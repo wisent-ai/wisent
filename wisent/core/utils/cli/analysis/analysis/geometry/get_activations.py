@@ -5,7 +5,7 @@ import json
 import os
 import time
 
-from wisent.core.utils.config_tools.constants import JSON_INDENT, PROGRESS_LOG_INTERVAL_10
+from wisent.core.utils.config_tools.constants import JSON_INDENT, PROGRESS_LOG_INTERVAL_10, ARCHITECTURE_MODULE_LIMIT
 
 
 def execute_get_activations(args):
@@ -105,7 +105,7 @@ def execute_get_activations(args):
             pair_set.add(pair)
 
         # 6. Collect activations
-        collector = ActivationCollector(model=model)
+        collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
 
         if raw_mode:
             # RAW MODE: Collect full hidden states [seq_len, hidden_size]

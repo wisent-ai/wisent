@@ -17,12 +17,8 @@ from pathlib import Path
 from typing import Optional, Tuple, Dict, Any
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from wisent.core.utils.config_tools.constants import (
-    GROM_HIDDEN_DIM, GROM_ROUTER_TEMPERATURE,
-    GROM_ROUTER_HIDDEN_DIM, GROM_MAX_ALPHA,
-    GROM_GATING_SHRINK_FACTOR,
-)
-from wisent.core.utils.infra_tools.errors import MissingParameterError
+from wisent.core import constants as _C
+from wisent.core.utils.infra_tools.errors import MissingParameterError, InsufficientDataError
 
 from wisent.core.weight_modification._standalone_loader_helpers import (
     TETNOHooks,
@@ -32,19 +28,19 @@ from wisent.core.weight_modification._standalone_loader_helpers import (
 
 class GatingNetwork(nn.Module):
     """Learned gating network matching GROM architecture."""
-    def __init__(self, input_dim: int, hidden_dim: int = GROM_HIDDEN_DIM):
+    def __init__(self, input_dim: int, hidden_dim: int, *, shrink_factor: int):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.LayerNorm(hidden_dim),
             nn.GELU(),
-            nn.Linear(hidden_dim, hidden_dim // GROM_GATING_SHRINK_FACTOR),
+            nn.Linear(hidden_dim, hidden_dim // shrink_factor),
             nn.GELU(),
-            nn.Linear(hidden_dim // GROM_GATING_SHRINK_FACTOR, 1),
+            nn.Linear(hidden_dim // shrink_factor, _C.COMBO_OFFSET),
         )
 
     def forward(self, x: torch.Tensor,
-                temperature: float = GROM_ROUTER_TEMPERATURE) -> torch.Tensor:
+                temperature: float) -> torch.Tensor:
         logit = self.net(x)
         return torch.sigmoid(logit / temperature)
 
@@ -52,7 +48,7 @@ class GatingNetwork(nn.Module):
 class IntensityNetwork(nn.Module):
     """Predicts per-layer steering intensity matching GROM architecture."""
     def __init__(self, input_dim: int, num_layers: int,
-                 hidden_dim: int = GROM_ROUTER_HIDDEN_DIM, max_alpha: float = GROM_MAX_ALPHA):
+                 hidden_dim: int, max_alpha: float):
         super().__init__()
         self.max_alpha = max_alpha
         self.num_layers = num_layers
@@ -125,24 +121,37 @@ class GROMHooks:
 
         if "gate_network_state" in grom_data:
             config = grom_data["gate_network_config"]
+            if "hidden_dim" not in config:
+                raise InsufficientDataError(reason="hidden_dim missing from gate_network_config. Re-bake the model with current wisent version.")
+            if "shrink_factor" not in config:
+                raise InsufficientDataError(reason="shrink_factor missing from gate_network_config. Re-bake the model with current wisent version.")
             self.gate_network = GatingNetwork(
-                config["input_dim"], config.get("hidden_dim", GROM_HIDDEN_DIM))
+                config["input_dim"], config["hidden_dim"],
+                shrink_factor=config["shrink_factor"])
             self.gate_network.load_state_dict(grom_data["gate_network_state"])
             self.gate_network = self.gate_network.to(model.device).eval()
 
         if "intensity_network_state" in grom_data:
             config = grom_data["intensity_network_config"]
+            if "hidden_dim" not in config:
+                raise InsufficientDataError(reason="hidden_dim missing from intensity_network_config. Re-bake the model with current wisent version.")
+            if "max_alpha" not in grom_data:
+                raise InsufficientDataError(reason="max_alpha missing from saved GROM data. Re-bake the model with current wisent version.")
             self.intensity_network = IntensityNetwork(
                 config["input_dim"], config["num_layers"],
-                config.get("hidden_dim", GROM_ROUTER_HIDDEN_DIM),
-                max_alpha=grom_data.get("max_alpha", GROM_MAX_ALPHA))
+                config["hidden_dim"],
+                max_alpha=grom_data["max_alpha"])
             self.intensity_network.load_state_dict(
                 grom_data["intensity_network_state"])
             self.intensity_network = (
                 self.intensity_network.to(model.device).eval())
 
-        self.gate_temperature = grom_data.get("gate_temperature", GROM_ROUTER_TEMPERATURE)
-        self.max_alpha = grom_data.get("max_alpha", GROM_MAX_ALPHA)
+        if "gate_temperature" not in grom_data:
+            raise InsufficientDataError(reason="gate_temperature missing from saved GROM data. Re-bake the model with current wisent version.")
+        self.gate_temperature = grom_data["gate_temperature"]
+        if "max_alpha" not in grom_data:
+            raise InsufficientDataError(reason="max_alpha missing from saved GROM data. Re-bake the model with current wisent version.")
+        self.max_alpha = grom_data["max_alpha"]
 
     def _get_effective_direction(self, layer_name: str) -> torch.Tensor:
         """Get weighted combination of directions for a layer."""

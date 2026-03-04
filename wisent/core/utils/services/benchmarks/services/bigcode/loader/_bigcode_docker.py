@@ -9,13 +9,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from wisent.core.utils.config_tools.constants import (
-    BIGCODE_TEST_TIMEOUT,
     DISPLAY_TRUNCATION_LARGE,
     DISPLAY_TRUNCATION_MEDIUM,
     DOCKER_CPU_PERIOD_US,
     DOCKER_CPU_QUOTA_50PCT_US,
-    DEFAULT_TIMEOUT_DOCKER,
 )
+from wisent.core.utils.infra_tools.infra.core.hardware import docker_code_exec_timeout_s
 from wisent.core.utils.infra_tools.infra.core.hardware import docker_bigcode_mem_limit_mb
 
 logger = logging.getLogger(__name__)
@@ -105,7 +104,7 @@ class BigCodeDockerMixin:
                 )
                 
                 # Wait for completion with timeout
-                exit_status = container.wait(timeout=DEFAULT_TIMEOUT_DOCKER)
+                exit_status = container.wait(timeout=docker_code_exec_timeout_s())
                 
                 # Get output
                 stdout = container.logs(stdout=True, stderr=False).decode("utf-8")
@@ -128,7 +127,7 @@ class BigCodeDockerMixin:
                 result["error"] = f"Docker API error: {e}"
             except Exception as e:
                 if "timed out" in str(e).lower() or "timeout" in str(e).lower():
-                    result["error"] = f"Timeout ({DEFAULT_TIMEOUT_DOCKER}s)"
+                    result["error"] = f"Timeout ({docker_code_exec_timeout_s()}s)"
                 else:
                     result["error"] = str(e)
         
@@ -178,7 +177,7 @@ class BigCodeDockerMixin:
         }
         return commands.get(language, f"python /code/{filename}")
 
-    def _execute_in_subprocess(self, sample: Dict, generation: str, task_name: str) -> Dict:
+    def _execute_in_subprocess(self, sample: Dict, generation: str, task_name: str, test_timeout: int) -> Dict:
         """Execute code in subprocess (less secure)."""
         result = {"passed": False, "error": None, "output": None}
 
@@ -193,7 +192,7 @@ class BigCodeDockerMixin:
 
             try:
                 # Execute
-                proc = subprocess.run([sys.executable, temp_path], capture_output=True, text=True, timeout=BIGCODE_TEST_TIMEOUT)
+                proc = subprocess.run([sys.executable, temp_path], capture_output=True, text=True, timeout=test_timeout)
 
                 if proc.returncode == 0:
                     result["passed"] = True

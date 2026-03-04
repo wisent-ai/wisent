@@ -11,9 +11,9 @@ import os
 import json
 import torch
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Optional
 from wisent.core import constants as _C
-from wisent.core.utils.config_tools.constants import PAIR_GENERATORS_DEFAULT_N, DISPLAY_TOP_N_SMALL
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_SMALL
 
 
 @dataclass
@@ -30,19 +30,10 @@ class GeometryResult:
 def run_comprehensive_geometry_analysis(
     task: str,
     model: str,
-    num_pairs: int = PAIR_GENERATORS_DEFAULT_N,
+    num_pairs: int,
     output_dir: str | None = None,
 ):
-    """
-    Run comprehensive geometry analysis across full search space.
-    
-    Sweeps:
-    - All layers (every 2nd layer for efficiency)
-    - All token aggregations: average, final, first, max, min
-    - All prompt strategies: chat_template, direct_completion, instruction_following
-    
-    Returns best configuration for each geometry type.
-    """
+    """Run comprehensive geometry analysis across full search space."""
     from wisent.core.primitives.models.wisent_model import WisentModel
     from wisent.core.primitives.contrastive_pairs.diagnostics import detect_geometry_structure
     from wisent.core.control.steering_methods.preflight import run_preflight_check
@@ -258,7 +249,8 @@ def run_comprehensive_geometry_analysis(
                     print("\nSteering method compatibility:")
                     for method in ["caa", "grom", "tecza", "tetno"]:
                         try:
-                            check = run_preflight_check(pos_tensor, neg_tensor, method)
+                            from wisent.core.control.steering_methods._helpers.preflight_helpers import PreflightThresholds
+                            check = run_preflight_check(pos_tensor, neg_tensor, method, thresholds=PreflightThresholds())
                             print(f"  {method.upper()}: {check.compatibility_score:.0%} compatible")
                             if check.warnings:
                                 for w in check.warnings[:2]:

@@ -1,9 +1,5 @@
 """Steering method definitions: CAA, OSTRZE, TECZA."""
 
-from wisent.core.utils.config_tools.constants import (
-    STEERING_STRENGTH_RANGE_WIDE,
-    STEERING_STRENGTH_RANGE_NARROW,
-)
 from wisent.core.control.steering_methods.registry.registry import (
     SteeringMethodDefinition,
     SteeringMethodParameter,
@@ -26,10 +22,6 @@ CAA_DEFINITION = SteeringMethodDefinition(
             cli_flag="--caa-normalize",
         ),
     ],
-    optimization_config={
-        "strength_search_range": STEERING_STRENGTH_RANGE_WIDE,
-    },
-    strength_range=STEERING_STRENGTH_RANGE_WIDE,
 )
 
 
@@ -54,10 +46,6 @@ OSTRZE_DEFINITION = SteeringMethodDefinition(
             cli_flag="--ostrze-C",
         ),
     ],
-    optimization_config={
-        "strength_search_range": STEERING_STRENGTH_RANGE_WIDE,
-    },
-    strength_range=STEERING_STRENGTH_RANGE_WIDE,
 )
 
 
@@ -134,9 +122,4 @@ TECZA_DEFINITION = SteeringMethodDefinition(
             cli_flag="--tecza-max-cosine-similarity",
         ),
     ],
-    optimization_config={
-        "strength_search_range": STEERING_STRENGTH_RANGE_NARROW,
-        "num_directions_range": (1, 7),
-    },
-    strength_range=STEERING_STRENGTH_RANGE_NARROW,
 )

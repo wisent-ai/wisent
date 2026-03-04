@@ -7,7 +7,7 @@ from typing import Mapping, Optional, Sequence, Callable
 from wisent.core.control.generation.synthetic.cleaners.methods.core.atoms import Deduper
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.utils.infra_tools.errors import InvalidValueError, InvalidRangeError
-from wisent.core.utils.config_tools.constants import BLAKE2B_DIGEST_SIZE, DEDUP_WORD_NGRAM, DEDUP_CHAR_NGRAM, DEFAULT_LAYER_WEIGHT, SIMHASH_BIT_WIDTH, SIMHASH_DEFAULT_NUM_BANDS, SIMHASH_THRESHOLD_CONSERVATIVE
+from wisent.core.utils.config_tools.constants import BLAKE2B_DIGEST_SIZE, SIMHASH_BIT_WIDTH
 
 __all__ = [
     "SimHashDeduper",
@@ -21,15 +21,16 @@ class SimHashDeduper(Deduper):
 
     def __init__(
         self,
-        threshold_bits: int = SIMHASH_THRESHOLD_CONSERVATIVE,
+        *,
+        threshold_bits: int,
         fields_to_hash: Sequence[str] = ("prompt",),
         field_weights: Mapping[str, float] | None = None,
-        tokenizer: Optional[str] = None,  # None (=auto) | "word" | "char"
-        word_ngram: int = DEDUP_WORD_NGRAM,
-        char_ngram: int = DEDUP_CHAR_NGRAM,
+        tokenizer: Optional[str] = None,
+        word_ngram: int,
+        char_ngram: int,
         strip_accents: bool = True,
         stopwords: set[str] | None = None,
-        num_bands: int = SIMHASH_DEFAULT_NUM_BANDS,  # 64 must be divisible by num_bands; band_size = 64/num_bands
+        num_bands: int,
         exact_keys: Sequence[str] = ("prompt", "positive", "negative"),
         key_fn: Callable[[Mapping[str, str]], str] | None = None,
     ) -> None:
@@ -147,7 +148,7 @@ class SimHashDeduper(Deduper):
         else:
             for field in self.fields_to_hash:
                 text = item.get(field, "") or ""
-                w = float(self.field_weights.get(field, DEFAULT_LAYER_WEIGHT))
+                w = float(self.field_weights[field])
                 if not text or w == 0.0:
                     continue
                 f = self._extract_features(text)

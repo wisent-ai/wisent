@@ -23,8 +23,8 @@ except ImportError:
 
 from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.core.utils.config_tools.constants import (
-    ZERO_THRESHOLD, DEFAULT_RANDOM_SEED, LINEARITY_N_INIT,
-    VIZ_N_NEIGHBORS, VIZ_MIN_DIST, STABILITY_N_CLUSTERS,
+    ZERO_THRESHOLD, DEFAULT_RANDOM_SEED,
+    VIZ_N_NEIGHBORS, VIZ_MIN_DIST,
     N_COMPONENTS_2D,
     PROGRESS_LOG_INTERVAL_20,
 )
@@ -106,14 +106,14 @@ def compute_projection(
     seed: int = DEFAULT_RANDOM_SEED,
 ) -> Tuple[np.ndarray, str]:
     """
-    Project difference vectors to 2D using various methods.
-    
+    Project difference vectors using various methods.
+
     Args:
         diff_vectors: [N, hidden_dim] array
         method: "pca", "umap", or "pacmap"
         n_components: number of output dimensions
         seed: random seed
-        
+
     Returns:
         projected: [N, n_components] array
         method_used: actual method used (may differ if requested not available)
@@ -145,6 +145,7 @@ def compute_projection(
 def analyze_layer_separability(
     diff_vectors_by_layer: Dict[int, np.ndarray],
     sources: List[str],
+    *, linearity_n_init: int, stability_n_clusters: int,
 ) -> Dict[int, Dict]:
     """
     Analyze how well concepts are separated at each layer.
@@ -158,7 +159,7 @@ def analyze_layer_separability(
     
     for layer_idx, diffs in diff_vectors_by_layer.items():
         # Cluster
-        km = KMeans(n_clusters=STABILITY_N_CLUSTERS, random_state=DEFAULT_RANDOM_SEED, n_init=LINEARITY_N_INIT)
+        km = KMeans(n_clusters=stability_n_clusters, random_state=DEFAULT_RANDOM_SEED, n_init=linearity_n_init)
         labels = km.fit_predict(diffs)
         
         # Silhouette

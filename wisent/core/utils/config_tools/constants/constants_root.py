@@ -14,18 +14,7 @@ COMPARE_TOL = 1e-6
 NEAR_ZERO_TOL = 1e-9
 SHERMAN_MORRISON_EPS = 1e-12
 
-# --- Regularization / tolerances ---
-TIKHONOV_REG = 1e-4
-EARLY_STOP_TOL = 1e-4
-MIN_NORM_THRESHOLD = 1e-4
-DEFAULT_CLASSIFIER_LR = 1e-3
-L1_DEFAULT_COEF = 1e-3
+# --- Math tolerances ---
 MATH_REL_TOL = 1e-4
 MATH_PERCENT_REL_TOL = 1e-3
 SYMPY_REL_TOL = 1e-9
-
-# --- Optuna search bounds ---
-LR_LOWER_BOUND = 1e-4
-LR_UPPER_BOUND = 1e-2
-ALPHA_LOWER_BOUND = 1e-4
-ALPHA_UPPER_BOUND = 1e-1

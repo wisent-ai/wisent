@@ -10,10 +10,10 @@ import torch
 import numpy as np
 from sklearn.metrics import roc_curve, auc, precision_recall_curve
 from wisent.core.utils.config_tools.constants import (
-    N_BOOTSTRAP_DEFAULT, PAIR_GENERATORS_DEFAULT_N,
-    THRESHOLD_HIDDEN_DIM_LARGE, THRESHOLD_HIDDEN_DIM_DEFAULT,
-    ZERO_THRESHOLD, NULL_DISTRIBUTION_SAMPLES_PER_CLASS,
-    EXISTENCE_THRESHOLD_GRID, GAP_THRESHOLD_CANDIDATES,
+    N_BOOTSTRAP_DEFAULT,
+    THRESHOLD_HIDDEN_DIM_LARGE,
+    THRESHOLD_HIDDEN_DIM_DEFAULT,
+    ZERO_THRESHOLD,
 )
 
 GCS_BUCKET = "wisent-images-bucket"
@@ -66,50 +66,56 @@ def generate_null_distribution(
     model: "WisentModel",
     n_samples: int = N_BOOTSTRAP_DEFAULT,
     hidden_dim: int = THRESHOLD_HIDDEN_DIM_LARGE,
+    *,
+    probe_knn_k: int,
+    cv_folds: int,
+    null_sample_size: int,
 ) -> Tuple[List[float], List[float]]:
     """
     Generate null distribution by testing random/nonsense data.
-    
+
     Args:
         model: WisentModel instance
         n_samples: Number of random samples
         hidden_dim: Hidden dimension
-        
+        probe_knn_k: Number of neighbors for k-NN
+        cv_folds: Number of cross-validation folds
+        null_sample_size: Number of samples per random class
+
     Returns:
         (knn_scores, linear_scores) for random data
     """
     from wisent.core.reading.modules.runner.geometry_runner import compute_knn_accuracy, compute_linear_probe_accuracy
-    
+
     knn_scores = []
     linear_scores = []
-    
+
     for _ in range(n_samples):
-        # Generate random activations (no real signal)
-        pos = torch.randn(NULL_DISTRIBUTION_SAMPLES_PER_CLASS, hidden_dim)
-        neg = torch.randn(NULL_DISTRIBUTION_SAMPLES_PER_CLASS, hidden_dim)
-        
-        knn = compute_knn_accuracy(pos, neg, k=10)
-        linear = compute_linear_probe_accuracy(pos, neg)
-        
+        pos = torch.randn(null_sample_size, hidden_dim)
+        neg = torch.randn(null_sample_size, hidden_dim)
+
+        knn = compute_knn_accuracy(pos, neg, k=probe_knn_k, n_folds=cv_folds)
+        linear = compute_linear_probe_accuracy(pos, neg, cv_folds)
+
         knn_scores.append(knn)
         linear_scores.append(linear)
-    
+
     return knn_scores, linear_scores
 
 
 def generate_synthetic_data(
     structure: str,
-    n_samples: int = PAIR_GENERATORS_DEFAULT_N,
+    n_samples: int,
     hidden_dim: int = THRESHOLD_HIDDEN_DIM_DEFAULT,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Generate synthetic data with known structure for validation.
-    
+
     Args:
         structure: 'linear', 'xor', 'spirals', 'random'
         n_samples: Samples per class
         hidden_dim: Dimension
-        
+
     Returns:
         (pos_activations, neg_activations)
     """
@@ -219,8 +225,9 @@ def compute_precision_recall_for_gap(
 
 def run_sensitivity_analysis(
     results: List[Dict],
-    existence_thresholds: List[float] = EXISTENCE_THRESHOLD_GRID,
-    gap_thresholds: List[float] = GAP_THRESHOLD_CANDIDATES,
+    *,
+    existence_thresholds: List[float],
+    gap_thresholds: List[float],
 ) -> Dict[str, Dict[str, float]]:
     """
     Run sensitivity analysis across threshold combinations.

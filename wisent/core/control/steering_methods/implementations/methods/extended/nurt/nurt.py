@@ -19,17 +19,7 @@ from wisent.core.primitives.model_interface.core.activations.core.atoms import L
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
 
-from wisent.core.utils.config_tools.constants import (
-    DEFAULT_VARIANCE_THRESHOLD,
-    NURT_NUM_DIMS,
-    NURT_TRAINING_EPOCHS,
-    MLP_LEARNING_RATE,
-    NURT_LR_MIN,
-    NURT_NUM_INTEGRATION_STEPS,
-    NURT_T_MAX,
-    DEFAULT_WEIGHT_DECAY,
-    GROM_MAX_GRAD_NORM,
-)
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
 from .flow_network import FlowVelocityNetwork
 from .subspace import discover_concept_subspace, project_to_subspace
 
@@ -40,23 +30,39 @@ __all__ = [
 ]
 
 
+def _require(name: str, kwargs: dict):
+    """Raise ValueError if a required hyperparameter is missing."""
+    if name not in kwargs:
+        raise ValueError(
+            f"Parameter '{name}' is required. "
+            f"Run 'wisent optimize-steering auto' first, or pass it explicitly."
+        )
+    return kwargs[name]
+
+
 @dataclass
 class NurtConfig:
     """Configuration for Concept Flow steering method."""
-    num_dims: int = NURT_NUM_DIMS
-    """Number of concept subspace dimensions. 0 = auto from variance threshold."""
-    variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD
-    """Cumulative variance threshold for auto dimension selection."""
-    training_epochs: int = NURT_TRAINING_EPOCHS
+    num_dims: int
+    """Number of concept subspace dimensions. Zero = auto from variance threshold."""
+    max_concept_dim: int
+    """Maximum concept subspace dimensions."""
+    training_epochs: int
     """Number of training epochs for flow matching."""
-    lr: float = MLP_LEARNING_RATE
+    lr: float
     """Learning rate for AdamW optimizer."""
-    lr_min: float = NURT_LR_MIN
+    lr_min: float
     """Minimum learning rate for cosine annealing."""
-    num_integration_steps: int = NURT_NUM_INTEGRATION_STEPS
+    num_integration_steps: int
     """Number of Euler integration steps at inference."""
-    t_max: float = NURT_T_MAX
+    t_max: float
     """Integration endpoint (t_max * strength = effective integration range)."""
+    variance_threshold: float
+    """Cumulative variance threshold for auto dimension selection."""
+    weight_decay: float
+    """Weight decay for AdamW optimizer."""
+    max_grad_norm: float
+    """Maximum gradient norm for clipping."""
     flow_hidden_dim: Optional[int] = None
     """Hidden dimension for velocity network. None = auto from concept_dim."""
 
@@ -91,13 +97,16 @@ class NurtMethod(BaseSteeringMethod):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.config = NurtConfig(
-            num_dims=kwargs.get("num_dims", NURT_NUM_DIMS),
-            variance_threshold=kwargs.get("variance_threshold", DEFAULT_VARIANCE_THRESHOLD),
-            training_epochs=kwargs.get("training_epochs", NURT_TRAINING_EPOCHS),
-            lr=kwargs.get("lr", MLP_LEARNING_RATE),
-            lr_min=kwargs.get("lr_min", NURT_LR_MIN),
-            num_integration_steps=kwargs.get("num_integration_steps", NURT_NUM_INTEGRATION_STEPS),
-            t_max=kwargs.get("t_max", NURT_T_MAX),
+            num_dims=_require("num_dims", kwargs),
+            max_concept_dim=_require("max_concept_dim", kwargs),
+            training_epochs=_require("training_epochs", kwargs),
+            lr=_require("lr", kwargs),
+            lr_min=_require("lr_min", kwargs),
+            num_integration_steps=_require("num_integration_steps", kwargs),
+            t_max=_require("t_max", kwargs),
+            variance_threshold=_require("variance_threshold", kwargs),
+            weight_decay=_require("weight_decay", kwargs),
+            max_grad_norm=_require("max_grad_norm", kwargs),
             flow_hidden_dim=kwargs.get("flow_hidden_dim", None),
         )
 
@@ -138,8 +147,9 @@ class NurtMethod(BaseSteeringMethod):
             # 1. Discover concept subspace
             Vh, S, k = discover_concept_subspace(
                 pos, neg,
-                num_dims=self.config.num_dims,
                 variance_threshold=self.config.variance_threshold,
+                nurt_num_dims=self.config.num_dims,
+                nurt_max_concept_dim=self.config.max_concept_dim,
             )
             # 2. Project to subspace
             z_pos = project_to_subspace(pos, Vh)
@@ -179,7 +189,7 @@ class NurtMethod(BaseSteeringMethod):
         """Train a single flow velocity network via conditional flow matching."""
         network = FlowVelocityNetwork(concept_dim, self.config.flow_hidden_dim)
         optimizer = torch.optim.AdamW(
-            network.parameters(), lr=self.config.lr, weight_decay=DEFAULT_WEIGHT_DECAY,
+            network.parameters(), lr=self.config.lr, weight_decay=self.config.weight_decay,
         )
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             optimizer, T_max=self.config.training_epochs, eta_min=self.config.lr_min,
@@ -197,7 +207,7 @@ class NurtMethod(BaseSteeringMethod):
             v_pred = network(z_t, t.squeeze(-1))
             loss = F.mse_loss(v_pred, target)
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(network.parameters(), max_norm=GROM_MAX_GRAD_NORM)
+            torch.nn.utils.clip_grad_norm_(network.parameters(), max_norm=self.config.max_grad_norm)
             optimizer.step()
             scheduler.step()
 

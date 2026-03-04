@@ -24,8 +24,8 @@ class LatencyReportingMixin:
             min_time=min(durations),
             max_time=max(durations),
             std_dev=statistics.stdev(durations) if len(durations) > 1 else 0,
-            percentile_95=self._percentile(durations, _C.PERCENTILE_HIGH),
-            percentile_99=self._percentile(durations, _C.PERCENTILE_CRITICAL),
+            percentile_95=self._percentile(durations, 95),
+            percentile_99=self._percentile(durations, 99),
             events=events.copy()
         )
     

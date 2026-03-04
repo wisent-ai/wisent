@@ -4,8 +4,7 @@ Extracted from synthetic_evaluator.py to keep file under 300 lines.
 Contains evaluate_model implementation and create_synthetic_evaluator factory.
 """
 
-from typing import Dict, List, Optional
-from wisent.core.utils.config_tools.constants import SYNTHETIC_EVAL_NUM_PROMPTS
+from typing import Dict
 
 
 def evaluate_model_impl(evaluator, model=None, num_samples: int = None) -> Dict:
@@ -61,7 +60,6 @@ def create_synthetic_evaluator(
     model=None,
     test_prompts_file: str = None,
     generate_prompts: bool = False,
-    num_test_prompts: int = SYNTHETIC_EVAL_NUM_PROMPTS,
     verbose: bool = False,
 ):
     """Factory function to create a SyntheticEvaluator.
@@ -71,7 +69,6 @@ def create_synthetic_evaluator(
         model: WisentModel instance to use for generation and judging
         test_prompts_file: Optional file with test prompts
         generate_prompts: If True, generate prompts relevant to trait
-        num_test_prompts: Number of test prompts to use
         verbose: Enable verbose output
 
     Returns:
@@ -83,6 +80,5 @@ def create_synthetic_evaluator(
         model=model,
         test_prompts_file=test_prompts_file,
         generate_prompts=generate_prompts,
-        num_test_prompts=num_test_prompts,
         verbose=verbose,
     )

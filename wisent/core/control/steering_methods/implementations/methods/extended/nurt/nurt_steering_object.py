@@ -18,10 +18,7 @@ from wisent.core.control.steering_methods.steering_object import (
     BaseSteeringObject,
     SteeringObjectMetadata,
 )
-from wisent.core.utils.config_tools.constants import (
-    NURT_NUM_INTEGRATION_STEPS,
-    NURT_T_MAX,
-)
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
 from .flow_network import FlowVelocityNetwork, euler_integrate
 from .subspace import project_to_subspace, reconstruct_from_subspace
 
@@ -40,8 +37,8 @@ class NurtSteeringObject(BaseSteeringObject):
         concept_bases: Dict[int, torch.Tensor],
         mean_neg: Dict[int, torch.Tensor],
         mean_pos: Dict[int, torch.Tensor],
-        num_integration_steps: int = NURT_NUM_INTEGRATION_STEPS,
-        t_max: float = NURT_T_MAX,
+        num_integration_steps: int,
+        t_max: float,
         layer_variance: Optional[Dict[int, float]] = None,
     ):
         super().__init__(metadata)
@@ -247,13 +244,24 @@ class NurtSteeringObject(BaseSteeringObject):
         lv_raw = data.get("layer_variance", {})
         layer_variance = {int(k): float(v) for k, v in lv_raw.items()}
 
+        num_integration_steps = data.get("num_integration_steps")
+        if num_integration_steps is None:
+            raise InsufficientDataError(
+                reason="Missing 'num_integration_steps' in saved data. Re-train the steering object.",
+            )
+        t_max = data.get("t_max")
+        if t_max is None:
+            raise InsufficientDataError(
+                reason="Missing 't_max' in saved data. Re-train the steering object.",
+            )
+
         return cls(
             metadata=metadata,
             flow_networks=flow_networks,
             concept_bases=concept_bases,
             mean_neg=mean_neg,
             mean_pos=mean_pos,
-            num_integration_steps=data.get("num_integration_steps", NURT_NUM_INTEGRATION_STEPS),
-            t_max=data.get("t_max", NURT_T_MAX),
+            num_integration_steps=num_integration_steps,
+            t_max=t_max,
             layer_variance=layer_variance,
         )

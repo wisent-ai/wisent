@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict
 
 from wisent.core.primitives.model_interface.core.activations.activations import Activations
-from wisent.core.utils.config_tools.constants import CLASSIFIER_THRESHOLD, SPLIT_RATIO_FULL
+from wisent.core.utils.config_tools.constants import SPLIT_RATIO_FULL, DEFAULT_RANDOM_SEED
 from wisent.core.primitives.models.core.layer import Layer
 from wisent.core.primitives.models import get_generate_kwargs
 
@@ -20,7 +20,7 @@ def evaluate_text_generation(evaluator, classifier, task_name: str, num_samples:
             docs, task_data = evaluator._load_task_interface_data(task_name, num_samples)
         else:
             task_data = model.load_lm_eval_task(task_name, shots=0, limit=num_samples)
-            docs, _ = model.split_task_data(task_data, split_ratio=SPLIT_RATIO_FULL)
+            docs, _ = model.split_task_data(task_data, split_ratio=SPLIT_RATIO_FULL, random_seed=DEFAULT_RANDOM_SEED)
         if not docs:
             return evaluator._error_result(f"No documents retrieved from task: {task_name}")
         logger.info(f"Retrieved {len(docs)} documents from {task_name}")
@@ -64,30 +64,30 @@ def evaluate_text_generation(evaluator, classifier, task_name: str, num_samples:
                     features_numpy = features.cpu().numpy()
                     prediction_proba = classifier.predict_proba([features_numpy])
                     if isinstance(prediction_proba, (list, tuple)):
-                        prediction = prediction_proba[0] if len(prediction_proba) > 0 else CLASSIFIER_THRESHOLD
+                        prediction = prediction_proba[0] if len(prediction_proba) > 0 else None
                     else:
                         prediction = prediction_proba
                     if hasattr(prediction, "__len__") and not isinstance(prediction, str):
-                        prediction = prediction[0] if len(prediction) > 0 else CLASSIFIER_THRESHOLD
+                        prediction = prediction[0] if len(prediction) > 0 else None
                     prediction = float(prediction)
                 except Exception as proba_error:
                     logger.warning(f"predict_proba failed: {proba_error}, trying predict...")
                     try:
                         predictions = classifier.predict([features.cpu().numpy()])
-                        prediction = float(predictions[0]) if len(predictions) > 0 else CLASSIFIER_THRESHOLD
+                        prediction = float(predictions[0]) if len(predictions) > 0 else None
                     except Exception as predict_error:
                         logger.error(f"Both predict_proba and predict failed: {predict_error}")
-                        prediction = CLASSIFIER_THRESHOLD
+                        prediction = None
                 classification_results.append({"question": response_data["question"],
                     "generated_response": response_data["generated_response"],
-                    "classifier_score": prediction, "classifier_truthful": prediction < CLASSIFIER_THRESHOLD})
+                    "classifier_score": prediction, "classifier_truthful": prediction is not None and prediction < classifier.threshold})
             except Exception as e:
                 import traceback
                 logger.error(f"Error classifying generated response: {e}")
                 logger.error(f"Full traceback: {traceback.format_exc()}")
                 classification_results.append({"question": response_data["question"],
                     "generated_response": response_data["generated_response"],
-                    "classifier_score": CLASSIFIER_THRESHOLD, "classifier_truthful": False, "error": str(e)})
+                    "classifier_score": None, "classifier_truthful": False, "error": str(e)})
                 continue
         return {"ground_truth": "EVALUATED", "method_used": "lm-eval-harness-text-generation",
                 "confidence": evaluation_results.get("accuracy", 0.0),

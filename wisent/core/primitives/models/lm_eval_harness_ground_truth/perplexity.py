@@ -6,7 +6,7 @@ import torch
 from typing import Any, Dict
 
 from wisent.core.primitives.model_interface.core.activations.activations import Activations
-from wisent.core.utils.config_tools.constants import CONTEXT_MAX_PREVIEW, PERPLEXITY_WIKITEXT_THRESHOLD, CLASSIFIER_THRESHOLD, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TOP_N_SMALL, SPLIT_RATIO_FULL
+from wisent.core.utils.config_tools.constants import CONTEXT_MAX_PREVIEW, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TOP_N_SMALL, SPLIT_RATIO_FULL, DEFAULT_RANDOM_SEED
 from wisent.core.primitives.models.core.layer import Layer
 from wisent.core.primitives.models import get_generate_kwargs
 
@@ -41,7 +41,7 @@ def evaluate_perplexity(evaluator, classifier, task_name: str, num_samples: int,
     try:
         logger.info(f"PERPLEXITY EVALUATION: {task_name}")
         task_data = model.load_lm_eval_task(task_name, shots=0, limit=num_samples)
-        docs, _ = model.split_task_data(task_data, split_ratio=SPLIT_RATIO_FULL)
+        docs, _ = model.split_task_data(task_data, split_ratio=SPLIT_RATIO_FULL, random_seed=DEFAULT_RANDOM_SEED)
         if not docs:
             return evaluator._error_result(f"No documents retrieved from task: {task_name}")
         logger.info(f"Retrieved {len(docs)} documents from {task_name}")
@@ -72,9 +72,9 @@ def evaluate_perplexity(evaluator, classifier, task_name: str, num_samples: int,
                                     classification_score = float(classification_score[0])
                             except Exception:
                                 predictions = classifier.predict([features.cpu().numpy()])
-                                classification_score = float(predictions[0]) if len(predictions) > 0 else CLASSIFIER_THRESHOLD
+                                classification_score = float(predictions[0]) if len(predictions) > 0 else None
                         else:
-                            classification_score = CLASSIFIER_THRESHOLD
+                            classification_score = None
                     except Exception as e:
                         logger.error(f"Error classifying WikiText document: {e}")
                         classification_score = None
@@ -128,11 +128,11 @@ def evaluate_perplexity(evaluator, classifier, task_name: str, num_samples: int,
                             else:
                                 classification_score = prediction_proba
                             if hasattr(classification_score, "__len__") and not isinstance(classification_score, str):
-                                classification_score = classification_score[0] if len(classification_score) > 0 else CLASSIFIER_THRESHOLD
+                                classification_score = classification_score[0] if len(classification_score) > 0 else None
                             classification_score = float(classification_score)
                         except Exception:
                             predictions = classifier.predict([features.cpu().numpy()])
-                            classification_score = float(predictions[0]) if len(predictions) > 0 else CLASSIFIER_THRESHOLD
+                            classification_score = float(predictions[0]) if len(predictions) > 0 else None
                     except Exception as e:
                         logger.error(f"Error classifying best choice: {e}")
                     perplexity_results.append({"question": prompt, "choices": choice_perplexities,
@@ -149,8 +149,8 @@ def evaluate_perplexity(evaluator, classifier, task_name: str, num_samples: int,
             avg_perplexity = sum(perplexities) / len(perplexities) if perplexities else float("inf")
             classifier_scores = [r["classifier_score"] for r in perplexity_results if r["classifier_score"] is not None]
             avg_classifier_score = sum(classifier_scores) / len(classifier_scores) if classifier_scores else None
-            perplexity_accuracy = 1.0 if avg_perplexity < PERPLEXITY_WIKITEXT_THRESHOLD else 0.0
-            correct_perplexity = sum(1 for r in perplexity_results if r["perplexity"] < PERPLEXITY_WIKITEXT_THRESHOLD)
+            perplexity_accuracy = 1.0 if avg_perplexity < 100 else 0.0
+            correct_perplexity = sum(1 for r in perplexity_results if r["perplexity"] < 100)
         else:
             correct_perplexity = sum(1 for r in perplexity_results if r.get("perplexity_correct") == True)
             perplexity_accuracy = correct_perplexity / total_samples if total_samples > 0 else 0.0

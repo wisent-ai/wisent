@@ -1,7 +1,7 @@
 """Concept analysis: correlations, main analysis, and interference detection."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, Any
 import numpy as np
 import torch
@@ -11,10 +11,7 @@ from sklearn.metrics import silhouette_score, adjusted_rand_score
 from sklearn.decomposition import PCA
 
 from wisent.core.utils.config_tools.constants import (
-    ZERO_THRESHOLD, CONCEPT_K_MAX, CONCEPT_TOP_SINGULAR_VALUES,
-    ICD_SINGLE_CONCEPT_THRESHOLD, ICD_MODERATE_THRESHOLD,
-    SILHOUETTE_MULTI_CONCEPT_THRESHOLD, SILHOUETTE_WEAK_MULTI_THRESHOLD,
-    CONCEPT_CORRELATION_HIGH, CONCEPT_CORRELATION_MODERATE,
+    ZERO_THRESHOLD,
 )
 from wisent.core.reading.diagnostics.analysis.concept_analysis import (
     ConceptAnalysisResult,
@@ -54,7 +51,13 @@ def compute_concept_correlations(
 def analyze_concepts(
     pos_activations: np.ndarray,
     neg_activations: np.ndarray,
-    k_max: int = CONCEPT_K_MAX,
+    k_max: int = None,
+    *,
+    concept_top_singular_values: int,
+    icd_single_concept_threshold: int,
+    icd_moderate_threshold: int,
+    silhouette_multi_concept_threshold: float,
+    silhouette_weak_multi_threshold: float,
 ) -> ConceptAnalysisResult:
     """
     Full concept analysis on contrastive activations.
@@ -73,6 +76,8 @@ def analyze_concepts(
     Returns:
         ConceptAnalysisResult with all metrics
     """
+    if k_max is None:
+        raise ValueError("k_max is required")
     # Ensure numpy arrays
     if isinstance(pos_activations, torch.Tensor):
         pos_activations = pos_activations.float().cpu().numpy()
@@ -112,14 +117,14 @@ def analyze_concepts(
     confidence = "low"
     interpretation = ""
     
-    if icd < ICD_SINGLE_CONCEPT_THRESHOLD:
+    if icd < icd_single_concept_threshold:
         is_single_concept = True
         confidence = "high"
         interpretation = f"ICD={icd:.1f} indicates a single dominant concept direction."
-    elif icd < ICD_MODERATE_THRESHOLD:
+    elif icd < icd_moderate_threshold:
         # Check clustering quality
         best_sil = max(silhouette_scores.values()) if silhouette_scores else 0
-        if best_sil > SILHOUETTE_MULTI_CONCEPT_THRESHOLD and k_detected > 1:
+        if best_sil > silhouette_multi_concept_threshold and k_detected > 1:
             is_single_concept = False
             confidence = "medium"
             interpretation = f"ICD={icd:.1f} with silhouette={best_sil:.2f} suggests {k_detected} distinct concepts."
@@ -130,7 +135,7 @@ def analyze_concepts(
     else:
         # High ICD
         best_sil = max(silhouette_scores.values()) if silhouette_scores else 0
-        if best_sil > SILHOUETTE_WEAK_MULTI_THRESHOLD and k_detected > 1:
+        if best_sil > silhouette_weak_multi_threshold and k_detected > 1:
             is_single_concept = False
             confidence = "high"
             interpretation = f"ICD={icd:.1f} is high, suggesting {k_detected}+ mixed concepts or high noise."
@@ -141,8 +146,8 @@ def analyze_concepts(
     
     return ConceptAnalysisResult(
         icd=icd,
-        top_singular_values=singular_values[:CONCEPT_TOP_SINGULAR_VALUES],
-        top_variance_explained=cum_variance[:CONCEPT_TOP_SINGULAR_VALUES] if cum_variance else [],
+        top_singular_values=singular_values[:concept_top_singular_values],
+        top_variance_explained=cum_variance[:concept_top_singular_values] if cum_variance else [],
         eigenvalue_gap=gap,
         num_concepts_detected=k_detected,
         silhouette_scores=silhouette_scores,
@@ -160,6 +165,9 @@ def analyze_concept_interference(
     activations_b: Tuple[np.ndarray, np.ndarray],
     name_a: str,
     name_b: str,
+    *,
+    concept_correlation_high: float,
+    concept_correlation_moderate: float,
 ) -> Dict[str, Any]:
     """
     Analyze interference between two concepts.
@@ -221,10 +229,10 @@ def analyze_concept_interference(
     cross_accuracy_b_to_a = float(probe_b.score(X_train, y_train))
     
     # Interpretation
-    if abs(correlation) > CONCEPT_CORRELATION_HIGH:
+    if abs(correlation) > concept_correlation_high:
         interference = "high"
         interpretation = f"High correlation ({correlation:.2f}) means steering {name_a} will significantly affect {name_b}."
-    elif abs(correlation) > CONCEPT_CORRELATION_MODERATE:
+    elif abs(correlation) > concept_correlation_moderate:
         interference = "medium"
         interpretation = f"Moderate correlation ({correlation:.2f}) means some interference between concepts."
     else:

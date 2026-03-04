@@ -53,7 +53,7 @@ class LMEvalBenchmarkExtractor(ABC):
         evaluator_name (str): Name of the evaluator to use (e.g., "log_likelihoods")
     """
 
-    # Default evaluator - subclasses should override
+    # Default evaluator - subclasses should override.
     evaluator_name: str = EVALUATOR_NAME_LOG_LIKELIHOODS
 
     @abstractmethod
@@ -61,6 +61,8 @@ class LMEvalBenchmarkExtractor(ABC):
         self,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
+        *,
+        train_ratio: float,
     ) -> list[ContrastivePair]:
         """
         Extract contrastive pairs from the provided lm-eval task.
@@ -142,6 +144,8 @@ class LMEvalBenchmarkExtractor(ABC):
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
         preferred_doc: str | None = None,
+        *,
+        train_ratio: float,
     ) -> list[dict[str, Any]]:
         """
         Load TRAINING documents for contrastive pair extraction.
@@ -180,8 +184,8 @@ class LMEvalBenchmarkExtractor(ABC):
         if not all_docs:
             raise NoDocsAvailableError(task_name=benchmark_name)
 
-        # Apply our 80/20 split and get TRAINING docs only
-        train_docs, _ = create_deterministic_split(all_docs, benchmark_name)
+        # Apply train/test split and get TRAINING docs only
+        train_docs, _ = create_deterministic_split(all_docs, benchmark_name, train_ratio=train_ratio)
 
         # Coerce to dicts
         docs_list = cls._coerce_docs_to_dicts(train_docs, max_items)

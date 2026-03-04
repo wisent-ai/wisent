@@ -6,7 +6,7 @@ using Cohen's d effect size by comparing outputs before and after steering.
 from typing import Dict, List, Optional, Any
 import numpy as np
 import torch
-from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD, EFFECT_SIZE_MEDIUM, LAYER_SWEEP_STRENGTH
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD, EFFECT_SIZE_MEDIUM, DIAGNOSTICS_TOTAL_CHECKS
 from wisent.core.primitives.models.config import get_generate_kwargs
 
 
@@ -141,19 +141,17 @@ def validate_steering_effectiveness(
 
 
 def run_full_validation(
-    pos: torch.Tensor,
-    neg: torch.Tensor,
-    device: str,
-    model=None,
-    tokenizer=None,
-    test_prompts: Optional[List[str]] = None,
-    layer: int = None,
+    pos: torch.Tensor, neg: torch.Tensor, device: str, n_bootstrap: int,
+    model=None, tokenizer=None, test_prompts: Optional[List[str]] = None,
+    layer: int = None, mlp_early_stopping_min_samples: int = None,
+    mlp_probe_max_iter: int = None, steering_strength: float = None,
+    *, decomp_min_silhouette: float, decomp_pca_dims_max: int,
+    decomp_max_silhouette_samples: int, decomp_adaptive_k_min: int, decomp_adaptive_k_max: int,
+    decomp_min_cluster_size_base: int, decomp_cluster_size_ratio: int,
+    decomp_kmeans_n_init_min: int, decomp_kmeans_n_init_max: int,
+    decomp_kmeans_scaling_factor: int,
 ) -> Dict[str, Any]:
-    """
-    Run full protocol with validation: test -> recommend -> validate.
-
-    Returns complete results including steering validation if model provided.
-    """
+    """Run full protocol with validation: test -> recommend -> validate."""
     from .signal_null_tests import compute_signal_vs_null, compute_aggregate_signal
     from .effective_dim_null import compute_effective_dimensions_vs_null
     from .geometry_null import compute_geometry_vs_null
@@ -162,24 +160,27 @@ def run_full_validation(
     from .intervention_selection import rigorous_select_intervention
 
     # Step 1: Signal test
-    signal_metrics = compute_signal_vs_null(pos, neg, ["knn_accuracy", "mlp_probe_accuracy"])
+    signal_metrics = compute_signal_vs_null(
+        pos, neg, ["knn_accuracy", "mlp_probe_accuracy"],
+        mlp_early_stopping_min_samples=mlp_early_stopping_min_samples,
+        mlp_probe_max_iter=mlp_probe_max_iter)
     signal_z, signal_p, _ = compute_aggregate_signal(signal_metrics, correction="bonferroni")
 
     # Step 2: Geometry test
-    linearity = test_linearity(pos, neg)
+    linearity = test_linearity(pos, neg, diagnostics_total_checks=DIAGNOSTICS_TOTAL_CHECKS)
     geometry_diagnosis = linearity.diagnosis
 
     # Step 3: Effective dimension
-    eff_dim = compute_effective_dimensions_vs_null(pos, neg)
+    eff_dim = compute_effective_dimensions_vs_null(pos, neg, n_bootstrap=n_bootstrap)
     eff_dim_z = eff_dim["z_scores"].get("effective_rank_z", 0)
 
     # Step 4: Geometry type
-    geo_type = compute_geometry_vs_null(pos, neg)
+    geo_type = compute_geometry_vs_null(pos, neg, n_bootstrap=n_bootstrap)
     geo_type_z = geo_type.get("z_scores", {})
 
-    # Step 5: Decomposition
     diff = pos - neg
-    n_concepts, labels, sil = find_optimal_clustering(diff)
+    _dk = {k: v for k, v in locals().items() if k.startswith("decomp_")}
+    n_concepts, labels, sil = find_optimal_clustering(diff, **_dk)
 
     # Make recommendation
     intervention = rigorous_select_intervention(
@@ -204,10 +205,12 @@ def run_full_validation(
 
     # Validate if model provided
     if model is not None and test_prompts and intervention.recommended_method != "NONE":
+        if steering_strength is None:
+            raise ValueError("steering_strength is required when model is provided for validation")
         steering_vector = (pos.mean(dim=0) - neg.mean(dim=0)).to(device)
         validation = validate_steering_effectiveness(
             model, tokenizer, steering_vector, test_prompts, layer,
-            steering_strength=LAYER_SWEEP_STRENGTH, target_direction="increase",
+            steering_strength=steering_strength, target_direction="increase",
         )
         result["validation"] = validation
 

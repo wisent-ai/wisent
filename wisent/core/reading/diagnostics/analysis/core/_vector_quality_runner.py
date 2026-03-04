@@ -8,6 +8,9 @@ import torch
 import numpy as np
 
 from ..base import DiagnosticsIssue, DiagnosticsReport, MetricReport
+from wisent.core.utils.config_tools.constants import (
+    PARSER_DEFAULT_LAYER_START, COMBO_OFFSET,
+)
 from wisent.core.reading.diagnostics.analysis.vector_quality import (
     VectorQualityConfig,
     VectorQualityReport,
@@ -29,6 +32,8 @@ from wisent.core.reading.diagnostics.analysis._vector_quality_helpers import (
 def run_vector_quality_diagnostics(
     positive_activations: torch.Tensor,
     negative_activations: torch.Tensor,
+    min_clusters: int,
+    *, adaptive_cv_min_folds: int,
     pair_prompts: Optional[List[str]] = None,
     config: Optional[VectorQualityConfig] = None,
 ) -> Tuple[VectorQualityReport, DiagnosticsReport]:
@@ -93,7 +98,7 @@ def run_vector_quality_diagnostics(
     all_issues.extend(issues)
     
     # 6. Clustering
-    silhouette, issues = _compute_clustering(positive_activations, negative_activations, cfg)
+    silhouette, issues = _compute_clustering(positive_activations, negative_activations, cfg, min_clusters=min_clusters)
     report.silhouette_score = silhouette
     all_issues.extend(issues)
     
@@ -102,21 +107,21 @@ def run_vector_quality_diagnostics(
     
     # 8. CV classification accuracy
     report.cv_classification_accuracy = _compute_cv_classification(
-        positive_activations, negative_activations, cfg
+        positive_activations, negative_activations, cfg, adaptive_cv_min_folds=adaptive_cv_min_folds
     )
     
     # 9. Cohen's d
-    report.cohens_d = _compute_cohens_d(positive_activations, negative_activations)
+    report.cohens_d = _compute_cohens_d(positive_activations, negative_activations, min_clusters=min_clusters)
     
     # Determine overall quality
-    critical_count = sum(1 for i in all_issues if i.severity == "critical")
-    warning_count = sum(1 for i in all_issues if i.severity == "warning")
-    
-    if critical_count > 0:
+    critical_count = sum(COMBO_OFFSET for i in all_issues if i.severity == "critical")
+    warning_count = sum(COMBO_OFFSET for i in all_issues if i.severity == "warning")
+
+    if critical_count > PARSER_DEFAULT_LAYER_START:
         report.overall_quality = "poor"
-    elif warning_count >= 3:
+    elif warning_count >= cfg.vq_warnings_fair_threshold:
         report.overall_quality = "fair"
-    elif warning_count > 0:
+    elif warning_count > PARSER_DEFAULT_LAYER_START:
         report.overall_quality = "good"
     else:
         report.overall_quality = "excellent"
@@ -126,15 +131,15 @@ def run_vector_quality_diagnostics(
         report.recommendations.append(
             f"Remove {len(report.outlier_pairs)} outlier pair(s) with low alignment and retrain."
         )
-    if report.convergence_score and report.convergence_score < cfg.convergence_warning:
+    if report.convergence_score and report.convergence_score < cfg.vq_convergence_warning:
         report.recommendations.append(
             "Add more contrastive pairs to improve vector stability."
         )
-    if report.snr and report.snr < cfg.snr_warning:
+    if report.snr and report.snr < cfg.vq_snr_warning:
         report.recommendations.append(
             "Use more distinct positive/negative examples to increase signal-to-noise ratio."
         )
-    if report.pca_pc1_variance and report.pca_pc1_variance < cfg.pca_variance_warning:
+    if report.pca_pc1_variance and report.pca_pc1_variance < cfg.vq_pca_variance_warning:
         report.recommendations.append(
             "Pairs may capture multiple concepts. Focus pairs on a single, clear distinction."
         )

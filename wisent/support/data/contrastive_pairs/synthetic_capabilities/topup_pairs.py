@@ -17,11 +17,6 @@ from wisent.core.control.generation.synthetic.cleaners.methods.base_dedupers imp
 from wisent.core.control.generation.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
 from wisent.core.primitives.models import get_generate_kwargs
 from wisent.core.utils.config_tools.constants import (
-    TOKENS_PER_PAIR_ESTIMATE,
-    TOKENS_BASE_OFFSET,
-    TOKEN_ESTIMATE_MIN,
-    TOKEN_ESTIMATE_MAX,
-    SIMHASH_THRESHOLD_AGGRESSIVE,
     DISPLAY_TRUNCATION_SHORT, JSON_INDENT,
 )
 
@@ -47,7 +42,21 @@ TARGET_COUNT = 100
 MODEL_NAME = "meta-llama/Llama-3.2-1B-Instruct"
 DEVICE = "mps"
 
-def topup_capability(capability: str, trait: str, base_dir: str):
+def topup_capability(
+    capability: str, trait: str, base_dir: str,
+    *,
+    tokens_per_pair_estimate: int,
+    tokens_base_offset: int,
+    token_estimate_min: int,
+    token_estimate_max: int,
+    simhash_threshold_bits: int,
+    dedup_word_ngram: int,
+    dedup_char_ngram: int,
+    simhash_num_bands: int,
+    fast_diversity_seed: int,
+    diversity_max_sample_size: int,
+    retry_multiplier: int,
+):
     """Top up a single capability to TARGET_COUNT pairs."""
     filepath = os.path.join(base_dir, capability, "llama_3.2_1b_pairs.json")
 
@@ -72,16 +81,21 @@ def topup_capability(capability: str, trait: str, base_dir: str):
     model = WisentModel(MODEL_NAME, device=DEVICE)
 
     # Set up generator
-    estimated_tokens = needed * TOKENS_PER_PAIR_ESTIMATE + TOKENS_BASE_OFFSET
-    max_tokens = max(TOKEN_ESTIMATE_MIN, min(estimated_tokens, TOKEN_ESTIMATE_MAX))
+    estimated_tokens = needed * tokens_per_pair_estimate + tokens_base_offset
+    max_tokens = max(token_estimate_min, min(estimated_tokens, token_estimate_max))
     generation_config = get_generate_kwargs(max_new_tokens=max_tokens)
 
     cleaning_steps = [
-        DeduperCleaner(deduper=SimHashDeduper(threshold_bits=SIMHASH_THRESHOLD_AGGRESSIVE)),
+        DeduperCleaner(deduper=SimHashDeduper(
+            threshold_bits=simhash_threshold_bits,
+            word_ngram=dedup_word_ngram,
+            char_ngram=dedup_char_ngram,
+            num_bands=simhash_num_bands,
+        )),
     ]
     cleaner = PairsCleaner(steps=cleaning_steps)
     db_instructions = Default_DB_Instructions()
-    diversity = FastDiversity()
+    diversity = FastDiversity(seed=fast_diversity_seed, max_sample_size=diversity_max_sample_size)
 
     generator = SyntheticContrastivePairsGenerator(
         model=model,
@@ -92,7 +106,7 @@ def topup_capability(capability: str, trait: str, base_dir: str):
         db_instructions=db_instructions,
         cleaner=cleaner,
         diversity=diversity,
-        nonsense_mode=None,
+        retry_multiplier=retry_multiplier,
     )
 
     # Generate additional pairs (request extra to account for deduplication)
@@ -131,9 +145,23 @@ def topup_capability(capability: str, trait: str, base_dir: str):
 
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Top up capability pairs")
+    parser.add_argument("--tokens-per-pair-estimate", type=int, required=True)
+    parser.add_argument("--tokens-base-offset", type=int, required=True)
+    parser.add_argument("--token-estimate-min", type=int, required=True)
+    parser.add_argument("--token-estimate-max", type=int, required=True)
+    parser.add_argument("--simhash-threshold-bits", type=int, required=True)
+    parser.add_argument("--dedup-word-ngram", type=int, required=True)
+    parser.add_argument("--dedup-char-ngram", type=int, required=True)
+    parser.add_argument("--simhash-num-bands", type=int, required=True)
+    parser.add_argument("--fast-diversity-seed", type=int, required=True)
+    parser.add_argument("--diversity-max-sample-size", type=int, required=True)
+    parser.add_argument("--retry-multiplier", type=int, required=True)
+    a = parser.parse_args()
+
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Check which capabilities need topping up
     to_topup = []
     for cap, trait in CAPABILITIES.items():
         filepath = os.path.join(base_dir, cap, "llama_3.2_1b_pairs.json")
@@ -148,14 +176,21 @@ def main():
     for cap, trait, needed in to_topup:
         print(f"  - {cap}: needs {needed} more pairs")
 
-    print(f"\nStarting top-up process...")
-
     for cap, trait, _ in to_topup:
-        topup_capability(cap, trait, base_dir)
-
-    print(f"\n{'='*60}")
-    print("ALL DONE!")
-    print(f"{'='*60}")
+        topup_capability(
+            cap, trait, base_dir,
+            tokens_per_pair_estimate=a.tokens_per_pair_estimate,
+            tokens_base_offset=a.tokens_base_offset,
+            token_estimate_min=a.token_estimate_min,
+            token_estimate_max=a.token_estimate_max,
+            simhash_threshold_bits=a.simhash_threshold_bits,
+            dedup_word_ngram=a.dedup_word_ngram,
+            dedup_char_ngram=a.dedup_char_ngram,
+            simhash_num_bands=a.simhash_num_bands,
+            fast_diversity_seed=a.fast_diversity_seed,
+            diversity_max_sample_size=a.diversity_max_sample_size,
+            retry_multiplier=a.retry_multiplier,
+        )
 
 
 if __name__ == "__main__":

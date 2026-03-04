@@ -17,7 +17,6 @@ Usage:
 
 import argparse
 
-from wisent.core.utils.config_tools.constants import PAIR_GENERATORS_DEFAULT_N
 from wisent.examples.scripts._comparison import run_analysis
 
 
@@ -45,6 +44,15 @@ def main():
         "--device", type=str, required=True,
         help="Device to run on (cuda, mps, cpu)"
     )
+    parser.add_argument(
+        "--knn-k", type=int, required=True,
+        help="Number of neighbors for k-NN classifier"
+    )
+    parser.add_argument("--cv-folds", type=int, required=True)
+    parser.add_argument("--signal-exist-threshold", type=float, required=True)
+    parser.add_argument("--signal-linear-gap", type=float, required=True)
+    parser.add_argument("--min-cloud-points", type=int, required=True)
+    parser.add_argument("--geometry-optimization-steps", type=int, required=True)
 
     args = parser.parse_args()
 
@@ -54,8 +62,14 @@ def main():
 
     run_analysis(
         model_name=args.model,
-        layers_to_analyze=layers,
         n_pairs=args.n_pairs,
+        knn_k=args.knn_k,
+        cv_folds=args.cv_folds,
+        signal_exist_threshold=args.signal_exist_threshold,
+        signal_linear_gap=args.signal_linear_gap,
+        min_cloud_points=args.min_cloud_points,
+        geometry_optimization_steps=args.geometry_optimization_steps,
+        layers_to_analyze=layers,
         output_dir=args.output_dir,
         device=args.device,
     )

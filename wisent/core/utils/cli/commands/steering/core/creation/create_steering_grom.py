@@ -2,21 +2,17 @@
 from __future__ import annotations
 import torch
 
-from wisent.core.utils.config_tools.constants import (
-    GROM_GATE_TEMPERATURE,
-    GROM_MAX_ALPHA,
-    GROM_NUM_DIRECTIONS,
-    GROM_GATE_DIM_DIVISOR,
-    GROM_INTENSITY_DIM_DIVISOR,
-    GROM_CREATE_NOISE_SCALE,
-    GROM_LEARNING_RATE,
-    DEFAULT_WEIGHT_DECAY,
-    GROM_OPTIMIZATION_STEPS,
-    GROM_CREATE_GATE_THRESHOLD,
-    GROM_RETAIN_WEIGHT,
-    GROM_MAX_GRAD_NORM,
-    GROM_CREATE_LOG_INTERVAL,
-)
+from wisent.core.utils.config_tools.constants import RECURSION_INITIAL_DEPTH
+
+
+def _require_arg(args, attr_name):
+    val = getattr(args, attr_name, None)
+    if val is None:
+        raise ValueError(
+            f"Parameter '{attr_name}' is required. "
+            f"Run 'wisent optimize-steering auto' first, or pass it explicitly."
+        )
+    return val
 
 
 def _create_grom_steering_object(
@@ -24,12 +20,23 @@ def _create_grom_steering_object(
     layer_activations: dict,
     available_layers: list,
     args,
+    log_interval: int,
+    *,
+    gate_dim_min: int,
+    gate_dim_max: int,
+    gate_dim_divisor: int,
+    gate_shrink_factor: int,
+    intensity_dim_min: int,
+    intensity_dim_max: int,
+    intensity_dim_divisor: int,
+    create_noise_scale: float,
+    create_gate_threshold: float,
 ) -> GROMSteeringObject:
     """Create GROM steering object with learned networks."""
     from wisent.core.control.steering_methods.methods.grom import GROMMethod
     from wisent.core.control.steering_methods._steering_object_grom import GROMGateNetwork, GROMIntensityNetwork
     
-    num_directions = getattr(args, 'grom_num_directions', GROM_NUM_DIRECTIONS)
+    num_directions = _require_arg(args, 'grom_num_directions')
     hidden_dim = metadata.hidden_dim
     num_layers = len(available_layers)
     
@@ -39,18 +46,12 @@ def _create_grom_steering_object(
         sensor_layer_idx = num_layers - 1
     sensor_layer = int(available_layers[min(sensor_layer_idx, num_layers - 1)])
     
-    gate_hidden_dim = getattr(args, 'grom_gate_hidden_dim', None)
-    if gate_hidden_dim is None:
-        gate_hidden_dim = max(32, min(512, hidden_dim // GROM_GATE_DIM_DIVISOR))
-    intensity_hidden_dim = getattr(args, 'grom_intensity_hidden_dim', None)
-    if intensity_hidden_dim is None:
-        intensity_hidden_dim = max(16, min(256, hidden_dim // GROM_INTENSITY_DIM_DIVISOR))
-    max_alpha = getattr(args, 'grom_max_alpha', None)
-    if max_alpha is None:
-        max_alpha = GROM_MAX_ALPHA
+    gate_hidden_dim = max(gate_dim_min, min(gate_dim_max, hidden_dim // gate_dim_divisor))
+    intensity_hidden_dim = max(intensity_dim_min, min(intensity_dim_max, hidden_dim // intensity_dim_divisor))
+    max_alpha = _require_arg(args, 'grom_max_alpha')
     
     # Initialize networks
-    gate_network = GROMGateNetwork(hidden_dim, gate_hidden_dim)
+    gate_network = GROMGateNetwork(hidden_dim, gate_hidden_dim, shrink_factor=gate_shrink_factor)
     intensity_network = GROMIntensityNetwork(hidden_dim, num_layers, intensity_hidden_dim, max_alpha)
     
     # Prepare data
@@ -83,7 +84,7 @@ def _create_grom_steering_object(
         dirs = torch.randn(num_directions, hidden_dim)
         dirs[0] = caa_dir
         for i in range(1, num_directions):
-            dirs[i] = torch.nn.functional.normalize(caa_dir + torch.randn(hidden_dim) * GROM_CREATE_NOISE_SCALE, dim=0)
+            dirs[i] = torch.nn.functional.normalize(caa_dir + torch.randn(hidden_dim) * create_noise_scale, dim=0)
         
         directions[layer_int] = torch.nn.Parameter(dirs)
         direction_weights[layer_int] = torch.nn.Parameter(torch.zeros(num_directions))
@@ -93,14 +94,20 @@ def _create_grom_steering_object(
     all_params.extend(gate_network.parameters())
     all_params.extend(intensity_network.parameters())
     
-    optimizer = torch.optim.AdamW(all_params, lr=GROM_LEARNING_RATE, weight_decay=DEFAULT_WEIGHT_DECAY)
+    learning_rate = _require_arg(args, 'grom_learning_rate')
+    weight_decay = _require_arg(args, 'grom_weight_decay')
+    optimizer = torch.optim.AdamW(all_params, lr=learning_rate, weight_decay=weight_decay)
     
     sensor_pos = all_pos[sensor_layer]
     sensor_neg = all_neg[sensor_layer]
     
+    retain_weight = _require_arg(args, 'grom_retain_weight')
+    max_grad_norm = _require_arg(args, 'grom_max_grad_norm')
+
     print(f"   Training GROM ({num_directions} directions, {len(layer_order)} layers)...")
-    
-    for step in range(GROM_OPTIMIZATION_STEPS):
+
+    optimization_steps = _require_arg(args, 'grom_optimization_steps')
+    for step in range(optimization_steps):
         optimizer.zero_grad()
         
         total_loss = torch.tensor(0.0)
@@ -108,7 +115,7 @@ def _create_grom_steering_object(
         # Gate loss
         pos_gate = gate_network(sensor_pos)
         neg_gate = gate_network(sensor_neg)
-        gate_loss = torch.relu(GROM_CREATE_GATE_THRESHOLD - pos_gate).mean() + torch.relu(neg_gate - GROM_CREATE_GATE_THRESHOLD).mean()
+        gate_loss = torch.relu(create_gate_threshold - pos_gate).mean() + torch.relu(neg_gate - create_gate_threshold).mean()
         total_loss = total_loss + gate_loss
         
         # Per-layer losses
@@ -129,15 +136,15 @@ def _create_grom_steering_object(
             
             # Retain loss
             neg_proj = (neg_data * effective_dir).sum(dim=1).abs()
-            retain_loss = neg_proj.mean() * GROM_RETAIN_WEIGHT
+            retain_loss = neg_proj.mean() * retain_weight
             
             total_loss = total_loss + behavior_loss + retain_loss
         
         total_loss.backward()
-        torch.nn.utils.clip_grad_norm_(all_params, max_norm=GROM_MAX_GRAD_NORM)
+        torch.nn.utils.clip_grad_norm_(all_params, max_norm=max_grad_norm)
         optimizer.step()
         
-        if step % GROM_CREATE_LOG_INTERVAL == 0:
+        if step % log_interval == RECURSION_INITIAL_DEPTH:
             print(f"      Step {step}: loss={total_loss.item():.4f}")
     
     # Finalize directions
@@ -160,6 +167,6 @@ def _create_grom_steering_object(
         gate_network=gate_network,
         intensity_network=intensity_network,
         layer_order=layer_order,
-        gate_temperature=getattr(args, 'grom_gate_temperature', GROM_GATE_TEMPERATURE),
+        gate_temperature=_require_arg(args, 'grom_gate_temperature'),
         max_alpha=max_alpha,
     )

@@ -9,7 +9,7 @@ from typing import Dict, Any, List, Optional
 
 from wisent.core.utils import get_all_docs_from_task
 from wisent.core.utils.infra_tools.errors import InsufficientDataError, TaskNotFoundError
-from wisent.core.utils.config_tools.constants import JSON_INDENT, LM_HARNESS_NUM_SAMPLES_SMALL, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_TINY
+from wisent.core.utils.config_tools.constants import JSON_INDENT, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_TINY
 from wisent.core.utils.infra_tools.infra.core.hardware import subprocess_timeout_s
 
 from .sample_extraction import get_evaluation_method, get_category, extract_examples_from_task
@@ -137,11 +137,11 @@ def process_group_task(group_name: str, sub_tasks: List[str], get_task_dict) -> 
     }
 
 
-def test_sample_retrieval(task_name: str):
+def test_sample_retrieval(task_name: str, lm_harness_num_samples_small: int):
     """Test function to demonstrate the get_task_samples_for_analysis function."""
     from .sample_extraction import get_task_samples_for_analysis
     print(f"\n=== Testing Sample Retrieval for '{task_name}' ===")
-    result = get_task_samples_for_analysis(task_name, num_samples=LM_HARNESS_NUM_SAMPLES_SMALL)
+    result = get_task_samples_for_analysis(task_name, num_samples=lm_harness_num_samples_small)
     if "error" in result:
         print(f"Error: {result['error']}")
         return False
@@ -160,7 +160,7 @@ def test_sample_retrieval(task_name: str):
     return True
 
 
-def test_specific_task():
+def test_specific_task(lm_harness_num_samples_small: int):
     """Test specific problematic tasks for error handling."""
     from .sample_extraction import get_task_samples_for_analysis
     print("\nTesting specific problematic tasks...")
@@ -168,7 +168,7 @@ def test_specific_task():
     for task_name in test_tasks:
         print(f"\nTesting task: {task_name}")
         try:
-            result = get_task_samples_for_analysis(task_name, num_samples=LM_HARNESS_NUM_SAMPLES_SMALL)
+            result = get_task_samples_for_analysis(task_name, num_samples=lm_harness_num_samples_small)
             print(f"Result keys: {list(result.keys())}")
             if 'error' in result:
                 print(f"Error: {result['error']}")

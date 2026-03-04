@@ -14,14 +14,16 @@ from wisent.core.control.steering_methods.methods.nurt import (
     NurtMethod,
     NurtSteeringObject,
 )
-from wisent.core.utils.config_tools.constants import (
-    DEFAULT_VARIANCE_THRESHOLD,
-    MLP_LEARNING_RATE,
-    NURT_NUM_DIMS,
-    NURT_NUM_INTEGRATION_STEPS,
-    NURT_T_MAX,
-    NURT_TRAINING_EPOCHS,
-)
+
+
+def _require_arg(args, attr_name):
+    val = getattr(args, attr_name, None)
+    if val is None:
+        raise ValueError(
+            f"Parameter '{attr_name}' is required. "
+            f"Run 'wisent optimize-steering auto' first, or pass it explicitly."
+        )
+    return val
 
 
 def _create_nurt_steering_object(
@@ -32,17 +34,19 @@ def _create_nurt_steering_object(
 ) -> NurtSteeringObject:
     """Create Concept Flow steering object with per-layer flow networks."""
 
-    num_dims = getattr(args, "nurt_num_dims", NURT_NUM_DIMS)
-    variance_threshold = getattr(args, "nurt_variance_threshold", DEFAULT_VARIANCE_THRESHOLD)
-    training_epochs = getattr(args, "nurt_training_epochs", NURT_TRAINING_EPOCHS)
-    lr = getattr(args, "nurt_lr", MLP_LEARNING_RATE)
-    num_integration_steps = getattr(args, "nurt_num_integration_steps", NURT_NUM_INTEGRATION_STEPS)
-    t_max = getattr(args, "nurt_t_max", NURT_T_MAX)
-    flow_hidden_dim_raw = getattr(args, "nurt_hidden_dim", NURT_NUM_DIMS)
+    num_dims = _require_arg(args, "nurt_num_dims")
+    max_concept_dim = _require_arg(args, "nurt_max_concept_dim")
+    variance_threshold = _require_arg(args, "nurt_variance_threshold")
+    training_epochs = _require_arg(args, "nurt_training_epochs")
+    lr = _require_arg(args, "nurt_lr")
+    num_integration_steps = _require_arg(args, "nurt_num_integration_steps")
+    t_max = _require_arg(args, "nurt_t_max")
+    flow_hidden_dim_raw = _require_arg(args, "nurt_hidden_dim")
     flow_hidden_dim = flow_hidden_dim_raw if flow_hidden_dim_raw > 0 else None
 
     method = NurtMethod(
         num_dims=num_dims,
+        max_concept_dim=max_concept_dim,
         variance_threshold=variance_threshold,
         training_epochs=training_epochs,
         lr=lr,
@@ -77,7 +81,8 @@ def _create_nurt_steering_object(
 
         # Discover subspace
         Vh, S, k = discover_concept_subspace(
-            pos, neg, num_dims=num_dims, variance_threshold=variance_threshold,
+            pos, neg, variance_threshold=variance_threshold,
+            nurt_num_dims=num_dims, nurt_max_concept_dim=max_concept_dim,
         )
         # Project
         z_pos = project_to_subspace(pos, Vh)

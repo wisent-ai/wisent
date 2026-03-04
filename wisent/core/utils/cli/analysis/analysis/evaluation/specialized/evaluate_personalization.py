@@ -1,7 +1,13 @@
 """Personalization evaluation for evaluate-responses command."""
 import json
 import os
-from wisent.core.utils.config_tools.constants import JSON_INDENT, QUALITY_THRESHOLD, DEFAULT_SCORE, PERSONALIZATION_GOOD_THRESHOLD, SCORE_MIDPOINT_PCT
+from wisent.core.utils.config_tools.constants import (
+    JSON_INDENT,
+    SCORE_MIDPOINT_PCT,
+    PERSONALIZATION_DIFFERENCE_WEIGHT,
+    PERSONALIZATION_QUALITY_WEIGHT,
+    PERSONALIZATION_ALIGNMENT_WEIGHT,
+)
 
 from wisent.core.reading.evaluators.steering_evaluators import (
     SteeringEvaluatorFactory,
@@ -10,7 +16,7 @@ from wisent.core.reading.evaluators.steering_evaluators import (
 )
 
 
-def evaluate_personalization(args, input_data, responses, task_name, evaluation_results, task_results):
+def evaluate_personalization(args, input_data, responses, task_name, evaluation_results, task_results, personalization_good_threshold: int):
     """Handle personalization evaluation.
 
     Returns aggregated_metrics dict or None.
@@ -71,10 +77,24 @@ def evaluate_personalization(args, input_data, responses, task_name, evaluation_
     eval_config = EvaluatorConfig(
         evaluator_type="personalization",
         trait=trait,
-        num_eval_prompts=len(responses),
     )
     steering_evaluator = SteeringPersonalizationEvaluator(
-        eval_config, model_name, wisent_model=wisent_model
+        eval_config, model_name, wisent_model=wisent_model,
+        fast_diversity_seed=args.fast_diversity_seed,
+        diversity_max_sample_size=args.diversity_max_sample_size,
+        min_sentence_length=args.min_sentence_length,
+        nonsense_min_tokens=args.nonsense_min_tokens,
+        quality_min_response_length=args.quality_min_response_length,
+        quality_repetition_ratio_threshold=args.quality_repetition_ratio_threshold,
+        quality_bigram_repeat_threshold=args.quality_bigram_repeat_threshold,
+        quality_bigram_repeat_penalty=args.quality_bigram_repeat_penalty,
+        quality_special_char_ratio_threshold=args.quality_special_char_ratio_threshold,
+        quality_special_char_penalty=args.quality_special_char_penalty,
+        quality_char_repeat_count=args.quality_char_repeat_count,
+        quality_char_repeat_penalty=args.quality_char_repeat_penalty,
+        difference_weight=PERSONALIZATION_DIFFERENCE_WEIGHT,
+        quality_weight=PERSONALIZATION_QUALITY_WEIGHT,
+        alignment_weight=PERSONALIZATION_ALIGNMENT_WEIGHT,
     )
     # Set baseline responses for comparison
     baseline_texts = [b.get('generated_response', '') for b in baseline_responses]
@@ -115,10 +135,10 @@ def evaluate_personalization(args, input_data, responses, task_name, evaluation_
             evaluated_count += 1
 
             # Use aggregate scores from batch evaluation
-            diff_score = eval_results.get('difference_score', QUALITY_THRESHOLD)
-            qual_score = eval_results.get('quality_score', QUALITY_THRESHOLD)
-            align_score = eval_results.get('alignment_score', QUALITY_THRESHOLD)
-            overall = eval_results.get('overall_score', DEFAULT_SCORE)
+            diff_score = eval_results.get('difference_score', 50.0)
+            qual_score = eval_results.get('quality_score', 50.0)
+            align_score = eval_results.get('alignment_score', 50.0)
+            overall = eval_results['overall_score']
 
             # Collect scores
             difference_scores.append(diff_score)
@@ -148,7 +168,7 @@ def evaluate_personalization(args, input_data, responses, task_name, evaluation_
             })
 
             if args.verbose:
-                score_icon = '✅' if overall >= PERSONALIZATION_GOOD_THRESHOLD else ('⚠️' if overall >= SCORE_MIDPOINT_PCT else '❌')
+                score_icon = '✅' if overall >= personalization_good_threshold else ('⚠️' if overall >= SCORE_MIDPOINT_PCT else '❌')
                 print(f"{score_icon} Pair {idx}: Overall={overall:.1f} (diff={diff_score:.1f}, qual={qual_score:.1f}, align={align_score:.1f})")
 
         except Exception as e:

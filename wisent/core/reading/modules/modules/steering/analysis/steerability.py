@@ -8,30 +8,14 @@ for a given set of activations.
 import torch
 import numpy as np
 from typing import Dict, Any
-from wisent.core.utils.config_tools.constants import (
-    NORM_EPS, DEFAULT_RANDOM_SEED, LINEARITY_N_INIT,
-    STEERABILITY_SILHOUETTE_SAMPLE_LIMIT, STEERABILITY_MIN_PAIRS,
-    CUMSUM_THRESHOLD_90, MIN_CLUSTERS,
-)
+from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_RANDOM_SEED
 
-
-def _empty_steerability_metrics() -> Dict[str, Any]:
-    """Return empty steerability metrics when computation fails."""
-    return {
-        "diff_mean_alignment": None,
-        "caa_probe_alignment": None,
-        "pct_positive_alignment": None,
-        "steering_vector_norm_ratio": None,
-        "cluster_direction_angle": None,
-        "per_cluster_alignment_k2": None,
-        "spherical_silhouette_k2": None,
-        "effective_steering_dims": None,
-    }
+_EMPTY_STEER = {"diff_mean_alignment": None, "caa_probe_alignment": None, "pct_positive_alignment": None, "steering_vector_norm_ratio": None, "cluster_direction_angle": None, "per_cluster_alignment_k2": None, "spherical_silhouette_k2": None, "effective_steering_dims": None}
 
 
 def compute_steerability_metrics(
-    pos_activations: torch.Tensor,
-    neg_activations: torch.Tensor,
+    pos_activations: torch.Tensor, neg_activations: torch.Tensor, min_clusters: int,
+    *, steerability_min_pairs: int, steerability_silhouette_sample_limit: int, linearity_n_init: int,
 ) -> Dict[str, float]:
     """
     Compute metrics that predict whether steering will work.
@@ -43,8 +27,8 @@ def compute_steerability_metrics(
     try:
         n_pairs = min(len(pos_activations), len(neg_activations))
         
-        if n_pairs < STEERABILITY_MIN_PAIRS:
-            return _empty_steerability_metrics()
+        if n_pairs < steerability_min_pairs:
+            return dict(_EMPTY_STEER)
         
         diff_vectors = (pos_activations[:n_pairs] - neg_activations[:n_pairs]).float().cpu().numpy()
         
@@ -52,15 +36,15 @@ def compute_steerability_metrics(
         diff_mean_norm = np.linalg.norm(diff_mean)
         
         if diff_mean_norm < NORM_EPS:
-            return _empty_steerability_metrics()
+            return dict(_EMPTY_STEER)
         
         diff_mean_normalized = diff_mean / diff_mean_norm
         
         diff_norms = np.linalg.norm(diff_vectors, axis=1, keepdims=True)
         valid_mask = diff_norms.squeeze() > NORM_EPS
         
-        if valid_mask.sum() < STEERABILITY_MIN_PAIRS:
-            return _empty_steerability_metrics()
+        if valid_mask.sum() < steerability_min_pairs:
+            return dict(_EMPTY_STEER)
         
         diff_normalized = diff_vectors[valid_mask] / diff_norms[valid_mask]
         
@@ -73,7 +57,7 @@ def compute_steerability_metrics(
         
         from sklearn.cluster import KMeans
         
-        km = KMeans(n_clusters=2, random_state=DEFAULT_RANDOM_SEED, n_init=LINEARITY_N_INIT)
+        km = KMeans(n_clusters=2, random_state=DEFAULT_RANDOM_SEED, n_init=linearity_n_init)
         cluster_labels = km.fit_predict(diff_normalized)
         
         c0_mask = cluster_labels == 0
@@ -99,11 +83,11 @@ def compute_steerability_metrics(
         def spherical_silhouette(X_norm, labels):
             n = len(X_norm)
             k = len(set(labels))
-            if k < MIN_CLUSTERS:
+            if k < min_clusters:
                 return 0.0
             
             silhouettes = []
-            for i in range(min(n, STEERABILITY_SILHOUETTE_SAMPLE_LIMIT)):
+            for i in range(min(n, steerability_silhouette_sample_limit)):
                 same_cluster = labels == labels[i]
                 if same_cluster.sum() > 1:
                     a = 1 - (X_norm[i] @ X_norm[same_cluster].T).mean()
@@ -134,7 +118,7 @@ def compute_steerability_metrics(
             total_var = eigenvalues.sum()
             if total_var > 0:
                 cumsum = np.cumsum(eigenvalues) / total_var
-                effective_dims = int(np.searchsorted(cumsum, CUMSUM_THRESHOLD_90) + 1)
+                effective_dims = int(np.searchsorted(cumsum, 0.9) + 1)
             else:
                 effective_dims = 1
         except:
@@ -165,7 +149,7 @@ def compute_steerability_metrics(
             "effective_steering_dims": effective_dims,
         }
     except Exception:
-        return _empty_steerability_metrics()
+        return dict(_EMPTY_STEER)
 
 
 def compute_linearity_score(

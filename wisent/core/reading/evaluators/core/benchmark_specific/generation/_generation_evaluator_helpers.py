@@ -5,8 +5,6 @@ from typing import Any
 
 from wisent.core.reading.evaluators.core.atoms import EvalResult
 from wisent.core.utils.config_tools.constants import (
-    EVAL_WEIGHT_EMBEDDING, EVAL_WEIGHT_NLI, EVAL_MIN_MARGIN,
-    EVAL_CONFIDENCE_CEILING, EVAL_CONFIDENCE_BASELINE,
     ROUNDING_PRECISION,
 )
 
@@ -23,6 +21,9 @@ class GenerationEvaluatorHelpersMixin:
         incorrect_answers: list,
         task_name: str,
         answer_type: str,
+        *,
+        embedding_weight: float,
+        nli_weight: float,
     ) -> EvalResult:
         """Compare model response to both correct and incorrect reference answers.
 
@@ -61,8 +62,8 @@ class GenerationEvaluatorHelpersMixin:
                 nli_incorrect = nli
 
         # Combine scores (weighted average)
-        score_correct = EVAL_WEIGHT_EMBEDDING * max_correct_sim + EVAL_WEIGHT_NLI * nli_correct
-        score_incorrect = EVAL_WEIGHT_EMBEDDING * max_incorrect_sim + EVAL_WEIGHT_NLI * nli_incorrect
+        score_correct = embedding_weight * max_correct_sim + nli_weight * nli_correct
+        score_incorrect = embedding_weight * max_incorrect_sim + nli_weight * nli_incorrect
 
         margin = score_correct - score_incorrect
 
@@ -78,8 +79,8 @@ class GenerationEvaluatorHelpersMixin:
             "best_incorrect_match": best_incorrect,
         }
 
-        if margin > EVAL_MIN_MARGIN:
-            confidence = min(EVAL_CONFIDENCE_CEILING, EVAL_CONFIDENCE_BASELINE + margin)
+        if margin > 0.05:
+            confidence = min(0.95, 0.6 + margin)
             return EvalResult(
                 ground_truth="TRUTHFUL",
                 method_used=self.name,
@@ -87,8 +88,8 @@ class GenerationEvaluatorHelpersMixin:
                 details=f"Response closer to truthful (margin={margin:.3f})",
                 meta=meta,
             )
-        elif margin < -EVAL_MIN_MARGIN:
-            confidence = min(EVAL_CONFIDENCE_CEILING, EVAL_CONFIDENCE_BASELINE + abs(margin))
+        elif margin < -0.05:
+            confidence = min(0.95, 0.6 + abs(margin))
             return EvalResult(
                 ground_truth="UNTRUTHFUL",
                 method_used=self.name,

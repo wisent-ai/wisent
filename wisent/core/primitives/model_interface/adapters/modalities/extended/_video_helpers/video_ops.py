@@ -107,10 +107,9 @@ class VideoOpsMixin:
         self,
         content: VideoContent,
         steering_vectors: LayerActivations,
-        config: SteeringConfig | VideoSteeringConfig | None = None,
+        config: SteeringConfig | VideoSteeringConfig,
     ) -> torch.Tensor:
         """Process video with steering applied."""
-        config = config or VideoSteeringConfig()
         with self._steering_hooks(steering_vectors, config):
             return self.encode(content)
 

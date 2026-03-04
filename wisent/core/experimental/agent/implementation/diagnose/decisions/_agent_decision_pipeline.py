@@ -6,15 +6,15 @@ from wisent.core.experimental.agent.diagnose._agent_decision_types import (
     QualityResult, QualityControlledResponse, SteeringParams)
 from wisent.core.experimental.agent.diagnose.classifier_marketplace import (
     ClassifierMarketplace, ClassifierListing, ClassifierCreationEstimate)
-from wisent.core.utils.config_tools.constants import AGENT_DECISION_NUM_SAMPLES, AGENT_PENALTY_MULTIPLIER, AGENT_DECISION_QUALITY_THRESHOLD, AGENT_DECISION_TIME_BUDGET, SECONDS_PER_MINUTE, SEPARATOR_WIDTH_NARROW
+from wisent.core.utils.config_tools.constants import SECONDS_PER_MINUTE, SEPARATOR_WIDTH_NARROW
 
 class ClassifierPipelineMixin:
     """Mixin providing decision pipeline methods."""
 
-    async def make_classifier_decisions(self, 
+    async def make_classifier_decisions(self,
                                       task_analysis: TaskAnalysis,
-                                      quality_threshold: float = AGENT_DECISION_QUALITY_THRESHOLD,
-                                      time_budget_minutes: float = AGENT_DECISION_TIME_BUDGET,
+                                      quality_threshold: float,
+                                      time_budget_minutes: float,
                                       max_classifiers: int = None) -> List[ClassifierDecision]:
         """
         Make decisions about which benchmark-specific classifiers to create or use.
@@ -129,7 +129,7 @@ class ClassifierPipelineMixin:
                 action="use_existing",
                 selected_classifier=best_existing,
                 reasoning=f"Using existing despite low quality - time/budget constraints",
-                confidence=existing_quality * AGENT_PENALTY_MULTIPLIER  # Penalty for low quality
+                confidence=existing_quality * self._penalty_multiplier
             )
         
         return ClassifierDecision(
@@ -202,14 +202,14 @@ class ClassifierPipelineMixin:
         
         try:
             # Initialize classifier creator
-            creator = ClassifierCreator(self.marketplace.model)
+            creator = ClassifierCreator(self.marketplace.model, max_tasks_to_process=self.max_tasks_to_process)
             
             # Create classifier using benchmark-specific training data
             print(f"      📊 Loading training data from benchmark: {benchmark_name}")
             classifier = await creator.create_classifier_for_issue_with_benchmarks(
                 issue_type=benchmark_name,  # Use benchmark name as issue type
                 relevant_benchmarks=[benchmark_name],
-                num_samples=AGENT_DECISION_NUM_SAMPLES
+                num_samples=self._decision_num_samples
             )
             
             return classifier
@@ -241,11 +241,11 @@ class ClassifierPipelineMixin:
         
         return summary
     
-    async def smart_classifier_selection(self, 
+    async def smart_classifier_selection(self,
                                        prompt: str,
+                                       quality_threshold: float,
+                                       time_budget_minutes: float,
                                        context: str = "",
-                                       quality_threshold: float = AGENT_DECISION_QUALITY_THRESHOLD,
-                                       time_budget_minutes: float = AGENT_DECISION_TIME_BUDGET,
                                        max_classifiers: int = None) -> List[Dict[str, Any]]:
         """
         One-stop method for intelligent classifier selection.

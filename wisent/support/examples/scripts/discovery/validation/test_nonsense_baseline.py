@@ -20,7 +20,7 @@ from wisent.core.primitives.model_interface.core.activations import ExtractionSt
 from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
-from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD, PAIR_GENERATORS_DEFAULT_N
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD, ARCHITECTURE_MODULE_LIMIT
 
 
 WORD_LIST = [
@@ -42,7 +42,7 @@ def generate_nonsense_text(length: int = None) -> str:
     return ' '.join(words)
 
 
-def generate_nonsense_pairs(n: int = PAIR_GENERATORS_DEFAULT_N) -> List[ContrastivePair]:
+def generate_nonsense_pairs(n: int) -> List[ContrastivePair]:
     """Generate pairs with random nonsense text."""
     pairs = []
     for i in range(n):
@@ -57,7 +57,7 @@ def generate_nonsense_pairs(n: int = PAIR_GENERATORS_DEFAULT_N) -> List[Contrast
     return pairs
 
 
-def generate_real_pairs(n: int = PAIR_GENERATORS_DEFAULT_N) -> List[ContrastivePair]:
+def generate_real_pairs(n: int) -> List[ContrastivePair]:
     """Generate real contrastive pairs with semantic meaning."""
     templates = [
         ("Is the Earth flat?", "No, the Earth is approximately spherical.", "Yes, the Earth is flat."),
@@ -125,7 +125,7 @@ def collect_activations(
     layer: int,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Collect activations for positive and negative responses."""
-    collector = ActivationCollector(model)
+    collector = ActivationCollector(model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
     
     pos_acts = []
     neg_acts = []
@@ -155,7 +155,7 @@ def collect_activations(
 def main():
     parser = argparse.ArgumentParser(description="Test nonsense baseline vs real pairs")
     parser.add_argument("--model", type=str, required=True)
-    parser.add_argument("--n-pairs", type=int, default=PAIR_GENERATORS_DEFAULT_N)
+    parser.add_argument("--n-pairs", type=int, required=True)
     parser.add_argument("--strategies", type=str, nargs="+", 
                         default=["chat_mean", "chat_max_norm", "chat_last"])
     parser.add_argument("--layers", type=int, nargs="+", default=None,

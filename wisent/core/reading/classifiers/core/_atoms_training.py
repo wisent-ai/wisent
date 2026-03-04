@@ -11,7 +11,7 @@ from torch.nn.modules.loss import _Loss
 from wisent.core.reading.classifiers.core._atoms_config import (
     ClassifierTrainConfig, ClassifierTrainReport, ClassifierMetrics,
 )
-from wisent.core.utils.config_tools.constants import TRAINING_LOG_FREQUENCY
+from wisent.core.utils.config_tools.constants import RECURSION_INITIAL_DEPTH, COMBO_OFFSET
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,7 @@ class ClassifierTrainingMixin:
             self,
             X,
             y,
+            log_frequency: int,
             config: ClassifierTrainConfig | None = None,
             optimizer: str | optim.Optimizer | callable | None = None,
             lr: float | None = None,
@@ -34,7 +35,9 @@ class ClassifierTrainingMixin:
        
         #1 creating 
         cfg = config or ClassifierTrainConfig()
-        torch.manual_seed(cfg.random_state)
+        from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
+        _rs = cfg.random_state if cfg.random_state is not None else DEFAULT_RANDOM_SEED
+        torch.manual_seed(_rs)
 
         #2 creating tensors
         X_tensor = self.to_2d_tensor(X, device=self.device, dtype=self.dtype)
@@ -97,7 +100,7 @@ class ClassifierTrainingMixin:
                 if stop:
                     break
 
-            if (epoch == 0) or ((epoch + 1) % TRAINING_LOG_FREQUENCY == 0) or (epoch == cfg.num_epochs - 1):
+            if (epoch == RECURSION_INITIAL_DEPTH) or ((epoch + COMBO_OFFSET) % log_frequency == RECURSION_INITIAL_DEPTH) or (epoch == cfg.num_epochs - COMBO_OFFSET):
                 logger.info("[%s] epoch %d/%d  train=%.4f  test=%.4f  acc=%.4f  f1=%.4f",
                             self.name, epoch + 1, cfg.num_epochs, train_loss, test_loss, acc, f1)
 
@@ -176,7 +179,9 @@ class ClassifierTrainingMixin:
         test_count = min(test_count, len(ds) - 1)
         train_count = len(ds) - test_count
 
-        gen = torch.Generator().manual_seed(cfg.random_state)
+        from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
+        _rs = cfg.random_state if cfg.random_state is not None else DEFAULT_RANDOM_SEED
+        gen = torch.Generator().manual_seed(_rs)
         train_ds, test_ds = random_split(ds, [train_count, test_count], generator=gen)
 
         return (

@@ -21,12 +21,9 @@ from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import
     detect_geometry_structure,
     GeometryAnalysisConfig,
 )
-from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_RANDOM_SEED, GEOMETRY_DEFAULT_NUM_COMPONENTS, DIAG_OPTIMIZATION_STEPS, PAIR_GENERATORS_DEFAULT_N, DISPLAY_TOP_N_SMALL, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_STANDARD, VIZ_ALPHA_MEDIUM, VIZ_ALPHA_LIGHT, VIZ_FONTSIZE_SUPTITLE
+from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_RANDOM_SEED, DISPLAY_TOP_N_SMALL, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_STANDARD, VIZ_ALPHA_MEDIUM, VIZ_ALPHA_LIGHT, VIZ_FONTSIZE_SUPTITLE, ARCHITECTURE_MODULE_LIMIT
 
-
-# Best configs loaded from comprehensive test results
-BEST_CONFIGS = None  # Will be loaded from geometry_analysis_results.json
-
+BEST_CONFIGS = None
 
 def load_best_configs(results_file: str | None = None, configs_json: str | None = None):
     """Load best configs from comprehensive geometry analysis results or JSON string."""
@@ -98,19 +95,20 @@ PROMPT_MAP = {
     "direct_completion": ExtractionStrategy.CHAT_LAST,
 }
 
-
 def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", required=True)
     parser.add_argument("--model", required=True)
-    parser.add_argument("--num-pairs", type=int, default=PAIR_GENERATORS_DEFAULT_N)
+    parser.add_argument("--num-pairs", type=int, required=True)
     parser.add_argument("--layer", type=int, default=None, help="Single layer (overrides multi-config)")
     parser.add_argument("--aggregation", default=None, help="Single aggregation (overrides multi-config)")
     parser.add_argument("--prompt-strategy", default=None, help="Single prompt strategy (overrides multi-config)")
     parser.add_argument("--output", required=True)
     parser.add_argument("--multi-config", action="store_true", help="Run all best configs for each structure")
     parser.add_argument("--configs-json", default=None, help="JSON string with best_by_geometry configs")
+    parser.add_argument("--geometry-num-components", type=int, required=True)
+    parser.add_argument("--geometry-optimization-steps", type=int, required=True)
     args = parser.parse_args()
 
     print(f"Loading model {args.model}...")
@@ -120,7 +118,7 @@ def main():
     extractor = get_extractor(args.task)
     pairs = extractor.extract_contrastive_pairs(limit=args.num_pairs)
 
-    collector = ActivationCollector(model=wisent_model)
+    collector = ActivationCollector(model=wisent_model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
 
     if args.multi_config:
         # Run for each structure's best config
@@ -236,7 +234,7 @@ def run_single_config(args, wisent_model, pairs, collector, layer, aggregation, 
     pos_tensor = torch.from_numpy(pos_arr).float()
     neg_tensor = torch.from_numpy(neg_arr).float()
     
-    config = GeometryAnalysisConfig(num_components=GEOMETRY_DEFAULT_NUM_COMPONENTS, optimization_steps=DIAG_OPTIMIZATION_STEPS)
+    config = GeometryAnalysisConfig(num_components=args.geometry_num_components, optimization_steps=args.geometry_optimization_steps)
     result = detect_geometry_structure(pos_tensor, neg_tensor, config)
     
     detector_scores = {name: score.score for name, score in result.all_scores.items()}

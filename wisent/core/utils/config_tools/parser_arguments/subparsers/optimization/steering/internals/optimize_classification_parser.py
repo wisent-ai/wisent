@@ -1,10 +1,5 @@
 """Parser setup for the 'optimize-classification' command."""
 
-from wisent.core.utils.config_tools.constants import (
-    CLASSIFICATION_THRESHOLD_RANGE,
-    OPTIMIZE_MAX_TIME_MINUTES_SHORT,
-    OPTIMIZER_AGGREGATION_METHODS,
-)
 
 
 def setup_classification_optimizer_parser(parser):
@@ -26,7 +21,7 @@ def setup_classification_optimizer_parser(parser):
         help="Metric to optimize",
     )
     parser.add_argument(
-        "--max-time-per-task", type=float, default=OPTIMIZE_MAX_TIME_MINUTES_SHORT, help="Maximum time per task in minutes (default: 15.0)"
+        "--max-time-per-task", type=float, default=None, help="Maximum time per task in minutes"
     )
     parser.add_argument(
         "--layer-range", type=str, default=None, help="Layer range to test (e.g., '10-20', if None uses all layers)"
@@ -35,14 +30,14 @@ def setup_classification_optimizer_parser(parser):
         "--aggregation-methods",
         type=str,
         nargs="+",
-        default=list(OPTIMIZER_AGGREGATION_METHODS),
+        default=None,
         help="Token aggregation methods to test",
     )
     parser.add_argument(
         "--threshold-range",
         type=float,
         nargs="+",
-        default=CLASSIFICATION_THRESHOLD_RANGE,
+        required=True,
         help="Detection thresholds to test",
     )
     parser.add_argument("--device", type=str, default=None, help="Device to run on")
@@ -111,4 +106,54 @@ def setup_classification_optimizer_parser(parser):
         "--train-on-generations",
         action="store_true",
         help="Train on actual model generations instead of contrastive pairs (slower, disables --train-on-contrastive-only)",
+    )
+
+    # Personalization evaluator parameters
+    parser.add_argument(
+        "--fast-diversity-seed", type=int, required=True,
+        help="Seed for fast diversity computation"
+    )
+    parser.add_argument(
+        "--diversity-max-sample-size", type=int, required=True,
+        help="Maximum sample size for diversity computation"
+    )
+    parser.add_argument(
+        "--min-sentence-length", type=int, required=True,
+        help="Minimum sentence length for coherence evaluation"
+    )
+    parser.add_argument(
+        "--nonsense-min-tokens", type=int, required=True,
+        help="Minimum token count for nonsense word detection"
+    )
+    parser.add_argument(
+        "--quality-min-response-length", type=int, required=True,
+        help="Minimum response length for quality scoring"
+    )
+    parser.add_argument(
+        "--quality-repetition-ratio-threshold", type=float, required=True,
+        help="Threshold for repetitive token ratio penalty"
+    )
+    parser.add_argument(
+        "--quality-bigram-repeat-threshold", type=int, required=True,
+        help="Threshold for repeated bigram count penalty"
+    )
+    parser.add_argument(
+        "--quality-bigram-repeat-penalty", type=float, required=True,
+        help="Penalty multiplier for repeated bigrams"
+    )
+    parser.add_argument(
+        "--quality-special-char-ratio-threshold", type=float, required=True,
+        help="Threshold for special character ratio penalty"
+    )
+    parser.add_argument(
+        "--quality-special-char-penalty", type=float, required=True,
+        help="Penalty multiplier for excessive special characters"
+    )
+    parser.add_argument(
+        "--quality-char-repeat-count", type=int, required=True,
+        help="Minimum consecutive character repeats to trigger penalty"
+    )
+    parser.add_argument(
+        "--quality-char-repeat-penalty", type=float, required=True,
+        help="Penalty multiplier for character repetition"
     )

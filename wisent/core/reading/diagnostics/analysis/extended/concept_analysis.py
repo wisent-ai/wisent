@@ -23,9 +23,7 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score, adjusted_rand_score
 from sklearn.decomposition import PCA
 from wisent.core.utils.config_tools.constants import (
-    ZERO_THRESHOLD, DEFAULT_RANDOM_SEED, LINEARITY_N_INIT,
-    CONCEPT_PCA_COMPONENTS, CONCEPT_K_MAX,
-    CLUSTERING_MEANINGFUL_THRESHOLD,
+    ZERO_THRESHOLD, DEFAULT_RANDOM_SEED,
 )
 
 
@@ -115,7 +113,7 @@ def compute_icd(diff_vectors: np.ndarray) -> float:
 
 def compute_eigenvalue_spectrum(
     diff_vectors: np.ndarray,
-    n_components: int = CONCEPT_PCA_COMPONENTS,
+    n_components: int = None,
 ) -> Tuple[List[float], List[float], float]:
     """
     Compute eigenvalue spectrum of difference vectors.
@@ -153,22 +151,25 @@ def compute_eigenvalue_spectrum(
 def decompose_concepts(
     diff_vectors: np.ndarray,
     method: str,
-    k_max: int = CONCEPT_K_MAX,
+    k_max: int = None,
+    kmeans_n_init: int = None,
+    *,
+    clustering_meaningful_threshold: float,
 ) -> Tuple[int, np.ndarray, List[np.ndarray], Dict[int, float]]:
     """
     Decompose mixed concepts using clustering on difference vectors.
-    
-    This implements Algorithm 2 from the Zwiad paper:
-    1. Normalize difference vectors
-    2. Try different k values
-    3. Select best k by silhouette score
-    4. Return cluster assignments and directions
-    
+
+    This implements the concept decomposition algorithm from the Zwiad paper:
+    - Normalize difference vectors
+    - Try different k values
+    - Select best k by silhouette score
+    - Return cluster assignments and directions
+
     Args:
         diff_vectors: [n_samples, hidden_dim] difference vectors
         k_max: Maximum number of concepts to consider
         method: Clustering method ("kmeans" or "spectral")
-        
+
     Returns:
         Tuple of:
         - k_detected: Estimated number of concepts
@@ -176,6 +177,10 @@ def decompose_concepts(
         - directions: List of concept directions (normalized)
         - silhouette_scores: Dict mapping k -> silhouette score
     """
+    if kmeans_n_init is None:
+        raise ValueError("kmeans_n_init is required")
+    if k_max is None:
+        raise ValueError("k_max is required")
     n_samples = len(diff_vectors)
     diff_vectors = np.asarray(diff_vectors, dtype=np.float64)
     
@@ -200,7 +205,7 @@ def decompose_concepts(
     for k in range(2, min(k_max + 1, n_samples // 2)):
         try:
             if method == "kmeans":
-                clusterer = KMeans(n_clusters=k, random_state=DEFAULT_RANDOM_SEED, n_init=LINEARITY_N_INIT)
+                clusterer = KMeans(n_clusters=k, random_state=DEFAULT_RANDOM_SEED, n_init=kmeans_n_init)
             else:
                 from sklearn.cluster import SpectralClustering
                 clusterer = SpectralClustering(n_clusters=k, random_state=DEFAULT_RANDOM_SEED)
@@ -222,7 +227,7 @@ def decompose_concepts(
             continue
     
     # If no good clustering found, return single concept
-    if best_score < CLUSTERING_MEANINGFUL_THRESHOLD:
+    if best_score < clustering_meaningful_threshold:
         direction = diff_vectors.mean(axis=0)
         norm = np.linalg.norm(direction)
         if norm > ZERO_THRESHOLD:
@@ -246,7 +251,7 @@ def decompose_concepts(
 
 
 # Re-exports from split module
-from wisent.core.reading.diagnostics.analysis._concept_analysis_part2 import (
+from wisent.core.reading.diagnostics.analysis._concept_correlations_interference import (
     compute_concept_correlations,
     analyze_concepts,
     analyze_concept_interference,

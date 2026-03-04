@@ -8,7 +8,7 @@ import logging
 from typing import List, Dict, Any, Optional, Tuple
 
 import torch
-from wisent.core.utils.config_tools.constants import NORM_EPS, AUTO_EVAL_SUBSET, BAR_CHART_SCALE
+from wisent.core.utils.config_tools.constants import NORM_EPS, BAR_CHART_SCALE
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +21,10 @@ def run_grid_search(
     strength_range: List[float],
     eval_pairs: List[Any],
     task_name: str,
-    verbose: bool = False
-) -> Tuple[List[Dict], int, float, Dict]:
+    min_norm_threshold: float,
+    verbose: bool = False,
+    auto_eval_subset: int = None,
+) -> Tuple[List[Dict], int, float, Dict, Dict]:
     """
     Run grid search over layers and strengths.
 
@@ -37,7 +39,7 @@ def run_grid_search(
         verbose: Enable verbose output
 
     Returns:
-        Tuple of (grid_results, best_layer, best_strength, best_config)
+        Tuple of (grid_results, best_layer, best_strength, best_config, method_params)
     """
     from wisent.core.reading.evaluators.rotator import EvaluatorRotator
     from wisent.core.primitives.models import get_generate_kwargs
@@ -73,6 +75,7 @@ def run_grid_search(
             wisent_model.set_steering_from_raw(
                 {str(layer): steering_vector},
                 scale=strength,
+                min_norm_threshold=min_norm_threshold,
                 normalize=False
             )
 
@@ -106,7 +109,8 @@ def run_grid_search(
     if verbose:
         print(f"\n   Best: Layer {best_layer}, Strength {best_strength:.2f}, Score {best_score:.3f}")
 
-    return grid_results, best_layer, best_strength, best_config or {}
+    method_params = steering_result.get("method_params", {})
+    return grid_results, best_layer, best_strength, best_config or {}, method_params
 
 
 def _get_steering_vector(
@@ -161,7 +165,9 @@ def _evaluate_pairs(
 
     correct = 0
     total = 0
-    eval_subset = eval_pairs[:min(AUTO_EVAL_SUBSET, len(eval_pairs))]
+    if auto_eval_subset is None:
+        raise ValueError("auto_eval_subset is required")
+    eval_subset = eval_pairs[:min(auto_eval_subset, len(eval_pairs))]
 
     for pair in eval_subset:
         messages = [{"role": "user", "content": pair.prompt}]

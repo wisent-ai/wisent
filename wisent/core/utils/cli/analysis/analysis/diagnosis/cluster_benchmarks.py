@@ -43,9 +43,10 @@ RANDOM_TOKENS = ["I", "Well", "The", "Sure", "Let", "That", "It", "This", "My", 
 
 
 from wisent.core.utils.config_tools.constants import (
-    NORM_EPS, CLUSTER_PROGRESS_INTERVAL, CLUSTER_MIN_PAIRS,
-    GEOMETRY_DEFAULT_NUM_COMPONENTS, DIAG_OPTIMIZATION_STEPS,
-    DEFAULT_RANDOM_SEED, JSON_INDENT, CHANCE_LEVEL_ACCURACY,
+    NORM_EPS,
+    DEFAULT_RANDOM_SEED,
+    JSON_INDENT,
+    CHANCE_LEVEL_ACCURACY,
 )
 from wisent.core.utils.cli.analysis.diagnosis.cluster_benchmarks_activations import (
     ConfigResult, get_layers_to_test, get_activation, get_mc_balanced_activations,
@@ -133,11 +134,11 @@ def execute_cluster_benchmarks(args):
     all_pairs = {}
     
     for i, bench in enumerate(all_benchmarks):
-        if (i + 1) % CLUSTER_PROGRESS_INTERVAL == 0:
+        if (i + 1) % args.cluster_progress_interval == 0:
             logger.info(f"  [{i+1}/{len(all_benchmarks)}] Loaded {len(all_pairs)} benchmarks...")
         try:
-            pairs = load_benchmark_pairs(bench, loader, limit=pairs_per_benchmark)
-            if pairs and len(pairs) >= CLUSTER_MIN_PAIRS:
+            pairs = load_benchmark_pairs(bench, loader, limit=pairs_per_benchmark, train_ratio=args.train_ratio)
+            if pairs and len(pairs) >= args.cluster_min_pairs:
                 all_pairs[bench] = pairs
         except:
             pass
@@ -145,7 +146,7 @@ def execute_cluster_benchmarks(args):
     logger.info(f"Loaded {len(all_pairs)} benchmarks")
     
     # Test configurations
-    geo_config = GeometryAnalysisConfig(num_components=GEOMETRY_DEFAULT_NUM_COMPONENTS, optimization_steps=DIAG_OPTIMIZATION_STEPS)
+    geo_config = GeometryAnalysisConfig(num_components=args.geometry_default_num_components, optimization_steps=args.geometry_optimization_steps)
     all_results = []
     best_config = None
     best_acc = 0
@@ -158,7 +159,7 @@ def execute_cluster_benchmarks(args):
             
             for bench, pairs in all_pairs.items():
                 try:
-                    direction, pos_t, neg_t = compute_directions_for_strategy(llm, tokenizer, pairs, layer, device, strategy)
+                    direction, pos_t, neg_t = compute_directions_for_strategy(llm, tokenizer, pairs, layer, device, strategy, max_pairs=pairs_per_benchmark)
                     if direction is not None:
                         directions[bench] = direction
                         activations[bench] = {'pos': pos_t, 'neg': neg_t}
@@ -171,7 +172,7 @@ def execute_cluster_benchmarks(args):
                 except:
                     pass
             
-            if len(directions) < CLUSTER_MIN_PAIRS:
+            if len(directions) < args.cluster_min_pairs:
                 continue
             
             bench_names = list(directions.keys())

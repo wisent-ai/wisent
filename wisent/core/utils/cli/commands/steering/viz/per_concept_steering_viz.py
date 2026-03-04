@@ -8,12 +8,9 @@ import json
 import base64
 from pathlib import Path
 from wisent.core.utils.config_tools.constants import (
-    MLP_HIDDEN_DIM, CLASSIFIER_TEST_SIZE,
-    VIZ_MLP_EPOCHS, CLASSIFIER_BATCH_SIZE,
-    DEFAULT_SPLIT_RATIO, DATABASE_PAIR_LOADING_LIMIT,
-    DATABASE_ACTIVATION_LOADING_LIMIT,
+    VIZ_MLP_EPOCHS,
     VIZ_TRUTHFUL_REGION_THRESHOLD,
-    DEFAULT_RANDOM_SEED, DEFAULT_SCALE_FACTOR,
+    DEFAULT_RANDOM_SEED,
     JSON_INDENT,
     SEPARATOR_WIDTH_STANDARD,
 )
@@ -76,7 +73,7 @@ def execute_per_concept_steering_viz(args):
         print(f"Loaded {len(all_pair_texts)} pair texts from zwiad results")
     else:
         all_pair_texts = load_pair_texts_from_database(
-            task_name=args.task, limit=DATABASE_PAIR_LOADING_LIMIT, database_url=args.database_url
+            task_name=args.task, limit=args.db_pair_loading_limit, database_url=args.database_url
         )
         print(f"Loaded {len(all_pair_texts)} pair texts from database/cache")
         # Rebuild pair_assignments from cluster_labels if IDs don't match
@@ -136,7 +133,7 @@ def execute_per_concept_steering_viz(args):
         # Split 80/20
         random.seed(DEFAULT_RANDOM_SEED)
         random.shuffle(concept_pair_ids)
-        split_idx = int(len(concept_pair_ids) * DEFAULT_SPLIT_RATIO)
+        split_idx = int(len(concept_pair_ids) * 0.8)
         train_ids = set(concept_pair_ids[:split_idx])
         test_ids = concept_pair_ids[split_idx:]
         print(f"  Train: {len(train_ids)}, Test: {len(test_ids)}")
@@ -163,7 +160,7 @@ def execute_per_concept_steering_viz(args):
                 component=args.extraction_component,
                 extraction_strategy=args.extraction_strategy,
                 prompt_format=args.prompt_format,
-                limit=DATABASE_ACTIVATION_LOADING_LIMIT, database_url=args.database_url, pair_ids=train_ids
+                limit=args.db_activation_loading_limit, database_url=args.database_url, pair_ids=train_ids
             )
         print(f"  Loaded {len(pos_ref)} training reference pairs")
 
@@ -203,7 +200,7 @@ def execute_per_concept_steering_viz(args):
             base_resp = adapter._generate_unsteered(formatted, do_sample=True)
             if "assistant\n" in base_resp:
                 base_resp = base_resp.split("assistant\n")[-1].strip()
-            steered_resp = adapter.forward_with_steering(formatted, steering_vectors=steering_vectors, config=SteeringConfig(scale=DEFAULT_SCALE_FACTOR))
+            steered_resp = adapter.forward_with_steering(formatted, steering_vectors=steering_vectors, config=SteeringConfig(scale=args.strength))
             if "assistant\n" in steered_resp:
                 steered_resp = steered_resp.split("assistant\n")[-1].strip()
 
@@ -233,10 +230,15 @@ def execute_per_concept_steering_viz(args):
         y_train = np.concatenate([np.ones(len(pos_ref)), np.zeros(len(neg_ref))])
 
         if classifier_type == "mlp":
-            classifier = MLPClassifier(device="cpu", hidden_dim=MLP_HIDDEN_DIM)
+            mlp_hd = getattr(args, 'mlp_hidden_dim', None)
+            if mlp_hd is None:
+                raise ValueError("--mlp-hidden-dim is required for per-concept steering viz")
+            classifier = MLPClassifier(device="cpu", hidden_dim=mlp_hd)
         else:
             classifier = LogisticClassifier(device="cpu")
-        train_config = ClassifierTrainConfig(test_size=CLASSIFIER_TEST_SIZE, num_epochs=VIZ_MLP_EPOCHS, batch_size=CLASSIFIER_BATCH_SIZE)
+        if not hasattr(args, 'classifier_test_size') or args.classifier_test_size is None:
+            raise ValueError("--classifier-test-size is required for per-concept steering viz")
+        train_config = ClassifierTrainConfig(num_epochs=VIZ_MLP_EPOCHS, batch_size=args.classifier_batch_size, learning_rate=args.classifier_lr, test_size=args.classifier_test_size)
         classifier.fit(X_train, y_train, config=train_config)
 
         # Classify base and steered activations
@@ -293,6 +295,4 @@ def execute_per_concept_steering_viz(args):
     with open(summary_path, 'w') as f:
         json.dump(all_results, f, indent=JSON_INDENT)
     print(f"\nSummary saved to: {summary_path}")
-    print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
-    print("PER-CONCEPT STEERING VISUALIZATION COMPLETE")
-    print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
+    print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}\nPER-CONCEPT STEERING VISUALIZATION COMPLETE\n{'='*SEPARATOR_WIDTH_STANDARD}")

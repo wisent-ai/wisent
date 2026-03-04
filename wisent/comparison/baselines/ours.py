@@ -10,11 +10,10 @@ from __future__ import annotations
 import json
 import subprocess
 from pathlib import Path
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import torch
 
-from wisent.core.utils.config_tools.constants import COMPARISON_NUM_PAIRS
 from wisent.comparison.utils import apply_steering_to_model, remove_steering, convert_to_lm_eval_format
 
 if TYPE_CHECKING:
@@ -30,9 +29,9 @@ def generate_steering_vector(
     extraction_strategy: str,
     device: str,
     trait_label: str,
-    num_pairs: int = COMPARISON_NUM_PAIRS,
-    method: Optional[str] = None,
-    layers: str | None = None,
+    num_pairs: int,
+    method: str,
+    layers: str,
     normalize: bool = True,
     keep_intermediate: bool = False,
 ) -> Path:

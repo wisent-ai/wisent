@@ -39,7 +39,8 @@ class FullBenchmarkDownloader(
 
     UNAVAILABLE_BENCHMARKS = {}
 
-    def __init__(self, download_dir: str):
+    def __init__(self, download_dir: str, max_incorrect_per_correct: int):
+        self.max_incorrect_per_correct = max_incorrect_per_correct
         self.download_dir = Path(download_dir)
         self.download_dir.mkdir(exist_ok=True)
 
@@ -274,8 +275,9 @@ def main():
     group.add_argument("--all", action="store_true", help="Download all")
     parser.add_argument("--force", action="store_true", help="Force redownload")
     parser.add_argument("--download-dir", required=True)
+    parser.add_argument("--max-incorrect-per-correct", type=int, required=True)
     args = parser.parse_args()
-    downloader = FullBenchmarkDownloader(download_dir=args.download_dir)
+    downloader = FullBenchmarkDownloader(download_dir=args.download_dir, max_incorrect_per_correct=args.max_incorrect_per_correct)
     try:
         to_dl = None if args.all else args.benchmarks
         results = downloader.download_all_benchmarks(benchmarks=to_dl, force=args.force)

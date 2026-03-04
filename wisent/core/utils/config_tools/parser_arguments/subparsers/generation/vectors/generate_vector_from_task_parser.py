@@ -2,8 +2,6 @@
 
 import argparse
 
-from wisent.core.utils.config_tools.constants import TECZA_NUM_DIRECTIONS
-
 
 def setup_generate_vector_from_task_parser(parser: argparse.ArgumentParser) -> None:
     """
@@ -123,8 +121,8 @@ def setup_generate_vector_from_task_parser(parser: argparse.ArgumentParser) -> N
     parser.add_argument(
         "--num-directions",
         type=int,
-        default=TECZA_NUM_DIRECTIONS,
-        help="Number of steering directions for TECZA/GROM (default: 3)"
+        default=None,
+        help="Number of steering directions for TECZA/GROM (required at runtime)"
     )
     
     # Intermediate file handling

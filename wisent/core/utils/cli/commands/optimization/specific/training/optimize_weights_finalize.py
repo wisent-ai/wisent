@@ -4,7 +4,7 @@ import os
 import subprocess
 import time
 
-from wisent.core.utils.config_tools.constants import DEFAULT_SHOW_COMPARISONS, DISPLAY_TRUNCATION_SHORT, JSON_INDENT, SECONDS_PER_MINUTE
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_SHORT, JSON_INDENT, SECONDS_PER_MINUTE
 
 
 def upload_to_gcs(local_path: str, gcs_bucket: str, gcs_key: str) -> bool:
@@ -145,7 +145,7 @@ def _finalize_optimization(
 
     # Show/save before/after comparisons if requested
     save_comparisons_path = getattr(args, 'save_comparisons', None)
-    show_comparisons_count = getattr(args, 'show_comparisons', DEFAULT_SHOW_COMPARISONS)
+    show_comparisons_count = args.show_comparisons
     if show_comparisons_count > 0 or save_comparisons_path:
         _show_response_comparisons(
             base_model=base_model,

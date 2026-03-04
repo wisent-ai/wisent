@@ -2,7 +2,7 @@
 
 import json
 import sys
-from wisent.core.utils.config_tools.constants import JSON_INDENT, MIN_PAIRS_FOR_LINEARITY, DISPLAY_TOP_N_MEDIUM, SEPARATOR_WIDTH_MEDIUM_PLUS, SEPARATOR_WIDTH_STANDARD, SEPARATOR_WIDTH_WIDE
+from wisent.core.utils.config_tools.constants import JSON_INDENT, DISPLAY_TOP_N_MEDIUM, SEPARATOR_WIDTH_MEDIUM_PLUS, SEPARATOR_WIDTH_STANDARD, SEPARATOR_WIDTH_WIDE
 
 
 def execute_check_linearity(args):
@@ -52,7 +52,7 @@ def execute_check_linearity(args):
                 print(f"Skipping malformed pair: {e}")
             continue
     
-    if len(pairs) < MIN_PAIRS_FOR_LINEARITY:
+    if len(pairs) < args.min_pairs_for_linearity:
         print(f"Error: Need at least 10 valid pairs, got {len(pairs)}")
         sys.exit(1)
     
@@ -69,6 +69,8 @@ def execute_check_linearity(args):
         min_cohens_d=args.min_cohens_d,
         max_pairs=args.max_pairs,
         geometry_optimization_steps=args.optimization_steps,
+        linearity_layer_sampling_divisor=args.linearity_layer_sampling_divisor,
+        geometry_default_num_components=args.geometry_default_num_components,
     )
     
     if args.layers:

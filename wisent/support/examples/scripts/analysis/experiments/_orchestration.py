@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
-from wisent.core.utils.config_tools.constants import CONCEPT_BIC_STRONG_THRESHOLD, DEFAULT_RANDOM_SEED, N_BOOTSTRAP_DEFAULT, CONFIDENCE_HIGH_VOTES, CONFIDENCE_MEDIUM_VOTES, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, N_BOOTSTRAP_DEFAULT, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM
 from wisent.core.primitives.models.wisent_model import WisentModel
 
 from ._data_loading import extract_difference_vectors
@@ -61,7 +61,9 @@ class ConceptDetectionResult:
 
 def detect_concepts(
     diff_vectors: np.ndarray,
-    sources: Optional[List[str]] = None
+    sources: Optional[List[str]] = None,
+    *,
+    concept_bic_strong_threshold: float,
 ) -> ConceptDetectionResult:
     """
     Run all detection methods and synthesize results.
@@ -118,7 +120,7 @@ def detect_concepts(
         num_concepts_votes.append(1)
     
     # Evidence 5: Bimodality
-    if bimodal_results["bic_difference"] > CONCEPT_BIC_STRONG_THRESHOLD:
+    if bimodal_results["bic_difference"] > concept_bic_strong_threshold:
         evidence.append(f"BIC favors 2 components (diff={bimodal_results['bic_difference']:.1f})")
         num_concepts_votes.append(2)
     else:
@@ -127,8 +129,8 @@ def detect_concepts(
     
     # Final verdict
     num_concepts = 2 if sum(num_concepts_votes) / len(num_concepts_votes) > 1.5 else 1
-    confidence = "high" if sum(v == num_concepts for v in num_concepts_votes) >= CONFIDENCE_HIGH_VOTES else \
-                 "medium" if sum(v == num_concepts for v in num_concepts_votes) >= CONFIDENCE_MEDIUM_VOTES else "low"
+    confidence = "high" if sum(v == num_concepts for v in num_concepts_votes) >= 4 else \
+                 "medium" if sum(v == num_concepts for v in num_concepts_votes) >= 3 else "low"
     
     return ConceptDetectionResult(
         eigenvalue_ratio=eigen_results["eigenvalue_ratio"],
@@ -161,10 +163,13 @@ def run_single_sample_detection(
     layer: int = None,
     n_bootstrap: int = N_BOOTSTRAP_DEFAULT,
     seed: int = DEFAULT_RANDOM_SEED,
+    *,
+    kmeans_n_init_small: int,
+    kmeans_n_init_medium: int,
 ):
     """
     Run detection on a SINGLE sample to determine if it contains multiple concepts.
-    
+
     This is the answer to: "I have this data, how do I know if it's mixed?"
     """
     print("=" * SEPARATOR_WIDTH_WIDE)
@@ -183,7 +188,7 @@ def run_single_sample_detection(
     diff_vectors, _ = extract_difference_vectors(model, pairs, layer)
     
     print("\nRunning single-sample detection...")
-    result = detect_multiple_concepts_single_sample(diff_vectors, n_bootstrap, seed)
+    result = detect_multiple_concepts_single_sample(diff_vectors, n_bootstrap, seed, kmeans_n_init_small=kmeans_n_init_small, kmeans_n_init_medium=kmeans_n_init_medium)
     
     print(f"\n{'=' * SEPARATOR_WIDTH_MEDIUM}")
     print(f"VERDICT: {result['verdict']}")

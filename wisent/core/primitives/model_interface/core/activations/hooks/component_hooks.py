@@ -12,7 +12,6 @@ from typing import Dict, List, Optional
 import torch
 import torch.nn as nn
 
-from wisent.core.utils.config_tools.constants import ARCHITECTURE_MODULE_LIMIT
 from wisent.core.primitives.model_interface.core.activations.strategies.extraction_strategy import ExtractionComponent
 from wisent.core.reading.modules.utilities.signal_analysis.structure.transformer_analysis import (
     TransformerComponent,
@@ -61,22 +60,27 @@ def _get_submodule(model: nn.Module, target: str) -> nn.Module:
     return current
 
 
-def _detect_model_type(model: nn.Module) -> str:
-    """Detect model architecture family from config or module names."""
+def _detect_model_type(model: nn.Module, architecture_module_limit: int) -> str:
+    """Detect model architecture family from config or module names.
+
+    Args:
+        model: The nn.Module to inspect.
+        architecture_module_limit: Max module names to join for pattern matching.
+    """
     config = getattr(model, "config", None)
     if config is not None:
         model_type = getattr(config, "model_type", "")
         if model_type:
             return model_type
 
-    # Fallback: check for common module patterns
+    # Check common module patterns when config is absent
     module_names = [name for name, _ in model.named_modules()]
-    joined = " ".join(module_names[:ARCHITECTURE_MODULE_LIMIT])
+    joined = " ".join(module_names[:architecture_module_limit])
     if "self_attn" in joined:
-        return "llama"  # Llama-like architecture
+        return "llama"
     if "attn" in joined and "transformer.h" in joined:
         return "gpt2"
-    return "llama"  # Default to Llama-like
+    return "llama"
 
 
 class ComponentHookManager:
@@ -84,7 +88,7 @@ class ComponentHookManager:
     Manages forward hooks for extracting from transformer components.
 
     Usage:
-        manager = ComponentHookManager(model, component, layers=[8, 12])
+        manager = ComponentHookManager(model, component, layers, architecture_module_limit)
         with manager.hooks_active():
             output = model(**inputs, output_hidden_states=True)
             captured = manager.get_captured()
@@ -95,13 +99,14 @@ class ComponentHookManager:
         model: nn.Module,
         component: ExtractionComponent,
         layers: List[int],
+        architecture_module_limit: int,
     ):
         self.model = model
         self.component = component
         self.layers = layers
         self._handles: List[torch.utils.hooks.RemovableHook] = []
         self._captured: Dict[int, torch.Tensor] = {}
-        self._model_type = _detect_model_type(model)
+        self._model_type = _detect_model_type(model, architecture_module_limit)
 
     def _make_forward_hook(self, layer_idx: int):
         """Create a forward hook that captures output[0]."""

@@ -1,6 +1,16 @@
 """Argparse setup for the migrate-activations CLI command."""
 
 
+def _add_hf_retry_args(p):
+    """Add HF upload retry arguments to a subparser."""
+    p.add_argument("--hf-max-retries", type=int, required=True, help="Max upload retries")
+    p.add_argument("--hf-base-wait", type=int, required=True, help="Base wait seconds between retries")
+    p.add_argument("--hf-backoff-max-exp", type=int, required=True, help="Max exponent for backoff")
+    p.add_argument("--hf-jitter-min", type=float, required=True, help="Minimum jitter multiplier")
+    p.add_argument("--hf-jitter-max", type=float, required=True, help="Maximum jitter multiplier")
+    p.add_argument("--hf-retryable-pattern", type=str, action="append", required=True, help="Retryable error pattern (repeatable)")
+
+
 def setup_migrate_activations_parser(parser):
     """Configure the migrate-activations subparser."""
     subparsers = parser.add_subparsers(dest="action", help="Migration actions")
@@ -39,6 +49,7 @@ def setup_migrate_activations_parser(parser):
         "--reverse", action="store_true",
         help="Process combos in reverse order within the slice",
     )
+    _add_hf_retry_args(all_parser)
 
     # consolidate - build index.json from markers
     consolidate_parser = subparsers.add_parser(
@@ -49,6 +60,7 @@ def setup_migrate_activations_parser(parser):
         "--dry-run", action="store_true",
         help="Print consolidated index without uploading",
     )
+    _add_hf_retry_args(consolidate_parser)
 
     # single - migrate one (model, benchmark, strategy)
     single_parser = subparsers.add_parser(
@@ -74,6 +86,7 @@ def setup_migrate_activations_parser(parser):
         "--dry-run", action="store_true",
         help="Print what would be uploaded without uploading",
     )
+    _add_hf_retry_args(single_parser)
 
     # pair-texts - migrate pair texts for a benchmark
     pt_parser = subparsers.add_parser(
@@ -91,6 +104,7 @@ def setup_migrate_activations_parser(parser):
         "--dry-run", action="store_true",
         help="Print what would be uploaded without uploading",
     )
+    _add_hf_retry_args(pt_parser)
 
     # raw - migrate raw activations
     raw_parser = subparsers.add_parser(
@@ -109,6 +123,10 @@ def setup_migrate_activations_parser(parser):
         help="Prompt format",
     )
     raw_parser.add_argument(
+        "--chunk-size", type=int, required=True,
+        help="Number of pairs per shard for raw activation migration",
+    )
+    raw_parser.add_argument(
         "--database-url", type=str, default=None,
         help="Database URL (defaults to DATABASE_URL env var)",
     )
@@ -116,6 +134,7 @@ def setup_migrate_activations_parser(parser):
         "--dry-run", action="store_true",
         help="Print what would be uploaded without uploading",
     )
+    _add_hf_retry_args(raw_parser)
 
     # verify - verify migration for a single layer
     verify_parser = subparsers.add_parser(

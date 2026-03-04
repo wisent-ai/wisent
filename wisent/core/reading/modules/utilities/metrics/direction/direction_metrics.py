@@ -12,9 +12,8 @@ from typing import Dict, Any
 from wisent.core.reading.modules.utilities.signal_analysis.intrinsic_dim import estimate_local_intrinsic_dim
 from wisent.core.utils.config_tools.constants import (
     NORM_EPS, DEFAULT_RANDOM_SEED,
-    DIRECTION_N_BOOTSTRAP, DIRECTION_SUBSET_FRACTION, DIRECTION_STD_PENALTY,
-    CONSISTENCY_W_COSINE, CONSISTENCY_W_POSITIVE, CONSISTENCY_W_HIGH_SIM,
-    DIRECTION_MODERATE_SIMILARITY, CHANCE_LEVEL_ACCURACY,
+    CHANCE_LEVEL_ACCURACY,
+    SCORE_RANGE_MIN, SCORE_RANGE_MAX, N_COMPONENTS_2D,
 )
 
 
@@ -31,29 +30,12 @@ def compute_direction_from_pairs(
 def compute_direction_stability(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_bootstrap: int = DIRECTION_N_BOOTSTRAP,
-    subset_fraction: float = DIRECTION_SUBSET_FRACTION,
+    *,
+    n_bootstrap: int,
+    subset_fraction: float,
+    direction_std_penalty: float,
 ) -> Dict[str, float]:
-    """
-    Measure stability of the separation direction across bootstrap samples.
-
-    If the direction is stable (high cosine similarity across subsets),
-    then there is likely ONE consistent direction encoding the concept.
-    If unstable, different samples use different directions.
-
-    Args:
-        pos_activations: [N, hidden_dim] positive class activations
-        neg_activations: [N, hidden_dim] negative class activations
-        n_bootstrap: Number of bootstrap samples
-        subset_fraction: Fraction of data to use per bootstrap
-
-    Returns:
-        Dict with:
-            - mean_cosine: Mean pairwise cosine similarity between bootstrap directions
-            - std_cosine: Std of pairwise cosine similarities
-            - min_cosine: Minimum pairwise cosine similarity
-            - stability_score: 0-1 score (1 = perfectly stable)
-    """
+    """Measure stability of the separation direction across bootstrap samples."""
     try:
         n_pos = len(pos_activations)
         n_neg = len(neg_activations)
@@ -103,8 +85,8 @@ def compute_direction_stability(
         std_cosine = float(off_diagonal.std())
         min_cosine = float(off_diagonal.min())
 
-        stability_score = max(0, (mean_cosine + 1) / 2 - std_cosine * DIRECTION_STD_PENALTY)
-        stability_score = min(1.0, stability_score)
+        stability_score = max(SCORE_RANGE_MIN, (mean_cosine + SCORE_RANGE_MAX) / N_COMPONENTS_2D - std_cosine * direction_std_penalty)
+        stability_score = min(SCORE_RANGE_MAX, stability_score)
 
         return {
             "mean_cosine": mean_cosine,
@@ -124,28 +106,13 @@ def compute_direction_stability(
 def compute_pairwise_diff_consistency(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
+    *,
+    consistency_w_cosine: float,
+    consistency_w_positive: float,
+    consistency_w_high_sim: float,
+    direction_moderate_similarity: float,
 ) -> Dict[str, float]:
-    """
-    Measure consistency of individual difference vectors.
-
-    For each pair, compute diff = pos_i - neg_i.
-    Then measure how similar these diffs are to each other.
-
-    High consistency -> all pairs use same direction -> ONE steering vector enough
-    Low consistency -> different pairs use different directions -> need MULTIPLE vectors
-
-    Args:
-        pos_activations: [N, hidden_dim] positive class activations
-        neg_activations: [N, hidden_dim] negative class activations
-
-    Returns:
-        Dict with:
-            - mean_pairwise_cosine: Mean cosine sim between diff vectors
-            - std_pairwise_cosine: Std of cosine similarities
-            - fraction_positive: Fraction of pairs with positive cosine
-            - fraction_high_sim: Fraction of pairs with cosine > 0.5
-            - consistency_score: 0-1 summary score
-    """
+    """Measure consistency of individual difference vectors."""
     try:
         n_pairs = min(len(pos_activations), len(neg_activations))
 
@@ -183,14 +150,14 @@ def compute_pairwise_diff_consistency(
         mean_cos = float(off_diagonal.mean())
         std_cos = float(off_diagonal.std())
         fraction_positive = float((off_diagonal > 0).mean())
-        fraction_high_sim = float((off_diagonal > DIRECTION_MODERATE_SIMILARITY).mean())
+        fraction_high_sim = float((off_diagonal > direction_moderate_similarity).mean())
 
         consistency_score = (
-            CONSISTENCY_W_COSINE * max(0, (mean_cos + 1) / 2) +
-            CONSISTENCY_W_POSITIVE * fraction_positive +
-            CONSISTENCY_W_HIGH_SIM * fraction_high_sim
+            consistency_w_cosine * max(SCORE_RANGE_MIN, (mean_cos + SCORE_RANGE_MAX) / N_COMPONENTS_2D) +
+            consistency_w_positive * fraction_positive +
+            consistency_w_high_sim * fraction_high_sim
         )
-        consistency_score = min(1.0, max(0.0, consistency_score))
+        consistency_score = min(SCORE_RANGE_MAX, max(SCORE_RANGE_MIN, consistency_score))
 
         return {
             "mean_pairwise_cosine": mean_cos,

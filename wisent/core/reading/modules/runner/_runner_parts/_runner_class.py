@@ -9,6 +9,9 @@ import torch
 
 from wisent.core.reading.modules import GeometrySearchSpace
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.utils.config_tools.constants import (
+    DEFAULT_RANDOM_SEED,
+)
 from wisent.core.primitives.model_interface.core.activations.activation_cache import (
     ActivationCache,
     CachedActivations,
@@ -39,10 +42,14 @@ class GeometryRunner:
         self,
         search_space: GeometrySearchSpace,
         model: "WisentModel",
+        report_interval: int,
         cache_dir: Optional[str] = None,
+        *, train_ratio: float,
     ):
         self.search_space = search_space
         self.model = model
+        self.report_interval = report_interval
+        self.train_ratio = train_ratio
         self.cache_dir = cache_dir or (
             f"/tmp/wisent_geometry_cache_{model.model_name.replace('/', '_')}"
         )
@@ -126,9 +133,7 @@ class GeometryRunner:
         """Run the geometry search."""
         benchmarks = benchmarks or self.search_space.benchmarks
         strategies = strategies or self.search_space.strategies
-        max_combo = (
-            max_layer_combo_size or self.search_space.config.max_layer_combo_size
-        )
+        max_combo = max_layer_combo_size or self.search_space.config.max_layer_combo_size
         num_layers = self.model.num_layers
         layer_combos = get_layer_combinations(num_layers, max_combo)
         results = GeometrySearchResults(
@@ -215,6 +220,7 @@ class GeometryRunner:
             pairs=pairs,
             benchmark=benchmark,
             strategy=strategy,
+            report_interval=self.report_interval,
             cache=self.raw_cache,
             show_progress=show_progress,
         )
@@ -236,11 +242,9 @@ class GeometryRunner:
             task = list(task_dict.values())[0]
         except Exception:
             task = None
-        limit = self.search_space.config.pairs_per_benchmark
-        if limit <= 0:
-            limit = None
-        pairs = lm_build_contrastive_pairs(benchmark, task, limit=limit)
+        limit: Optional[int] = self.search_space.config.pairs_per_benchmark
+        pairs = lm_build_contrastive_pairs(benchmark, task, limit=limit, train_ratio=self.train_ratio)
         if limit and len(pairs) > limit:
-            random.seed(self.search_space.config.random_seed)
+            random.seed(DEFAULT_RANDOM_SEED)
             pairs = random.sample(pairs, limit)
         return pairs

@@ -6,10 +6,17 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 from wisent.core.utils.cli.optimization.core.method_optimizer_config import OptimizationConfig
-from wisent.core.utils.config_tools.constants import (AUTO_DEFAULT_STRENGTHS, TECZA_SEARCH_NUM_DIRECTIONS, TECZA_SEARCH_OPT_STEPS, TECZA_SEARCH_RETAIN_WEIGHTS, TECZA_LEARNING_RATE, TECZA_INDEPENDENCE_WEIGHT, TETNO_SEARCH_STEERING_LAYERS, TETNO_SEARCH_CONDITION_THRESHOLDS, TETNO_SEARCH_GATE_TEMPERATURES, TETNO_SEARCH_MAX_ALPHAS, GROM_SEARCH_NUM_DIRECTIONS, GROM_SEARCH_STEERING_LAYERS, GROM_SEARCH_GATE_HIDDEN_DIMS, GROM_SEARCH_INTENSITY_HIDDEN_DIMS, GROM_SEARCH_OPT_STEPS, GROM_SEARCH_BEHAVIOR_WEIGHTS, GROM_SEARCH_RETAIN_WEIGHTS, GROM_SEARCH_SPARSE_WEIGHTS, GROM_SEARCH_MAX_ALPHAS)
+from wisent.core.utils.config_tools.constants import ARCHITECTURE_MODULE_LIMIT
 from wisent.core.control.steering_methods.registry import SteeringMethodRegistry
 
 logger = logging.getLogger(__name__)
+
+
+def _require_custom(custom: dict, key: str):
+    """Require a key in custom method params dict."""
+    if key not in custom:
+        raise ValueError(f"custom_method_params must include '{key}'")
+    return custom[key]
 
 
 def _log(self, msg: str):
@@ -26,6 +33,8 @@ def generate_search_space(
     custom_prompt_strategies: Optional[List[str]] = None,
     custom_method_params: Optional[Dict[str, List[Any]]] = None,
     evidence_reductions: Optional[Dict] = None,
+    *,
+    auto_default_strengths: tuple,
 ) -> List[OptimizationConfig]:
     """
     Generate search space for optimization.
@@ -39,7 +48,7 @@ def generate_search_space(
         List of OptimizationConfig to test
     """
     layers = custom_layers or self._get_full_layers(num_layers)
-    strengths = custom_strengths or list(AUTO_DEFAULT_STRENGTHS)
+    strengths = custom_strengths or list(auto_default_strengths)
     token_aggs = custom_token_aggregations or ["last_token", "mean_pooling", "first_token", "max_pooling", "continuation_token"]
     prompt_strats = custom_prompt_strategies or ["chat_template", "direct_completion", "multiple_choice", "role_playing", "instruction_following"]
     steering_strategies = ["constant", "initial_only", "diminishing", "increasing", "gaussian"]
@@ -150,11 +159,11 @@ def _get_method_param_ranges(
 
     elif self.method_name == "tecza":
         return {
-            "num_directions": custom.get("num_directions", list(TECZA_SEARCH_NUM_DIRECTIONS)),
-            "optimization_steps": custom.get("optimization_steps", list(TECZA_SEARCH_OPT_STEPS)),
-            "retain_weight": custom.get("retain_weight", list(TECZA_SEARCH_RETAIN_WEIGHTS)),
-            "learning_rate": custom.get("learning_rate", [TECZA_LEARNING_RATE]),
-            "independence_weight": custom.get("independence_weight", [TECZA_INDEPENDENCE_WEIGHT]),
+            "num_directions": _require_custom(custom, "num_directions"),
+            "optimization_steps": _require_custom(custom, "optimization_steps"),
+            "retain_weight": _require_custom(custom, "retain_weight"),
+            "learning_rate": _require_custom(custom, "learning_rate"),
+            "independence_weight": _require_custom(custom, "independence_weight"),
             "use_caa_init": custom.get("use_caa_init", [True]),
         }
 
@@ -165,12 +174,12 @@ def _get_method_param_ranges(
             ))
         return {
             "sensor_layer": custom.get("sensor_layer", sensor_defaults),
-            "steering_layers": custom.get("steering_layers", list(TETNO_SEARCH_STEERING_LAYERS)),
-            "condition_threshold": custom.get("condition_threshold", list(TETNO_SEARCH_CONDITION_THRESHOLDS)),
-            "gate_temperature": custom.get("gate_temperature", list(TETNO_SEARCH_GATE_TEMPERATURES)),
+            "steering_layers": _require_custom(custom, "steering_layers"),
+            "condition_threshold": _require_custom(custom, "condition_threshold"),
+            "gate_temperature": _require_custom(custom, "gate_temperature"),
             "per_layer_scaling": custom.get("per_layer_scaling", [True, False]),
             "use_entropy_scaling": custom.get("use_entropy_scaling", [True, False]),
-            "max_alpha": custom.get("max_alpha", list(TETNO_SEARCH_MAX_ALPHAS)),
+            "max_alpha": _require_custom(custom, "max_alpha"),
         }
 
     elif self.method_name == "grom":
@@ -179,16 +188,16 @@ def _get_method_param_ranges(
                 list(range(0, nl, max(1, nl // 4))) + [nl - 1]
             ))
         return {
-            "num_directions": custom.get("num_directions", list(GROM_SEARCH_NUM_DIRECTIONS)),
+            "num_directions": _require_custom(custom, "num_directions"),
             "sensor_layer": custom.get("sensor_layer", sensor_defaults),
-            "steering_layers": custom.get("steering_layers", list(GROM_SEARCH_STEERING_LAYERS)),
-            "gate_hidden_dim": custom.get("gate_hidden_dim", list(GROM_SEARCH_GATE_HIDDEN_DIMS)),
-            "intensity_hidden_dim": custom.get("intensity_hidden_dim", list(GROM_SEARCH_INTENSITY_HIDDEN_DIMS)),
-            "optimization_steps": custom.get("optimization_steps", list(GROM_SEARCH_OPT_STEPS)),
-            "behavior_weight": custom.get("behavior_weight", list(GROM_SEARCH_BEHAVIOR_WEIGHTS)),
-            "retain_weight": custom.get("retain_weight", list(GROM_SEARCH_RETAIN_WEIGHTS)),
-            "sparse_weight": custom.get("sparse_weight", list(GROM_SEARCH_SPARSE_WEIGHTS)),
-            "max_alpha": custom.get("max_alpha", list(GROM_SEARCH_MAX_ALPHAS)),
+            "steering_layers": _require_custom(custom, "steering_layers"),
+            "gate_hidden_dim": _require_custom(custom, "gate_hidden_dim"),
+            "intensity_hidden_dim": _require_custom(custom, "intensity_hidden_dim"),
+            "optimization_steps": _require_custom(custom, "optimization_steps"),
+            "behavior_weight": _require_custom(custom, "behavior_weight"),
+            "retain_weight": _require_custom(custom, "retain_weight"),
+            "sparse_weight": _require_custom(custom, "sparse_weight"),
+            "max_alpha": _require_custom(custom, "max_alpha"),
         }
 
     # Default for unknown methods - empty params
@@ -253,7 +262,7 @@ def collect_activations(
         ContrastivePairSet with activations populated
     """
     # Store activations on CPU - GROM and other methods expect CPU tensors for training
-    collector = ActivationCollector(model=self.model, store_device="cpu")
+    collector = ActivationCollector(model=self.model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT, store_device="cpu")
 
     updated_pairs = []
     for pair in pairs.pairs:
@@ -273,5 +282,12 @@ def collect_activations(
 
 
 def _load_evidence_reductions(self, task_name: str):
-    """No-op stub — evidence ledger was removed."""
     return {}
+
+def _build_default_method_params(method_name: str):
+    """Build default custom_method_params dict for a given method."""
+    if method_name == "tetno":
+        raise ValueError("TETNO search params must be provided via custom_method_params. No built-in defaults.")
+    if method_name == "grom":
+        raise ValueError("GROM search params must be provided via custom_method_params. No built-in defaults.")
+    return None

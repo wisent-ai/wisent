@@ -33,6 +33,7 @@ class HuggingFaceDataLoader(BaseDataLoader):
         limit: int | None,
         training_limit: int | None,
         testing_limit: int | None,
+        **extractor_kwargs: Any,
     ) -> LoadDataResult:
         """
         Load a HuggingFace dataset by name, convert to contrastive pairs,
@@ -53,7 +54,7 @@ class HuggingFaceDataLoader(BaseDataLoader):
 
         # Get the extractor for this task
         try:
-            extractor = get_extractor(task_name)
+            extractor = get_extractor(task_name, **extractor_kwargs)
         except Exception as e:
             raise DataLoaderError(f"No extractor found for HuggingFace task '{task_name}': {e}")
 
@@ -95,7 +96,7 @@ class HuggingFaceDataLoader(BaseDataLoader):
         limit: int | None = None,
         training_limit: int | None = None,
         testing_limit: int | None = None,
-        **_: Any,
+        **extractor_kwargs: Any,
     ) -> LoadDataResult:
         """Load a HuggingFace dataset."""
         split = self._effective_split(split_ratio)
@@ -108,6 +109,7 @@ class HuggingFaceDataLoader(BaseDataLoader):
             limit=limit,
             training_limit=training_limit,
             testing_limit=testing_limit,
+            **extractor_kwargs,
         )
 
     def _split_pairs(

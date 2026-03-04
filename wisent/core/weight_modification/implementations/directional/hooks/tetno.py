@@ -5,7 +5,6 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 from typing import TYPE_CHECKING
-from wisent.core.utils.config_tools.constants import TETNO_GATE_TEMPERATURE, DEFAULT_LAYER_WEIGHT
 from wisent.core.utils.infra_tools.errors import MissingParameterError
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
@@ -19,7 +18,7 @@ _LOG = setup_logger(__name__)
 class TETNORuntimeHooks:
     """Runtime hooks for TETNO conditional steering."""
 
-    def __init__(self, model: Module, tetno_result, base_strength: float, gate_temperature: float = TETNO_GATE_TEMPERATURE) -> None:
+    def __init__(self, model: Module, tetno_result, base_strength: float, gate_temperature: float) -> None:
         self.model = model
         self.tetno_result = tetno_result
         self.base_strength = base_strength
@@ -99,7 +98,9 @@ class TETNORuntimeHooks:
         if behavior_vector is None:
             return output
         behavior_vector = behavior_vector.to(hidden_states.device)
-        layer_scale = self.tetno_result.layer_scales.get(layer_name, DEFAULT_LAYER_WEIGHT)
+        if layer_name not in self.tetno_result.layer_scales:
+            raise KeyError(f"No layer_scale for '{layer_name}' in TETNO result")
+        layer_scale = self.tetno_result.layer_scales[layer_name]
         gate = self._current_gate.to(hidden_states.device)
         if hidden_states.dim() == 3:
             gate = gate.view(-1, 1, 1)
@@ -124,7 +125,8 @@ def apply_grom_steering(
     from .grom import GROMRuntimeHooks, project_weights_grom
     result = {}
     if mode in ("static", "hybrid"):
-        stats = project_weights_grom(model=model, grom_result=grom_result, components=components,
+        blw = grom_result.metadata.get("base_layer_weight")
+        stats = project_weights_grom(model=model, grom_result=grom_result, base_layer_weight=blw, components=components,
                                        base_strength=base_strength if mode == "static" else 1.0,
                                        use_learned_intensities=True, verbose=verbose)
         result["stats"] = stats

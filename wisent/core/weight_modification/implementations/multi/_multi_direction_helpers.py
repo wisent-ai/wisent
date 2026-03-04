@@ -34,24 +34,20 @@ def train_and_bake_tecza(
     Returns:
         MultiDirectionResult
     """
-    from wisent.core.control.steering_methods.methods.advanced import (
-        TECZAMethod, TECZAConfig)
+    from wisent.core.control.steering_methods.methods.advanced import TECZAMethod
 
     cfg = config or MultiDirectionConfig(method="tecza")
+    if tecza_config is None:
+        raise ValueError("tecza_config dict is required with all TECZA hyperparameters")
 
-    # Build TECZA config
-    p_cfg = TECZAConfig(
-        num_directions=cfg.num_directions,
-        optimization_steps=cfg.optimization_steps,
-    )
-    if tecza_config:
-        for k, v in tecza_config.items():
-            if hasattr(p_cfg, k):
-                setattr(p_cfg, k, v)
+    # Build kwargs from tecza_config, overriding num_directions/optimization_steps from cfg
+    tecza_kwargs = dict(tecza_config)
+    tecza_kwargs["num_directions"] = cfg.num_directions
+    tecza_kwargs["optimization_steps"] = cfg.optimization_steps
 
     # Train TECZA
     print(f"\nTraining TECZA with {cfg.num_directions} directions...")
-    tecza = TECZAMethod(config=p_cfg)
+    tecza = TECZAMethod(**tecza_kwargs)
     result = tecza.train_tecza(pair_set)
 
     # Extract directions (TECZA has no learned weights, use uniform)

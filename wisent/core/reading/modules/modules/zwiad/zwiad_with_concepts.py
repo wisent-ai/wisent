@@ -6,8 +6,8 @@ import json
 import torch
 import numpy as np
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_SCORE, DEFAULT_RANDOM_SEED, JSON_INDENT, VIZ_PCA_COMPONENTS,
-    LINEARITY_MAX_PAIRS, MIN_CONCEPT_DIM,
+    DEFAULT_RANDOM_SEED, DIAGNOSTICS_TOTAL_CHECKS, JSON_INDENT,
+    VIZ_PCA_COMPONENTS,
 )
 from wisent.core.reading.modules.utilities.metrics.core.metrics_core import compute_geometry_metrics
 from wisent.core.reading.modules.utilities.concepts import decompose_and_name_concepts_with_labels, find_optimal_layer_per_concept
@@ -54,11 +54,25 @@ __all__ = [
 def run_zwiad_with_concept_naming(
     activations_by_layer: Dict[int, Tuple[torch.Tensor, torch.Tensor]],
     llm_model: str,
+    concept_naming_n_samples: int,
+    min_clusters: int,
     pair_texts: Optional[Dict[int, Dict[str, str]]] = None,
     generate_visualizations: bool = True,
     steps: Optional[str] = None, output_path: Optional[str] = None,
+    linearity_max_pairs: int = None, min_concept_dim: int = None,
+    spectral_n_neighbors: int = None,
+    *,
+    cv_folds: int,
+    min_concept_pairs: int,
+    zwiad_score_primary: float, zwiad_score_secondary: float, zwiad_score_tertiary: float,
+    zwiad_editability_threshold: float, zwiad_przelom_bonus_max: float,
+    subsample_threshold: int, pca_dims_limit: int,
 ) -> Dict[str, Any]:
-    """Run Zwiad with geometry metrics, 5-step protocol, and concept naming."""
+    """Run Zwiad with geometry metrics, multi-step protocol, and concept naming."""
+    if linearity_max_pairs is None:
+        raise ValueError("linearity_max_pairs is required")
+    if min_concept_dim is None:
+        raise ValueError("min_concept_dim is required")
     from .zwiad_protocol import (
         test_signal, test_geometry, test_decomposition, select_intervention,
         test_editability, SignalTestResult, GeometryTestResult,
@@ -93,7 +107,7 @@ def run_zwiad_with_concept_naming(
     if "metrics" in existing and existing["metrics"]:
         metrics = existing["metrics"]
     else:
-        metrics = compute_geometry_metrics(pos_concat, neg_concat, generate_visualizations=generate_visualizations)
+        metrics = compute_geometry_metrics(pos_concat, neg_concat, min_clusters=min_clusters, n_folds=cv_folds, generate_visualizations=generate_visualizations, spectral_n_neighbors=spectral_n_neighbors, subsample_threshold=subsample_threshold, pca_dims_limit=pca_dims_limit)
     results = {
         "n_pairs": n_pairs, "n_layers": n_layers, "layers_used": sorted_layers,
         "total_dims": pos_concat.shape[1], "steps_run": list(steps_to_run),
@@ -102,7 +116,7 @@ def run_zwiad_with_concept_naming(
     }
     _save_checkpoint(results, output_path)
     signal_result, geometry_result, decomposition_result, editability_result = None, None, None, None
-    min_pairs_for_probes = MIN_CONCEPT_DIM
+    min_pairs_for_probes = min_concept_dim
     # Step 1: Signal
     if "signal" in steps_to_run:
         if "signal_test" in existing:
@@ -128,18 +142,18 @@ def run_zwiad_with_concept_naming(
             results["geometry_test"] = existing["geometry_test"]
             gt = existing["geometry_test"]
             if "linear_accuracy" in gt:
-                geometry_result = GeometryTestResult(**{k: gt.get(k, DEFAULT_SCORE) for k in _GEO_KEYS})
+                geometry_result = GeometryTestResult(**{k: gt[k] for k in _GEO_KEYS})
         elif n_pairs < min_pairs_for_probes:
             results["geometry_test"] = {"status": "insufficient_data", "n_pairs": n_pairs}
         else:
-            _n_geo = min(n_pairs, LINEARITY_MAX_PAIRS)
-            if n_pairs > LINEARITY_MAX_PAIRS:
-                _idx = np.random.RandomState(DEFAULT_RANDOM_SEED).choice(n_pairs, LINEARITY_MAX_PAIRS, replace=False)
+            _n_geo = min(n_pairs, linearity_max_pairs)
+            if n_pairs > linearity_max_pairs:
+                _idx = np.random.RandomState(DEFAULT_RANDOM_SEED).choice(n_pairs, linearity_max_pairs, replace=False)
                 _idx.sort()
                 _pg, _ng = pos_pca[_idx], neg_pca[_idx]
             else:
                 _pg, _ng = pos_pca, neg_pca
-            geometry_result = test_geometry(_pg, _ng)
+            geometry_result = test_geometry(_pg, _ng, diagnostics_total_checks=DIAGNOSTICS_TOTAL_CHECKS)
             results["geometry_test"] = {k: getattr(geometry_result, k) for k in _GEO_KEYS}
         _save_checkpoint(results, output_path)
     # Step 3: Decomposition + Concept Naming
@@ -150,7 +164,7 @@ def run_zwiad_with_concept_naming(
             if "n_concepts" in dt and "status" not in dt:
                 decomposition_result = DecompositionTestResult(
                     n_concepts=dt["n_concepts"], cluster_labels=dt.get("cluster_labels", [0]*n_pairs),
-                    silhouette_score=dt.get("silhouette_score", DEFAULT_SCORE),
+                    silhouette_score=dt["silhouette_score"],
                     is_fragmented=dt.get("is_fragmented", False),
                     per_concept_sizes=dt.get("per_concept_sizes", {}))
             if "concept_decomposition" in existing:
@@ -163,12 +177,13 @@ def run_zwiad_with_concept_naming(
                 "n_concepts": decomposition_result.n_concepts, "silhouette_score": decomposition_result.silhouette_score,
                 "is_fragmented": decomposition_result.is_fragmented, "per_concept_sizes": decomposition_result.per_concept_sizes}
             decomp = decompose_and_name_concepts_with_labels(
-                pos_concat, neg_concat, pair_texts, cluster_labels=decomposition_result.cluster_labels,
+                pos_concat, neg_concat, concept_naming_n_samples=concept_naming_n_samples,
+                pair_texts=pair_texts, cluster_labels=decomposition_result.cluster_labels,
                 n_concepts=decomposition_result.n_concepts,
                 generate_visualizations=generate_visualizations, llm_model=llm_model)
             decomp["n_layers_used"] = n_layers
             labels_arr = np.array(decomposition_result.cluster_labels)
-            pcl = find_optimal_layer_per_concept(activations_by_layer, labels_arr, decomposition_result.n_concepts)
+            pcl = find_optimal_layer_per_concept(activations_by_layer, labels_arr, decomposition_result.n_concepts, cv_folds=cv_folds, min_concept_pairs=min_concept_pairs)
             for concept in decomp.get("concepts", []):
                 idx = concept["id"] - 1
                 if idx in pcl:
@@ -185,11 +200,11 @@ def run_zwiad_with_concept_naming(
             if "composite_editability" in et:
                 editability_result = EditabilityTestResult(
                     composite_editability=et["composite_editability"],
-                    steering_survival=et.get("steering_survival", DEFAULT_SCORE),
-                    spectral_concentration=et.get("spectral_concentration", DEFAULT_SCORE),
-                    spectral_sharpness=et.get("spectral_sharpness", DEFAULT_SCORE),
-                    attention_entropy=et.get("attention_entropy", DEFAULT_SCORE),
-                    jacobian_sensitivity=et.get("jacobian_sensitivity", DEFAULT_SCORE))
+                    steering_survival=et["steering_survival"],
+                    spectral_concentration=et["spectral_concentration"],
+                    spectral_sharpness=et["spectral_sharpness"],
+                    attention_entropy=et["attention_entropy"],
+                    jacobian_sensitivity=et["jacobian_sensitivity"])
         elif n_pairs >= 2:
             editability_result = test_editability(pos_pca, neg_pca)
             results["editability_test"] = {
@@ -202,7 +217,10 @@ def run_zwiad_with_concept_naming(
         _save_checkpoint(results, output_path)
     # Step 4: Intervention Selection
     if "intervention" in steps_to_run and signal_result and geometry_result and decomposition_result:
-        intervention = select_intervention(signal_result, geometry_result, decomposition_result, metrics=metrics, editability=editability_result)
+        intervention = select_intervention(signal_result, geometry_result, decomposition_result, metrics=metrics, editability=editability_result,
+            zwiad_score_primary=zwiad_score_primary, zwiad_score_secondary=zwiad_score_secondary,
+            zwiad_score_tertiary=zwiad_score_tertiary, zwiad_editability_threshold=zwiad_editability_threshold,
+            zwiad_przelom_bonus_max=zwiad_przelom_bonus_max)
         results["intervention"] = {
             "recommended_method": intervention.recommended_method, "confidence": intervention.confidence,
             "reasoning": intervention.reasoning, "method_scores": intervention.method_scores}

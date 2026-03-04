@@ -8,16 +8,19 @@ import torch
 import numpy as np
 from typing import Dict, Any, Optional
 from wisent.core.utils.config_tools.constants import (
-    NORM_EPS, MANIFOLD_LINEARITY_SAMPLE_LIMIT, SPECTRAL_N_NEIGHBORS_DEFAULT,
-    PCA_MAX_COMPONENTS_NULL, CUMULATIVE_VARIANCE_TOP_N, PCA_QUALITY_COMPONENTS,
-    DISPLAY_TOP_N_SMALL,
+    NORM_EPS, DISPLAY_TOP_N_SMALL, COMBO_OFFSET,
 )
 
 
 def compute_manifold_metrics(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_neighbors: int = SPECTRAL_N_NEIGHBORS_DEFAULT,
+    *,
+    n_neighbors: int,
+    pca_max_components_null: int,
+    manifold_linearity_sample_limit: int,
+    cumulative_variance_top_n: int,
+    pca_quality_components: int,
 ) -> Dict[str, Any]:
     """
     Compute manifold and curvature metrics.
@@ -37,7 +40,7 @@ def compute_manifold_metrics(
     # PCA on diffs
     from sklearn.decomposition import PCA
 
-    n_components = min(PCA_MAX_COMPONENTS_NULL, n - 1, diffs.shape[1])
+    n_components = min(pca_max_components_null, n - COMBO_OFFSET, diffs.shape[COMBO_OFFSET])
     pca = PCA(n_components=n_components)
     diffs_pca = pca.fit_transform(diffs)
 
@@ -54,7 +57,7 @@ def compute_manifold_metrics(
 
     # Local linearity: how well does local PCA match global PCA
     local_linearities = []
-    for i in range(min(n, MANIFOLD_LINEARITY_SAMPLE_LIMIT)):
+    for i in range(min(n, manifold_linearity_sample_limit)):
         # Find k nearest neighbors
         distances = np.linalg.norm(diffs - diffs[i], axis=1)
         neighbor_idx = np.argsort(distances)[1:n_neighbors+1]
@@ -81,8 +84,8 @@ def compute_manifold_metrics(
         # PCA variance
         "variance_pc1": float(explained_variance[0]) if len(explained_variance) > 0 else None,
         "variance_pc2": float(explained_variance[1]) if len(explained_variance) > 1 else None,
-        "variance_pc3": float(explained_variance[CUMULATIVE_VARIANCE_TOP_N - 1]) if len(explained_variance) > CUMULATIVE_VARIANCE_TOP_N - 1 else None,
-        "variance_top5": float(cumsum_variance[PCA_QUALITY_COMPONENTS - 1]) if len(cumsum_variance) > PCA_QUALITY_COMPONENTS - 1 else None,
+        "variance_pc3": float(explained_variance[cumulative_variance_top_n - 1]) if len(explained_variance) > cumulative_variance_top_n - 1 else None,
+        "variance_top5": float(cumsum_variance[pca_quality_components - 1]) if len(cumsum_variance) > pca_quality_components - 1 else None,
         "variance_top10": float(cumsum_variance[DISPLAY_TOP_N_SMALL - 1]) if len(cumsum_variance) > DISPLAY_TOP_N_SMALL - 1 else None,
 
         # Dimensionality

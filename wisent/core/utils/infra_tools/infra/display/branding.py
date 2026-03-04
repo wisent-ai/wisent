@@ -57,7 +57,7 @@ def get_logo(width: int = WM_BRANDING_WIDTH) -> str:
     Get the Wisent ASCII logo, optionally centered to a specific width.
 
     Args:
-        width: Total width to center the logo within (default: 48)
+        width: Total width to center the logo within
 
     Returns:
         ASCII art logo as a string
@@ -71,7 +71,7 @@ def render_banner(title: str, width: int = WM_BRANDING_WIDTH, use_color: bool = 
 
     Args:
         title: Title text to display (e.g., "Wisent CLI")
-        width: Width for centering (default: 48)
+        width: Width for centering
         use_color: Whether to use ANSI color codes (default: True)
 
     Returns:
@@ -98,7 +98,7 @@ def print_banner(title: str, width: int = WM_BRANDING_WIDTH, use_color: bool = T
 
     Args:
         title: Title text to display (e.g., "Wisent CLI")
-        width: Width for centering (default: 48)
+        width: Width for centering
         use_color: Whether to use ANSI color codes (default: True)
     """
     print(render_banner(title, width, use_color))

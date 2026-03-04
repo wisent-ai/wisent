@@ -26,9 +26,7 @@ from wisent.core.utils.cli.optimize_steering.data.responses import execute_gener
 from wisent.core.utils.cli.optimize_steering.scores import execute_evaluate_responses
 from wisent.core.utils.cli.optimize_steering.pipeline import _make_args
 from wisent.core.utils import preferred_dtype
-from wisent.core.utils.config_tools.constants import (LOG_EPS, TIKHONOV_REG, RL_BASELINE, DEFAULT_SCORE, RL_NUM_EPISODES,
-    LAYER_SWEEP_STRENGTH,
-    RL_EPSILON, PRZELOM_EPSILON, SZLAK_INFERENCE_K, RL_BATCH_LIMIT, CLASSIFIER_THRESHOLD,
+from wisent.core.utils.config_tools.constants import (LOG_EPS,
     SEPARATOR_WIDTH_WIDE)
 
 
@@ -102,7 +100,7 @@ def _update_cost_shaping(
     layer_data: Dict[int, dict],
     rewards: List[float],
     learning_rate: float,
-    baseline: float = RL_BASELINE,
+    baseline: float = None,
 ) -> None:
     """REINFORCE update: scalar advantage from mean reward shapes cost.
 
@@ -113,6 +111,8 @@ def _update_cost_shaping(
     """
     if not rewards:
         return
+    if baseline is None:
+        raise ValueError("baseline is required")
     mean_reward = sum(rewards) / len(rewards)
     advantage = mean_reward - baseline
     for layer_int, data in layer_data.items():
@@ -173,7 +173,7 @@ def _extract_per_example_rewards(scores_file: str) -> List[float]:
         if isinstance(evaluation, dict) and "correct" in evaluation:
             rewards.append(1.0 if evaluation["correct"] else 0.0)
         elif isinstance(evaluation, dict):
-            rewards.append(evaluation.get("score", DEFAULT_SCORE))
+            rewards.append(evaluation["score"])
         else:
             rewards.append(0.0)
     return rewards
@@ -201,12 +201,24 @@ def execute_transport_rl(args):
     model = args.model
     task = args.task
     epf = args.enriched_pairs_file
-    max_iter = getattr(args, 'max_iterations', RL_NUM_EPISODES)
-    lr = getattr(args, 'learning_rate', RL_EPSILON)
-    epsilon = getattr(args, 'epsilon', PRZELOM_EPSILON)
-    reg = getattr(args, 'regularization', TIKHONOV_REG)
-    inf_k = getattr(args, 'inference_k', SZLAK_INFERENCE_K)
-    limit = getattr(args, 'limit', RL_BATCH_LIMIT)
+    layer_sweep_strength = getattr(args, 'layer_sweep_strength', None)
+    if layer_sweep_strength is None:
+        raise ValueError("layer_sweep_strength is required")
+    max_iter = getattr(args, 'max_iterations', None)
+    if max_iter is None:
+        raise ValueError("max_iterations is required")
+    lr = getattr(args, 'learning_rate', None)
+    if lr is None:
+        raise ValueError("learning_rate is required")
+    epsilon = args.epsilon
+    reg = getattr(args, 'regularization', None)
+    inf_k = getattr(args, 'inference_k', None)
+    limit = getattr(args, 'limit', None)
+    if limit is None:
+        raise ValueError("limit is required")
+    initial_baseline = getattr(args, 'initial_baseline', None)
+    if initial_baseline is None:
+        raise ValueError("initial_baseline is required")
     output_path = getattr(args, 'output', 'best_transport_rl.pt')
     device = getattr(args, 'device', None)
 
@@ -247,7 +259,8 @@ def execute_transport_rl(args):
             # Generate steered responses
             execute_generate_responses(_make_args(
                 task=task, input_file=epf, model=model, output=rf,
-                num_questions=limit, steering_object=sf, steering_strength=LAYER_SWEEP_STRENGTH,
+                num_questions=limit, min_load_limit_questions=limit,
+                steering_object=sf, steering_strength=layer_sweep_strength,
                 steering_strategy="constant", use_steering=True, device=device,
                 verbose=False, cached_model=None,
             ))
@@ -259,7 +272,7 @@ def execute_transport_rl(args):
             print(f"   Score: {agg:.4f} (mean_reward={sum(rewards)/n:.3f}, n={len(rewards)})")
             # Update cost shaping with running baseline
             if rewards:
-                baseline = sum(score_history) / len(score_history) if score_history else CLASSIFIER_THRESHOLD
+                baseline = sum(score_history) / len(score_history) if score_history else initial_baseline
                 _update_cost_shaping(C_shaping, layer_data, rewards, lr, baseline=baseline)
             score_history.append(agg)
             # Track best — save incrementally so progress survives timeouts

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Dict, Optional, Any
 
 import torch
-from wisent.core.utils.config_tools.constants import SIMILARITY_THRESHOLD, DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO
+from wisent.core.utils.config_tools.constants import SIMILARITY_THRESHOLD
 
 from wisent.core.utils import resolve_default_device
 
@@ -131,8 +131,8 @@ def generate_multi_benchmark_vectors(args, verbose: bool = False) -> Dict[int, t
     unified_args.exclude_benchmarks = None
     unified_args.max_benchmarks = getattr(args, 'max_benchmarks', None)
     unified_args.cap_pairs_per_benchmark = getattr(args, 'cap_pairs_per_benchmark', None)
-    unified_args.train_ratio = getattr(args, 'train_ratio', DEFAULT_SPLIT_RATIO)
-    unified_args.seed = getattr(args, 'seed', DEFAULT_RANDOM_SEED)
+    unified_args.train_ratio = args.train_ratio
+    unified_args.seed = args.seed
     unified_args.model = args.model
     unified_args.device = getattr(args, 'device', None)
     unified_args.layer = None

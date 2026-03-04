@@ -5,9 +5,6 @@ from wisent.core.control.steering_methods.registry.registry import (
     SteeringMethodParameter,
     SteeringMethodType,
 )
-from wisent.core.utils.config_tools.constants import (
-    STEERING_STRENGTH_RANGE_WIDE, STEERING_STRENGTH_RANGE_NARROW,
-)
 
 
 MLP_DEFINITION = SteeringMethodDefinition(
@@ -53,6 +50,12 @@ MLP_DEFINITION = SteeringMethodDefinition(
             cli_flag="--mlp-weight-decay",
         ),
         SteeringMethodParameter(
+            name="early_stop_tol",
+            type=float,
+            help="Early stopping tolerance for training convergence",
+            cli_flag="--mlp-early-stop-tol",
+        ),
+        SteeringMethodParameter(
             name="normalize",
             type=bool,
             default=True, required=False,
@@ -61,10 +64,6 @@ MLP_DEFINITION = SteeringMethodDefinition(
             cli_flag="--mlp-normalize",
         ),
     ],
-    optimization_config={
-        "strength_search_range": STEERING_STRENGTH_RANGE_WIDE,
-    },
-    strength_range=STEERING_STRENGTH_RANGE_WIDE,
 )
 
 
@@ -119,10 +118,6 @@ NURT_DEFINITION = SteeringMethodDefinition(
             cli_flag="--nurt-hidden-dim",
         ),
     ],
-    optimization_config={
-        "strength_search_range": STEERING_STRENGTH_RANGE_NARROW,
-    },
-    strength_range=STEERING_STRENGTH_RANGE_NARROW,
 )
 
 
@@ -147,10 +142,6 @@ SZLAK_DEFINITION = SteeringMethodDefinition(
             cli_flag="--szlak-inference-k",
         ),
     ],
-    optimization_config={
-        "strength_search_range": STEERING_STRENGTH_RANGE_NARROW,
-    },
-    strength_range=STEERING_STRENGTH_RANGE_NARROW,
 )
 
 
@@ -204,8 +195,4 @@ WICHER_DEFINITION = SteeringMethodDefinition(
             cli_flag="--wicher-alpha-decay",
         ),
     ],
-    optimization_config={
-        "strength_search_range": STEERING_STRENGTH_RANGE_NARROW,
-    },
-    strength_range=STEERING_STRENGTH_RANGE_NARROW,
 )

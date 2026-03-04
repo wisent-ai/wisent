@@ -13,6 +13,16 @@ from wisent.core import constants as _C
 
 def detect_concepts_multilayer(
     activations_by_layer: Dict[int, Tuple[torch.Tensor, torch.Tensor]],
+    min_clusters: int,
+    *,
+    hdbscan_min_cluster_floor: int,
+    hdbscan_adaptive_divisor: int,
+    hdbscan_min_samples: int,
+    kmeans_n_init_small: int,
+    spectral_n_neighbors: int,
+    elbow_consecutive_decreases: int,
+    concept_detection_coarse_k: tuple,
+    cumulative_variance_top_n: int,
     use_hdbscan: bool = True,
 ) -> Dict[str, Any]:
     """
@@ -58,24 +68,24 @@ def detect_concepts_multilayer(
 
     # Now cluster on concatenated representation
     if use_hdbscan:
-        result = detect_with_hdbscan(concatenated)
+        result = detect_with_hdbscan(concatenated, min_clusters=min_clusters, hdbscan_min_cluster_floor=hdbscan_min_cluster_floor, hdbscan_adaptive_divisor=hdbscan_adaptive_divisor, hdbscan_min_samples=hdbscan_min_samples, kmeans_n_init_small=kmeans_n_init_small, spectral_n_neighbors=spectral_n_neighbors, elbow_consecutive_decreases=elbow_consecutive_decreases, concept_detection_coarse_k=concept_detection_coarse_k, cumulative_variance_top_n=cumulative_variance_top_n)
     else:
-        result = detect_with_coarse_fine_search(concatenated)
+        result = detect_with_coarse_fine_search(concatenated, min_clusters=min_clusters, concept_detection_coarse_k=concept_detection_coarse_k, kmeans_n_init_small=kmeans_n_init_small, spectral_n_neighbors=spectral_n_neighbors, elbow_consecutive_decreases=elbow_consecutive_decreases, cumulative_variance_top_n=cumulative_variance_top_n)
 
     result["n_layers_used"] = len(layers)
     result["layers"] = layers
     return result
 
 
-def detect_with_hdbscan(diff_normalized: np.ndarray) -> Dict[str, Any]:
+def detect_with_hdbscan(diff_normalized: np.ndarray, min_clusters: int, *, hdbscan_min_cluster_floor: int, hdbscan_adaptive_divisor: int, hdbscan_min_samples: int, kmeans_n_init_small: int = None, spectral_n_neighbors: int = None, elbow_consecutive_decreases: int = None, concept_detection_coarse_k: tuple = None, cumulative_variance_top_n: int = None) -> Dict[str, Any]:
     """Use HDBSCAN for automatic cluster count detection."""
     try:
         import hdbscan
         from sklearn.metrics import silhouette_score
 
         clusterer = hdbscan.HDBSCAN(
-            min_cluster_size=max(_C.HDBSCAN_MIN_CLUSTER_FLOOR, len(diff_normalized) // _C.HDBSCAN_ADAPTIVE_DIVISOR),
-            min_samples=_C.HDBSCAN_MIN_SAMPLES_DEFAULT,
+            min_cluster_size=max(hdbscan_min_cluster_floor, len(diff_normalized) // hdbscan_adaptive_divisor),
+            min_samples=hdbscan_min_samples,
             metric='euclidean',
             cluster_selection_method='eom'
         )
@@ -84,7 +94,7 @@ def detect_with_hdbscan(diff_normalized: np.ndarray) -> Dict[str, Any]:
         unique_labels = set(labels)
         n_clusters = len([l for l in unique_labels if l >= 0])
 
-        if n_clusters < _C.MIN_CLUSTERS:
+        if n_clusters < min_clusters:
             return {"n_concepts": 1, "silhouette_scores": {}, "method": "hdbscan"}
 
         valid_mask = labels >= 0
@@ -103,12 +113,12 @@ def detect_with_hdbscan(diff_normalized: np.ndarray) -> Dict[str, Any]:
             "noise_ratio": float((labels == -1).sum() / len(labels)),
         }
     except ImportError:
-        return detect_with_coarse_fine_search(diff_normalized)
+        return detect_with_coarse_fine_search(diff_normalized, min_clusters=min_clusters, concept_detection_coarse_k=concept_detection_coarse_k, kmeans_n_init_small=kmeans_n_init_small, spectral_n_neighbors=spectral_n_neighbors, elbow_consecutive_decreases=elbow_consecutive_decreases, cumulative_variance_top_n=cumulative_variance_top_n)
     except Exception as e:
         return {"n_concepts": 1, "silhouette_scores": {}, "error": str(e), "method": "hdbscan"}
 
 
-def detect_with_coarse_fine_search(diff_normalized: np.ndarray) -> Dict[str, Any]:
+def detect_with_coarse_fine_search(diff_normalized: np.ndarray, min_clusters: int, concept_detection_coarse_k: tuple, *, kmeans_n_init_small: int, spectral_n_neighbors: int, elbow_consecutive_decreases: int, cumulative_variance_top_n: int) -> Dict[str, Any]:
     """Efficient coarse-to-fine search with K-means screening."""
     from sklearn.cluster import SpectralClustering, KMeans
     from sklearn.metrics import silhouette_score
@@ -118,16 +128,16 @@ def detect_with_coarse_fine_search(diff_normalized: np.ndarray) -> Dict[str, Any
     silhouette_scores = {}
 
     # Phase 1: Coarse search with fast K-means
-    coarse_k_values = list(_C.CONCEPT_DETECTION_COARSE_K)
+    coarse_k_values = list(concept_detection_coarse_k)
     coarse_k_values = [k for k in coarse_k_values if k <= max_k]
 
     if not coarse_k_values:
-        coarse_k_values = [_C.MIN_CLUSTERS]
+        coarse_k_values = [min_clusters]
 
     kmeans_scores = {}
     for k in coarse_k_values:
         try:
-            kmeans = KMeans(n_clusters=k, random_state=_C.DEFAULT_RANDOM_SEED, n_init=_C.KMEANS_N_INIT_SMALL, )
+            kmeans = KMeans(n_clusters=k, random_state=_C.DEFAULT_RANDOM_SEED, n_init=kmeans_n_init_small, )
             labels = kmeans.fit_predict(diff_normalized)
             score = silhouette_score(diff_normalized, labels)
             kmeans_scores[k] = float(score)
@@ -139,16 +149,16 @@ def detect_with_coarse_fine_search(diff_normalized: np.ndarray) -> Dict[str, Any
 
     # Find top 3 k values from K-means screening
     sorted_k = sorted(kmeans_scores.items(), key=lambda x: x[1], reverse=True)
-    top_candidates = [k for k, _ in sorted_k[:_C.CUMULATIVE_VARIANCE_TOP_N]]
+    top_candidates = [k for k, _ in sorted_k[:cumulative_variance_top_n]]
 
     # Phase 2: Refine around top candidates with SpectralClustering
-    n_neighbors = min(_C.SPECTRAL_N_NEIGHBORS_DEFAULT, n_samples - 1)
+    n_neighbors = min(spectral_n_neighbors, n_samples - 1)
     refine_k_values = set()
 
     for k in top_candidates:
         for delta in range(-3, 4):
             candidate = k + delta
-            if _C.MIN_CLUSTERS <= candidate <= max_k:
+            if min_clusters <= candidate <= max_k:
                 refine_k_values.add(candidate)
 
     refine_k_values = sorted(refine_k_values)
@@ -156,7 +166,7 @@ def detect_with_coarse_fine_search(diff_normalized: np.ndarray) -> Dict[str, Any
     consecutive_decreases = 0
     prev_score = None
     best_score = -1
-    best_k = _C.MIN_CLUSTERS
+    best_k = min_clusters
 
     for k in refine_k_values:
         try:
@@ -175,7 +185,7 @@ def detect_with_coarse_fine_search(diff_normalized: np.ndarray) -> Dict[str, Any
             if prev_score is not None:
                 if score < prev_score:
                     consecutive_decreases += 1
-                    if consecutive_decreases >= _C.ELBOW_CONSECUTIVE_DECREASES and k > best_k:
+                    if consecutive_decreases >= elbow_consecutive_decreases and k > best_k:
                         break
                 else:
                     consecutive_decreases = 0
@@ -187,7 +197,7 @@ def detect_with_coarse_fine_search(diff_normalized: np.ndarray) -> Dict[str, Any
     if not silhouette_scores:
         best_k = max(kmeans_scores, key=kmeans_scores.get)
         # Re-run K-means with best_k to get labels
-        kmeans = KMeans(n_clusters=best_k, random_state=_C.DEFAULT_RANDOM_SEED, n_init=_C.KMEANS_N_INIT_SMALL, )
+        kmeans = KMeans(n_clusters=best_k, random_state=_C.DEFAULT_RANDOM_SEED, n_init=kmeans_n_init_small, )
         best_labels = kmeans.fit_predict(diff_normalized)
         return {
             "best_k": best_k,

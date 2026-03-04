@@ -47,7 +47,7 @@ def execute_modify_weights(args):
     harmless_vectors = _load_harmless_vectors(args)
     wisent_model, model, tokenizer = _load_model(args)
     if needs_auto_selection and args.task:
-        steering_vectors = _run_auto_selection(args, wisent_model, steering_vectors)
+        steering_vectors = _run_auto_selection(args, wisent_model, steering_vectors, min_clusters=getattr(args, 'min_clusters', None), min_pairs_for_linearity=args.min_pairs_for_linearity)
     if getattr(args, 'guided', False):
         execute_guided_modification(args, wisent_model, model, tokenizer)
         return
@@ -196,7 +196,7 @@ def _load_model(args):
                 elif hasattr(m, 'transformer') and hasattr(m.transformer, 'h'):
                     self.num_layers = len(m.transformer.h)
                 else:
-                    self.num_layers = _C.DEFAULT_NUM_HIDDEN_LAYERS
+                    raise ValueError("num_layers must be specified: cannot detect layers from model architecture")
         wisent_model = ModelInfo(model)
     else:
         wisent_model = WisentModel(args.model, device=getattr(args, 'device', None))
@@ -206,19 +206,26 @@ def _load_model(args):
         print(f"Model loaded with {wisent_model.num_layers} layers\n")
     return wisent_model, model, tokenizer
 
-def _run_auto_selection(args, wisent_model, steering_vectors):
+def _run_auto_selection(args, wisent_model, steering_vectors, min_clusters: int = None, *, min_pairs_for_linearity: int):
     """Run auto-selection and generate CAA vectors if needed."""
     from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
     from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
     from wisent.core.control.steering_methods.methods.caa import CAAMethod
     from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
     pairs = _generate_pairs(args, wisent_model)
-    if pairs and len(pairs) >= _C.MIN_PAIRS_FOR_LINEARITY:
-        steering_method, modification_method, _ = auto_select_steering_method(pairs, wisent_model, args.verbose)
+    if pairs and len(pairs) >= min_pairs_for_linearity:
+        steering_method, modification_method, _ = auto_select_steering_method(
+            pairs, wisent_model, min_clusters=min_clusters, verbose=args.verbose,
+            spectral_n_neighbors=args.spectral_n_neighbors,
+            geometry_cv_folds=args.geometry_cv_folds,
+            min_layer_activations_for_geometry=args.min_layer_activations_for_geometry,
+            method_selection_sample_size=args.method_selection_sample_size,
+            layer_sampling_divisor=args.layer_sampling_divisor,
+        )
         args.steering_method = steering_method
         args.method = modification_method
         if modification_method == "directional" and steering_vectors is None:
-            collector = ActivationCollector(model=wisent_model)
+            collector = ActivationCollector(model=wisent_model, architecture_module_limit=_C.ARCHITECTURE_MODULE_LIMIT)
             all_layers = get_all_layers(wisent_model)
             enriched_pairs = [collector.collect(p, strategy=ExtractionStrategy.default(), layers=all_layers) for p in pairs]
             pair_set = ContrastivePairSet(pairs=enriched_pairs, name="auto_caa")
@@ -253,7 +260,7 @@ def _generate_pairs(args, wisent_model):
                 ))
         else:
             from wisent.extractors.lm_eval.lm_task_pairs_generation import build_contrastive_pairs
-            raw_pairs = build_contrastive_pairs(task_name=args.task, limit=args.num_pairs)
+            raw_pairs = build_contrastive_pairs(task_name=args.task, limit=args.num_pairs, train_ratio=args.train_ratio)
             pairs.extend(raw_pairs)
     elif args.trait:
         from wisent.core.primitives.contrastive_pairs.generators.llm_synthetic import LLMSyntheticGenerator

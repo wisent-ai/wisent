@@ -12,7 +12,6 @@ from dataclasses import dataclass
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from wisent.cli_utils.cli_prepare_dataset import _split_and_cap
-from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO
 
 # Import additional tests and runner from extracted module
 from wisent.tests.cli_utils._split_cap_helpers import (
@@ -35,7 +34,7 @@ def test_split_and_cap_basic():
     items = [{"id": i, "text": f"Item {i}"} for i in range(100)]
 
     train, test = _split_and_cap(
-        items=items, split_ratio=DEFAULT_SPLIT_RATIO,
+        items=items, split_ratio=0.8,
         caps=Caps(train=1000, test=1000),
         seed=42, verbose=True,
     )
@@ -50,7 +49,7 @@ def test_split_and_cap_with_train_cap():
     items = [{"id": i, "text": f"Item {i}"} for i in range(100)]
 
     train, test = _split_and_cap(
-        items=items, split_ratio=DEFAULT_SPLIT_RATIO,
+        items=items, split_ratio=0.8,
         caps=Caps(train=50, test=1000),
         seed=42, verbose=True,
     )
@@ -64,7 +63,7 @@ def test_split_and_cap_with_test_cap():
     items = [{"id": i, "text": f"Item {i}"} for i in range(100)]
 
     train, test = _split_and_cap(
-        items=items, split_ratio=DEFAULT_SPLIT_RATIO,
+        items=items, split_ratio=0.8,
         caps=Caps(train=1000, test=10),
         seed=42, verbose=True,
     )
@@ -78,7 +77,7 @@ def test_split_and_cap_both_caps():
     items = [{"id": i, "text": f"Item {i}"} for i in range(100)]
 
     train, test = _split_and_cap(
-        items=items, split_ratio=DEFAULT_SPLIT_RATIO,
+        items=items, split_ratio=0.8,
         caps=Caps(train=30, test=5),
         seed=42, verbose=True,
     )

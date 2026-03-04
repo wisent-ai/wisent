@@ -1,26 +1,17 @@
-"""
-LoRA DPO training: dataset creation and training pipeline.
-
-Extracted from lora_dpo.py to keep files under 300 lines.
-"""
+"""LoRA DPO training: dataset creation and training pipeline."""
 from __future__ import annotations
 
 import gc
 import json
 import tempfile
 from pathlib import Path
-
 import torch
 from datasets import Dataset
 from peft import LoraConfig, TaskType, get_peft_model
 from trl import DPOTrainer, DPOConfig
 
 from wisent.core.utils.config_tools.constants import (
-    LORA_DEFAULT_DROPOUT,
     DPO_DEFAULT_BETA,
-    COMPARISON_DEFAULT_BATCH_SIZE,
-    COMPARISON_NUM_PAIRS, DEFAULT_WEIGHT_DECAY, TRAINING_WARMUP_RATIO,
-    COMPARISON_LOGGING_STEPS, LORA_DPO_LEARNING_RATE, LORA_DPO_NUM_EPOCHS,
     JSON_INDENT,
 )
 from wisent.comparison.utils import (
@@ -60,12 +51,16 @@ def train_lora_dpo(
     lora_r: int,
     lora_alpha: int,
     device: str,
-    num_pairs: int = COMPARISON_NUM_PAIRS,
+    weight_decay: float,
+    batch_size: int,
+    logging_steps: int,
+    num_pairs: int,
+    lora_dropout: float,
+    learning_rate: float,
+    num_epochs: int,
+    warmup_ratio: float,
+    *,
     keep_intermediate: bool = False,
-    lora_dropout: float = LORA_DEFAULT_DROPOUT,
-    learning_rate: float = LORA_DPO_LEARNING_RATE,
-    num_epochs: int = LORA_DPO_NUM_EPOCHS,
-    batch_size: int = COMPARISON_DEFAULT_BATCH_SIZE,
     max_length: int | None = None,
     max_prompt_length: int | None = None,
     beta: float = DPO_DEFAULT_BETA,
@@ -120,8 +115,8 @@ def train_lora_dpo(
         per_device_train_batch_size=batch_size,
         gradient_accumulation_steps=1,
         learning_rate=learning_rate,
-        weight_decay=DEFAULT_WEIGHT_DECAY, warmup_ratio=TRAINING_WARMUP_RATIO,
-        logging_steps=COMPARISON_LOGGING_STEPS, save_strategy="no",
+        weight_decay=weight_decay, warmup_ratio=warmup_ratio,
+        logging_steps=logging_steps, save_strategy="no",
         bf16=(dtype == torch.bfloat16),
         fp16=(dtype == torch.float16),
         report_to="none",

@@ -11,7 +11,6 @@ from ..geometry import (
     GeometryAnalysisResult,
     detect_geometry_structure,
 )
-from wisent.core import constants as _C
 
 
 __all__ = [
@@ -31,6 +30,8 @@ def combine_layer_activations(
     neg_by_layer: Dict[int, torch.Tensor],
     layers: List[int],
     method: str,
+    multi_layer_weight_min: float = None,
+    multi_layer_weight_max: float = None,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """Combine activations from multiple layers."""
     pos_acts = [pos_by_layer[l] for l in layers if l in pos_by_layer]
@@ -43,7 +44,9 @@ def combine_layer_activations(
     elif method == "mean":
         return torch.stack(pos_acts, dim=0).mean(dim=0), torch.stack(neg_acts, dim=0).mean(dim=0)
     elif method == "weighted":
-        weights = torch.linspace(_C.MULTI_LAYER_WEIGHT_MIN, _C.MULTI_LAYER_WEIGHT_MAX, len(pos_acts))
+        if multi_layer_weight_min is None or multi_layer_weight_max is None:
+            raise ValueError("multi_layer_weight_min and multi_layer_weight_max are required for weighted method")
+        weights = torch.linspace(multi_layer_weight_min, multi_layer_weight_max, len(pos_acts))
         weights = weights / weights.sum()
         combined_pos = sum(w * a for w, a in zip(weights, pos_acts))
         combined_neg = sum(w * a for w, a in zip(weights, neg_acts))
@@ -83,7 +86,7 @@ def analyze_pairs(pos_by_layer, neg_by_layer, layers, cfg, geo_cfg, all_combo_re
         return results
 
     for i, (l1, l2) in enumerate(combinations(layers, 2)):
-        if i >= cfg.max_pair_combinations:
+        if i >= 50:
             break
         name = f"L{l1}+L{l2}"
         pos, neg = combine_layer_activations(pos_by_layer, neg_by_layer, [l1, l2], cfg.combination_method)
@@ -109,13 +112,13 @@ def analyze_adjacent(pos_by_layer, neg_by_layer, layers, cfg, geo_cfg, all_combo
     return results
 
 
-def analyze_skip(pos_by_layer, neg_by_layer, layers, cfg, geo_cfg, all_combo_results):
+def analyze_skip(pos_by_layer, neg_by_layer, layers, cfg, geo_cfg, all_combo_results, layer_stride: int):
     """Analyze skip patterns (every 2nd, every 3rd, first/last)."""
     results: Dict[str, GeometryAnalysisResult] = {}
     if not cfg.analyze_skip or len(layers) < 4:
         return results
 
-    patterns = [("every_2nd", layers[::_C.LAYER_STRIDE_DEFAULT]), ("first_last", [layers[0], layers[-1]])]
+    patterns = [("every_2nd", layers[::layer_stride]), ("first_last", [layers[0], layers[-1]])]
     if len(layers) >= 6:
         patterns.append(("every_3rd", layers[::3]))
     if len(layers) >= 3:
@@ -147,13 +150,13 @@ def analyze_custom(pos_by_layer, neg_by_layer, layers, cfg, geo_cfg, all_combo_r
     return results
 
 
-def compare_combined_vs_single(combined_result, best_layer, best_score):
+def compare_combined_vs_single(combined_result, best_layer, best_score, multi_layer_score_threshold):
     """Compare combined vs single layer performance."""
     if not combined_result:
         return "No comparison available"
-    if combined_result.best_score > best_score + _C.MULTI_LAYER_SCORE_THRESHOLD:
+    if combined_result.best_score > best_score + multi_layer_score_threshold:
         return f"Combined ({combined_result.best_score:.2f}) better than single ({best_score:.2f})"
-    elif best_score > combined_result.best_score + _C.MULTI_LAYER_SCORE_THRESHOLD:
+    elif best_score > combined_result.best_score + multi_layer_score_threshold:
         return f"Single L{best_layer} ({best_score:.2f}) better than combined"
     return f"Similar: combined={combined_result.best_score:.2f}, single={best_score:.2f}"
 
@@ -162,18 +165,20 @@ def generate_recommendation(
     per_layer_results, layer_subset_results, skip_results, layer_pair_results,
     best_single_layer, best_single_layer_structure, best_single_layer_score,
     best_combination, best_combination_score, best_combination_structure,
-    layer_agreement, all_combinations_ranked
+    layer_agreement, all_combinations_ranked,
+    multi_layer_agreement_threshold, multi_layer_low_agreement,
+    multi_layer_improvement_threshold, display_top_n_tiny,
 ):
     """Generate comprehensive recommendation based on multi-layer analysis."""
     parts = []
-    if layer_agreement > _C.MULTI_LAYER_AGREEMENT_THRESHOLD:
+    if layer_agreement > multi_layer_agreement_threshold:
         parts.append(f"High agreement ({layer_agreement:.0%}): consistent structure.")
-    elif layer_agreement < _C.MULTI_LAYER_LOW_AGREEMENT:
+    elif layer_agreement < multi_layer_low_agreement:
         parts.append(f"Low agreement ({layer_agreement:.0%}): varies by depth.")
     else:
         parts.append(f"Moderate agreement ({layer_agreement:.0%}).")
 
-    if best_combination and best_combination_score > best_single_layer_score + _C.MULTI_LAYER_IMPROVEMENT_THRESHOLD:
+    if best_combination and best_combination_score > best_single_layer_score + multi_layer_improvement_threshold:
         improvement = best_combination_score - best_single_layer_score
         parts.append(
             f"BEST: '{best_combination}' ({best_combination_structure.value}: "
@@ -185,8 +190,8 @@ def generate_recommendation(
             f"{best_single_layer_score:.2f}). Multi-layer doesn't improve."
         )
 
-    if len(all_combinations_ranked) >= _C.DISPLAY_TOP_N_TINY:
-        top3 = ", ".join([f"{n}={s:.2f}" for n, s, _ in all_combinations_ranked[:_C.DISPLAY_TOP_N_TINY]])
+    if len(all_combinations_ranked) >= display_top_n_tiny:
+        top3 = ", ".join([f"{n}={s:.2f}" for n, s, _ in all_combinations_ranked[:display_top_n_tiny]])
         parts.append(f"Top 3: {top3}.")
 
     return " ".join(parts)

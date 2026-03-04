@@ -14,7 +14,14 @@ from scipy.spatial.distance import pdist, squareform
 from wisent.core import constants as _C
 
 
-def compute_cloud_shape(activations: torch.Tensor) -> Dict[str, Any]:
+def compute_cloud_shape(
+    activations: torch.Tensor,
+    *,
+    cloud_var_percentile_50: float,
+    cloud_var_percentile_90: float,
+    cloud_var_percentile_99: float,
+    intrinsic_dim_top_n: int,
+) -> Dict[str, Any]:
     """Characterize the shape of a single activation point cloud."""
     X = activations.float().cpu().numpy()
     n, d = X.shape
@@ -31,9 +38,9 @@ def compute_cloud_shape(activations: torch.Tensor) -> Dict[str, Any]:
     total_var = eigenvalues.sum()
     if total_var > 0:
         cumsum = np.cumsum(eigenvalues) / total_var
-        dim_50 = int(np.searchsorted(cumsum, _C.CLOUD_VAR_PERCENTILE_50) + 1)
-        dim_90 = int(np.searchsorted(cumsum, _C.CLOUD_VAR_PERCENTILE_90) + 1)
-        dim_99 = int(np.searchsorted(cumsum, _C.CLOUD_VAR_PERCENTILE_99) + 1)
+        dim_50 = int(np.searchsorted(cumsum, cloud_var_percentile_50) + _C.COMBO_OFFSET)
+        dim_90 = int(np.searchsorted(cumsum, cloud_var_percentile_90) + _C.COMBO_OFFSET)
+        dim_99 = int(np.searchsorted(cumsum, cloud_var_percentile_99) + _C.COMBO_OFFSET)
         participation_ratio = (total_var ** 2) / (np.sum(eigenvalues ** 2) + _C.NORM_EPS)
     else:
         dim_50, dim_90, dim_99 = 1, 1, 1
@@ -52,11 +59,11 @@ def compute_cloud_shape(activations: torch.Tensor) -> Dict[str, Any]:
         "participation_ratio": float(participation_ratio),
         "sphericity": float(sphericity),
         "top_eigenvalue_ratio": float(eigenvalues[0] / total_var) if total_var > 0 else 0,
-        "top_eigenvalues": eigenvalues[:_C.INTRINSIC_DIM_TOP_N].tolist(),
+        "top_eigenvalues": eigenvalues[:intrinsic_dim_top_n].tolist(),
     }
 
 
-def compute_cone_fit(activations: torch.Tensor) -> Dict[str, Any]:
+def compute_cone_fit(activations: torch.Tensor, *, cloud_cone_percentile: int) -> Dict[str, Any]:
     """Test if activations lie on a cone from the origin."""
     X = activations.float().cpu().numpy()
     n, d = X.shape
@@ -75,7 +82,7 @@ def compute_cone_fit(activations: torch.Tensor) -> Dict[str, Any]:
     cos_angles = X_normalized @ cone_axis
     angles = np.arccos(np.clip(cos_angles, -1, 1))
     angles_deg = np.degrees(angles)
-    cone_half_angle = float(np.percentile(angles_deg, _C.CLOUD_CONE_PERCENTILE))
+    cone_half_angle = float(np.percentile(angles_deg, cloud_cone_percentile))
     concentration = float(cos_angles.mean())
     return {
         "cone_axis_strength": float(mean_dir_norm),
@@ -110,14 +117,16 @@ def compute_sphere_fit(activations: torch.Tensor) -> Dict[str, Any]:
     }
 
 
-def compute_manifold_dimension(activations: torch.Tensor, k_neighbors: int = _C.CLOUD_K_NEIGHBORS_DEFAULT) -> Dict[str, Any]:
-    """Estimate intrinsic dimension using local methods."""
+def compute_manifold_dimension(activations: torch.Tensor, k_neighbors: int = None, *, cloud_max_samples_manifold: int) -> Dict[str, Any]:
+    """Estimate intrinsic dimension using local methods. k_neighbors must be set by caller."""
+    if k_neighbors is None:
+        raise ValueError("k_neighbors must be provided by caller")
     X = activations.float().cpu().numpy()
     n, d = X.shape
-    if n < k_neighbors + 1:
+    if n < k_neighbors + _C.COMBO_OFFSET:
         return {"error": "not enough points for local estimation"}
-    if n > _C.CLOUD_MAX_SAMPLES_MANIFOLD:
-        idx = np.random.choice(n, _C.CLOUD_MAX_SAMPLES_MANIFOLD, replace=False)
+    if n > cloud_max_samples_manifold:
+        idx = np.random.choice(n, cloud_max_samples_manifold, replace=False)
         X_sub = X[idx]
     else:
         X_sub = X
@@ -142,18 +151,20 @@ def compute_manifold_dimension(activations: torch.Tensor, k_neighbors: int = _C.
     }
 
 
-def compute_cluster_structure(activations: torch.Tensor, max_clusters: int = _C.MAX_CLUSTERS) -> Dict[str, Any]:
-    """Analyze cluster structure of the point cloud."""
+def compute_cluster_structure(activations: torch.Tensor, max_clusters: int = None, *, min_cloud_cluster_points: int, linearity_n_init: int) -> Dict[str, Any]:
+    """Analyze cluster structure of the point cloud. max_clusters must be set by caller."""
+    if max_clusters is None:
+        raise ValueError("max_clusters must be provided by caller")
     from sklearn.cluster import KMeans
     from sklearn.metrics import silhouette_score
     X = activations.float().cpu().numpy()
     n, d = X.shape
-    if n < _C.MIN_CLOUD_CLUSTER_POINTS:
+    if n < min_cloud_cluster_points:
         return {"error": "need at least 6 points"}
     silhouettes = {}
     inertias = {}
     for k in range(2, min(max_clusters + 1, n // 2)):
-        km = KMeans(n_clusters=k, random_state=_C.DEFAULT_RANDOM_SEED, n_init=_C.LINEARITY_N_INIT)
+        km = KMeans(n_clusters=k, random_state=_C.DEFAULT_RANDOM_SEED, n_init=linearity_n_init)
         labels = km.fit_predict(X)
         try:
             sil = silhouette_score(X, labels)
@@ -176,8 +187,10 @@ def compute_cluster_structure(activations: torch.Tensor, max_clusters: int = _C.
     }
 
 
-def compute_density_structure(activations: torch.Tensor, k_neighbors: int = _C.CLOUD_K_NEIGHBORS_DEFAULT) -> Dict[str, Any]:
-    """Analyze density variations in the point cloud."""
+def compute_density_structure(activations: torch.Tensor, k_neighbors: int = None) -> Dict[str, Any]:
+    """Analyze density variations in the point cloud. k_neighbors must be set by caller."""
+    if k_neighbors is None:
+        raise ValueError("k_neighbors must be provided by caller")
     X = activations.float().cpu().numpy()
     n, d = X.shape
     if n < k_neighbors + 1:
@@ -204,16 +217,16 @@ def compute_density_structure(activations: torch.Tensor, k_neighbors: int = _C.C
     }
 
 
-def compute_topology_indicators(activations: torch.Tensor) -> Dict[str, Any]:
+def compute_topology_indicators(activations: torch.Tensor, *, cloud_max_samples_topology: int) -> Dict[str, Any]:
     """Basic topological indicators using MST connectivity."""
     X = activations.float().cpu().numpy()
     n, d = X.shape
     if n < 10:
         return {"error": "need at least 10 points"}
-    if n > _C.CLOUD_MAX_SAMPLES_TOPOLOGY:
-        idx = np.random.choice(n, _C.CLOUD_MAX_SAMPLES_TOPOLOGY, replace=False)
+    if n > cloud_max_samples_topology:
+        idx = np.random.choice(n, cloud_max_samples_topology, replace=False)
         X = X[idx]
-        n = _C.CLOUD_MAX_SAMPLES_TOPOLOGY
+        n = cloud_max_samples_topology
     dists = squareform(pdist(X))
     sorted_edges = np.sort(dists[np.triu_indices(n, k=1)])
     from scipy.sparse.csgraph import minimum_spanning_tree

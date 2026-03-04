@@ -7,8 +7,9 @@ import numpy as np
 import torch
 from typing import Dict
 
+from typing import Optional
 from wisent.core.utils.config_tools.constants import (
-    ZERO_THRESHOLD, N_BOOTSTRAP, DEFAULT_RANDOM_SEED, Z_SCORE_SIGNIFICANCE,
+    ZERO_THRESHOLD, Z_SCORE_SIGNIFICANCE,
 )
 
 from wisent.core.reading.modules.utilities.signal_analysis.intrinsic_dim import (
@@ -22,8 +23,8 @@ from wisent.core.reading.modules.utilities.signal_analysis.intrinsic_dim import 
 def compute_null_effective_dimensions(
     n_samples: int,
     n_dims: int,
-    n_bootstrap: int = N_BOOTSTRAP,
-    random_state: int = DEFAULT_RANDOM_SEED,
+    n_bootstrap: int,
+    random_state: Optional[int] = None,
 ) -> Dict[str, float]:
     """
     Compute effective dimensions for random (null) difference vectors.
@@ -31,6 +32,9 @@ def compute_null_effective_dimensions(
     This establishes what effective dimension you'd expect by chance.
     If your real data has similar effective_dim to null, there's no structure.
     """
+    if random_state is None:
+        from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
+        random_state = DEFAULT_RANDOM_SEED
     rng = np.random.RandomState(random_state)
 
     pr_nulls, er_nulls, sr_nulls = [], [], []
@@ -55,8 +59,8 @@ def compute_null_effective_dimensions(
 def compute_effective_dimensions_vs_null(
     pos: torch.Tensor,
     neg: torch.Tensor,
-    n_bootstrap: int = N_BOOTSTRAP,
-    random_state: int = DEFAULT_RANDOM_SEED,
+    n_bootstrap: int,
+    random_state: Optional[int] = None,
 ) -> Dict[str, any]:
     """
     Compute effective dimensions with comparison to null baseline.

@@ -12,13 +12,6 @@ from wisent.core.primitives.model_interface.core.activations import ExtractionSt
 from wisent.core.primitives.model_interface.core.activations.activations import Activations
 from wisent.core.primitives.models import get_generate_kwargs
 from wisent.core.utils.infra_tools.errors import MissingParameterError
-from wisent.core.utils.config_tools.constants import (CLASSIFIER_THRESHOLD,
-    AGENT_DEFAULT_SAMPLES, CLASSIFIER_HIDDEN_DIM,
-    CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, DEFAULT_CLASSIFIER_LR,
-    CLASSIFIER_EARLY_STOPPING_PATIENCE, QUALITY_THRESHOLD_CLAMP_MIN,
-    QUALITY_THRESHOLD_CLAMP_MAX, QUALITY_EVAL_LAYER_MIN,
-    QUALITY_EVAL_LAYER_MAX, QUALITY_EVAL_SAMPLES_MIN,
-    QUALITY_EVAL_SAMPLES_MAX)
 
 
 class QualityEvaluationMixin:
@@ -104,7 +97,15 @@ class QualityEvaluationMixin:
 
         return "ACCEPTABLE" in judgment
 
-    async def _determine_classifier_parameters(self, prompt: str, benchmark_names: List[str]) -> "ClassifierParams":
+    async def _determine_classifier_parameters(
+        self,
+        prompt: str,
+        benchmark_names: List[str],
+        quality_eval_layer_min: int,
+        quality_eval_layer_max: int,
+        quality_eval_samples_min: int,
+        quality_eval_samples_max: int,
+    ) -> "ClassifierParams":
         """
         Use model to determine optimal classifier parameters based on prompt analysis.
 
@@ -163,18 +164,32 @@ class QualityEvaluationMixin:
         response = result[0] if isinstance(result, tuple) else result
 
         # Parse the response
-        return self._parse_classifier_params(response)
+        return self._parse_classifier_params(
+            response,
+            quality_eval_layer_min=quality_eval_layer_min,
+            quality_eval_layer_max=quality_eval_layer_max,
+            quality_eval_samples_min=quality_eval_samples_min,
+            quality_eval_samples_max=quality_eval_samples_max,
+        )
 
-    def _parse_classifier_params(self, response: str) -> "ClassifierParams":
+    def _parse_classifier_params(
+        self,
+        response: str,
+        quality_eval_layer_min: int,
+        quality_eval_layer_max: int,
+        quality_eval_samples_min: int,
+        quality_eval_samples_max: int,
+        default_samples: int = None,
+    ) -> "ClassifierParams":
         """Parse model response to extract classifier parameters."""
         from ..agent.diagnose.agent_classifier_decision import ClassifierParams
-
-        # Default values in case parsing fails
+        if default_samples is None:
+            raise MissingParameterError(params=["default_samples"], context="_parse_classifier_params")
         layer = self.params.layer
-        threshold = CLASSIFIER_THRESHOLD
-        samples = AGENT_DEFAULT_SAMPLES
+        threshold = None
+        samples = default_samples
         classifier_type = None
-        reasoning = "Using default parameters due to parsing failure"
+        reasoning = ""
 
         try:
             lines = response.strip().split("\n")
@@ -191,15 +206,20 @@ class QualityEvaluationMixin:
                 elif line.startswith("REASONING:"):
                     reasoning = line.split(":", 1)[1].strip()
         except Exception as e:
-            print(f"   Warning: Failed to parse classifier parameters: {e}")
-            print(
-                f"   Using defaults: layer={layer}, threshold={threshold}, samples={samples}, type={classifier_type}"
+            raise MissingParameterError(
+                params=["LAYER", "THRESHOLD", "SAMPLES", "TYPE"],
+                context=f"Failed to parse classifier parameters from model response: {e}",
             )
 
+        if threshold is None:
+            raise MissingParameterError(params=["threshold"], context="Model response must specify THRESHOLD")
+        if classifier_type is None:
+            raise MissingParameterError(params=["classifier_type"], context="Model response must specify TYPE")
+
         # Validate ranges
-        layer = max(QUALITY_EVAL_LAYER_MIN, min(QUALITY_EVAL_LAYER_MAX, layer))
-        threshold = max(QUALITY_THRESHOLD_CLAMP_MIN, min(QUALITY_THRESHOLD_CLAMP_MAX, threshold))
-        samples = max(QUALITY_EVAL_SAMPLES_MIN, min(QUALITY_EVAL_SAMPLES_MAX, samples))
+        layer = max(quality_eval_layer_min, min(quality_eval_layer_max, layer))
+        threshold = max(0.1, min(0.9, threshold))
+        samples = max(quality_eval_samples_min, min(quality_eval_samples_max, samples))
         valid_types = ["logistic", "svm", "neural"]
         if classifier_type not in valid_types:
             raise MissingParameterError(
@@ -207,18 +227,29 @@ class QualityEvaluationMixin:
                 context=f"Model must specify TYPE as one of {valid_types}, got: {classifier_type}",
             )
 
+        # Classifier config params must come from config, not silent defaults
+        classifier_config = self.params._params.get("classifier", {})
+        if "num_epochs" not in classifier_config:
+            raise MissingParameterError(params=["num_epochs"], context="classifier config must specify num_epochs")
+        if "batch_size" not in classifier_config:
+            raise MissingParameterError(params=["batch_size"], context="classifier config must specify batch_size")
+        if "learning_rate" not in classifier_config:
+            raise MissingParameterError(params=["learning_rate"], context="classifier config must specify learning_rate")
+        if "early_stopping_patience" not in classifier_config:
+            raise MissingParameterError(params=["early_stopping_patience"], context="classifier config must specify early_stopping_patience")
+        if "hidden_dim" not in classifier_config:
+            raise MissingParameterError(params=["hidden_dim"], context="classifier config must specify hidden_dim")
+
         return ClassifierParams(
             optimal_layer=layer,
             classification_threshold=threshold,
             training_samples=samples,
             classifier_type=classifier_type,
+            num_epochs=classifier_config["num_epochs"],
+            batch_size=classifier_config["batch_size"],
+            learning_rate=classifier_config["learning_rate"],
+            early_stopping_patience=classifier_config["early_stopping_patience"],
+            hidden_dim=classifier_config["hidden_dim"],
             reasoning=reasoning,
             model_name=self.model_name,
-            aggregation_method=None,
-            token_aggregation=None,
-            num_epochs=CLASSIFIER_NUM_EPOCHS,
-            batch_size=CLASSIFIER_BATCH_SIZE,
-            learning_rate=DEFAULT_CLASSIFIER_LR,
-            early_stopping_patience=CLASSIFIER_EARLY_STOPPING_PATIENCE,
-            hidden_dim=CLASSIFIER_HIDDEN_DIM,
         )

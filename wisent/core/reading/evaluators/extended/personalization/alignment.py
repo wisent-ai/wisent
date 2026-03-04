@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     import torch
 
 from wisent.core.utils.infra_tools.errors import MissingParameterError
-from wisent.core.utils.config_tools.constants import SCORE_SCALE_100, CONTRASTIVE_SCORE_OFFSET, CONTRASTIVE_SCORE_RANGE
+from wisent.core.utils.config_tools.constants import SCORE_SCALE_100
 
 __all__ = ["evaluate_alignment", "estimate_alignment"]
 
@@ -162,6 +162,6 @@ def _compute_contrastive_alignment(
     # Contrastive score: how much more similar to positive than negative
     # Range: [-2, 2] -> normalize to [0, 1]
     contrastive_score = mean_positive_sim - mean_negative_sim
-    normalized_score = (contrastive_score + CONTRASTIVE_SCORE_OFFSET) / CONTRASTIVE_SCORE_RANGE
+    normalized_score = (contrastive_score + 2) / 4
 
     return max(0.0, min(1.0, normalized_score))

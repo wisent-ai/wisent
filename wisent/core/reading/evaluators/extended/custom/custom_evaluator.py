@@ -15,7 +15,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Protocol, Union
 
-from wisent.core.utils.config_tools.constants import DEFAULT_TIMEOUT_DOCKER, DEFAULT_API_RETRIES, DEFAULT_RETRY_DELAY, SCORE_RANGE_MIN, SCORE_RANGE_MAX
+from wisent.core.utils.config_tools.constants import SCORE_RANGE_MIN, SCORE_RANGE_MAX
 from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
 
 # Re-export from helpers
@@ -46,8 +46,6 @@ class CustomEvaluatorConfig:
     description: str = "Custom evaluator"
     invert_score: bool = False
     score_key: Optional[str] = None
-    min_score: float = SCORE_RANGE_MIN
-    max_score: float = SCORE_RANGE_MAX
     normalize: bool = True
 
 
@@ -90,8 +88,8 @@ class CustomEvaluator(ABC):
             score = result.get(self.config.score_key, result.get("score", 0.0))
 
         if self.config.normalize:
-            score = (score - self.config.min_score) / (self.config.max_score - self.config.min_score)
-            score = max(0.0, min(1.0, score))
+            score = (score - SCORE_RANGE_MIN) / (SCORE_RANGE_MAX - SCORE_RANGE_MIN)
+            score = max(SCORE_RANGE_MIN, min(SCORE_RANGE_MAX, score))
 
         if self.config.invert_score:
             score = 1.0 - score
@@ -129,18 +127,18 @@ class APIEvaluator(CustomEvaluator):
         self,
         name: str,
         description: str,
+        api_timeout: int,
+        max_retries: int,
+        retry_delay: float,
         config: Optional[CustomEvaluatorConfig] = None,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
-        timeout: float = DEFAULT_TIMEOUT_DOCKER,
-        max_retries: int = DEFAULT_API_RETRIES,
-        retry_delay: float = DEFAULT_RETRY_DELAY,
         cache_responses: bool = True,
     ):
         super().__init__(name=name, description=description, config=config)
         self.api_key = api_key
         self.base_url = base_url
-        self.timeout = timeout
+        self.timeout = api_timeout
         self.max_retries = max_retries
         self.retry_delay = retry_delay
         self.cache_responses = cache_responses

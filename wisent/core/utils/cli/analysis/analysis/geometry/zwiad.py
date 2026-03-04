@@ -57,7 +57,7 @@ def execute_zwiad(args):
                 activations = cache_data['activations']
                 labels = cache_data['labels']
                 metadata = cache_data.get('metadata', {})
-                layer = metadata.get('layer_id', _C.DEFAULT_SCORE)
+                layer = metadata['layer_id']
 
                 # Split by labels (0=neg, 1=pos)
                 if isinstance(activations, np.ndarray):
@@ -108,7 +108,7 @@ def execute_zwiad(args):
             try:
                 pair_texts = load_pair_texts_from_database(
                     task_name=args.task,
-                    limit=args.limit or _C.ZWIAD_ANALYSIS_LIMIT,
+                    limit=args.limit or args.zwiad_analysis_limit,
                     database_url=args.database_url,
                 )
                 print(f"  Loaded {len(pair_texts)} pair texts")
@@ -178,7 +178,7 @@ def execute_zwiad(args):
         try:
             pair_texts = load_pair_texts_from_database(
                 task_name=args.task,
-                limit=args.limit or _C.ZWIAD_ANALYSIS_LIMIT_SMALL,
+                limit=args.limit or args.zwiad_analysis_limit_small,
                 database_url=args.database_url,
             )
             print(f"  Loaded {len(pair_texts)} pair texts")
@@ -194,17 +194,23 @@ def execute_zwiad(args):
         print("\nERROR: No activations loaded.")
         sys.exit(1)
 
-    # Run zwiad with specified steps
     print(f"\n{'='*_C.SEPARATOR_WIDTH_STANDARD}")
     print(f"Running Zwiad protocol (steps: {args.steps})")
     print(f"{'='*_C.SEPARATOR_WIDTH_STANDARD}")
 
     results = run_zwiad_with_concept_naming(
         activations_by_layer=activations_by_layer,
+        llm_model=args.llm_model,
+        concept_naming_n_samples=args.concept_naming_n_samples,
+        min_clusters=getattr(args, 'min_clusters', None),
         pair_texts=pair_texts,
         generate_visualizations=not args.no_visualizations,
-        llm_model=args.llm_model,
         steps=args.steps, output_path=args.output,
+        cv_folds=args.cv_folds, min_concept_pairs=args.min_concept_pairs,
+        zwiad_score_primary=args.zwiad_score_primary, zwiad_score_secondary=args.zwiad_score_secondary,
+        zwiad_score_tertiary=args.zwiad_score_tertiary,
+        zwiad_editability_threshold=args.zwiad_editability_threshold,
+        zwiad_przelom_bonus_max=args.zwiad_przelom_bonus_max,
     )
 
     # Print results
@@ -217,17 +223,15 @@ def execute_zwiad(args):
     print(f"\nRecommended method: {results.get('recommended_method')}")
     conf = results.get('recommendation_confidence')
     print(f"Confidence: {conf:.2f}" if conf is not None else "Confidence: N/A")
-    # Print key metrics
     metrics = results.get("metrics", {})
     if metrics:
         print(f"\n--- Key Metrics (all-layer concatenated) ---")
-        print(f"Signal strength: {metrics.get('signal_strength', _C.DEFAULT_SCORE):.3f}")
-        print(f"Linear probe accuracy: {metrics.get('linear_probe_accuracy', _C.DEFAULT_SCORE):.3f}")
-        print(f"MLP probe accuracy: {metrics.get('mlp_probe_accuracy', _C.DEFAULT_SCORE):.3f}")
-        print(f"KNN accuracy: {metrics.get('knn_accuracy', _C.DEFAULT_SCORE):.3f}")
-        print(f"KNN PCA accuracy: {metrics.get('knn_pca_accuracy', _C.DEFAULT_SCORE):.3f}")
+        print(f"Signal strength: {metrics['signal_strength']:.3f}")
+        print(f"Linear probe accuracy: {metrics['linear_probe_accuracy']:.3f}")
+        print(f"MLP probe accuracy: {metrics['mlp_probe_accuracy']:.3f}")
+        print(f"KNN accuracy: {metrics['knn_accuracy']:.3f}")
+        print(f"KNN PCA accuracy: {metrics['knn_pca_accuracy']:.3f}")
 
-    # Print concept decomposition
     decomposition = results.get("concept_decomposition")
     if decomposition:
         n_concepts = decomposition.get("n_concepts", 1)
@@ -236,12 +240,11 @@ def execute_zwiad(args):
 
         for concept in decomposition.get("concepts", []):
             print(f"\nConcept {concept['id']}: {concept.get('name', 'Unnamed')}")
-            print(f"  Pairs: {concept.get('n_pairs', _C.DEFAULT_SCORE)}")
-            print(f"  Silhouette: {concept.get('silhouette_score', _C.DEFAULT_SCORE):.3f}")
+            print(f"  Pairs: {concept['n_pairs']}")
+            print(f"  Silhouette: {concept['silhouette_score']:.3f}")
             if 'optimal_layer' in concept:
-                print(f"  Optimal layer: {concept['optimal_layer']} (acc: {concept.get('optimal_layer_accuracy', _C.DEFAULT_SCORE):.3f})")
+                print(f"  Optimal layer: {concept['optimal_layer']} (acc: {concept['optimal_layer_accuracy']:.3f})")
 
-            # Print representative pairs
             rep_pairs = concept.get("representative_pairs", [])
             if rep_pairs:
                 print(f"  Representative pairs:")
@@ -252,7 +255,6 @@ def execute_zwiad(args):
                     elif isinstance(pair, int):
                         print(f"    - pair index {pair}")
 
-    # Save visualizations as PNG files
     if not args.no_visualizations and decomposition:
         import base64
         viz_dir = Path(args.visualizations_dir)
@@ -277,12 +279,10 @@ def execute_zwiad(args):
 
     results["extraction_component"] = getattr(args, "extraction_component", "residual_stream")
 
-    # Save results
     if args.output:
         output_path = Path(args.output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Convert tensors and numpy types for JSON serialization
         import numpy as _np
         def serialize(obj):
             if isinstance(obj, torch.Tensor): return obj.tolist()

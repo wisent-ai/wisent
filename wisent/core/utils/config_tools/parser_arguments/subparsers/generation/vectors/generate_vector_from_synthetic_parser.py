@@ -2,7 +2,6 @@
 
 import argparse
 
-from wisent.core.utils.config_tools.constants import PAIRS_SIMILARITY_THRESHOLD
 
 
 def setup_generate_vector_from_synthetic_parser(parser: argparse.ArgumentParser) -> None:
@@ -56,7 +55,7 @@ def setup_generate_vector_from_synthetic_parser(parser: argparse.ArgumentParser)
     parser.add_argument(
         "--similarity-threshold",
         type=float,
-        default=PAIRS_SIMILARITY_THRESHOLD,
+        required=True,
         help="Cosine similarity threshold for filtering pairs (default: 0.8)"
     )
     

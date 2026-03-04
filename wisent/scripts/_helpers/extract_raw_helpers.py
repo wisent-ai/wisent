@@ -7,7 +7,7 @@ import psycopg2
 from psycopg2.extras import execute_values
 import torch
 
-from wisent.core.utils.config_tools.constants import EXTRACTION_DB_BATCH_SIZE, EXTRACTION_DEFAULT_PAIR_LIMIT, PROGRESS_LOG_INTERVAL, DEFAULT_MAX_RETRIES, PROGRESS_LOG_INTERVAL_10
+from wisent.core.utils.config_tools.constants import PROGRESS_LOG_INTERVAL_10, RECURSION_INITIAL_DEPTH
 
 
 def hidden_states_to_bytes(hidden_states: torch.Tensor) -> bytes:
@@ -52,17 +52,18 @@ def check_pair_fully_extracted(get_conn_fn, model_id: int, pair_id: int,
         return False
 
 
-def batch_create_raw_activations(get_conn_fn, reset_conn_fn, activations_data: list):
+def batch_create_raw_activations(get_conn_fn, reset_conn_fn, activations_data: list, max_retries: int, batch_size: int = None):
     """Batch insert multiple RawActivation records."""
     if not activations_data:
         return
 
-    batch_size = EXTRACTION_DB_BATCH_SIZE
+    if batch_size is None:
+        raise ValueError("batch_size is required for batch_create_raw_activations")
 
     for i in range(0, len(activations_data), batch_size):
         batch = activations_data[i:i + batch_size]
 
-        for attempt in range(DEFAULT_MAX_RETRIES):
+        for attempt in range(max_retries):
             try:
                 conn = get_conn_fn()
                 cur = conn.cursor()
@@ -75,15 +76,17 @@ def batch_create_raw_activations(get_conn_fn, reset_conn_fn, activations_data: l
                 cur.close()
                 break
             except (psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.errors.QueryCanceled) as e:
-                print(f"  [DB batch error attempt {attempt+1}/{DEFAULT_MAX_RETRIES}: {e}]", flush=True)
+                print(f"  [DB batch error attempt {attempt+1}/{max_retries}: {e}]", flush=True)
                 reset_conn_fn()
-                if attempt == DEFAULT_MAX_RETRIES - 1:
+                if attempt == max_retries - 1:
                     raise
 
 
 def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_id: int,
-                      num_layers: int, device: str, get_conn_fn, reset_conn_fn, limit: int = EXTRACTION_DEFAULT_PAIR_LIMIT):
+                      num_layers: int, device: str, get_conn_fn, reset_conn_fn, max_retries: int, log_interval: int, limit: int = None):
     """Extract raw activations for a single benchmark using 3 formats."""
+    if limit is None:
+        raise ValueError("limit is required for extract_benchmark")
     print(f"  [EXTRACT] Importing extraction strategy...", flush=True)
     from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, build_extraction_texts
     print(f"  [EXTRACT] Extraction strategy imported", flush=True)
@@ -147,7 +150,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
 
         if check_pair_fully_extracted(get_conn_fn, model_id, pair_id, num_layers, format_names):
             skipped += 1
-            if skipped % PROGRESS_LOG_INTERVAL == 0:
+            if skipped % log_interval == RECURSION_INITIAL_DEPTH:
                 print(f"    [skipped {skipped} already-extracted pairs]", flush=True)
             continue
 
@@ -192,7 +195,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
             del pos_hidden, neg_hidden
 
         reset_conn_fn()
-        batch_create_raw_activations(get_conn_fn, reset_conn_fn, activations_batch)
+        batch_create_raw_activations(get_conn_fn, reset_conn_fn, activations_batch, max_retries=max_retries)
         extracted += 1
 
         if (pair_idx + 1) % PROGRESS_LOG_INTERVAL_10 == 0:

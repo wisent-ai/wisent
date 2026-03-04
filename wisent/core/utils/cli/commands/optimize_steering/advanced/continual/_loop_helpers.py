@@ -20,8 +20,6 @@ from wisent.core.control.steering_methods.steering_object import (
     load_steering_object,
     CAASteeringObject,
 )
-from wisent.core.utils.config_tools.constants import (TIKHONOV_REG, RL_NUM_EPISODES, RL_EPSILON,
-    PRZELOM_EPSILON, SZLAK_INFERENCE_K, DEFAULT_LIMIT, CONTINUAL_LOOP_QUERY_LIMIT)
 from wisent.core import constants as _C
 
 
@@ -96,7 +94,8 @@ def evaluate_vectors(
 
     execute_generate_responses(_make_args(
         task=task, input_file=enriched_path, model=model, output=rf,
-        num_questions=limit, steering_object=sf, steering_strength=strength,
+        num_questions=limit, min_load_limit_questions=limit,
+        steering_object=sf, steering_strength=strength,
         steering_strategy="constant", use_steering=True, device=device,
         verbose=False, cached_model=None,
     ))
@@ -137,13 +136,13 @@ def run_rl_iteration(
             rl_args = _make_args(
                 model=model, task=task, enriched_pairs_file=enriched_path,
                 method=method_lower,
-                max_iterations=getattr(args, 'max_iterations', RL_NUM_EPISODES),
-                learning_rate=getattr(args, 'learning_rate', RL_EPSILON),
-                epsilon=getattr(args, 'epsilon', PRZELOM_EPSILON),
-                regularization=getattr(args, 'regularization', TIKHONOV_REG),
-                inference_k=getattr(args, 'inference_k', SZLAK_INFERENCE_K),
-                noise_scale=getattr(args, 'noise_scale', RL_EPSILON),
-                limit=getattr(args, 'limit', DEFAULT_LIMIT),
+                max_iterations=getattr(args, 'max_iterations', None),
+                learning_rate=getattr(args, 'learning_rate', None),
+                epsilon=args.epsilon,
+                regularization=getattr(args, 'regularization', None),
+                inference_k=getattr(args, 'inference_k', None),
+                noise_scale=getattr(args, 'noise_scale', None),
+                limit=args.limit,
                 output=output_path,
                 device=getattr(args, 'device', None),
             )
@@ -155,10 +154,10 @@ def run_rl_iteration(
             rl_args = _make_args(
                 model=model, task=task, enriched_pairs_file=enriched_path,
                 method=method,
-                max_iterations=getattr(args, 'max_iterations', RL_NUM_EPISODES),
-                learning_rate=getattr(args, 'learning_rate', RL_EPSILON),
-                noise_scale=getattr(args, 'noise_scale', RL_EPSILON),
-                limit=getattr(args, 'limit', DEFAULT_LIMIT),
+                max_iterations=getattr(args, 'max_iterations', None),
+                learning_rate=getattr(args, 'learning_rate', None),
+                noise_scale=getattr(args, 'noise_scale', None),
+                limit=args.limit,
                 output=output_path,
                 device=getattr(args, 'device', None),
             )
@@ -175,13 +174,21 @@ def run_rl_iteration(
     return result
 
 
-def select_method_for_task(task: str, model: str) -> str:
+def select_method_for_task(
+    task: str, model: str, min_norm_threshold: float,
+    tecza_params: dict, min_clusters: int = None,
+    query_limit: int = None, *, train_ratio: float,
+) -> str:
     """Select steering method for a task using zwiad recommendation."""
+    if query_limit is None:
+        raise ValueError("query_limit is required")
     try:
         from wisent.core.control.steering_optimizer import run_auto_steering_optimization
         result = run_auto_steering_optimization(
-            model_name=model, task_name=task, limit=CONTINUAL_LOOP_QUERY_LIMIT,
-            device=None, verbose=False,
+            model_name=model, task_name=task, limit=query_limit,
+            min_norm_threshold=min_norm_threshold,
+            device=None, verbose=False, min_clusters=min_clusters,
+            tecza_params=tecza_params, train_ratio=train_ratio,
         )
         if "error" not in result:
             return result.get("best_method", "CAA")

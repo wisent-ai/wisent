@@ -1,13 +1,4 @@
 """Parser setup for the 'agent' command."""
-from wisent.core.utils.config_tools.constants import (
-    AGENT_CLASSIFIER_EPOCHS,
-    AGENT_DECISION_QUALITY_THRESHOLD,
-    AGENT_DECISION_TIME_BUDGET,
-    AGENT_MAX_PARALLEL_WORKERS,
-    AGENT_MAX_RESPONSE_ATTEMPTS,
-    DEFAULT_CLASSIFIER_LR,
-    QUALITY_CONTROL_MAX_ATTEMPTS,
-)
 
 
 def setup_agent_parser(parser):
@@ -23,15 +14,15 @@ def setup_agent_parser(parser):
         help="Agent strategy to use"
     )
     parser.add_argument(
-        "--quality-threshold", type=float, default=AGENT_DECISION_QUALITY_THRESHOLD, help="Quality threshold for classifiers (default: 0.3)"
+        "--quality-threshold", type=float, default=None, help="Quality threshold for classifiers"
     )
     parser.add_argument(
         "--time-budget",
         type=float,
-        default=AGENT_DECISION_TIME_BUDGET,
-        help="Time budget in minutes for creating classifiers (default: 10.0)",
+        default=None,
+        help="Time budget in minutes for creating classifiers",
     )
-    parser.add_argument("--max-attempts", type=int, default=AGENT_MAX_RESPONSE_ATTEMPTS, help="Maximum improvement attempts (default: 3)")
+    parser.add_argument("--max-attempts", type=int, default=None, help="Maximum improvement attempts")
     parser.add_argument(
         "--max-classifiers", type=int, default=None, help="Maximum classifiers to use (default: no limit)"
     )
@@ -45,10 +36,64 @@ def setup_agent_parser(parser):
         "--similarity-threshold",
         type=float,
         default=None,
-        help="Similarity threshold for deduplication (0-1, higher = more strict)",
+        help="Similarity threshold for deduplication (higher = more strict)",
     )
     parser.add_argument(
-        "--max-workers", type=int, default=AGENT_MAX_PARALLEL_WORKERS, help="Number of parallel workers for generation (default: 4)"
+        "--max-workers", type=int, required=True, help="Number of parallel workers for generation"
+    )
+    parser.add_argument(
+        "--agent-synth-min-pairs", type=int, required=True,
+        help="Minimum number of synthetic pairs to generate"
+    )
+    parser.add_argument(
+        "--agent-synth-time-multiplier", type=int, required=True,
+        help="Multiplier for time budget to determine pair count"
+    )
+
+    # Data infrastructure parameters
+    parser.add_argument(
+        "--generate-pairs-min-tokens", type=int, required=True,
+        help="Minimum tokens for pair generation"
+    )
+    parser.add_argument(
+        "--simhash-default-threshold-bits", type=int, required=True,
+        help="SimHash threshold bits for deduplication"
+    )
+    parser.add_argument(
+        "--tokens-per-pair-estimate", type=int, required=True,
+        help="Estimated tokens per contrastive pair"
+    )
+    parser.add_argument(
+        "--tokens-base-offset", type=int, required=True,
+        help="Base token offset for generation"
+    )
+    parser.add_argument(
+        "--trait-label-max-length", type=int, required=True,
+        help="Maximum length for trait labels"
+    )
+    parser.add_argument(
+        "--dedup-word-ngram", type=int, required=True,
+        help="Word n-gram size for deduplication"
+    )
+    parser.add_argument(
+        "--dedup-char-ngram", type=int, required=True,
+        help="Character n-gram size for deduplication"
+    )
+    parser.add_argument(
+        "--simhash-num-bands", type=int, required=True,
+        help="Number of bands for SimHash LSH"
+    )
+    parser.add_argument(
+        "--fast-diversity-seed", type=int, required=True,
+        help="Random seed for diversity computation"
+    )
+    parser.add_argument(
+        "--diversity-max-sample-size", type=int, required=True,
+        help="Maximum sample size for diversity metrics"
+    )
+    parser.add_argument(
+        "--retry-multiplier", type=int, required=True,
+        help="Multiplier for max generation retry attempts"
     )
 
     # Activation collection arguments
@@ -61,16 +106,22 @@ def setup_agent_parser(parser):
 
     # Classifier training arguments
     parser.add_argument(
-        "--classifier-epochs", type=int, default=AGENT_CLASSIFIER_EPOCHS, help="Number of epochs for classifier training (default: 50)"
+        "--classifier-epochs", type=int, default=None, help="Number of epochs for classifier training"
     )
     parser.add_argument(
-        "--classifier-lr", type=float, default=DEFAULT_CLASSIFIER_LR, help="Learning rate for classifier training (default: 1e-3)"
+        "--classifier-lr", type=float, default=None, help="Learning rate for classifier training"
     )
     parser.add_argument(
         "--classifier-batch-size",
         type=int,
-        default=None,
-        help="Batch size for classifier training (default: adaptive based on data size)",
+        required=True,
+        help="Batch size for classifier training",
+    )
+    parser.add_argument(
+        "--classifier-test-size",
+        type=float,
+        required=True,
+        help="Fraction of data to hold out for testing",
     )
     parser.add_argument(
         "--classifier-type",
@@ -109,8 +160,8 @@ def setup_agent_parser(parser):
     parser.add_argument(
         "--max-quality-attempts",
         type=int,
-        default=QUALITY_CONTROL_MAX_ATTEMPTS,
-        help="Maximum attempts to achieve acceptable quality (default: 5)",
+        default=None,
+        help="Maximum attempts to achieve acceptable quality",
     )
     parser.add_argument(
         "--show-parameter-reasoning", action="store_true", help="Display model's reasoning for parameter choices"

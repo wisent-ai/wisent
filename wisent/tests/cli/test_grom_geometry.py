@@ -4,6 +4,7 @@ Tests for GROM geometry adaptation integration.
 Tests geometry detection, pre-flight checks, and GROM adaptive training.
 """
 
+import argparse
 import subprocess
 import tempfile
 import os
@@ -12,9 +13,6 @@ import torch
 
 from wisent.core.utils.config_tools.constants import (
     DEFAULT_RANDOM_SEED,
-    GROM_TEST_HIDDEN_DIM,
-    GROM_TEST_N_SAMPLES,
-    GEOMETRY_OPTIMIZATION_STEPS_SMALL,
     SEPARATOR_WIDTH_STANDARD,
 )
 
@@ -24,7 +22,7 @@ except ImportError:
     pytest = None
 
 
-def test_grom_geometry_on_truthfulqa():
+def test_grom_geometry_on_truthfulqa(*, geometry_optimization_steps: int):
     """Test GROM geometry adaptation on truthfulqa_gen task."""
     with tempfile.TemporaryDirectory() as tmpdir:
         pairs_file = os.path.join(tmpdir, "pairs.json")
@@ -106,8 +104,10 @@ def test_grom_geometry_on_truthfulqa():
         
         # Pre-flight checks
         print("[Step 4] Running pre-flight checks...")
-        caa_check = run_preflight_check(pos_tensor, neg_tensor, "caa")
-        grom_check = run_preflight_check(pos_tensor, neg_tensor, "grom")
+        from wisent.core.control.steering_methods._helpers.preflight_helpers import PreflightThresholds
+        _pf_thresholds = PreflightThresholds()
+        caa_check = run_preflight_check(pos_tensor, neg_tensor, "caa", thresholds=_pf_thresholds)
+        grom_check = run_preflight_check(pos_tensor, neg_tensor, "grom", thresholds=_pf_thresholds)
         
         print(f"   CAA: {caa_check.compatibility_score:.0%} compatible")
         print(f"   GROM: {grom_check.compatibility_score:.0%} compatible")
@@ -122,7 +122,7 @@ def test_grom_geometry_on_truthfulqa():
             steering_layers=[8, 12, 15],
             sensor_layer=15,
             adapt_to_geometry=True,
-            optimization_steps=GEOMETRY_OPTIMIZATION_STEPS_SMALL,
+            optimization_steps=geometry_optimization_steps,
         )
         
         # Test the geometry adaptation logic directly with our tensors
@@ -150,13 +150,11 @@ def test_grom_geometry_on_truthfulqa():
         print("=" * SEPARATOR_WIDTH_STANDARD)
 
 
-def test_geometry_detection_synthetic():
+def test_geometry_detection_synthetic(*, hidden_dim: int, n_samples: int):
     """Test geometry detection with synthetic data."""
     from wisent.core.primitives.contrastive_pairs.diagnostics import detect_geometry_structure
-    
+
     torch.manual_seed(DEFAULT_RANDOM_SEED)
-    hidden_dim = GROM_TEST_HIDDEN_DIM
-    n_samples = GROM_TEST_N_SAMPLES
 
     # Create linear data
     base = torch.randn(hidden_dim)
@@ -171,13 +169,11 @@ def test_geometry_detection_synthetic():
     print(f"Linear detection: {result.all_scores['linear'].score:.3f}")
 
 
-def test_preflight_checks():
+def test_preflight_checks(*, hidden_dim: int, n_samples: int):
     """Test pre-flight check system."""
     from wisent.core.control.steering_methods.preflight import run_preflight_check
-    
+
     torch.manual_seed(DEFAULT_RANDOM_SEED)
-    hidden_dim = GROM_TEST_HIDDEN_DIM
-    n_samples = GROM_TEST_N_SAMPLES
 
     # Linear data
     base = torch.randn(hidden_dim)
@@ -185,8 +181,10 @@ def test_preflight_checks():
     pos = base.unsqueeze(0) * 3 + torch.randn(n_samples, hidden_dim) * 0.05
     neg = base.unsqueeze(0) * -3 + torch.randn(n_samples, hidden_dim) * 0.05
 
-    caa_result = run_preflight_check(pos, neg, "caa")
-    grom_result = run_preflight_check(pos, neg, "grom")
+    from wisent.core.control.steering_methods._helpers.preflight_helpers import PreflightThresholds
+    _pf_thresholds = PreflightThresholds()
+    caa_result = run_preflight_check(pos, neg, "caa", thresholds=_pf_thresholds)
+    grom_result = run_preflight_check(pos, neg, "grom", thresholds=_pf_thresholds)
     
     # For linear data, CAA should be highly compatible
     assert caa_result.compatibility_score > 0.8, f"CAA should be compatible for linear: {caa_result.compatibility_score}"
@@ -196,13 +194,11 @@ def test_preflight_checks():
     print(f"GROM compatibility: {grom_result.compatibility_score:.0%}")
 
 
-def test_grom_adaptation_linear():
+def test_grom_adaptation_linear(*, hidden_dim: int, n_samples: int):
     """Test GROM adapts correctly to linear data."""
     from wisent.core.control.steering_methods.methods.grom import GROMMethod
-    
+
     torch.manual_seed(DEFAULT_RANDOM_SEED)
-    hidden_dim = GROM_TEST_HIDDEN_DIM
-    n_samples = GROM_TEST_N_SAMPLES
 
     # Create linear data
     base = torch.randn(hidden_dim)
@@ -236,30 +232,34 @@ def test_grom_adaptation_linear():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="GROM geometry tests")
+    parser.add_argument("--hidden-dim", type=int, required=True,
+                        help="Hidden dimension for synthetic test data")
+    parser.add_argument("--n-samples", type=int, required=True,
+                        help="Number of synthetic samples for test data")
+    parser.add_argument("--geometry-optimization-steps", type=int, required=True,
+                        help="Optimization steps for geometry detection")
+    cli_args = parser.parse_args()
+
+    test_kwargs = dict(hidden_dim=cli_args.hidden_dim, n_samples=cli_args.n_samples)
+
     print("Running GROM geometry tests...\n")
-    
+
+    for label, fn in [
+        ("Geometry detection with synthetic data", test_geometry_detection_synthetic),
+        ("Pre-flight checks", test_preflight_checks),
+        ("GROM adaptation for linear data", test_grom_adaptation_linear),
+    ]:
+        print("=" * SEPARATOR_WIDTH_STANDARD)
+        print(label)
+        print("=" * SEPARATOR_WIDTH_STANDARD)
+        fn(**test_kwargs)
+        print("PASSED\n")
+
     print("=" * SEPARATOR_WIDTH_STANDARD)
-    print("Test 1: Geometry detection with synthetic data")
+    print("Full GROM geometry on truthfulqa_gen")
     print("=" * SEPARATOR_WIDTH_STANDARD)
-    test_geometry_detection_synthetic()
+    test_grom_geometry_on_truthfulqa(geometry_optimization_steps=cli_args.geometry_optimization_steps)
     print("PASSED\n")
-    
-    print("=" * SEPARATOR_WIDTH_STANDARD)
-    print("Test 2: Pre-flight checks")
-    print("=" * SEPARATOR_WIDTH_STANDARD)
-    test_preflight_checks()
-    print("PASSED\n")
-    
-    print("=" * SEPARATOR_WIDTH_STANDARD)
-    print("Test 3: GROM adaptation for linear data")
-    print("=" * SEPARATOR_WIDTH_STANDARD)
-    test_grom_adaptation_linear()
-    print("PASSED\n")
-    
-    print("=" * SEPARATOR_WIDTH_STANDARD)
-    print("Test 4: Full GROM geometry on truthfulqa_gen")
-    print("=" * SEPARATOR_WIDTH_STANDARD)
-    test_grom_geometry_on_truthfulqa()
-    print("PASSED\n")
-    
+
     print("\nAll tests passed!")

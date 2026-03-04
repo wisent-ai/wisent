@@ -24,12 +24,6 @@ class SteeringMethodConfig(ABC):
     layers: List[int] = None
     strengths: List[float] = None
 
-    def __post_init__(self):
-        if self.layers is None:
-            self.layers = []
-        if self.strengths is None:
-            self.strengths = [1.0]
-
     @classmethod
     def from_registry(cls, method_name: str, layers: List[int] = None, strengths: List[float] = None):
         """Create config from centralized registry."""
@@ -65,18 +59,18 @@ class SteeringResult:
     comparative_metrics: Dict[str, Any] = None
 
 
-# Import split parts - SteeringMethodTrainer ABC and SteeringTrainer live in _part2
-from wisent.core.utils.config_tools.optuna.steering._steering_opt_parts._part2 import (  # noqa: E402
+# Import split parts - SteeringMethodTrainer ABC and SteeringTrainer live in _steering_trainer
+from wisent.core.utils.config_tools.optuna.steering._steering_opt_parts._steering_trainer import (  # noqa: E402
     SteeringMethodTrainer,
     SteeringTrainer,
 )
-from wisent.core.utils.config_tools.optuna.steering._steering_opt_parts._part3 import (  # noqa: E402
+from wisent.core.utils.config_tools.optuna.steering._steering_opt_parts._optimizer_core import (  # noqa: E402
     _SteeringOptimizerCore,
 )
-from wisent.core.utils.config_tools.optuna.steering._steering_opt_parts._part4 import (  # noqa: E402
+from wisent.core.utils.config_tools.optuna.steering._steering_opt_parts._optimizer_eval import (  # noqa: E402
     _SteeringOptimizerEval,
 )
-from wisent.core.utils.config_tools.optuna.steering._steering_opt_parts._part5 import (  # noqa: E402
+from wisent.core.utils.config_tools.optuna.steering._steering_opt_parts._classifier_management import (  # noqa: E402
     _SteeringOptimizerClassifier,
 )
 
@@ -92,7 +86,7 @@ class SteeringOptimizer(_SteeringOptimizerCore, _SteeringOptimizerEval, _Steerin
     4. Test final steering method on test data
     """
 
-    def __init__(self, cache_config: Optional[CacheConfig] = None):
+    def __init__(self, cache_config: CacheConfig):
         _SteeringOptimizerCore.__init__(self, cache_config=cache_config)
 
 

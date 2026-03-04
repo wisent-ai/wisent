@@ -4,7 +4,7 @@ from typing import Any, Callable, Iterable, Optional, TYPE_CHECKING
 import logging
 
 from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.utils.config_tools.constants import FEEDBACK_MAX_CHARS, SAFE_DOCKER_FSIZE_MB, SAFE_DOCKER_NOFILE, DISPLAY_TRUNCATION_LARGE
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_LARGE
 from wisent.core.utils.infra_tools.infra.core.hardware import (
     eval_time_limit_s,
     eval_cpu_limit_s,
@@ -37,26 +37,32 @@ class EvaluatorConfig:
     Configuration for CodingEvaluator.
 
     attributes:
-        image:
-            Docker image to use for code execution (default: "coding/sandbox:polyglot-1.0").
-        runtime:
-            Optional Docker runtime (e.g., "runsc" for gVisor).
         feedback_max_chars:
-            Maximum characters of feedback to pass to the repair function (default: 2000).
+            Maximum characters of feedback to pass to the repair function.
+        fsize_mb:
+            Maximum file size in MB for Docker sandbox jobs.
+        nofile:
+            Maximum number of open files for Docker sandbox jobs.
+        image:
+            Docker image to use for code execution.
+        runtime:
+            Optional Docker runtime (e.g., runsc for gVisor).
         self_repair:
-            Whether to perform a single self-repair turn (default: True).
+            Whether to perform a single self-repair turn.
         time_limit_s:
-            Time limit in seconds for each code execution (default: 8s).
+            Time limit in seconds for each code execution.
         cpu_limit_s:
-            CPU time limit in seconds for each code execution (default: 3s).
+            CPU time limit in seconds for each code execution.
         mem_limit_mb:
-            Memory limit in megabytes for each code execution (default: 768MB).
+            Memory limit in megabytes for each code execution.
         pre_sanitize:
-            Whether to run LLM output through a sanitizer before execution (default: True).
+            Whether to run LLM output through a sanitizer before execution.
     """
+    feedback_max_chars: int
+    fsize_mb: int
+    nofile: int
     image: Optional[str] = None
     runtime: Optional[str] = None
-    feedback_max_chars: int = FEEDBACK_MAX_CHARS
     self_repair: bool = True
     time_limit_s: int = field(default_factory=eval_time_limit_s)
     cpu_limit_s: int = field(default_factory=eval_cpu_limit_s)
@@ -96,16 +102,16 @@ class CodingEvaluator(BaseEvaluator):
 
     def __init__(
         self,
+        cfg: EvaluatorConfig,
         provider: Optional["Provider"] = None,
         model_fn: Optional[Callable[["CodingTask"], dict[str,str]]] = None,
         repair_fn: Optional[RepairFn] = None,
-        cfg: EvaluatorConfig = None
     ):
         """Initialize coding evaluator."""
         self.provider = provider
         self.model_fn = model_fn
         self.repair_fn = repair_fn
-        self.cfg = cfg or EvaluatorConfig()
+        self.cfg = cfg
         self.exec = DockerSandboxExecutor(image=self.cfg.image, runtime=self.cfg.runtime)
 
     def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:
@@ -191,7 +197,7 @@ if __name__ == "__main__":
                 run_argv=["python3", "tests.py"],
                 cpu_limit_s=cpu_limit_s, wall_timeout_s=wall_timeout_s,
                 mem_limit_mb=self.cfg.mem_limit_mb,
-                fsize_mb=SAFE_DOCKER_FSIZE_MB, nproc=nproc, nofile=SAFE_DOCKER_NOFILE,
+                fsize_mb=self.cfg.fsize_mb, nproc=nproc, nofile=self.cfg.nofile,
             )
 
             result = self.exec.run(files, job)

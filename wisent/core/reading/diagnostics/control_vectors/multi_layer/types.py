@@ -2,20 +2,19 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, Any
 
 from ..geometry import StructureType, GeometryAnalysisResult
-from wisent.core.utils.config_tools.constants import DIAG_NUM_COMPONENTS, DIAG_OPTIMIZATION_STEPS, DIAG_MAX_PAIR_COMBINATIONS
 
 
 @dataclass
 class MultiLayerGeometryConfig:
     """Configuration for multi-layer geometry analysis."""
 
-    num_components: int = DIAG_NUM_COMPONENTS
-    optimization_steps: int = DIAG_OPTIMIZATION_STEPS
-    combination_method: Optional[str] = None  # "concat", "mean", "weighted"
+    num_components: int = None
+    """Number of geometry components. Must be set by caller."""
+    combination_method: str = "concat"
     analyze_per_layer: bool = True
     analyze_combined: bool = True
     analyze_subsets: bool = True  # early/middle/late
@@ -23,7 +22,6 @@ class MultiLayerGeometryConfig:
     analyze_adjacent: bool = True  # adjacent layer pairs
     analyze_skip: bool = True  # every other layer, every third, etc.
     analyze_custom: Optional[List[List[int]]] = None  # custom layer combinations
-    max_pair_combinations: int = DIAG_MAX_PAIR_COMBINATIONS  # limit number of pair combinations to analyze
 
 
 @dataclass

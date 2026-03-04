@@ -18,6 +18,7 @@ def visualize_k_concepts(
     title: str = "Multi-Concept Detection",
     output_path: Optional[str] = None,
     show_plot: bool = True,
+    *, linearity_n_init: int,
 ):
     """
     Visualize the k-concept detection results.
@@ -34,7 +35,7 @@ def visualize_k_concepts(
     proj_2d = pca.fit_transform(diff_vectors)
 
     # Cluster with optimal k
-    km = KMeans(n_clusters=optimal_k, random_state=_C.DEFAULT_RANDOM_SEED, n_init=_C.LINEARITY_N_INIT)
+    km = KMeans(n_clusters=optimal_k, random_state=_C.DEFAULT_RANDOM_SEED, n_init=linearity_n_init)
     cluster_labels = km.fit_predict(diff_vectors)
     
     # Color palettes
@@ -162,6 +163,7 @@ def visualize_concept_detection(
     title: str = "Concept Detection Visualization",
     output_path: Optional[str] = None,
     show_plot: bool = True,
+    *, linearity_n_init: int, stability_n_clusters: int,
 ):
     """
     Create a visualization showing:
@@ -178,7 +180,7 @@ def visualize_concept_detection(
     proj_2d = pca.fit_transform(diff_vectors)
 
     # K-means clustering
-    km = KMeans(n_clusters=_C.STABILITY_N_CLUSTERS, random_state=_C.DEFAULT_RANDOM_SEED, n_init=_C.LINEARITY_N_INIT)
+    km = KMeans(n_clusters=stability_n_clusters, random_state=_C.DEFAULT_RANDOM_SEED, n_init=linearity_n_init)
     cluster_labels = km.fit_predict(diff_vectors)
     
     # Compute cluster directions

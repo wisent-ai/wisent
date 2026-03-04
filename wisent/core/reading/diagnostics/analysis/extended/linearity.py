@@ -9,15 +9,6 @@ from enum import Enum
 import torch
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
-from wisent.core.utils.config_tools.constants import (
-    CHECK_LINEARITY_LINEAR_THRESHOLD,
-    CHECK_LINEARITY_WEAK_THRESHOLD,
-    CHECK_LINEARITY_MIN_COHENS_D,
-    CHECK_LINEARITY_DEFAULT_MAX_PAIRS,
-    DIAG_OPTIMIZATION_STEPS,
-    LINEARITY_LAYER_SAMPLING_DIVISOR,
-    GEOMETRY_DEFAULT_NUM_COMPONENTS,
-)
 
 
 class LinearityVerdict(Enum):
@@ -30,30 +21,27 @@ class LinearityVerdict(Enum):
 @dataclass
 class LinearityConfig:
     """Configuration for linearity check."""
-    
-    linear_threshold: float = CHECK_LINEARITY_LINEAR_THRESHOLD
+
+    linear_threshold: float
     """Linear score threshold to declare LINEAR."""
-
-    weak_threshold: float = CHECK_LINEARITY_WEAK_THRESHOLD
+    weak_threshold: float
     """Linear score threshold to declare WEAKLY_LINEAR."""
-
-    min_cohens_d: float = CHECK_LINEARITY_MIN_COHENS_D
+    min_cohens_d: float
     """Minimum Cohen's d for meaningful separation."""
-    
+    max_pairs: int
+    """Maximum number of pairs to use for analysis."""
+    geometry_optimization_steps: int
+    """Steps for geometry detection optimization."""
+    linearity_layer_sampling_divisor: int
+    """Divisor for sampling layers across depth."""
+    geometry_default_num_components: int
+    """Number of components for geometry detection."""
     layers_to_test: Optional[List[int]] = None
     """Specific layers to test. If None, tests sample across depth."""
-    
     extraction_strategies: Optional[List[ExtractionStrategy]] = None
     """Extraction strategies to test. If None, tests default set."""
-    
     normalize_options: List[bool] = field(default_factory=lambda: [False, True])
     """Normalization options to test."""
-    
-    max_pairs: int = CHECK_LINEARITY_DEFAULT_MAX_PAIRS
-    """Maximum number of pairs to use for analysis."""
-
-    geometry_optimization_steps: int = DIAG_OPTIMIZATION_STEPS
-    """Steps for geometry detection optimization."""
 
 
 @dataclass
@@ -115,20 +103,26 @@ def check_linearity(
     """
     from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
     from wisent.core.reading.diagnostics import detect_geometry_structure, GeometryAnalysisConfig
-    
-    cfg = config or LinearityConfig()
-    collector = ActivationCollector(model)
-    
+    from wisent.core.utils.config_tools.constants import (
+        PARSER_DEFAULT_LAYER_START, COMBO_OFFSET, ARCHITECTURE_MODULE_LIMIT,
+    )
+
+    if config is None:
+        raise ValueError("config (LinearityConfig) is required")
+    cfg = config
+    collector = ActivationCollector(model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+
     num_layers = model.hf_model.config.num_hidden_layers
-    
+
     # Determine layers to test
     if cfg.layers_to_test is None:
+        _step = max(COMBO_OFFSET, num_layers // cfg.linearity_layer_sampling_divisor)
         layers_to_test = sorted(set(
-            list(range(0, num_layers, max(1, num_layers // LINEARITY_LAYER_SAMPLING_DIVISOR))) + [num_layers - 1]
+            list(range(PARSER_DEFAULT_LAYER_START, num_layers, _step)) + [num_layers - COMBO_OFFSET]
         ))
     else:
         layers_to_test = cfg.layers_to_test
-    
+
     # Determine extraction strategies
     if cfg.extraction_strategies is None:
         extraction_strategies = [
@@ -138,12 +132,12 @@ def check_linearity(
         ]
     else:
         extraction_strategies = cfg.extraction_strategies
-    
+
     # Limit pairs
     test_pairs = pairs[:cfg.max_pairs]
-    
+
     geo_config = GeometryAnalysisConfig(
-        num_components=GEOMETRY_DEFAULT_NUM_COMPONENTS,
+        num_components=cfg.geometry_default_num_components,
         optimization_steps=cfg.geometry_optimization_steps,
     )
     

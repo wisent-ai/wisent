@@ -89,7 +89,7 @@ class AdaptedEvaluatorMath(EvaluatorMath):
 
 
 
-def multi_math_equal(answer, response, choice=False):
+def multi_math_equal(answer, response, timeout: int, choice=False):
     if choice:
         final_result = None
         for answer_regex in MULTILINGUAL_ANSWER_REGEXES:
@@ -107,7 +107,7 @@ def multi_math_equal(answer, response, choice=False):
     else:
         prediction1 = extract_answer(response, '')
         prediction1 = strip_string(prediction1, skip_unit='' in STRIP_EXCEPTIONS)
-        result1 = math_equal(answer, prediction1)
+        result1 = math_equal(answer, prediction1, timeout=timeout)
 
         prediction2 = None
         try:

@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import torch
 
 from wisent.core.control.steering_methods.registry import SteeringMethodRegistry
+from wisent.core.utils.config_tools.constants import ARCHITECTURE_MODULE_LIMIT
 from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
@@ -120,7 +121,7 @@ class UnifiedSteeringTrainer:
     @property
     def collector(self) -> ActivationCollector:
         if self._collector is None:
-            self._collector = ActivationCollector(model=self.model)
+            self._collector = ActivationCollector(model=self.model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
         return self._collector
     
     def train_for_layer(

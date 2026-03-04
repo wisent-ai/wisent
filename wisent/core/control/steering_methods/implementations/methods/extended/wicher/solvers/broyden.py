@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import torch
 import torch.nn.functional as F
-from wisent.core.utils.config_tools.constants import NORM_EPS, SHERMAN_MORRISON_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY
+from wisent.core.utils.config_tools.constants import NORM_EPS, SHERMAN_MORRISON_EPS
 
 
 def _compute_residual(
@@ -77,11 +77,11 @@ def wicher_broyden_step(
     concept_dir: torch.Tensor,
     concept_basis: torch.Tensor,
     component_variances: torch.Tensor,
-    num_steps: int = BROYDEN_DEFAULT_NUM_STEPS,
-    alpha: float = BROYDEN_DEFAULT_ALPHA,
-    eta: float = BROYDEN_DEFAULT_ETA,
-    beta: float = BROYDEN_DEFAULT_BETA,
-    alpha_decay: float = BROYDEN_DEFAULT_ALPHA_DECAY,
+    num_steps: int,
+    alpha: float,
+    eta: float,
+    beta: float,
+    alpha_decay: float,
 ) -> torch.Tensor:
     """
     Iterative subspace-projected Broyden steering.

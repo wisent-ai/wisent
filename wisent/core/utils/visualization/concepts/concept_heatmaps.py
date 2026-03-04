@@ -7,7 +7,7 @@ import base64
 
 from wisent.core.utils.config_tools.constants import (
     VIZ_DPI, HEATMAP_TEXT_CONTRAST_THRESHOLD, VIZ_HEATMAP_ASTERISK_SIZE,
-    CLASSIFIER_THRESHOLD, VIZ_FONTSIZE_ANNOTATION,
+    CHANCE_LEVEL_ACCURACY, VIZ_FONTSIZE_ANNOTATION,
     VIZ_FIGSIZE_MIN_WIDTH, VIZ_FIGSIZE_MIN_HEIGHT,
     VIZ_FIGSIZE_HEATMAP_SCALE_W, VIZ_FIGSIZE_HEATMAP_SCALE_H,
     VIZ_FIGSIZE_CONCEPT_MIN_W, VIZ_FIGSIZE_CONCEPT_SCALE,
@@ -48,7 +48,7 @@ def create_layer_accuracy_heatmap(
     for i, concept in enumerate(concepts):
         layer_accs = concept.get("layer_accuracies", {})
         for j, layer in enumerate(layers):
-            matrix[i, j] = layer_accs.get(layer, CLASSIFIER_THRESHOLD)
+            matrix[i, j] = layer_accs.get(layer, CHANCE_LEVEL_ACCURACY)
 
     # Create heatmap
     fig, ax = plt.subplots(figsize=(max(VIZ_FIGSIZE_MIN_WIDTH, len(layers) * VIZ_FIGSIZE_HEATMAP_SCALE_W), max(VIZ_FIGSIZE_MIN_HEIGHT, n_concepts * VIZ_FIGSIZE_HEATMAP_SCALE_H)))

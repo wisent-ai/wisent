@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Tuple
 
 import torch
 
-from wisent.core.utils.config_tools.constants import PAIR_GENERATORS_DEFAULT_N, JSON_INDENT
+from wisent.core.utils.config_tools.constants import JSON_INDENT, ARCHITECTURE_MODULE_LIMIT
 from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
@@ -68,8 +68,15 @@ def run_analysis(
     model_name: str,
     output_dir: str,
     device: str,
+    *,
+    n_pairs: int,
+    knn_k: int,
+    cv_folds: int,
+    signal_exist_threshold: float,
+    signal_linear_gap: float,
+    min_cloud_points: int,
+    geometry_optimization_steps: int,
     layers_to_analyze: Optional[List[int]] = None,
-    n_pairs: int = PAIR_GENERATORS_DEFAULT_N,
 ):
     """Run the full concept evolution analysis."""
     
@@ -100,7 +107,7 @@ def run_analysis(
     
     print(f"  Analyzing layers: {layers_to_analyze}")
     
-    collector = ActivationCollector(model=model, store_device="cpu")
+    collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT, store_device="cpu")
     
     concept_metrics = {}
     activations_by_concept = {}
@@ -110,6 +117,12 @@ def run_analysis(
             model, collector, concept_name, concept_data,
             layers_to_analyze,
             n_pairs=n_pairs,
+            knn_k=knn_k,
+            cv_folds=cv_folds,
+            signal_exist_threshold=signal_exist_threshold,
+            signal_linear_gap=signal_linear_gap,
+            min_cloud_points=min_cloud_points,
+            geometry_optimization_steps=geometry_optimization_steps,
             strategy=ExtractionStrategy.CHAT_LAST,
         )
         concept_metrics[concept_name] = metrics

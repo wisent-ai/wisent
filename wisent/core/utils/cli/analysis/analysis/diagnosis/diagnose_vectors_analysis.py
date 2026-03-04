@@ -3,14 +3,20 @@ from typing import Dict
 
 import torch
 from wisent.core import constants as _C
-from wisent.core.utils.config_tools.constants import CONE_THRESHOLD, CONE_DIRECTIONS, DIAG_NUM_COMPONENTS, MAX_CLUSTERS, MANIFOLD_NEIGHBORS, DEFAULT_OPTIMIZATION_STEPS
+from wisent.core import constants as _C
 
 
 def _run_cone_analysis(
-    activations_file: str, 
+    activations_file: str,
     verbose: bool = False,
-    cone_threshold: float = CONE_THRESHOLD,
-    cone_directions: int = CONE_DIRECTIONS,
+    cone_threshold: float = None,
+    cone_directions: int = None,
+    optimization_steps: int = None,
+    *,
+    min_cosine_similarity: float,
+    diag_significance_strong: float,
+    diag_significance_moderate: float,
+    diag_significance_weak: float,
 ):
     """Run cone structure analysis on activations."""
     from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
@@ -73,11 +79,14 @@ def _run_cone_analysis(
         print(f"   Hidden dimension: {pos_acts.shape[1]}")
         
         # Run cone analysis
-        config = ConeAnalysisConfig(
+        cone_config_kwargs = dict(
             num_directions=cone_directions,
-            optimization_steps=DEFAULT_OPTIMIZATION_STEPS,
             cone_threshold=cone_threshold,
+            min_cosine_similarity=min_cosine_similarity,
         )
+        if optimization_steps is not None:
+            cone_config_kwargs["optimization_steps"] = optimization_steps
+        config = ConeAnalysisConfig(**cone_config_kwargs)
         
         print(f"\n   Running cone analysis...")
         result = check_cone_structure(pos_acts, neg_acts, config)
@@ -101,7 +110,7 @@ def _run_cone_analysis(
         # Separation scores
         print(f"\n   Per-Direction Separation Scores:")
         for i, score in enumerate(result.separation_scores):
-            significance = "***" if abs(score) > _C.DIAG_SIGNIFICANCE_STRONG else "**" if abs(score) > _C.DIAG_SIGNIFICANCE_MODERATE else "*" if abs(score) > _C.DIAG_SIGNIFICANCE_WEAK else ""
+            significance = "***" if abs(score) > diag_significance_strong else "**" if abs(score) > diag_significance_moderate else "*" if abs(score) > diag_significance_weak else ""
             print(f"      Direction {i}: {score:.4f} {significance}")
         
         # Interpretation
@@ -129,9 +138,13 @@ def _run_cone_analysis(
 def _run_geometry_analysis(
     activations_file: str,
     verbose: bool = False,
-    num_components: int = DIAG_NUM_COMPONENTS,
-    max_clusters: int = MAX_CLUSTERS,
-    manifold_neighbors: int = MANIFOLD_NEIGHBORS,
+    num_components: int = None,
+    max_clusters: int = None,
+    manifold_neighbors: int = None,
+    *,
+    diag_score_high: float,
+    diag_score_moderate: float,
+    diag_score_low: float,
 ):
     """Run comprehensive geometry structure analysis on activations."""
     from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
@@ -208,7 +221,7 @@ def _run_geometry_analysis(
         print(f"   {'-'*32}")
         
         for name, score in sorted(result.all_scores.items(), key=lambda x: x[1].score, reverse=True):
-            marker = "***" if score.score > _C.DIAG_SCORE_HIGH else "**" if score.score > _C.DIAG_SCORE_MODERATE else "*" if score.score > _C.DIAG_SCORE_LOW else ""
+            marker = "***" if score.score > diag_score_high else "**" if score.score > diag_score_moderate else "*" if score.score > diag_score_low else ""
             print(f"   {name:<12} {score.score:<8.3f} {score.confidence:<10.3f} {marker}")
         
         print(f"\n📝 Recommendation:")

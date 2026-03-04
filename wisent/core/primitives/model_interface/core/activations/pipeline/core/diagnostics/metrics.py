@@ -16,7 +16,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
-from wisent.core.utils.config_tools.constants import NORM_EPS, CV_FOLDS, DIAGNOSTIC_MLP_HIDDEN_SIZES
+from wisent.core.utils.config_tools.constants import NORM_EPS
 
 
 def compute_pairwise_consistency(directions: torch.Tensor) -> Tuple[float, float]:
@@ -39,26 +39,18 @@ def compute_pairwise_consistency(directions: torch.Tensor) -> Tuple[float, float
 def compute_linear_nonlinear_accuracy(
     pos: torch.Tensor,
     neg: torch.Tensor,
-    cv_folds: int = CV_FOLDS
+    *,
+    cv_folds: int,
+    diagnostic_mlp_hidden_sizes: tuple,
 ) -> Tuple[float, float]:
-    """
-    Compute linear and nonlinear classification accuracy.
-
-    Args:
-        pos: Positive activations [n_samples, hidden_dim]
-        neg: Negative activations [n_samples, hidden_dim]
-        cv_folds: Number of cross-validation folds
-
-    Returns:
-        Tuple of (linear_accuracy, nonlinear_accuracy)
-    """
+    """Compute linear and nonlinear classification accuracy."""
     X = torch.cat([pos, neg], dim=0).cpu().float().numpy()
     y = np.array([1] * len(pos) + [0] * len(neg))
 
     linear = make_pipeline(StandardScaler(), LogisticRegression(solver="lbfgs"))
     linear_scores = cross_val_score(linear, X, y, cv=cv_folds, scoring="accuracy")
 
-    mlp = make_pipeline(StandardScaler(), MLPClassifier(hidden_layer_sizes=DIAGNOSTIC_MLP_HIDDEN_SIZES, early_stopping=True))
+    mlp = make_pipeline(StandardScaler(), MLPClassifier(hidden_layer_sizes=diagnostic_mlp_hidden_sizes, early_stopping=True))
     mlp_scores = cross_val_score(mlp, X, y, cv=cv_folds, scoring="accuracy")
 
     return linear_scores.mean(), mlp_scores.mean()

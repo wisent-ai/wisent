@@ -5,7 +5,7 @@ import torch
 from wisent.core.reading.classifiers.core.atoms import ClassifierTrainReport
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
 from wisent.core.utils import preferred_dtype
-from wisent.core.utils.config_tools.constants import AGENT_CLASSIFIER_EPOCHS, DEFAULT_CLASSIFIER_LR, CLASSIFIER_THRESHOLD, CLASSIFIER_HIDDEN_DIM, CLASSIFIER_TEST_SIZE, BATCH_SIZE_CAP
+from wisent.core.utils.config_tools.constants import ARCHITECTURE_MODULE_LIMIT
 
 
 def _torch_dtype_to_numpy(torch_dtype: torch.dtype):
@@ -53,10 +53,14 @@ def train_classifier_on_pairs(
     token_aggregation: str,
     classifier_type: str,
     prompt_strategy: str,
+    classifier_epochs: int,
+    classifier_lr: float,
+    classifier_threshold: float,
+    classifier_hidden_dim: int,
+    classifier_dropout: float,
+    classifier_batch_size: int,
+    classifier_test_size: float,
     verbose: bool = False,
-    classifier_epochs: int = AGENT_CLASSIFIER_EPOCHS,
-    classifier_lr: float = DEFAULT_CLASSIFIER_LR,
-    classifier_batch_size: int = None,
     normalize_layers: bool = False,
     return_full_sequence: bool = False,
 ):
@@ -76,8 +80,6 @@ def train_classifier_on_pairs(
             Number of epochs for classifier training
         classifier_lr:
             Learning rate for classifier training
-        classifier_batch_size:
-            Batch size for classifier training
         token_aggregation:
             Token aggregation strategy (average, final, first, max, min)
         prompt_strategy:
@@ -110,7 +112,7 @@ def train_classifier_on_pairs(
     prompt_construction_strategy = _map_prompt_strategy(prompt_strategy)
 
     # Collect activations for all pairs
-    collector = ActivationCollector(model=model)
+    collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
     target_layers = [str(target_layer)]
     layer_key = target_layers[0]
 
@@ -153,22 +155,20 @@ def train_classifier_on_pairs(
 
     # Instantiate classifier based on type
     if classifier_type == "logistic":
-        classifier = LogisticClassifier(threshold=CLASSIFIER_THRESHOLD)
+        classifier = LogisticClassifier(threshold=classifier_threshold)
         print(f"   Training logistic classifier...")
     elif classifier_type == "mlp":
-        classifier = MLPClassifier(threshold=CLASSIFIER_THRESHOLD, hidden_dim=CLASSIFIER_HIDDEN_DIM)
+        classifier = MLPClassifier(threshold=classifier_threshold, hidden_dim=classifier_hidden_dim, dropout=classifier_dropout)
         print(f"   Training MLP classifier...")
     else:
         raise UnknownTypeError(entity_type="classifier_type", value=classifier_type, valid_values=["logistic", "mlp"])
 
-    # Determine batch size: use provided value or adaptive default
-    if classifier_batch_size is None:
-        batch_size = min(BATCH_SIZE_CAP, len(X_train) // 2)
-    else:
-        batch_size = classifier_batch_size
+    batch_size = classifier_batch_size
 
+    if classifier_test_size is None:
+        raise ValueError("classifier_test_size is required for train_classifier_on_pairs")
     train_config = ClassifierTrainConfig(
-        test_size=CLASSIFIER_TEST_SIZE,
+        test_size=classifier_test_size,
         num_epochs=classifier_epochs,
         batch_size=batch_size,
         learning_rate=classifier_lr,

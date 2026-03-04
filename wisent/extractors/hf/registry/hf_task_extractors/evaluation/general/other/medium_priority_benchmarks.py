@@ -9,7 +9,7 @@ import re
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT, HTTP_TIMEOUT_MEDIUM
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT
 
 __all__ = [
     "CNMOExtractor",
@@ -145,6 +145,15 @@ class CurateExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "personalized_alignment"
 
+    def __init__(self, http_timeout: int):
+        """Initialize CURATe extractor.
+
+        Args:
+            http_timeout: Timeout in seconds for HTTP requests.
+        """
+        super().__init__()
+        self.http_timeout = http_timeout
+
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
@@ -182,7 +191,7 @@ class CurateExtractor(HuggingFaceBenchmarkExtractor):
         try:
             import pandas as pd
             
-            response = requests.get(CURATE_GITHUB_URL, timeout=HTTP_TIMEOUT_MEDIUM)
+            response = requests.get(CURATE_GITHUB_URL, timeout=self.http_timeout)
             response.raise_for_status()
             
             df = pd.read_excel(io.BytesIO(response.content))

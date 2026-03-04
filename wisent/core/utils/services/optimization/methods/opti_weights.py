@@ -21,13 +21,6 @@ import optuna
 import torch
 
 from wisent.core.utils.services.optimization.core.atoms import BaseOptimizer, Direction, HPOConfig, HPORun
-from wisent.core.utils.config_tools.constants import (
-    WEIGHT_MIN_DISTANCE_FRACTION,
-    OPTI_WEIGHTS_STRENGTH_RANGE,
-    OPTI_WEIGHTS_MAX_WEIGHT_RANGE,
-    OPTI_WEIGHTS_MIN_WEIGHT_RANGE,
-    OPTI_WEIGHTS_POSITION_RANGE,
-)
 
 from wisent.core.utils.services.optimization.methods._opti_weights_checkpointing import WeightsCheckpointingMixin
 
@@ -64,16 +57,29 @@ class WeightsOptimizerConfig:
         target_value:
             Target value to achieve (for early stopping).
     """
-    strength_range: tuple[float, float] = OPTI_WEIGHTS_STRENGTH_RANGE
-    max_weight_range: tuple[float, float] = OPTI_WEIGHTS_MAX_WEIGHT_RANGE
-    min_weight_range: tuple[float, float] = OPTI_WEIGHTS_MIN_WEIGHT_RANGE
-    position_range: tuple[float, float] = OPTI_WEIGHTS_POSITION_RANGE
+    strength_range: tuple[float, float] = None
+    max_weight_range: tuple[float, float] = None
+    min_weight_range: tuple[float, float] = None
+    position_range: tuple[float, float] = None
+    weight_min_distance_fraction: float = None
     method: Literal["directional", "bake"] = "directional"
     components: int = 1
     norm_preserve: bool = True
     optimize_direction_index: bool = False
     target_metric: Optional[str] = None
     target_value: float | None = None
+    kernel_center_divisor: float = None
+    kernel_sigma_divisor: float = None
+
+    def __post_init__(self):
+        required = (
+            "strength_range", "max_weight_range", "min_weight_range",
+            "position_range", "weight_min_distance_fraction",
+            "kernel_center_divisor", "kernel_sigma_divisor",
+        )
+        for field_name in required:
+            if getattr(self, field_name) is None:
+                raise ValueError(f"{field_name} is required in WeightsOptimizerConfig")
 
 
 class WeightsOptimizer(BaseOptimizer, WeightsCheckpointingMixin):
@@ -235,7 +241,7 @@ class WeightsOptimizer(BaseOptimizer, WeightsCheckpointingMixin):
         max_weight_position = params["max_weight_position"] * (self.num_layers - 1)
 
         # Compute min_weight_distance from position
-        min_weight_distance = WEIGHT_MIN_DISTANCE_FRACTION * (self.num_layers - 1)
+        min_weight_distance = self.config.weight_min_distance_fraction * (self.num_layers - 1)
 
         if self.config.method == "directional":
             project_with_kernel(
@@ -262,6 +268,8 @@ class WeightsOptimizer(BaseOptimizer, WeightsCheckpointingMixin):
                 self.steering_vectors,
                 method="bias",
                 max_alpha=params["max_weight"] * params["strength"],
+                kernel_center_divisor=self.config.kernel_center_divisor,
+                kernel_sigma_divisor=self.config.kernel_sigma_divisor,
                 max_alpha_position=max_weight_position,
                 min_alpha=params["min_weight"],
                 components=self.config.components,

@@ -2,7 +2,7 @@
 
 import sys
 import json
-from wisent.core.utils.config_tools.constants import DEFAULT_SCORE, DISPLAY_TRUNCATION_MODEL, DISPLAY_TRUNCATION_TASK, JSON_INDENT, SEPARATOR_WIDTH_FULL
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_MODEL, DISPLAY_TRUNCATION_TASK, JSON_INDENT, SEPARATOR_WIDTH_FULL
 from wisent.core.utils.config_tools.config import (
     get_cache,
     get_cached_optimization,
@@ -272,7 +272,7 @@ def execute_import(args, cache: OptimizationCache):
                 method=result_data.get("method", "CAA"),
                 token_aggregation=result_data.get("token_aggregation", "average"),
                 prompt_strategy=result_data.get("prompt_strategy", "question_only"),
-                score=result_data.get("score", DEFAULT_SCORE),
+                score=result_data.get("score"),
                 metric=result_data.get("metric", "accuracy"),
                 metadata=result_data.get("metadata", {}),
                 set_as_default=False

@@ -1,11 +1,11 @@
 """Docker execution evaluation for evaluate-responses command."""
 import json
 import os
-from wisent.core.utils.config_tools.constants import DEFAULT_SCORE, JSON_INDENT
+from wisent.core.utils.config_tools.constants import JSON_INDENT, FEEDBACK_MAX_CHARS, SAFE_DOCKER_FSIZE_MB, SAFE_DOCKER_NOFILE
 from wisent.core.utils.infra_tools.infra.core.hardware import eval_time_limit_s, eval_cpu_limit_s, eval_mem_limit_mb
 
 
-def evaluate_docker_execution(args, input_data, responses, task_name, evaluation_results, task_results, task_config=None):
+def evaluate_docker_execution(args, input_data, responses, task_name, evaluation_results, task_results, subprocess_timeout: int, task_config=None):
     """Handle docker_execution evaluation.
 
     Returns aggregated_metrics dict or None if evaluation should continue.
@@ -38,6 +38,7 @@ def evaluate_docker_execution(args, input_data, responses, task_name, evaluation
         release_version = input_data.get('release_version', 'all')
 
         provider = LiveCodeBenchProvider(
+            subprocess_timeout=subprocess_timeout,
             language=language,
             release_version=release_version,
             limit=None  # Load all problems
@@ -72,6 +73,7 @@ def evaluate_docker_execution(args, input_data, responses, task_name, evaluation
     # Configure evaluator
     docker_config = task_config.get('docker_config', {})
     config = EvaluatorConfig(
+        feedback_max_chars=FEEDBACK_MAX_CHARS, fsize_mb=SAFE_DOCKER_FSIZE_MB, nofile=SAFE_DOCKER_NOFILE,
         image=docker_config.get('image', 'coding/sandbox:polyglot-1.0'),
         time_limit_s=docker_config.get('time_limit_s', eval_time_limit_s()),
         cpu_limit_s=docker_config.get('cpu_limit_s', eval_cpu_limit_s()),
@@ -86,7 +88,7 @@ def evaluate_docker_execution(args, input_data, responses, task_name, evaluation
     print(f"   Memory limit: {config.mem_limit_mb}MB\n")
 
     # Run evaluation
-    evaluator = CodingEvaluator(provider, model_fn, cfg=config)
+    evaluator = CodingEvaluator(cfg=config, provider=provider, model_fn=model_fn)
 
     print(f"🎯 Executing code in Docker sandbox...\n")
 
@@ -186,8 +188,8 @@ def evaluate_docker_execution(args, input_data, responses, task_name, evaluation
     print(f"✅ EVALUATION COMPLETE")
     print(f"{'='*80}")
     print(f"   Total problems: {len(task_results)}")
-    print(f"   Passed: {int(aggregated_metrics.get('total_passed', DEFAULT_SCORE))}")
-    print(f"   Failed: {len(task_results) - int(aggregated_metrics.get('total_passed', DEFAULT_SCORE))}")
-    print(f"   Pass rate: {aggregated_metrics.get('pass_rate', DEFAULT_SCORE):.2%}")
+    print(f"   Passed: {int(aggregated_metrics['total_passed'])}")
+    print(f"   Failed: {len(task_results) - int(aggregated_metrics['total_passed'])}")
+    print(f"   Pass rate: {aggregated_metrics['pass_rate']:.2%}")
     print(f"{'='*80}\n")
     return aggregated_metrics

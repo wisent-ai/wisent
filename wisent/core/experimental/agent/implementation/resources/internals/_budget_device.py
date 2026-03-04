@@ -4,7 +4,7 @@ from typing import Dict, List
 from wisent.core.utils.infra_tools.errors import NoBenchmarkDataError
 from wisent.core.experimental.agent.resources._budget_manager import BudgetManager
 from wisent.core.experimental.agent.resources._budget_functions import get_budget_manager
-from wisent.core.utils.config_tools.constants import AGENT_RESOURCE_BUDGET_MINUTES, DEVICE_HASH_PREFIX, SEPARATOR_WIDTH_COMPACT, SEPARATOR_WIDTH_NARROW, SEPARATOR_WIDTH_MEDIUM, SECONDS_PER_MINUTE
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_COMPACT, SEPARATOR_WIDTH_NARROW, SEPARATOR_WIDTH_MEDIUM, SECONDS_PER_MINUTE
 logger = logging.getLogger(__name__)
 
 def estimate_completion_time_minutes(tasks: List[str]) -> float:
@@ -33,13 +33,16 @@ def track_task_performance(task_name: str, start_time: float, end_time: float) -
     _budget_manager.track_task_execution(task_name, start_time, end_time)
 
 
-def run_device_benchmark(force_rerun: bool = False) -> None:
+def run_device_benchmark(force_rerun: bool = False, device_hash_prefix: int = None) -> None:
     """
     Run device performance benchmark and save results.
-    
+
     Args:
         force_rerun: Force re-run even if cached results exist
+        device_hash_prefix: Number of characters to display from device ID hash
     """
+    if device_hash_prefix is None:
+        raise ValueError("device_hash_prefix is required")
     from .device_benchmarks import ensure_benchmark_exists
     
     print("🚀 Running device performance benchmark...")
@@ -47,7 +50,7 @@ def run_device_benchmark(force_rerun: bool = False) -> None:
     
     print("\n✅ Benchmark Results:")
     print("=" * SEPARATOR_WIDTH_MEDIUM)
-    print(f"Device ID: {benchmark.device_id[:DEVICE_HASH_PREFIX]}...")
+    print(f"Device ID: {benchmark.device_id[:device_hash_prefix]}...")
     print(f"Device Type: {benchmark.device_type}")
     print(f"Model Loading: {benchmark.model_loading_seconds:.1f}s")
     print(f"Evaluation: {benchmark.benchmark_eval_seconds_per_100_examples:.1f}s per 100 examples")
@@ -116,7 +119,7 @@ def main():
     
     # Budget command
     budget_parser = subparsers.add_parser('budget', help='Calculate budget allocations')
-    budget_parser.add_argument('--time-minutes', '-t', type=float, default=AGENT_RESOURCE_BUDGET_MINUTES, help='Time budget in minutes')
+    budget_parser.add_argument('--time-minutes', '-t', type=float, required=True, help='Time budget in minutes')
     budget_parser.add_argument('--task-type', default='benchmark_evaluation', help='Task type to optimize for')
     
     args = parser.parse_args()

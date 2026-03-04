@@ -51,6 +51,14 @@ class PolyMathEvaluator(BaseEvaluator):
     name = "polymath"
     description = "PolyMath evaluator for multilingual math answers"
 
+    def __init__(self, math_timeout: int):
+        """Initialize PolyMath evaluator.
+
+        Args:
+            math_timeout: Timeout in seconds for symbolic math equality checks.
+        """
+        self.math_timeout = math_timeout
+
     @staticmethod
     def get_prompt(question: str, language: str) -> str:
         """Create prompt by appending language-specific instruction to the question.
@@ -93,7 +101,7 @@ class PolyMathEvaluator(BaseEvaluator):
         # Use multi_math_equal which handles:
         # - Answer extraction (boxed, multilingual patterns, last number)
         # - Multiple comparison methods (numeric, symbolic, etc.)
-        is_correct, predictions, no_boxed = multi_math_equal(expected_str, response)
+        is_correct, predictions, no_boxed = multi_math_equal(expected_str, response, timeout=self.math_timeout)
 
         # Extract the model answer from predictions for logging
         # predictions is ((prediction1, result1), (prediction2, result2))

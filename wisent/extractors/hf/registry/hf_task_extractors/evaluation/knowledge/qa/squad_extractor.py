@@ -2,8 +2,6 @@
 from __future__ import annotations
 from typing import Any
 from wisent.core.utils.cli.cli_logger import setup_logger
-from wisent.core.utils.config_tools.constants import EXTRACTOR_DEFAULT_LIMIT, CONTEXT_MAX_LENGTH
-
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
@@ -16,11 +14,12 @@ __all__ = ["SQuADv2Extractor", "DROPExtractor"]
 class SQuADv2Extractor(HuggingFaceBenchmarkExtractor):
     """Extract contrastive pairs from SQuAD v2 benchmark."""
 
-    def __init__(self):
+    def __init__(self, context_max_length: int):
         super().__init__()
         self.name = "squadv2"
+        self._context_max_length = context_max_length
 
-    def extract_contrastive_pairs(self, limit: int | None = EXTRACTOR_DEFAULT_LIMIT) -> list[ContrastivePair]:
+    def extract_contrastive_pairs(self, limit: int | None = None) -> list[ContrastivePair]:
         pairs: list[ContrastivePair] = []
 
         try:
@@ -62,7 +61,7 @@ class SQuADv2Extractor(HuggingFaceBenchmarkExtractor):
 
             task_prompt = f"""Read the following context and answer the question.
 
-Context: {context[:CONTEXT_MAX_LENGTH]}
+Context: {context[:self._context_max_length]}
 
 Question: {question}
 
@@ -87,11 +86,12 @@ Answer:"""
 class DROPExtractor(HuggingFaceBenchmarkExtractor):
     """Extract contrastive pairs from DROP benchmark."""
 
-    def __init__(self):
+    def __init__(self, context_max_length: int):
         super().__init__()
         self.name = "drop"
+        self._context_max_length = context_max_length
 
-    def extract_contrastive_pairs(self, limit: int | None = EXTRACTOR_DEFAULT_LIMIT) -> list[ContrastivePair]:
+    def extract_contrastive_pairs(self, limit: int | None = None) -> list[ContrastivePair]:
         pairs: list[ContrastivePair] = []
 
         try:
@@ -130,7 +130,7 @@ class DROPExtractor(HuggingFaceBenchmarkExtractor):
 
             task_prompt = f"""Read the passage and answer the question (may require reasoning or calculation).
 
-Passage: {passage[:CONTEXT_MAX_LENGTH]}
+Passage: {passage[:self._context_max_length]}
 
 Question: {question}
 

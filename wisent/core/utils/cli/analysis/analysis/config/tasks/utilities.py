@@ -3,7 +3,7 @@
 import os
 import json
 import sys
-from wisent.core.utils.config_tools.constants import MAX_COMBINATIONS, THRESHOLD_RANGE_SHORT, MIN_QUALITY_SCORE_DEFAULT, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import THRESHOLD_RANGE_SHORT, SEPARATOR_WIDTH_STANDARD
 
 
 # ============================================================================
@@ -19,17 +19,17 @@ def execute_list_tasks(args, LMEvalDataLoader):
         print(f"\n📋 Tasks matching skills: {', '.join(args.skills)}")
         tasks = selector.find_tasks_by_tags(
             skills=args.skills,
-            min_quality_score=getattr(args, 'min_quality_score', MIN_QUALITY_SCORE_DEFAULT)
+            min_quality_score=getattr(args, 'min_quality_score', 2)
         )
     elif hasattr(args, 'risks') and args.risks:
         print(f"\n📋 Tasks matching risks: {', '.join(args.risks)}")
         tasks = selector.find_tasks_by_tags(
             risks=args.risks,
-            min_quality_score=getattr(args, 'min_quality_score', MIN_QUALITY_SCORE_DEFAULT)
+            min_quality_score=getattr(args, 'min_quality_score', 2)
         )
     else:
         print(f"\n📋 All available tasks:")
-        tasks = selector.find_tasks_by_tags(min_quality_score=getattr(args, 'min_quality_score', MIN_QUALITY_SCORE_DEFAULT))
+        tasks = selector.find_tasks_by_tags(min_quality_score=getattr(args, 'min_quality_score', 2))
 
     print(f"\n   Found {len(tasks)} tasks:\n")
     for i, task in enumerate(sorted(tasks), 1):
@@ -85,7 +85,7 @@ def select_tasks_by_criteria(args):
         skills=getattr(args, 'skills', None),
         risks=getattr(args, 'risks', None),
         num_tasks=getattr(args, 'num_tasks', None),
-        min_quality_score=getattr(args, 'min_quality_score', MIN_QUALITY_SCORE_DEFAULT),
+        min_quality_score=getattr(args, 'min_quality_score', 2),
         seed=getattr(args, 'task_seed', None)
     )
 
@@ -127,7 +127,7 @@ def execute_optimization(args, model, LMEvalDataLoader):
         threshold_range=list(THRESHOLD_RANGE_SHORT),
         classifier_types=[args.classifier_type],
         metric=getattr(args, 'optimize_metric', 'f1'),
-        max_combinations=getattr(args, 'optimize_max_combinations', MAX_COMBINATIONS)
+        max_combinations=args.optimize_max_combinations
     )
 
     total_combos = (len(layer_range) * len(config.aggregation_methods) *

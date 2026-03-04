@@ -9,6 +9,7 @@ import torch
 import numpy as np
 from enum import Enum
 from typing import Dict, Any, List, Optional
+"""Formerly imported CV_FOLDS is now a required parameter."""
 
 
 class TransformerComponent(Enum):
@@ -129,8 +130,8 @@ def analyze_transformer_components(
     
     Compares residual stream, attention output, and MLP output.
     """
-    from .probe_metrics import compute_linear_probe_accuracy, compute_signal_strength
-    
+    from wisent.core.reading.modules.utilities.metrics.probe.probe_metrics import compute_linear_probe_accuracy, compute_signal_strength
+
     results = {}
     model_type = model.config.model_type if hasattr(model.config, 'model_type') else "unknown"
     
@@ -155,25 +156,28 @@ def compare_components_for_benchmark(
     tokenizer,
     pos_activations_by_component: Dict[str, torch.Tensor],
     neg_activations_by_component: Dict[str, torch.Tensor],
+    min_clusters: int,
+    *,
+    cv_folds: int,
+    probe_min_per_class: int,
+    blend_default: float,
 ) -> Dict[str, Any]:
-    """
-    Compare which component has best steering signal for a benchmark.
-    """
-    from .probe_metrics import compute_linear_probe_accuracy
-    from .steerability import compute_steerability_metrics
-    
+    """Compare which component has best steering signal for a benchmark."""
+    from wisent.core.reading.modules.utilities.metrics.probe.probe_metrics import compute_linear_probe_accuracy
+    from wisent.core.reading.modules.modules.steering.analysis.steerability import compute_steerability_metrics
+
     results = {}
-    
+
     for component in pos_activations_by_component:
         if component not in neg_activations_by_component:
             continue
-        
+
         pos = pos_activations_by_component[component]
         neg = neg_activations_by_component[component]
-        
+
         try:
-            linear_acc = compute_linear_probe_accuracy(pos, neg)
-            steerability = compute_steerability_metrics(pos, neg)
+            linear_acc = compute_linear_probe_accuracy(pos, neg, cv_folds, probe_min_per_class=probe_min_per_class, blend_default=blend_default)
+            steerability = compute_steerability_metrics(pos, neg, min_clusters=min_clusters)
 
             results[component] = {
                 "linear_accuracy": linear_acc,
@@ -207,9 +211,9 @@ def compare_concept_granularity(
     Earlier layers often have more fine-grained concepts,
     later layers have more abstract concepts.
     """
-    from .probe_metrics import compute_linear_probe_accuracy
-    from .icd import compute_icd
-    
+    from wisent.core.reading.modules.utilities.metrics.probe.probe_metrics import compute_linear_probe_accuracy
+    from wisent.core.reading.modules.modules.geo_utils.icd import compute_icd
+
     # This would need per-layer activations
     # Placeholder implementation
     return {

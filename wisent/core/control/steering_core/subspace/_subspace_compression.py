@@ -3,14 +3,13 @@ from __future__ import annotations
 import os
 import json
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Tuple, Any
 from pathlib import Path
 import torch
 import torch.nn.functional as F
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerName
-from wisent.core.control.steering_core._subspace_analysis import UNIVERSAL_SUBSPACE_RANK
-from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD, CONCEPT_PCA_COMPONENTS
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD
 
 _LOG = setup_logger(__name__)
 
@@ -67,22 +66,24 @@ class UniversalBasis:
 
 def compute_universal_basis(
     vectors: List[torch.Tensor] | Dict[LayerName, torch.Tensor],
-    n_components: int = UNIVERSAL_SUBSPACE_RANK,
+    n_components: int = None,
     normalize: bool = True,
 ) -> UniversalBasis:
     """
     Compute a universal basis from a collection of steering vectors.
-    
+
     Args:
         vectors: Collection of steering vectors
         n_components: Number of basis components
         normalize: Whether to normalize vectors before PCA
-        
+
     Returns:
         UniversalBasis that can be used for compression/initialization
     """
+    if n_components is None:
+        raise ValueError("n_components is required")
     log = bind(_LOG)
-    
+
     # Convert to matrix
     if isinstance(vectors, dict):
         vector_list = [v.detach().float().reshape(-1) for v in vectors.values() if v is not None]
@@ -233,20 +234,20 @@ def load_compressed_vectors(path: str) -> Tuple[Dict[LayerName, torch.Tensor], U
 def explained_variance_analysis(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    max_components: int = CONCEPT_PCA_COMPONENTS,
+    *,
+    max_components: int,
 ) -> Tuple[List[float], List[float]]:
     """
     Analyze how many directions are needed to explain the behavioral difference.
-    
+
     Args:
         pos_activations: Positive example activations [N_pos, hidden_dim]
         neg_activations: Negative example activations [N_neg, hidden_dim]
         max_components: Maximum components to analyze
-        
+
     Returns:
         Tuple of (individual_variance, cumulative_variance) lists
     """
-    # Compute difference vectors
     n_min = min(pos_activations.shape[0], neg_activations.shape[0])
     diff = pos_activations[:n_min] - neg_activations[:n_min]
     

@@ -3,16 +3,8 @@ from __future__ import annotations
 import gc
 import json
 from pathlib import Path
-from typing import Optional
 import torch
-from wisent.core.utils.config_tools.constants import (
-    COMPARISON_DEFAULT_BATCH_SIZE,
-    COMPARISON_MAX_BATCH_SIZE,
-    COMPARISON_NUM_PAIRS,
-    COMPARISON_STEERING_LAYER,
-    COMPARISON_STEERING_SCALES,
-    DEFAULT_SPLIT_RATIO, JSON_INDENT,
-)
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 from wisent.comparison.utils import (
     create_test_only_task, run_ll_evaluation, apply_steering_to_model, remove_steering,
 )
@@ -74,31 +66,34 @@ def remove_reft(wisent_model: "WisentModel") -> None:
 def evaluate_reft(
     model_name: str, reft_path: str | Path, task: str,
     extraction_strategy: str, device: str,
-    train_ratio: float = DEFAULT_SPLIT_RATIO,
-    batch_size: int = COMPARISON_DEFAULT_BATCH_SIZE, max_batch_size: int = COMPARISON_MAX_BATCH_SIZE, limit: int | None = None,
+    batch_size: int, max_batch_size: int,
+    log_interval: int,
+    min_norm_threshold: float,
+    *,
+    train_ratio: float,
+    limit: int | None = None,
     output_dir: str | Path = None,
     num_train_pairs: int | None = None, num_epochs: int | None = None,
     low_rank_dimension: int | None = None, intervention_layers: list[int] | None = None,
     learning_rate: float | None = None,
-    with_steering: bool = False, steering_method: Optional[str] = None,
-    steering_layers: str = str(COMPARISON_STEERING_LAYER), steering_num_pairs: int = COMPARISON_NUM_PAIRS,
-    steering_scales: list[float] | None = None,
+    with_steering: bool = False, steering_method: str | None = None,
+    steering_layers: str,
+    steering_num_pairs: int,
+    steering_scales: tuple[float, ...],
 ) -> dict:
     """Evaluate a trained ReFT intervention comparing base vs ReFT performance."""
     reft_path = Path(reft_path)
-    if steering_scales is None:
-        steering_scales = list(COMPARISON_STEERING_SCALES)
     print(f"\n{'='*60}\nCreating test task for: {task}\n{'='*60}")
     task_dict = create_test_only_task(task, train_ratio=train_ratio)
     print(f"\n{'='*60}\nLoading model: {model_name}\n{'='*60}")
     wisent_model = WisentModel(model_name=model_name, device=device)
     print(f"\n{'='*60}\nRunning BASE evaluation (no ReFT)\n{'='*60}")
-    base_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, limit)
+    base_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=limit)
     print(f"Base accuracy: {base_acc_ll:.4f}")
     print(f"\n{'='*60}\nApplying ReFT intervention from: {reft_path}\n{'='*60}")
     apply_reft_to_model(wisent_model, reft_path)
     print(f"\n{'='*60}\nRunning REFT evaluation\n{'='*60}")
-    reft_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, limit)
+    reft_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=limit)
     print(f"ReFT accuracy: {reft_acc_ll:.4f}")
     results = {
         "task": task, "model": model_name, "reft_path": str(reft_path),
@@ -111,7 +106,8 @@ def evaluate_reft(
         results = _eval_reft_with_steering(
             wisent_model, task, task_dict, limit, base_acc_ll, reft_acc_ll,
             steering_method, steering_layers, steering_num_pairs, steering_scales,
-            extraction_strategy, device, results,
+            extraction_strategy, device, results, log_interval=log_interval,
+            min_norm_threshold=min_norm_threshold,
         )
     remove_reft(wisent_model)
     del wisent_model
@@ -131,7 +127,8 @@ def evaluate_reft(
 
 def _eval_reft_with_steering(wisent_model, task, task_dict, limit, base_acc_ll, reft_acc_ll,
                               steering_method, steering_layers, steering_num_pairs,
-                              steering_scales, extraction_strategy, device, results):
+                              steering_scales, extraction_strategy, device, results, log_interval: int,
+                              min_norm_threshold: float):
     """Run ReFT + steering evaluation at multiple scales."""
     from wisent.core.weight_modification.trainers.steering_trainer import WisentSteeringTrainer
     from wisent.core.control.steering_methods import get_steering_method
@@ -152,7 +149,7 @@ def _eval_reft_with_steering(wisent_model, task, task_dict, limit, base_acc_ll, 
     steering_method_obj = get_steering_method(steering_method, task_name=task, device=device)
     strategy = ExtractionStrategy(extraction_strategy)
     trainer = WisentSteeringTrainer(model=wisent_model, pair_set=pair_set, steering_method=steering_method_obj)
-    result = trainer.run(layers_spec=steering_layers, strategy=strategy, accept_low_quality_vector=True)
+    result = trainer.run(layers_spec=steering_layers, min_norm_threshold=min_norm_threshold, strategy=strategy, accept_low_quality_vector=True)
     steering_vectors = {k: v.cpu().float().tolist() for k, v in result.steered_vectors.to_dict().items() if v is not None}
     steering_data = {"steering_vectors": steering_vectors, "layers": list(steering_vectors.keys())}
     import os
@@ -160,8 +157,8 @@ def _eval_reft_with_steering(wisent_model, task, task_dict, limit, base_acc_ll, 
     results["steering"] = {"method": steering_method, "layers": list(steering_vectors.keys()),
                            "num_pairs": steering_num_pairs, "extraction_strategy": extraction_strategy, "scales": {}}
     for scale in steering_scales:
-        apply_steering_to_model(wisent_model, steering_data, scale=scale)
-        steer_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, limit)
+        apply_steering_to_model(wisent_model, steering_data, scale=scale, min_norm_threshold=min_norm_threshold)
+        steer_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=limit)
         remove_steering(wisent_model)
         results["steering"]["scales"][str(scale)] = {
             "accuracy": steer_acc_ll, "diff_from_base": steer_acc_ll - base_acc_ll,

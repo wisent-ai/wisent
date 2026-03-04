@@ -8,15 +8,10 @@ from datetime import datetime
 import numpy as np
 
 from wisent.core.utils import resolve_default_device
-from wisent.core.utils.config_tools.constants import (
-    MARKETPLACE_F1_WEIGHT, MARKETPLACE_ACCURACY_WEIGHT,
-    MARKETPLACE_DATA_QUALITY_WEIGHT, MARKETPLACE_DATA_QUALITY_DENOM,
-    MARKETPLACE_RECENCY_WEIGHT, BUDGET_RECENCY_WINDOW_DAYS,
-    CLASSIFIER_THRESHOLD,
-)
 from ._marketplace_helpers import (
     ClassifierCreationEstimate,
     MarketplaceEstimationMixin,
+    MarketplaceEstimationConfig,
 )
 
 @dataclass
@@ -49,7 +44,31 @@ class ClassifierMarketplace(MarketplaceEstimationMixin):
     to discover, evaluate, and create classifiers based on its needs.
     """
 
-    def __init__(self, model, search_paths: List[str] = None, layer: int = None):
+    def __init__(self, model, search_paths: List[str] = None, layer: int = None, f1_weight: float = None, accuracy_weight: float = None, data_quality_weight: float = None, data_quality_denom: float = None, recency_weight: float = None, recency_window_days: int = None, mp_config: MarketplaceEstimationConfig = None, data_oversample_multiplier: int = None):
+        if f1_weight is None:
+            raise ValueError("f1_weight is required")
+        if accuracy_weight is None:
+            raise ValueError("accuracy_weight is required")
+        if data_quality_weight is None:
+            raise ValueError("data_quality_weight is required")
+        if data_quality_denom is None:
+            raise ValueError("data_quality_denom is required")
+        if recency_weight is None:
+            raise ValueError("recency_weight is required")
+        if recency_window_days is None:
+            raise ValueError("recency_window_days is required")
+        if mp_config is None:
+            raise ValueError("mp_config is required")
+        if data_oversample_multiplier is None:
+            raise ValueError("data_oversample_multiplier is required")
+        self._data_oversample_multiplier = data_oversample_multiplier
+        self._f1_weight = f1_weight
+        self._accuracy_weight = accuracy_weight
+        self._data_quality_weight = data_quality_weight
+        self._data_quality_denom = data_quality_denom
+        self._recency_weight = recency_weight
+        self._recency_window_days = recency_window_days
+        self._mp_config = mp_config
         self.model = model
         self.layer = layer
         self.search_paths = search_paths or [
@@ -105,7 +124,9 @@ class ClassifierMarketplace(MarketplaceEstimationMixin):
             layer, issue_type = self._parse_filename(filepath)
             quality_score = self._calculate_quality_score(metadata)
 
-            threshold = metadata.get('threshold', CLASSIFIER_THRESHOLD)
+            if 'threshold' not in metadata:
+                raise KeyError(f"Classifier metadata at {filepath} missing required 'threshold' key")
+            threshold = metadata['threshold']
             training_samples = metadata.get('training_samples', 0)
             model_family = self._extract_model_family(metadata.get('model_name', ''))
             created_at = metadata.get('created_at', datetime.now().isoformat())
@@ -221,19 +242,19 @@ Respond with just the issue type (one word):"""
         accuracy = metadata.get('accuracy', metadata.get('training_accuracy', 0.0))
 
         if f1_score > 0:
-            score += f1_score * MARKETPLACE_F1_WEIGHT
+            score += f1_score * self._f1_weight
         if accuracy > 0:
-            score += accuracy * MARKETPLACE_ACCURACY_WEIGHT
+            score += accuracy * self._accuracy_weight
 
         training_samples = metadata.get('training_samples', 0)
         if training_samples > 0:
-            data_quality = min(training_samples / MARKETPLACE_DATA_QUALITY_DENOM, 1.0) * MARKETPLACE_DATA_QUALITY_WEIGHT
+            data_quality = min(training_samples / self._data_quality_denom, 1.0) * self._data_quality_weight
             score += data_quality
 
         try:
             created_at = datetime.fromisoformat(metadata.get('created_at', ''))
             days_old = (datetime.now() - created_at).days
-            recency_score = max(0, (BUDGET_RECENCY_WINDOW_DAYS - days_old) / BUDGET_RECENCY_WINDOW_DAYS) * MARKETPLACE_RECENCY_WEIGHT
+            recency_score = max(0, (self._recency_window_days - days_old) / self._recency_window_days) * self._recency_weight
             score += recency_score
         except:
             pass

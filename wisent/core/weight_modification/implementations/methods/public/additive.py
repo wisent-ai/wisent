@@ -1,28 +1,4 @@
-"""
-Additive weight modification: Bake steering vectors into model weights.
-
-This is a more conservative approach than directional projection. Instead of removing
-dimensions, we add bias toward the desired direction directly into the weights.
-
-The goal: Make the steering effect permanent without runtime hooks, but preserve
-all model capabilities.
-
-Key insight: Activation steering does `h' = h + αv` at runtime. We can
-approximate this by modifying weights to produce similar effects without hooks.
-
-Approaches:
-
-1. **Output bias addition** (simplest):
-   Add steering vector as bias to layer outputs
-
-2. **Weight shifting** (more sophisticated):
-   Modify weight matrices to shift outputs in steering direction
-
-Trade-off:
-- Additive is less aggressive than directional projection
-- Preserves original model capabilities better
-- But may not be as effective at changing behavior
-"""
+"""Additive weight modification: Bake steering vectors into model weights."""
 
 from __future__ import annotations
 
@@ -31,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
-from wisent.core.utils.config_tools.constants import NORM_EPS, KERNEL_DISTANCE_FRACTION, KERNEL_MIN_ALPHA, ADDITIVE_METHOD_MAX_ALPHA, ADDITIVE_KERNEL_CENTER_DIVISOR, ADDITIVE_KERNEL_SIGMA_DIVISOR, DEFAULT_LAYER_WEIGHT
+from wisent.core.utils.config_tools.constants import NORM_EPS
 
 if TYPE_CHECKING:
     from torch import Tensor
@@ -213,7 +189,9 @@ def bake_steering_into_weights(
         # Get effective alpha for this layer
         layer_alpha = alpha
         if layer_weights is not None:
-            layer_alpha *= layer_weights.get(layer_idx, DEFAULT_LAYER_WEIGHT)
+            if layer_idx not in layer_weights:
+                raise KeyError(f"No weight for layer {layer_idx} in layer_weights")
+            layer_alpha *= layer_weights[layer_idx]
 
         for component_name in components:
             try:
@@ -268,24 +246,32 @@ def bake_steering_with_kernel(
     model: Module,
     steering_vectors: dict[int, Tensor],
     method: str,
-    max_alpha: float = ADDITIVE_METHOD_MAX_ALPHA,
+    *,
+    max_alpha: float,
+    kernel_center_divisor: float,
+    kernel_sigma_divisor: float,
     max_alpha_position: float | None = None,
-    min_alpha: float = KERNEL_MIN_ALPHA,
+    min_alpha: float = None,
     min_alpha_distance: float | None = None,
+    kernel_distance_fraction: float | None = None,
     components: list[str] | None = None,
     verbose: bool = True,
 ) -> dict[str, int]:
     """Bake steering with kernel-based alpha distribution across layers."""
+    if min_alpha is None:
+        raise ValueError("min_alpha is required")
+    if kernel_distance_fraction is None:
+        raise ValueError("kernel_distance_fraction is required")
     import math
     layer_indices = sorted(steering_vectors.keys())
     if not layer_indices:
         return {"layers_modified": 0, "components_modified": 0, "total_parameters_modified": 0}
     n_layers = max(layer_indices) + 1
-    center = max_alpha_position if max_alpha_position is not None else n_layers / ADDITIVE_KERNEL_CENTER_DIVISOR
-    dist = min_alpha_distance if min_alpha_distance is not None else n_layers * KERNEL_DISTANCE_FRACTION
+    center = max_alpha_position if max_alpha_position is not None else n_layers / kernel_center_divisor
+    dist = min_alpha_distance if min_alpha_distance is not None else n_layers * kernel_distance_fraction
     if dist < NORM_EPS:
         dist = 1.0
-    sigma = dist / ADDITIVE_KERNEL_SIGMA_DIVISOR
+    sigma = dist / kernel_sigma_divisor
     layer_weights = {}
     for idx in layer_indices:
         w = math.exp(-0.5 * ((idx - center) / sigma) ** 2)

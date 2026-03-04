@@ -5,9 +5,7 @@ import torch
 from pathlib import Path
 from typing import Optional
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
-from wisent.core.utils.config_tools.constants import (
-    GROM_HIDDEN_DIM, GROM_ROUTER_HIDDEN_DIM, GROM_ROUTER_TEMPERATURE, GROM_MAX_ALPHA,
-)
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
 from wisent.core.weight_modification.export._generic import load_steered_model
 
 _LOG = setup_logger(__name__)
@@ -128,16 +126,33 @@ def load_grom_model(
         grom_result.layer_order = grom_data["layer_order"]
         grom_result.directions = {k: v.to(model.device) for k, v in grom_data["directions"].items()}
         grom_result.direction_weights = {k: v.to(model.device) for k, v in grom_data["direction_weights"].items()}
-        grom_result.gate_temperature = grom_data.get("gate_temperature", GROM_ROUTER_TEMPERATURE)
-        grom_result.max_alpha = grom_data.get("max_alpha", GROM_MAX_ALPHA)
+        if "gate_temperature" not in grom_data:
+            raise InsufficientDataError(
+                reason="gate_temperature missing from saved GROM data. Re-bake the model with current wisent version."
+            )
+        grom_result.gate_temperature = grom_data["gate_temperature"]
+        if "max_alpha" not in grom_data:
+            raise InsufficientDataError(
+                reason="max_alpha missing from saved GROM data. Re-bake the model with current wisent version."
+            )
+        grom_result.max_alpha = grom_data["max_alpha"]
         
         # Reconstruct gate network
         if "gate_network_state" in grom_data:
             from wisent.core.control.steering_methods.methods.grom import GatingNetwork
             config = grom_data["gate_network_config"]
+            if "hidden_dim" not in config:
+                raise InsufficientDataError(
+                    reason="hidden_dim missing from gate_network_config. Re-bake the model."
+                )
+            if "shrink_factor" not in config:
+                raise InsufficientDataError(
+                    reason="shrink_factor missing from gate_network_config. Re-bake the model."
+                )
             grom_result.gate_network = GatingNetwork(
                 config["input_dim"],
-                config.get("hidden_dim", GROM_HIDDEN_DIM),
+                config["hidden_dim"],
+                shrink_factor=config["shrink_factor"],
             )
             grom_result.gate_network.load_state_dict(grom_data["gate_network_state"])
             grom_result.gate_network = grom_result.gate_network.to(model.device)
@@ -148,10 +163,14 @@ def load_grom_model(
         if "intensity_network_state" in grom_data:
             from wisent.core.control.steering_methods.methods.grom import IntensityNetwork
             config = grom_data["intensity_network_config"]
+            if "hidden_dim" not in config:
+                raise InsufficientDataError(
+                    reason="hidden_dim missing from intensity_network_config. Re-bake the model."
+                )
             grom_result.intensity_network = IntensityNetwork(
                 config["input_dim"],
                 config["num_layers"],
-                config.get("hidden_dim", GROM_ROUTER_HIDDEN_DIM),
+                config["hidden_dim"],
             )
             grom_result.intensity_network.load_state_dict(grom_data["intensity_network_state"])
             grom_result.intensity_network = grom_result.intensity_network.to(model.device)

@@ -45,6 +45,8 @@ class PalomaExtractor(LMEvalBenchmarkExtractor):
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
         preferred_doc: str | None = None,
+        *,
+        train_ratio: float,
     ) -> list[ContrastivePair]:
         """
         Build contrastive pairs from Paloma docs.
@@ -65,7 +67,7 @@ class PalomaExtractor(LMEvalBenchmarkExtractor):
         max_items = self._normalize_limit(limit)
         # Load fewer docs since we'll split each into multiple pairs
         docs_to_load = 1 if max_items is None else max(1, max_items // PALOMA_DOCS_DIVISOR)
-        docs = self.load_docs(lm_eval_task_data, docs_to_load, preferred_doc=preferred_doc)
+        docs = self.load_docs(lm_eval_task_data, docs_to_load, preferred_doc=preferred_doc, train_ratio=train_ratio)
 
         pairs: list[ContrastivePair] = []
 

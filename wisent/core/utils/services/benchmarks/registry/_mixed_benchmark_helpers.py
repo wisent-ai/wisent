@@ -3,16 +3,17 @@
 import random
 import logging
 from typing import List, Dict, Any, Optional
-from wisent.core.utils.config_tools.constants import SAMPLES_PER_BENCHMARK
 
 logger = logging.getLogger(__name__)
 
 
 def sample_benchmarks_by_tag(
     tag: str,
-    samples_per_benchmark: int = SAMPLES_PER_BENCHMARK,
+    chunk_size: int,
+    max_cache_age_days: int,
+    samples_per_benchmark: int = 10,
     max_benchmarks: Optional[int] = None,
-    random_seed: Optional[int] = None
+    random_seed: Optional[int] = None, *, train_ratio: float,
 ) -> Dict[str, List[Dict[str, Any]]]:
     """
     Convenience function to sample from all benchmarks with a specific tag.
@@ -29,7 +30,7 @@ def sample_benchmarks_by_tag(
     from wisent.core.utils.services.benchmarks.mixed_benchmark_sampler import MixedBenchmarkSampler
     from wisent.core.utils.services.benchmarks.cache.managed_cached_benchmarks import get_managed_cache
 
-    sampler = MixedBenchmarkSampler()
+    sampler = MixedBenchmarkSampler(chunk_size=chunk_size, max_cache_age_days=max_cache_age_days)
 
     # Get all benchmarks with the tag
     benchmarks = sampler.get_benchmarks_by_tag(tag)
@@ -41,14 +42,15 @@ def sample_benchmarks_by_tag(
 
     # Sample from each benchmark
     results = {}
-    cache = get_managed_cache()
+    cache = get_managed_cache(chunk_size=chunk_size, max_cache_age_days=max_cache_age_days)
 
     for benchmark_name in benchmarks:
         try:
             samples = cache.get_task_samples(
                 task_name=benchmark_name,
                 limit=samples_per_benchmark,
-                force_fresh=False
+                force_fresh=False,
+                train_ratio=train_ratio,
             )
             results[benchmark_name] = samples
             logger.info(f"Sampled {len(samples)} from {benchmark_name}")

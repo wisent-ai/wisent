@@ -24,7 +24,7 @@ from ._layer_analysis import compute_projection
 from wisent.core.utils.config_tools.constants import (
     ZERO_THRESHOLD, VIZ_DPI, DEFAULT_RANDOM_SEED,
     DISPLAY_TRUNCATION_ERROR, DISPLAY_TRUNCATION_SHORT,
-    LINEARITY_N_INIT, VIZ_MARKER_SIZE, VIZ_ALPHA_LIGHT,
+    VIZ_MARKER_SIZE, VIZ_ALPHA_LIGHT,
     VIZ_ALPHA_MEDIUM, VIZ_LINEWIDTH_NORMAL,
     VIZ_MARKERSIZE_LINE_SMALL,
     VIZ_FONTSIZE_SUPTITLE, SEPARATOR_WIDTH_WIDE,
@@ -156,6 +156,7 @@ def attribute_pairs_to_concepts(
     diff_vectors: np.ndarray,
     pairs: List[Dict],
     detection_result: Dict,
+    *, linearity_n_init: int,
 ) -> Dict:
     """
     Attribute each pair to its detected concept.
@@ -182,7 +183,7 @@ def attribute_pairs_to_concepts(
     concept_groups = k_result['concept_groups']  # List of sets of cluster IDs
     
     # Cluster all pairs
-    km = KMeans(n_clusters=optimal_k, random_state=DEFAULT_RANDOM_SEED, n_init=LINEARITY_N_INIT)
+    km = KMeans(n_clusters=optimal_k, random_state=DEFAULT_RANDOM_SEED, n_init=linearity_n_init)
     cluster_labels = km.fit_predict(diff_vectors)
     
     # Map cluster -> concept

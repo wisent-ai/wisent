@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List
 
-from wisent.core.utils.config_tools.constants import PROGRESS_LOG_INTERVAL_10
+from wisent.core.utils.config_tools.constants import PROGRESS_LOG_INTERVAL_10, ARCHITECTURE_MODULE_LIMIT
 
 if TYPE_CHECKING:
     from wisent.core.primitives.models.wisent_model import WisentModel
@@ -31,7 +31,7 @@ def train_nurt_for_task(args, wisent_model: "WisentModel", pairs: List["Contrast
     if args.verbose:
         print(f"  Collecting activations for Concept Flow training...")
 
-    collector = ActivationCollector(model=wisent_model)
+    collector = ActivationCollector(model=wisent_model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
     layer_acts = {l: {"positive": [], "negative": []} for l in layers}
 
     for i, pair in enumerate(pairs):
@@ -69,7 +69,7 @@ def train_szlak_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
     if args.verbose:
         print(f"  Collecting activations for SZLAK training...")
 
-    collector = ActivationCollector(model=wisent_model)
+    collector = ActivationCollector(model=wisent_model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
     layer_acts = {l: {"positive": [], "negative": []} for l in layers}
 
     for i, pair in enumerate(pairs):
@@ -107,7 +107,7 @@ def train_wicher_for_task(args, wisent_model: "WisentModel", pairs: List["Contra
     if args.verbose:
         print(f"  Collecting activations for WICHER training...")
 
-    collector = ActivationCollector(model=wisent_model)
+    collector = ActivationCollector(model=wisent_model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
     layer_acts = {l: {"positive": [], "negative": []} for l in layers}
 
     for i, pair in enumerate(pairs):

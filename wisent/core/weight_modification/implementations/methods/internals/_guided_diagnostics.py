@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 from wisent.core.weight_modification.methods.guided import (
     LayerDiagnostics,
 )
-from wisent.core.utils.config_tools.constants import NORM_EPS, SEPARATOR_WIDTH_STANDARD, CHANCE_LEVEL_ACCURACY
+from wisent.core.utils.config_tools.constants import NORM_EPS, SEPARATOR_WIDTH_STANDARD, CHANCE_LEVEL_ACCURACY, ARCHITECTURE_MODULE_LIMIT
 from wisent.core.weight_modification.methods._guided_scoring import (
     _compute_knn_accuracy,
     _compute_fisher_ratio,
@@ -31,6 +31,9 @@ def compute_layer_diagnostics(
     extraction_strategy: str,
     layers: Optional[List[int]] = None,
     verbose: bool = True,
+    *,
+    probe_knn_k: int,
+    blend_default: float,
 ) -> Dict[int, LayerDiagnostics]:
     """
     Compute linearity diagnostics for each layer.
@@ -58,7 +61,7 @@ def compute_layer_diagnostics(
     
     log = bind(_LOG)
     
-    collector = ActivationCollector(model)
+    collector = ActivationCollector(model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
     num_layers = model.hf_model.config.num_hidden_layers
     
     if layers is None:
@@ -116,7 +119,9 @@ def compute_layer_diagnostics(
         
         # Compute diagnostics
         diag = _compute_single_layer_diagnostics(
-            pos_tensor, neg_tensor, layer, extraction_strategy
+            pos_tensor, neg_tensor, layer, extraction_strategy,
+            probe_knn_k=probe_knn_k,
+            blend_default=blend_default,
         )
         diagnostics[layer] = diag
         
@@ -141,6 +146,9 @@ def _compute_single_layer_diagnostics(
     neg_tensor: Tensor,
     layer_idx: int,
     extraction_strategy: str,
+    *,
+    probe_knn_k: int,
+    blend_default: float,
 ) -> LayerDiagnostics:
     """Compute diagnostics for a single layer's activations."""
     
@@ -148,7 +156,7 @@ def _compute_single_layer_diagnostics(
     linear_score, linear_details = _compute_linear_probe_accuracy(pos_tensor, neg_tensor)
     
     # 2. k-NN accuracy (geometry-agnostic baseline)
-    knn_score = _compute_knn_accuracy(pos_tensor, neg_tensor, k=10)
+    knn_score = _compute_knn_accuracy(pos_tensor, neg_tensor, k=probe_knn_k, blend_default=blend_default)
     
     # 3. Fisher ratio
     fisher_ratio = _compute_fisher_ratio(pos_tensor, neg_tensor)
@@ -161,7 +169,8 @@ def _compute_single_layer_diagnostics(
     
     # 6. Compute recommended weight based on diagnostics
     recommended_weight = _compute_recommended_weight(
-        linear_score, knn_score, fisher_ratio, cohens_d
+        linear_score, knn_score, fisher_ratio, cohens_d,
+        blend_default=blend_default,
     )
     
     return LayerDiagnostics(

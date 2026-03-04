@@ -5,10 +5,10 @@ random data to determine if structure is statistically significant.
 """
 import numpy as np
 import torch
-from typing import Dict
+from typing import Dict, Optional
 
 from wisent.core.utils.config_tools.constants import (
-    ZERO_THRESHOLD, N_BOOTSTRAP, DEFAULT_RANDOM_SEED, Z_SCORE_SIGNIFICANCE,
+    ZERO_THRESHOLD, Z_SCORE_SIGNIFICANCE,
 )
 
 from wisent.core.reading.modules.utilities.signal_analysis.structure import (
@@ -17,6 +17,13 @@ from wisent.core.reading.modules.utilities.signal_analysis.structure import (
     compute_cluster_structure,
     compute_relative_position,
 )
+
+
+def _resolve_seed(random_state: Optional[int]) -> int:
+    if random_state is None:
+        from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
+        return DEFAULT_RANDOM_SEED
+    return random_state
 
 
 def _generate_null_activations(
@@ -31,10 +38,11 @@ def _generate_null_activations(
 def compute_cone_null(
     n_samples: int,
     n_dims: int,
-    n_bootstrap: int = N_BOOTSTRAP,
-    random_state: int = DEFAULT_RANDOM_SEED,
+    n_bootstrap: int,
+    random_state: Optional[int] = None,
 ) -> Dict[str, float]:
     """Compute cone metrics for random (null) data."""
+    random_state = _resolve_seed(random_state)
     rng = np.random.RandomState(random_state)
 
     concentrations = []
@@ -62,10 +70,11 @@ def compute_cone_null(
 def compute_sphere_null(
     n_samples: int,
     n_dims: int,
-    n_bootstrap: int = N_BOOTSTRAP,
-    random_state: int = DEFAULT_RANDOM_SEED,
+    n_bootstrap: int,
+    random_state: Optional[int] = None,
 ) -> Dict[str, float]:
     """Compute sphere metrics for random (null) data."""
+    random_state = _resolve_seed(random_state)
     rng = np.random.RandomState(random_state)
 
     radius_cvs = []
@@ -89,10 +98,11 @@ def compute_sphere_null(
 def compute_cluster_null(
     n_samples: int,
     n_dims: int,
-    n_bootstrap: int = N_BOOTSTRAP,
-    random_state: int = DEFAULT_RANDOM_SEED,
+    n_bootstrap: int,
+    random_state: Optional[int] = None,
 ) -> Dict[str, float]:
     """Compute cluster metrics for random (null) data."""
+    random_state = _resolve_seed(random_state)
     rng = np.random.RandomState(random_state)
 
     silhouettes = []
@@ -119,10 +129,11 @@ def compute_cluster_null(
 def compute_translation_null(
     n_samples: int,
     n_dims: int,
-    n_bootstrap: int = N_BOOTSTRAP,
-    random_state: int = DEFAULT_RANDOM_SEED,
+    n_bootstrap: int,
+    random_state: Optional[int] = None,
 ) -> Dict[str, float]:
     """Compute translation metrics for random (null) pairs."""
+    random_state = _resolve_seed(random_state)
     rng = np.random.RandomState(random_state)
 
     consistencies = []
@@ -158,8 +169,8 @@ def _z_score(real_val: float, null_mean: float, null_std: float) -> float:
 def compute_geometry_vs_null(
     pos: torch.Tensor,
     neg: torch.Tensor,
-    n_bootstrap: int = N_BOOTSTRAP,
-    random_state: int = DEFAULT_RANDOM_SEED,
+    n_bootstrap: int,
+    random_state: Optional[int] = None,
 ) -> Dict[str, any]:
     """
     Compare detected geometry against null baselines.

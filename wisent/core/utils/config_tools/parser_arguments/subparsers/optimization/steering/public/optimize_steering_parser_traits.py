@@ -1,5 +1,4 @@
 """Personalization subparsers for optimize-steering."""
-from wisent.core.utils.config_tools.constants import OPTUNA_TRIALS_LARGE
 
 
 def setup_personalization_parsers(steering_subparsers):
@@ -103,7 +102,7 @@ def setup_personalization_parsers(steering_subparsers):
     personalization_parser.add_argument(
         "--n-trials",
         type=int,
-        default=OPTUNA_TRIALS_LARGE,
+        default=None,
         help="Number of Optuna trials when using --search-strategy optuna (default: 300)"
     )
     personalization_parser.add_argument(
@@ -111,6 +110,12 @@ def setup_personalization_parsers(steering_subparsers):
         type=int,
         required=True,
         help="Sample limit for optimization"
+    )
+    personalization_parser.add_argument(
+        "--layer-stride",
+        type=int,
+        required=True,
+        help="Stride for layer selection when auto-selecting layers"
     )
 
     # Multi-trait personalization optimization subcommand

@@ -2,16 +2,19 @@
 
 from datasets import load_dataset
 from wisent.core.reading.evaluators.benchmark_specific.generation_evaluator import GenerationEvaluator
-from wisent.core.utils.config_tools.constants import COMPARE_TOL, DISPLAY_TRUNCATION_COMPACT, NUM_EXAMPLES_DEFAULT, SEPARATOR_WIDTH_REPORT
+from wisent.core.utils.config_tools.constants import COMPARE_TOL, DISPLAY_TRUNCATION_COMPACT, SEPARATOR_WIDTH_REPORT, GENERATION_EMBEDDING_WEIGHT, GENERATION_NLI_WEIGHT
 
 # Load dataset
 ds = load_dataset("HuggingFaceH4/aime_2024", split="train")
 
 # Initialize evaluator
-evaluator = GenerationEvaluator()
+evaluator = GenerationEvaluator(
+    generation_embedding_weight=GENERATION_EMBEDDING_WEIGHT,
+    generation_nli_weight=GENERATION_NLI_WEIGHT,
+)
 
 # Test on a few examples
-num_examples = NUM_EXAMPLES_DEFAULT
+num_examples = 5
 
 print("=" * SEPARATOR_WIDTH_REPORT)
 print("Testing GenerationEvaluator answer extraction on AIME 2024")

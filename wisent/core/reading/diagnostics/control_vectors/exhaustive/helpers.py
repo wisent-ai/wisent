@@ -7,8 +7,6 @@ from typing import Dict, List, Tuple, Any
 
 from ..geometry import StructureType
 from .types import ExhaustiveCombinationResult
-from wisent.core import constants as _C
-from wisent.core.utils.config_tools.constants import EXHAUSTIVE_SEARCH_TOP_K
 
 
 __all__ = ["analyze_combination_patterns", "generate_exhaustive_recommendation"]
@@ -17,9 +15,11 @@ __all__ = ["analyze_combination_patterns", "generate_exhaustive_recommendation"]
 def analyze_combination_patterns(
     all_results: List[ExhaustiveCombinationResult],
     layers: List[int],
-    top_k: int = EXHAUSTIVE_SEARCH_TOP_K,
+    top_k: int = None,
 ) -> Dict[str, Any]:
     """Analyze patterns in top combinations."""
+    if top_k is None:
+        raise ValueError("top_k is required")
     top_results = all_results[:top_k]
 
     # Layer frequency in top combinations
@@ -79,13 +79,19 @@ def generate_exhaustive_recommendation(
     improvement_over_single: float,
     patterns: Dict[str, Any],
     total_combinations: int,
+    multi_layer_improvement_threshold: float = None,
+    display_top_n_tiny: int = None,
 ) -> str:
     """Generate recommendation from exhaustive analysis."""
+    if multi_layer_improvement_threshold is None:
+        raise ValueError("multi_layer_improvement_threshold is required")
+    if display_top_n_tiny is None:
+        raise ValueError("display_top_n_tiny is required")
     parts = []
 
     parts.append(f"Tested {total_combinations} layer combinations.")
 
-    if combination_beats_single and improvement_over_single > _C.MULTI_LAYER_IMPROVEMENT_THRESHOLD:
+    if combination_beats_single and improvement_over_single > multi_layer_improvement_threshold:
         layers_str = "+".join(f"L{l}" for l in best_combination)
         parts.append(
             f"BEST: {layers_str} ({best_structure.value}: {best_score:.3f}), "
@@ -104,7 +110,7 @@ def generate_exhaustive_recommendation(
 
     important_layers = patterns.get("most_important_layers", [])
     if important_layers:
-        layers_str = ", ".join(f"L{l}" for l in important_layers[:_C.DISPLAY_TOP_N_TINY])
+        layers_str = ", ".join(f"L{l}" for l in important_layers[:display_top_n_tiny])
         parts.append(f"Most important layers: {layers_str}.")
 
     dominant = patterns.get("dominant_structure", "unknown")

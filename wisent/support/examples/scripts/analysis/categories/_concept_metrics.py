@@ -14,8 +14,9 @@ from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import
 )
 
 from wisent.core.utils.config_tools.constants import (
-    NORM_EPS, GEOMETRY_OPTIMIZATION_STEPS_SMALL,
-    CV_FOLDS, KMEANS_N_INIT_SMALL, PAIR_GENERATORS_DEFAULT_N,
+    NORM_EPS, N_COMPONENTS_2D,
+    BINARY_CLASS_POSITIVE, BINARY_CLASS_NEGATIVE,
+    PARSER_DEFAULT_LAYER_START,
 )
 from wisent.examples.scripts._pair_generators_neutral import (
     ConceptMetrics,
@@ -44,64 +45,74 @@ def compute_cosine_similarity(v1: torch.Tensor, v2: torch.Tensor) -> float:
 def compute_linear_probe_accuracy(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_folds: int = CV_FOLDS,
+    n_folds: int = None,
+    *,
+    min_cloud_points: int,
+    blend_default: float,
 ) -> float:
     """Compute linear probe cross-validation accuracy."""
+    if n_folds is None:
+        raise ValueError("n_folds is required")
     try:
         from sklearn.linear_model import LogisticRegression
         from sklearn.model_selection import cross_val_score
-        
+
         n_pos = len(pos_activations)
         n_neg = len(neg_activations)
-        
-        if n_pos < 3 or n_neg < 3:
-            return 0.5
-        
-        X = torch.cat([pos_activations, neg_activations], dim=0).float().cpu().numpy()
-        y = np.array([1] * n_pos + [0] * n_neg)
-        
+
+        if n_pos < min_cloud_points or n_neg < min_cloud_points:
+            return blend_default
+
+        X = torch.cat([pos_activations, neg_activations], dim=PARSER_DEFAULT_LAYER_START).float().cpu().numpy()
+        y = np.array([BINARY_CLASS_POSITIVE] * n_pos + [BINARY_CLASS_NEGATIVE] * n_neg)
+
         n_folds = min(n_folds, min(n_pos, n_neg))
-        if n_folds < 2:
-            return 0.5
+        if n_folds < N_COMPONENTS_2D:
+            return blend_default
         
         clf = LogisticRegression( solver='lbfgs')
         scores = cross_val_score(clf, X, y, cv=n_folds, scoring='accuracy')
         return float(scores.mean())
     except Exception as e:
         print(f"  Warning: Linear probe failed: {e}")
-        return 0.5
+        return blend_default
 
 
 def compute_knn_accuracy(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    k: int = KMEANS_N_INIT_SMALL,
-    n_folds: int = CV_FOLDS,
+    k: int,
+    n_folds: int = None,
+    *,
+    min_cloud_points: int,
+    blend_default: float,
 ) -> float:
     """Compute k-NN cross-validation accuracy."""
+    if n_folds is None:
+        raise ValueError("n_folds is required")
     try:
         from sklearn.neighbors import KNeighborsClassifier
         from sklearn.model_selection import cross_val_score
-        
+
         n_pos = len(pos_activations)
         n_neg = len(neg_activations)
-        
-        if n_pos < k + 1 or n_neg < k + 1:
-            return 0.5
-        
-        X = torch.cat([pos_activations, neg_activations], dim=0).float().cpu().numpy()
-        y = np.array([1] * n_pos + [0] * n_neg)
-        
+
+        if n_pos < k + BINARY_CLASS_POSITIVE or n_neg < k + BINARY_CLASS_POSITIVE:
+            return blend_default
+
+        X = torch.cat([pos_activations, neg_activations], dim=PARSER_DEFAULT_LAYER_START).float().cpu().numpy()
+        y = np.array([BINARY_CLASS_POSITIVE] * n_pos + [BINARY_CLASS_NEGATIVE] * n_neg)
+
         n_folds = min(n_folds, min(n_pos, n_neg))
-        if n_folds < 2:
-            return 0.5
-        
+        if n_folds < N_COMPONENTS_2D:
+            return blend_default
+
         clf = KNeighborsClassifier(n_neighbors=k)
         scores = cross_val_score(clf, X, y, cv=n_folds, scoring='accuracy')
         return float(scores.mean())
     except Exception as e:
         print(f"  Warning: k-NN failed: {e}")
-        return 0.5
+        return blend_default
 
 
 def compute_cohens_d(
@@ -130,7 +141,16 @@ def analyze_concept(
     concept_name: str,
     concept_data: Dict,
     layers_to_analyze: List[int],
-    n_pairs: int = PAIR_GENERATORS_DEFAULT_N,
+    *,
+    n_pairs: int,
+    knn_k: int,
+    cv_folds: int,
+    signal_exist_threshold: float,
+    signal_linear_gap: float,
+    min_cloud_points: int,
+    geometry_optimization_steps: int,
+    blend_default: float,
+    default_score: float,
     strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
 ) -> Tuple[Dict[int, ConceptMetrics], Dict[int, Tuple[torch.Tensor, torch.Tensor]]]:
     """Analyze a single concept across multiple layers."""
@@ -183,29 +203,27 @@ def analyze_concept(
         activations_by_layer[layer] = (pos_tensor, neg_tensor)
         
         # Compute metrics
-        linear_acc = compute_linear_probe_accuracy(pos_tensor, neg_tensor)
-        knn_acc = compute_knn_accuracy(pos_tensor, neg_tensor, k=3)
+        linear_acc = compute_linear_probe_accuracy(pos_tensor, neg_tensor, cv_folds, min_cloud_points=min_cloud_points, blend_default=blend_default)
+        knn_acc = compute_knn_accuracy(pos_tensor, neg_tensor, k=knn_k, n_folds=cv_folds, min_cloud_points=min_cloud_points, blend_default=blend_default)
         cohens_d = compute_cohens_d(pos_tensor, neg_tensor)
         
         direction = compute_concept_direction(pos_tensor, neg_tensor)
         direction_norm = float(direction.norm())
         
-        # Signal detection (thresholds from Zwiad paper)
-        has_signal = max(linear_acc, knn_acc) >= 0.6
-        is_linear = has_signal and linear_acc >= knn_acc - 0.15
-        
-        # Geometry analysis
+        has_signal = max(linear_acc, knn_acc) >= signal_exist_threshold
+        is_linear = has_signal and linear_acc >= knn_acc - signal_linear_gap
+
         try:
-            config = GeometryAnalysisConfig(optimization_steps=GEOMETRY_OPTIMIZATION_STEPS_SMALL)
+            config = GeometryAnalysisConfig(optimization_steps=geometry_optimization_steps)
             geometry_result = detect_geometry_structure(pos_tensor, neg_tensor, config)
             best_structure = geometry_result.best_structure.value
-            linear_score = geometry_result.all_scores.get("linear", type('', (), {'score': 0.0})()).score
-            cone_score = geometry_result.all_scores.get("cone", type('', (), {'score': 0.0})()).score
+            linear_score = geometry_result.all_scores.get("linear", type('', (), {'score': default_score})()).score
+            cone_score = geometry_result.all_scores.get("cone", type('', (), {'score': default_score})()).score
         except Exception as e:
             print(f"  Layer {layer}: Geometry analysis failed: {e}")
             best_structure = "unknown"
-            linear_score = 0.0
-            cone_score = 0.0
+            linear_score = default_score
+            cone_score = default_score
         
         metrics = ConceptMetrics(
             concept=concept_name,

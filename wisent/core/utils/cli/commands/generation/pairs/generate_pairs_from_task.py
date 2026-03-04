@@ -31,6 +31,7 @@ def execute_generate_pairs_from_task(args):
         pairs = build_contrastive_pairs(
             task_name=args.task_name,
             limit=args.limit,
+            train_ratio=args.train_ratio,
         )
         pairs_task_name = args.task_name
 

@@ -5,8 +5,6 @@ from typing import Dict, List, Optional, Tuple
 
 import torch
 
-from wisent.core.utils.config_tools.constants import DATA_LOAD_LIMIT
-
 from wisent.core.reading.modules.utilities.data.cache import get_cache_path, save_activations_cache, save_pair_texts_cache
 from .hf_config import (
     HF_REPO_ID,
@@ -155,7 +153,7 @@ def load_available_layers_from_hf(
 
 def load_pair_texts_from_hf(
     task_name: str,
-    limit: int = DATA_LOAD_LIMIT,
+    limit: int,
     use_cache: bool = True,
 ) -> Dict[int, Dict[str, str]]:
     """Load contrastive pair texts from HuggingFace Hub.

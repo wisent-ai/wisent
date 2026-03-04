@@ -9,8 +9,9 @@ from typing import Optional
 
 from wisent.core.primitives.models import get_generate_kwargs
 from wisent.core.utils.config_tools.constants import (
-    EVAL_DEFAULT_DIFFERENCE_SCORE, EVAL_DIFFERENCE_CUTOFF,
-    EVAL_W_DIFFERENCE, EVAL_W_QUALITY, EVAL_W_ALIGNMENT,
+    PERSONALIZATION_DIFFERENCE_WEIGHT,
+    PERSONALIZATION_QUALITY_WEIGHT,
+    PERSONALIZATION_ALIGNMENT_WEIGHT,
 )
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,22 @@ class PersonalizationEvaluator:
         wisent_model=None,
         positive_examples: Optional[list[str]] = None,
         negative_examples: Optional[list[str]] = None,
+        *,
+        fast_diversity_seed: int,
+        diversity_max_sample_size: int,
+        min_sentence_length: int,
+        nonsense_min_tokens: int,
+        quality_min_response_length: int,
+        quality_repetition_ratio_threshold: float,
+        quality_bigram_repeat_threshold: int,
+        quality_bigram_repeat_penalty: float,
+        quality_special_char_ratio_threshold: float,
+        quality_special_char_penalty: float,
+        quality_char_repeat_count: int,
+        quality_char_repeat_penalty: float,
+        difference_weight: float = PERSONALIZATION_DIFFERENCE_WEIGHT,
+        quality_weight: float = PERSONALIZATION_QUALITY_WEIGHT,
+        alignment_weight: float = PERSONALIZATION_ALIGNMENT_WEIGHT,
     ):
         from wisent.core.reading.evaluators.steering_evaluators import BaseSteeringEvaluator
         BaseSteeringEvaluator.__init__(self, config, model_name)
@@ -58,6 +75,21 @@ class PersonalizationEvaluator:
         self.trait_name = config.trait.split()[0] if config.trait else "unknown"
         self.trait_description = config.trait or ""
         self._baseline_responses = None
+        self._fast_diversity_seed = fast_diversity_seed
+        self._diversity_max_sample_size = diversity_max_sample_size
+        self._min_sentence_length = min_sentence_length
+        self._nonsense_min_tokens = nonsense_min_tokens
+        self._quality_min_response_length = quality_min_response_length
+        self._quality_repetition_ratio_threshold = quality_repetition_ratio_threshold
+        self._quality_bigram_repeat_threshold = quality_bigram_repeat_threshold
+        self._quality_bigram_repeat_penalty = quality_bigram_repeat_penalty
+        self._quality_special_char_ratio_threshold = quality_special_char_ratio_threshold
+        self._quality_special_char_penalty = quality_special_char_penalty
+        self._quality_char_repeat_count = quality_char_repeat_count
+        self._quality_char_repeat_penalty = quality_char_repeat_penalty
+        self._difference_weight = difference_weight
+        self._quality_weight = quality_weight
+        self._alignment_weight = alignment_weight
 
     def get_prompts(self) -> list[str]:
         """Get evaluation prompts."""
@@ -73,8 +105,8 @@ class PersonalizationEvaluator:
             if not isinstance(custom_prompts, list):
                 custom_prompts = custom_prompts.get("prompts", [])
             return [p if isinstance(p, str) else p.get("prompt", str(p))
-                    for p in custom_prompts[:self.config.num_eval_prompts]]
-        return self.DEFAULT_PROMPTS[:self.config.num_eval_prompts]
+                    for p in custom_prompts[:30]]
+        return self.DEFAULT_PROMPTS[:30]
 
     def generate_baseline_responses(self) -> list[str]:
         """Generate baseline responses with unmodified model."""
@@ -110,20 +142,36 @@ class PersonalizationEvaluator:
         baseline_responses = self.generate_baseline_responses()
 
         if baseline_responses:
-            difference_score = evaluate_difference(baseline_responses, responses)
+            difference_score = evaluate_difference(
+                baseline_responses, responses,
+                fast_diversity_seed=self._fast_diversity_seed,
+                diversity_max_sample_size=self._diversity_max_sample_size,
+            )
         else:
-            difference_score = EVAL_DEFAULT_DIFFERENCE_SCORE
+            difference_score = 50.0
 
-        quality_score = evaluate_quality(responses)
+        quality_score = evaluate_quality(
+            responses,
+            min_sentence_length=self._min_sentence_length,
+            nonsense_min_tokens=self._nonsense_min_tokens,
+            quality_min_response_length=self._quality_min_response_length,
+            quality_repetition_ratio_threshold=self._quality_repetition_ratio_threshold,
+            quality_bigram_repeat_threshold=self._quality_bigram_repeat_threshold,
+            quality_bigram_repeat_penalty=self._quality_bigram_repeat_penalty,
+            quality_special_char_ratio_threshold=self._quality_special_char_ratio_threshold,
+            quality_special_char_penalty=self._quality_special_char_penalty,
+            quality_char_repeat_count=self._quality_char_repeat_count,
+            quality_char_repeat_penalty=self._quality_char_repeat_penalty,
+        )
         alignment_score = estimate_alignment(
             responses, self.trait_description,
             self.positive_examples, self.negative_examples,
         )
 
-        if difference_score < EVAL_DIFFERENCE_CUTOFF:
+        if difference_score < 70:
             overall_score = 0.0
         else:
-            overall_score = EVAL_W_DIFFERENCE * difference_score + EVAL_W_QUALITY * quality_score + EVAL_W_ALIGNMENT * alignment_score
+            overall_score = self._difference_weight * difference_score + self._quality_weight * quality_score + self._alignment_weight * alignment_score
 
         return {
             "difference_score": difference_score,
@@ -133,17 +181,31 @@ class PersonalizationEvaluator:
             "score": overall_score / 100.0,
         }
 
-    @staticmethod
-    def _evaluate_difference(baseline_responses: list[str], steered_responses: list[str]) -> float:
+    def _evaluate_difference(self, baseline_responses: list[str], steered_responses: list[str]) -> float:
         """Evaluate how different steered responses are from baseline."""
         from wisent.core.reading.evaluators.personalization import evaluate_difference
-        return evaluate_difference(baseline_responses, steered_responses)
+        return evaluate_difference(
+            baseline_responses, steered_responses,
+            fast_diversity_seed=self._fast_diversity_seed,
+            diversity_max_sample_size=self._diversity_max_sample_size,
+        )
 
-    @staticmethod
-    def _evaluate_quality(responses: list[str]) -> float:
+    def _evaluate_quality(self, responses: list[str]) -> float:
         """Evaluate the quality/coherence of responses."""
         from wisent.core.reading.evaluators.personalization import evaluate_quality
-        return evaluate_quality(responses)
+        return evaluate_quality(
+            responses,
+            min_sentence_length=self._min_sentence_length,
+            nonsense_min_tokens=self._nonsense_min_tokens,
+            quality_min_response_length=self._quality_min_response_length,
+            quality_repetition_ratio_threshold=self._quality_repetition_ratio_threshold,
+            quality_bigram_repeat_threshold=self._quality_bigram_repeat_threshold,
+            quality_bigram_repeat_penalty=self._quality_bigram_repeat_penalty,
+            quality_special_char_ratio_threshold=self._quality_special_char_ratio_threshold,
+            quality_special_char_penalty=self._quality_special_char_penalty,
+            quality_char_repeat_count=self._quality_char_repeat_count,
+            quality_char_repeat_penalty=self._quality_char_repeat_penalty,
+        )
 
     @staticmethod
     def estimate_alignment(

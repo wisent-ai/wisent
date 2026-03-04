@@ -2,7 +2,7 @@
 
 from typing import List, Dict, Any, Optional
 
-from wisent.core.utils.config_tools.constants import CLASSIFIER_MIN_PERFORMANCE_SCORE, DEFAULT_MAX_CLASSIFIERS_SELECT, DISPLAY_TOP_N_TINY
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_TINY
 
 
 class ClassifierSelectorHelpersMixin:
@@ -199,22 +199,26 @@ def auto_select_classifiers_for_agent(
     model_name: str,
     required_issue_types: List[str] = None,
     search_paths: List[str] = None,
-    max_classifiers: int = DEFAULT_MAX_CLASSIFIERS_SELECT,
-    min_performance: float = CLASSIFIER_MIN_PERFORMANCE_SCORE
+    max_classifiers: int = None,
+    min_performance: float = None
 ) -> List[Dict[str, Any]]:
     """
     Auto-select the best classifiers for an autonomous agent.
-    
+
     Args:
         model_name: Name of the model being used
         required_issue_types: List of required issue types to detect
         search_paths: Custom search paths for classifiers
         max_classifiers: Maximum number of classifiers to select
         min_performance: Minimum performance score required
-        
+
     Returns:
         List of classifier configurations ready for use
     """
+    if max_classifiers is None:
+        raise ValueError("max_classifiers is required for auto_select_classifiers_for_agent")
+    if min_performance is None:
+        raise ValueError("min_performance is required for auto_select_classifiers_for_agent")
     # Default issue types for comprehensive analysis
     if required_issue_types is None:
         required_issue_types = [

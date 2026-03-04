@@ -7,7 +7,6 @@ from .core import (
     is_valid_task,
     resolve_task_name,
     TaskManager,
-    _task_manager,
 )
 
 from .group_handling import (
@@ -37,7 +36,6 @@ __all__ = [
     'is_valid_task',
     'resolve_task_name',
     'TaskManager',
-    '_task_manager',
     # Group handling
     'find_working_task_from_group',
     'handle_configurable_group_task',

@@ -32,13 +32,6 @@ from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
-from wisent.core.utils.config_tools.constants import (
-    GROM_NUM_DIRECTIONS, GROM_OPTIMIZATION_STEPS, GROM_LEARNING_RATE,
-    GROM_WARMUP_STEPS, GROM_BEHAVIOR_WEIGHT, GROM_RETAIN_WEIGHT,
-    GROM_SPARSE_WEIGHT, GROM_SMOOTH_WEIGHT, GROM_INDEPENDENCE_WEIGHT,
-    GROM_MAX_ALPHA, GROM_GATE_TEMPERATURE, GROM_MIN_COSINE_SIM,
-    GROM_MAX_COSINE_SIM, GROM_ROUTER_TEMPERATURE,
-)
 from wisent.core.control.steering_methods.methods.grom._config import (
     GROMConfig, GatingNetwork, IntensityNetwork,
     DirectionWeightNetwork, GeometryAdaptation,
@@ -53,6 +46,33 @@ __all__ = [
     "IntensityNetwork",
 ]
 
+
+def _require(name: str, kwargs: dict):
+    """Raise ValueError if a required hyperparameter is missing."""
+    if name not in kwargs:
+        raise ValueError(
+            f"Parameter '{name}' is required. "
+            f"Run 'wisent optimize-steering auto' first, or pass it explicitly."
+        )
+    return kwargs[name]
+
+
+_GROM_REQUIRED_KWARGS = [
+    "num_directions", "optimization_steps", "learning_rate",
+    "warmup_steps", "behavior_weight", "retain_weight",
+    "sparse_weight", "smooth_weight", "independence_weight",
+    "max_alpha", "gate_temperature", "min_cosine_similarity",
+    "max_cosine_similarity", "weight_decay", "max_grad_norm",
+    "eta_min_factor", "linear_threshold", "adapt_cone_threshold",
+    "adapt_manifold_threshold", "adapt_linear_directions",
+    "adapt_complex_directions", "adapt_max_directions",
+    "significant_directions_default", "min_adapted_directions",
+    "caa_similarity_skip", "contrastive_margin", "contrastive_weight",
+    "utility_weight", "concentration_weight", "gate_warmup_weight",
+    "caa_alignment_weight", "gate_dim_min", "gate_dim_max",
+    "gate_dim_divisor", "intensity_dim_min", "intensity_dim_max",
+    "intensity_dim_divisor", "gate_shrink_factor",
+]
 
 
 class GROMResult:
@@ -76,10 +96,14 @@ class GROMResult:
     layer_order: List[LayerName]
     """Ordered list of layer names (for intensity network output indexing)."""
     
+    # Trained hyperparameters (stored from training config)
+    gate_temperature: float
+    """Temperature for gate sigmoid, stored from training."""
+
     # Metadata
     metadata: Dict[str, Any]
     """Training metadata and diagnostics."""
-    
+
     # Geometry analysis
     geometry_adaptation: Optional[GeometryAdaptation] = None
     """Results from geometry analysis (if adapt_to_geometry was True)."""
@@ -105,8 +129,13 @@ class GROMResult:
         effective = (weights.unsqueeze(-1) * dirs).sum(dim=0)  # [H]
         return F.normalize(effective, p=2, dim=-1)
     
-    def predict_gate(self, h: torch.Tensor, temperature: float = GROM_ROUTER_TEMPERATURE) -> torch.Tensor:
-        """Predict gate value from hidden state."""
+    def predict_gate(self, h: torch.Tensor, temperature: float = None) -> torch.Tensor:
+        """Predict gate value from hidden state.
+
+        Uses stored gate_temperature from training if not overridden.
+        """
+        if temperature is None:
+            temperature = self.gate_temperature
         if self.gate_network is None:
             # No gating - always return 1.0 (always steer)
             if h.dim() == 1:
@@ -189,30 +218,19 @@ class GROMMethod(BaseSteeringMethod):
     
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        # steering_layers and sensor_layer default to None - resolved at training time
-        # based on actual num_layers in the model
-        self.config = GROMConfig(
-            num_directions=kwargs.get("num_directions", GROM_NUM_DIRECTIONS),
-            steering_layers=kwargs.get("steering_layers", None),  # Auto-resolve from num_layers
-            sensor_layer=kwargs.get("sensor_layer", None),  # Auto-resolve from num_layers
-            num_layers=kwargs.get("num_layers", None),
-            gate_hidden_dim=kwargs.get("gate_hidden_dim", None),  # Auto-resolve from hidden_dim
-            intensity_hidden_dim=kwargs.get("intensity_hidden_dim", None),  # Auto-resolve from hidden_dim
-            optimization_steps=kwargs.get("optimization_steps", GROM_OPTIMIZATION_STEPS),
-            learning_rate=kwargs.get("learning_rate", GROM_LEARNING_RATE),
-            warmup_steps=kwargs.get("warmup_steps", GROM_WARMUP_STEPS),
-            behavior_weight=kwargs.get("behavior_weight", GROM_BEHAVIOR_WEIGHT),
-            retain_weight=kwargs.get("retain_weight", GROM_RETAIN_WEIGHT),
-            sparse_weight=kwargs.get("sparse_weight", GROM_SPARSE_WEIGHT),
-            smooth_weight=kwargs.get("smooth_weight", GROM_SMOOTH_WEIGHT),
-            independence_weight=kwargs.get("independence_weight", GROM_INDEPENDENCE_WEIGHT),
-            max_alpha=kwargs.get("max_alpha", GROM_MAX_ALPHA),
-            gate_temperature=kwargs.get("gate_temperature", GROM_GATE_TEMPERATURE),
-            min_cosine_similarity=kwargs.get("min_cosine_similarity", GROM_MIN_COSINE_SIM),
-            max_cosine_similarity=kwargs.get("max_cosine_similarity", GROM_MAX_COSINE_SIM),
-            use_caa_init=kwargs.get("use_caa_init", True),
-            normalize=kwargs.get("normalize", True),
-        )
+        if "config" in kwargs and isinstance(kwargs["config"], GROMConfig):
+            self.config = kwargs["config"]
+        else:
+            cfg = {k: _require(k, kwargs) for k in _GROM_REQUIRED_KWARGS}
+            cfg["steering_layers"] = kwargs.get("steering_layers")
+            cfg["sensor_layer"] = kwargs.get("sensor_layer")
+            cfg["num_layers"] = kwargs.get("num_layers")
+            cfg["gate_hidden_dim"] = kwargs.get("gate_hidden_dim")
+            cfg["intensity_hidden_dim"] = kwargs.get("intensity_hidden_dim")
+            cfg["use_caa_init"] = kwargs.get("use_caa_init", True)
+            cfg["normalize"] = kwargs.get("normalize", True)
+            self.config = GROMConfig(**cfg)
+        self.log_interval: int = _require("log_interval", kwargs)
         self._training_logs: List[Dict[str, float]] = []
     
     def train(self, pair_set: ContrastivePairSet) -> LayerActivations:

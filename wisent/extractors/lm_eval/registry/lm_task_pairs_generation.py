@@ -59,6 +59,8 @@ def _add_evaluator_to_pairs(
 def build_contrastive_pairs(
     task_name: str,
     limit: int | None = None,
+    *,
+    train_ratio: float,
 ) -> list["ContrastivePair"]:
     """
     Unified loader for contrastive pairs - handles both HuggingFace and lm-eval tasks.
@@ -113,9 +115,9 @@ def build_contrastive_pairs(
     from lm_eval.api.task import ConfigurableTask
     if isinstance(task_obj, ConfigurableTask):
         log.info("Single task")
-        pairs = extractor.extract_contrastive_pairs(task_obj, limit=max_items)
+        pairs = extractor.extract_contrastive_pairs(task_obj, limit=max_items, train_ratio=train_ratio)
         return _add_evaluator_to_pairs(pairs, evaluator_name, task_name)
-    
+
     # Group task (dict) - flatten and sample from all subtasks
     if isinstance(task_obj, dict):
         leaf_tasks = _flatten_task_dict(task_obj)
@@ -150,7 +152,7 @@ def build_contrastive_pairs(
                 
                 subtask_evaluator = getattr(subtask_extractor, 'evaluator_name', evaluator_name)
                 
-                subtask_pairs = subtask_extractor.extract_contrastive_pairs(subtask, limit=pairs_per_task)
+                subtask_pairs = subtask_extractor.extract_contrastive_pairs(subtask, limit=pairs_per_task, train_ratio=train_ratio)
                 subtask_pairs = _add_evaluator_to_pairs(subtask_pairs, subtask_evaluator, subtask_name)
                 all_pairs.extend(subtask_pairs)
                 
@@ -177,6 +179,8 @@ def lm_build_contrastive_pairs(
     task_name: str,
     lm_eval_task: "ConfigurableTask | None",
     limit: int | None = None,
+    *,
+    train_ratio: float,
 ) -> list["ContrastivePair"]:
     """
     Legacy function - resolve the task's extractor and return contrastive pairs.
@@ -218,6 +222,6 @@ def lm_build_contrastive_pairs(
     if isinstance(extractor, HuggingFaceBenchmarkExtractor):
         pairs = extractor.extract_contrastive_pairs(limit=max_items)
     else:
-        pairs = extractor.extract_contrastive_pairs(lm_eval_task, limit=max_items)
-    
+        pairs = extractor.extract_contrastive_pairs(lm_eval_task, limit=max_items, train_ratio=train_ratio)
+
     return _add_evaluator_to_pairs(pairs, evaluator_name, task_name)

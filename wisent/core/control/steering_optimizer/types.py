@@ -12,12 +12,6 @@ from enum import Enum
 from typing import Dict, List, Optional, Any
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
-from wisent.core.utils.config_tools.constants import (
-    STEERING_APP_INITIAL_TOKENS, STEERING_APP_INITIAL_TOKENS_SHORT,
-    STEERING_APP_INITIAL_TOKENS_LONG, STEERING_APP_DECAY_RATE,
-    STEERING_APP_DECAY_RATE_SLOW, STEERING_APP_GAUSSIAN_CENTER,
-    STEERING_APP_GAUSSIAN_WIDTH,
-)
 
 
 class SteeringApplicationStrategy(Enum):
@@ -34,12 +28,12 @@ class SteeringApplicationConfig:
     """Configuration for how steering is applied during generation."""
     strategy: SteeringApplicationStrategy = SteeringApplicationStrategy.CONSTANT
     # For INITIAL_ONLY: number of tokens to apply steering
-    initial_tokens: int = STEERING_APP_INITIAL_TOKENS
+    initial_tokens: Optional[int] = None
     # For DIMINISHING/INCREASING: decay/growth rate
-    rate: float = STEERING_APP_DECAY_RATE
+    rate: Optional[float] = None
     # For GAUSSIAN: center position (as fraction of sequence)
-    gaussian_center: float = STEERING_APP_GAUSSIAN_CENTER
-    gaussian_width: float = STEERING_APP_GAUSSIAN_WIDTH
+    gaussian_center: Optional[float] = None
+    gaussian_width: Optional[float] = None
 
 
 @dataclass
@@ -118,14 +112,23 @@ def get_default_prompt_construction_strategies() -> List[ExtractionStrategy]:
     ]
 
 
-def get_default_steering_application_configs() -> List[SteeringApplicationConfig]:
-    """Get steering application configurations to test."""
+def get_default_steering_application_configs(
+    *,
+    initial_tokens_short: int,
+    initial_tokens_long: int,
+    decay_rate: float,
+    decay_rate_slow: float,
+) -> List[SteeringApplicationConfig]:
+    """Get steering application configurations to test.
+
+    All parameters are required -- no hardcoded constant defaults.
+    """
     return [
         SteeringApplicationConfig(strategy=SteeringApplicationStrategy.CONSTANT),
-        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.INITIAL_ONLY, initial_tokens=STEERING_APP_INITIAL_TOKENS_SHORT),
-        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.INITIAL_ONLY, initial_tokens=STEERING_APP_INITIAL_TOKENS_LONG),
-        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.DIMINISHING, rate=STEERING_APP_DECAY_RATE_SLOW),
-        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.DIMINISHING, rate=STEERING_APP_DECAY_RATE),
+        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.INITIAL_ONLY, initial_tokens=initial_tokens_short),
+        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.INITIAL_ONLY, initial_tokens=initial_tokens_long),
+        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.DIMINISHING, rate=decay_rate_slow),
+        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.DIMINISHING, rate=decay_rate),
     ]
 
 

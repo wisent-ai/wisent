@@ -30,6 +30,8 @@ class JsonschemaBenchExtractor(LMEvalBenchmarkExtractor):
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
         preferred_doc: str | None = None,
+        *,
+        train_ratio: float,
     ) -> list[ContrastivePair]:
         """
         Build contrastive pairs from JSON Schema Bench docs.
@@ -44,7 +46,7 @@ class JsonschemaBenchExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
         max_items = self._normalize_limit(limit)
         # Always use test_docs due to misconfigured validation_split in lm-eval task
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc='test')
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc='test', train_ratio=train_ratio)
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 

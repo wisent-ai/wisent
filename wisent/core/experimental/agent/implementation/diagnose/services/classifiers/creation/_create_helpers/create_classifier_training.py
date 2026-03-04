@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Tuple
 
 from wisent.core.reading.classifiers.core.atoms import ActivationClassifier
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
-from wisent.core.utils.config_tools.constants import DATA_OVERSAMPLE_MULTIPLIER, SPLIT_RATIO_FULL
+from wisent.core.utils.config_tools.constants import SPLIT_RATIO_FULL, DEFAULT_RANDOM_SEED, RECURSION_INITIAL_DEPTH
 
 from ....activations import Activations
 from ....layer import Layer
@@ -17,23 +17,23 @@ class TrainingMixin:
 
     model: Model
 
-    def _load_benchmark_data(self, benchmarks: List[str], num_samples: int) -> List[Dict[str, Any]]:
+    def _load_benchmark_data(self, benchmarks: List[str], num_samples: int, *, data_oversample_multiplier: int) -> List[Dict[str, Any]]:
         """Load training data from multiple relevant benchmarks."""
         from ..tasks import TaskManager
 
         training_data = []
         samples_per_benchmark = max(1, num_samples // len(benchmarks))
 
-        # Create task manager instance
-        task_manager = TaskManager()
+        task_manager = TaskManager(max_tasks_to_process=self.max_tasks_to_process)
 
         for benchmark in benchmarks:
             try:
                 print(f"     Loading from {benchmark}...")
 
                 # Load benchmark task using TaskManager
-                task_data = task_manager.load_task(benchmark, limit=samples_per_benchmark * DATA_OVERSAMPLE_MULTIPLIER)
-                docs = task_manager.split_task_data(task_data, split_ratio=SPLIT_RATIO_FULL)[0]
+                task_data = task_manager.load_task(benchmark, limit=samples_per_benchmark * data_oversample_multiplier)
+                split = task_manager.split_task_data(task_data, split_ratio=SPLIT_RATIO_FULL, random_seed=DEFAULT_RANDOM_SEED)
+                docs = split[RECURSION_INITIAL_DEPTH]
 
                 # Extract QA pairs using existing system
                 from ....contrastive_pairs.contrastive_pair_set import ContrastivePairSet

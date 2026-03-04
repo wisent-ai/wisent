@@ -1,5 +1,4 @@
 """Method-specific subparsers for optimize-steering."""
-from wisent.core.utils.config_tools.constants import AUTO_MAX_TIME_MINUTES, OPTIMIZE_MAX_TIME_MINUTES, SEARCH_DEFAULT_STRENGTHS
 from wisent.core.control.steering_methods.registry import SteeringMethodRegistry
 AVAILABLE_METHODS = [m.upper() for m in SteeringMethodRegistry.list_methods()]
 
@@ -67,7 +66,7 @@ def setup_method_parsers(steering_subparsers):
     SteeringMethodRegistry.add_all_cli_arguments(method_parser)
     method_parser.add_argument("--limit", type=int, required=True, help="Maximum samples for testing")
     method_parser.add_argument(
-        "--max-time", type=float, default=OPTIMIZE_MAX_TIME_MINUTES, help="Maximum optimization time in minutes (default: 30.0)"
+        "--max-time", type=float, default=None, help="Maximum optimization time in minutes"
     )
     method_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     method_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
@@ -177,12 +176,12 @@ def setup_method_parsers(steering_subparsers):
     )
     SteeringMethodRegistry.add_all_cli_arguments(auto_parser)
     auto_parser.add_argument("--limit", type=int, required=True, help="Maximum samples for testing")
-    auto_parser.add_argument("--max-time", type=float, default=AUTO_MAX_TIME_MINUTES, help="Maximum time in minutes (default: 60)")
+    auto_parser.add_argument("--max-time", type=float, default=None, help="Maximum time in minutes")
     auto_parser.add_argument(
         "--strength-range",
         type=float,
         nargs="+",
-        default=list(SEARCH_DEFAULT_STRENGTHS),
+        default=None,
         help="Steering strengths to test (default: 0.5 1.0 1.5 2.0)",
     )
     auto_parser.add_argument(
@@ -202,5 +201,11 @@ def setup_method_parsers(steering_subparsers):
         "--save-as-default",
         action="store_true",
         help="Save optimal parameters as default for this model/task combination",
+    )
+    auto_parser.add_argument(
+        "--train-ratio",
+        type=float,
+        required=True,
+        help="Fraction of docs to use for training vs evaluation",
     )
 

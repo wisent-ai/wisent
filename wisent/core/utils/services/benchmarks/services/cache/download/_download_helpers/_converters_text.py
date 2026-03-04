@@ -3,7 +3,6 @@
 import random
 from typing import Any, Dict, List
 
-from wisent.core.utils.config_tools.constants import MAX_INCORRECT_PER_CORRECT
 
 
 class TextConvertersMixin:
@@ -264,7 +263,7 @@ class TextConvertersMixin:
 
         # Strategy 1: Use other answers from the same dataset if available
         if len(answers) > 1:
-            incorrect_answers.extend(answers[1:MAX_INCORRECT_PER_CORRECT + 1])
+            incorrect_answers.extend(answers[1:self.max_incorrect_per_correct + 1])
 
         # Strategy 2: Generate simple incorrect answers
         if len(incorrect_answers) < 2:
@@ -273,7 +272,7 @@ class TextConvertersMixin:
 
         # Create contrastive pairs
         pairs = []
-        for incorrect in incorrect_answers[:MAX_INCORRECT_PER_CORRECT]:  # Limit pairs
+        for incorrect in incorrect_answers[:self.max_incorrect_per_correct]:  # Limit pairs
             pairs.append(
                 {
                     "question": question,

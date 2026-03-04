@@ -12,8 +12,7 @@ from wisent.core.primitives.model_interface.core.activations import (
     extract_activation,
 )
 from wisent.core.utils.infra_tools.errors import NoHiddenStatesError
-from wisent.core.utils.config_tools.constants import LOG_EPS, PROGRESS_REPORT_INTERVAL
-from wisent.core.utils.infra_tools.infra.core.hardware import default_batch_size
+from wisent.core.utils.config_tools.constants import LOG_EPS, RECURSION_INITIAL_DEPTH, ARCHITECTURE_MODULE_LIMIT
 
 if TYPE_CHECKING:
     from wisent.core.primitives.models.wisent_model import WisentModel
@@ -33,6 +32,7 @@ class ActivationCollector:
     """
 
     model: "WisentModel"
+    architecture_module_limit: int
     store_device: str | torch.device = "cpu"
     dtype: torch.dtype | None = None
     _last_qk: dict = field(default_factory=dict, init=False, repr=False)
@@ -104,7 +104,7 @@ class ActivationCollector:
             if capture_qk:
                 from wisent.core.primitives.model_interface.core.activations.component_hooks import ComponentHookManager
                 for comp in (ExtractionComponent.Q_PROJ, ExtractionComponent.K_PROJ):
-                    mgr = ComponentHookManager(self.model.hf_model, comp, keep)
+                    mgr = ComponentHookManager(self.model.hf_model, comp, keep, self.architecture_module_limit)
                     mgr._register_hooks()
                     qk_mgrs.append(mgr)
             out = self.model.hf_model(**full_enc, output_hidden_states=True, use_cache=False)
@@ -149,7 +149,7 @@ class ActivationCollector:
     def _collect_with_hooks(self, full_enc, keep, component, strategy, answer_text, tok, prompt_len):
         """Run a second forward pass with hooks to capture component activations."""
         from wisent.core.primitives.model_interface.core.activations.component_hooks import ComponentHookManager
-        manager = ComponentHookManager(self.model.hf_model, component, keep)
+        manager = ComponentHookManager(self.model.hf_model, component, keep, self.architecture_module_limit)
         with manager.hooks_active():
             self.model.hf_model(**full_enc, output_hidden_states=False, use_cache=False)
         return manager.get_captured()
@@ -172,14 +172,13 @@ class ActivationCollector:
     def collect_batched(
         self,
         texts: list[str],
+        report_interval: int,
+        batch_size: int,
         strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
         layers: Sequence[LayerName] | None = None,
-        batch_size: int | None = None,
         show_progress: bool = True,
     ) -> list[dict[str, torch.Tensor]]:
         """Collect activations for multiple texts in batches."""
-        if batch_size is None:
-            batch_size = default_batch_size()
         self._ensure_eval_mode()
         results: list[dict[str, torch.Tensor]] = []
 
@@ -194,7 +193,7 @@ class ActivationCollector:
                 end = min(start + batch_size, len(texts))
                 batch_texts = texts[start:end]
 
-                if show_progress and batch_idx % PROGRESS_REPORT_INTERVAL == 0:
+                if show_progress and batch_idx % report_interval == RECURSION_INITIAL_DEPTH:
                     print(f"Processing batch {batch_idx + 1}/{num_batches}...", end='\r', flush=True)
 
                 encoded = tok(

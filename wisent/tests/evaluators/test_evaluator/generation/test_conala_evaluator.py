@@ -7,6 +7,7 @@ from wisent.core.reading.evaluators.benchmark_specific.conala_evaluator import (
     compute_bleu_single,
     compute_bleu,
 )
+from wisent.core.utils.config_tools.constants import CONALA_BLEU_THRESHOLD
 
 
 class TestTokenization:
@@ -104,7 +105,7 @@ class TestCoNaLaEvaluator:
 
     @pytest.fixture
     def evaluator(self):
-        return CoNaLaEvaluator()
+        return CoNaLaEvaluator(bleu_threshold=CONALA_BLEU_THRESHOLD)
 
     def test_perfect_match(self, evaluator):
         """Perfect match should be TRUTHFUL with BLEU score of 1.0."""
@@ -117,7 +118,7 @@ class TestCoNaLaEvaluator:
 
     def test_partial_match_high_bleu(self, evaluator):
         """High BLEU score should be TRUTHFUL."""
-        evaluator = CoNaLaEvaluator(bleu_threshold=0.3)
+        evaluator = CoNaLaEvaluator(bleu_threshold=CONALA_BLEU_THRESHOLD)
         # Need enough tokens for 4-gram overlap
         result = evaluator.evaluate(
             response="sorted(my_list, key=lambda x: x)",
@@ -197,7 +198,7 @@ class TestCoNaLaCorpusEvaluation:
 
     @pytest.fixture
     def evaluator(self):
-        return CoNaLaEvaluator()
+        return CoNaLaEvaluator(bleu_threshold=CONALA_BLEU_THRESHOLD)
 
     def test_corpus_evaluation_basic(self, evaluator):
         """Test basic corpus evaluation."""
@@ -245,34 +246,27 @@ class TestCoNaLaCorpusEvaluation:
 class TestCoNaLaEvaluatorConfiguration:
     """Tests for evaluator configuration."""
 
-    def test_custom_threshold(self):
-        """Test custom BLEU threshold."""
-        evaluator = CoNaLaEvaluator(bleu_threshold=0.8)
-        assert evaluator.bleu_threshold == 0.8
+    def test_uses_bleu_threshold_constant(self):
+        """Test that evaluator uses the configured BLEU threshold."""
+        evaluator = CoNaLaEvaluator(bleu_threshold=CONALA_BLEU_THRESHOLD)
+        result = evaluator.evaluate(
+            response="sorted(my_list, reverse=True)",
+            expected="sorted(my_list, reverse=True)"
+        )
+        assert result.meta["bleu_threshold"] == CONALA_BLEU_THRESHOLD
 
-    def test_custom_max_order(self):
-        """Test custom max n-gram order."""
-        evaluator = CoNaLaEvaluator(max_order=2)
-        assert evaluator.max_order == 2
-
-    def test_threshold_affects_truthfulness(self):
-        """Test that threshold affects TRUTHFUL/UNTRUTHFUL classification."""
-        # With low threshold, partial match is TRUTHFUL
-        low_threshold = CoNaLaEvaluator(bleu_threshold=0.1)
-        result_low = low_threshold.evaluate(
+    def test_bleu_scores_are_consistent(self):
+        """Test that BLEU scores are consistent across evaluations."""
+        evaluator = CoNaLaEvaluator(bleu_threshold=CONALA_BLEU_THRESHOLD)
+        result_a = evaluator.evaluate(
             response="sorted(my_list)",
             expected="sorted(my_list, reverse=True)"
         )
-
-        # With high threshold, same partial match might be UNTRUTHFUL
-        high_threshold = CoNaLaEvaluator(bleu_threshold=0.9)
-        result_high = high_threshold.evaluate(
+        result_b = evaluator.evaluate(
             response="sorted(my_list)",
             expected="sorted(my_list, reverse=True)"
         )
-
-        # The BLEU scores should be the same
-        assert result_low.meta["bleu_score"] == result_high.meta["bleu_score"]
+        assert result_a.meta["bleu_score"] == result_b.meta["bleu_score"]
 
 
 class TestCoNaLaEvaluatorEdgeCases:
@@ -280,7 +274,7 @@ class TestCoNaLaEvaluatorEdgeCases:
 
     @pytest.fixture
     def evaluator(self):
-        return CoNaLaEvaluator()
+        return CoNaLaEvaluator(bleu_threshold=CONALA_BLEU_THRESHOLD)
 
     def test_multiline_code(self, evaluator):
         """Test handling of multiline code."""

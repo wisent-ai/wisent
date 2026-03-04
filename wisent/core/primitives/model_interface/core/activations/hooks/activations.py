@@ -4,7 +4,6 @@ from typing import Any
 import torch
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 from wisent.core.utils.infra_tools.errors import InvalidValueError
-from wisent.core.utils.config_tools.constants import EXTRACTION_WEIGHTED_DECAY
 
 
 class Activations:
@@ -14,17 +13,19 @@ class Activations:
     features for classifier input based on the specified extraction strategy.
     """
 
-    def __init__(self, tensor: torch.Tensor, layer: Any, extraction_strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST):
+    def __init__(self, tensor: torch.Tensor, layer: Any, extraction_strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST, weighted_decay: float = None):
         """Initialize Activations wrapper.
 
         Args:
             tensor: Activation tensor (typically shape [batch, seq_len, hidden_dim])
             layer: Layer object containing layer metadata
             extraction_strategy: The extraction strategy to use
+            weighted_decay: Decay factor for CHAT_WEIGHTED strategy
         """
         self.tensor = tensor
         self.layer = layer
         self.extraction_strategy = extraction_strategy
+        self.weighted_decay = weighted_decay
 
     def extract_features_for_classifier(self) -> torch.Tensor:
         """Extract features from activations for classifier input.
@@ -58,8 +59,10 @@ class Activations:
             max_idx = torch.argmax(norms, dim=1)
             features = tensor[0, max_idx[0], :]
         elif strategy == ExtractionStrategy.CHAT_WEIGHTED:
+            if self.weighted_decay is None:
+                raise ValueError("weighted_decay is required for CHAT_WEIGHTED strategy")
             seq_len = tensor.shape[1]
-            weights = torch.exp(-torch.arange(seq_len, dtype=tensor.dtype, device=tensor.device) * EXTRACTION_WEIGHTED_DECAY)
+            weights = torch.exp(-torch.arange(seq_len, dtype=tensor.dtype, device=tensor.device) * self.weighted_decay)
             weights = weights / weights.sum()
             features = (tensor * weights.unsqueeze(0).unsqueeze(2)).sum(dim=1).squeeze(0)
         else:

@@ -17,7 +17,7 @@ from typing import Any, Optional
 import torch
 
 from wisent.core.reading.classifiers.core.atoms import Classifier
-from wisent.core.utils.config_tools.constants import CACHE_MAX_SIZE_GB_DEFAULT, CACHE_MAX_AGE_DAYS_DEFAULT, CACHE_MEMORY_SIZE_DEFAULT, HASH_DIGEST_PREFIX, BYTES_PER_MB, SECONDS_PER_HOUR
+from wisent.core.utils.config_tools.constants import BYTES_PER_MB, SECONDS_PER_HOUR
 
 logger = logging.getLogger(__name__)
 
@@ -55,13 +55,13 @@ class CacheMetadata:
 @dataclass
 class CacheConfig:
     """Configuration for classifier cache."""
-
+    max_cache_size_gb: float
+    max_age_days: float
+    memory_cache_size: int
+    hash_digest_prefix: int = None
     cache_dir: str = "./classifier_cache"
-    max_cache_size_gb: float = CACHE_MAX_SIZE_GB_DEFAULT
-    max_age_days: float = CACHE_MAX_AGE_DAYS_DEFAULT
-    memory_cache_size: int = CACHE_MEMORY_SIZE_DEFAULT  # Number of models to keep in memory
-
     def __post_init__(self):
+        if self.hash_digest_prefix is None: raise ValueError("hash_digest_prefix is required")
         Path(self.cache_dir).mkdir(parents=True, exist_ok=True)
 
 
@@ -141,7 +141,7 @@ class ClassifierCache(ClassifierCacheHelpersMixin):
 
         # Generate hash
         key_string = "_".join(key_components)
-        cache_key = hashlib.sha256(key_string.encode()).hexdigest()[:HASH_DIGEST_PREFIX]
+        cache_key = hashlib.sha256(key_string.encode()).hexdigest()[:self.config.hash_digest_prefix]
 
         return cache_key
 

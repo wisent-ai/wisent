@@ -4,8 +4,6 @@ import subprocess
 from dataclasses import dataclass
 
 from wisent.core.utils.config_tools.constants import (
-    EXTRACTION_DEFAULT_PAIR_LIMIT,
-    EXTRACTION_SINGLE_PAIR_LIMIT,
     ABLITERATION_NUM_PAIRS,
     ABLITERATION_DEFAULT_POSITION,
     ABLITERATION_DEFAULT_DISTANCE,
@@ -43,7 +41,7 @@ class AbliterationConfig:
         return args
 
 
-def evaluate_model(model_path: str, task: str, limit: int = EXTRACTION_DEFAULT_PAIR_LIMIT) -> tuple[float, float]:
+def evaluate_model(model_path: str, task: str, *, limit: int) -> tuple[float, float]:
     """
     Evaluate model and return (acc, acc_norm).
     """
@@ -130,6 +128,8 @@ def binary_search_strength(
     high: float = ABLITERATION_BINARY_SEARCH_HIGH,
     iterations: int = ABLITERATION_BINARY_SEARCH_ITERS,
     num_pairs: int = ABLITERATION_NUM_PAIRS,
+    *,
+    limit: int,
 ) -> tuple[float, float, float]:
     """
     Binary search to find optimal strength.
@@ -161,7 +161,7 @@ def binary_search_strength(
         model_path = run_abliteration(config, task, model, output_dir)
 
         if model_path:
-            acc, acc_norm = evaluate_model(model_path, task, limit=EXTRACTION_SINGLE_PAIR_LIMIT)
+            acc, acc_norm = evaluate_model(model_path, task, limit=limit)
             print(f"  Iteration {i+1}: strength={mid:.3f} -> acc={acc:.4f}, acc_norm={acc_norm:.4f}")
 
             if acc > best_acc:
@@ -182,6 +182,8 @@ def grid_search_components(
     base_dir: str,
     baseline_acc: float,
     num_pairs: int = ABLITERATION_NUM_PAIRS,
+    *,
+    limit: int,
 ) -> tuple[list[str], float]:
     """
     Test different component combinations.
@@ -220,7 +222,7 @@ def grid_search_components(
         model_path = run_abliteration(config, task, model, output_dir)
 
         if model_path:
-            acc, acc_norm = evaluate_model(model_path, task, limit=EXTRACTION_SINGLE_PAIR_LIMIT)
+            acc, acc_norm = evaluate_model(model_path, task, limit=limit)
             print(f"  Components {components}: acc={acc:.4f}")
 
             if acc > best_acc:
@@ -238,6 +240,8 @@ def grid_search_kernel_shape(
     baseline_acc: float,
     num_pairs: int = ABLITERATION_NUM_PAIRS,
     best_components: list[str] = None,
+    *,
+    limit: int,
 ) -> tuple[float, float, float, float]:
     """
     Search for optimal kernel shape (max_weight_position, min_weight_distance).
@@ -276,7 +280,7 @@ def grid_search_kernel_shape(
             model_path = run_abliteration(config, task, model, output_dir)
 
             if model_path:
-                acc, acc_norm = evaluate_model(model_path, task, limit=EXTRACTION_SINGLE_PAIR_LIMIT)
+                acc, acc_norm = evaluate_model(model_path, task, limit=limit)
 
                 if acc > best_acc:
                     best_position = pos

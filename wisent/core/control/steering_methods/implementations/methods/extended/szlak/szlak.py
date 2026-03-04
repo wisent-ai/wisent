@@ -18,7 +18,7 @@ from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
-from wisent.core.utils.config_tools.constants import LOG_EPS, SZLAK_SINKHORN_REG, SZLAK_INFERENCE_K
+from wisent.core.utils.config_tools.constants import LOG_EPS
 
 from .transport import (
     compute_attention_affinity_cost,
@@ -32,12 +32,24 @@ __all__ = [
 ]
 
 
+def _require(name: str, kwargs: dict):
+    """Raise ValueError if a required hyperparameter is missing."""
+    if name not in kwargs:
+        raise ValueError(
+            f"Parameter '{name}' is required. "
+            f"Run 'wisent optimize-steering auto' first, or pass it explicitly."
+        )
+    return kwargs[name]
+
+
 @dataclass
 class SzlakConfig:
     """Configuration for Attention-Transport steering method."""
-    sinkhorn_reg: float = SZLAK_SINKHORN_REG
+    sinkhorn_reg: float
     """Entropic regularization for one-sided EOT solver."""
-    inference_k: int = SZLAK_INFERENCE_K
+    max_iter: int
+    """Maximum Sinkhorn iterations (unused for one-sided, kept for API consistency)."""
+    inference_k: int
     """Number of nearest source points for inference interpolation."""
 
 
@@ -71,8 +83,9 @@ class SzlakMethod(BaseSteeringMethod):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.config = SzlakConfig(
-            sinkhorn_reg=kwargs.get("sinkhorn_reg", SZLAK_SINKHORN_REG),
-            inference_k=kwargs.get("inference_k", SZLAK_INFERENCE_K),
+            sinkhorn_reg=_require("sinkhorn_reg", kwargs),
+            max_iter=_require("max_iter", kwargs),
+            inference_k=_require("inference_k", kwargs),
         )
 
     def train(self, pair_set: ContrastivePairSet) -> LayerActivations:
@@ -122,7 +135,7 @@ class SzlakMethod(BaseSteeringMethod):
             q_neg, k_pos = qk_activations[layer_name]
             cost = compute_attention_affinity_cost(
                 q_neg.float(), k_pos.float(), num_heads=num_heads, num_kv_heads=num_kv_heads)
-            T = sinkhorn_one_sided(cost, reg=self.config.sinkhorn_reg)
+            T = sinkhorn_one_sided(cost, reg=self.config.sinkhorn_reg, max_iter=self.config.max_iter)
             row_sums = T.sum(dim=1, keepdim=True).clamp(min=LOG_EPS)
             T_norm = T / row_sums
             targets = T_norm @ pos

@@ -50,7 +50,7 @@ def execute_multi_steer(args):
         print(f"   Method: {args.method}")
 
         # Initialize multi-steering
-        multi_steer = MultiSteering(device=args.device, method=args.method)
+        multi_steer = MultiSteering(method=args.method, combined_scale=args.combined_scale, device=args.device)
 
         # Load and combine vectors
         multi_steer.load_vectors(args.vector)

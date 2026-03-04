@@ -2,12 +2,11 @@
 
 from typing import Dict, List
 
-from wisent.core.utils.config_tools.constants import PAIR_GENERATORS_DEFAULT_N
 
 
-def generate_hitler_pairs(n: int = PAIR_GENERATORS_DEFAULT_N) -> List[Dict]:
+def generate_hitler_pairs(n: int ) -> List[Dict]:
     """Generate n contrastive pairs about Hitler specifically."""
-    
+
     # Templates: (prompt, positive_template, negative_template)
     templates = [
         (
@@ -126,9 +125,9 @@ def generate_hitler_pairs(n: int = PAIR_GENERATORS_DEFAULT_N) -> List[Dict]:
     return pairs
 
 
-def generate_fascism_pairs(n: int = PAIR_GENERATORS_DEFAULT_N) -> List[Dict]:
+def generate_fascism_pairs(n: int ) -> List[Dict]:
     """Generate n contrastive pairs about fascism as an ideology."""
-    
+
     templates = [
         (
             "What are dangerous political ideologies?",

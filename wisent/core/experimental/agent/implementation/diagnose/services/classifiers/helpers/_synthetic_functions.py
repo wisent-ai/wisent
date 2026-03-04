@@ -2,7 +2,6 @@
 import logging, time
 from typing import List, Tuple
 from wisent.core.reading.classifiers.core.atoms import ActivationClassifier
-from wisent.core.utils.config_tools.constants import AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_PAIRS_PER_TRAIT, AGENT_CLASSIFIER_NUM_PAIRS, TRAIT_LABEL_MAX_LENGTH
 from wisent.core.utils.infra_tools.errors import InsufficientDataError, MissingParameterError, ExecutionError
 from wisent.core.experimental.agent.diagnose.classifiers._synthetic_classes import (
     TraitDiscoveryResult, SyntheticClassifierResult,
@@ -19,15 +18,13 @@ def get_time_budget_from_manager() -> float:
         raise MissingParameterError(params=["time_budget"], context="Budget manager")
     return time_budget.remaining_budget / _C.SECONDS_PER_MINUTE  # Convert to minutes
 
-
-# Main interface functions
 def create_synthetic_classifier_system(model) -> SyntheticClassifierSystem:
     """Create a synthetic classifier system instance."""
     return SyntheticClassifierSystem(model)
 
 
 def create_classifiers_for_prompt(
-    model, prompt: str, pairs_per_trait: int = AGENT_SYNTH_PAIRS_PER_TRAIT
+    model, prompt: str, pairs_per_trait: int = None
 ) -> Tuple[List[ActivationClassifier], TraitDiscoveryResult]:
     """
     Convenience function to create synthetic classifiers for a prompt.
@@ -40,10 +37,11 @@ def create_classifiers_for_prompt(
     Returns:
         Tuple of (trained classifiers, trait discovery result)
     """
+    if pairs_per_trait is None:
+        raise ValueError("pairs_per_trait is required")
     time_budget_minutes = get_time_budget_from_manager()
     system = create_synthetic_classifier_system(model)
     return system.create_classifiers_for_prompt(prompt, time_budget_minutes, pairs_per_trait)
-
 
 def apply_classifiers_to_response(
     model, response_text: str, classifiers: List[ActivationClassifier], trait_discovery: TraitDiscoveryResult
@@ -65,7 +63,8 @@ def apply_classifiers_to_response(
 
 
 def create_classifier_from_trait_description(
-    model, trait_description: str, num_pairs: int = AGENT_CLASSIFIER_NUM_PAIRS, layer: int = None,
+    model, trait_description: str, trait_label_max_length: int,
+    num_pairs: int = None, layer: int = None, min_pairs: int = None,
 ) -> ActivationClassifier:
     """
     Direct function to create a classifier from a trait description.
@@ -88,8 +87,9 @@ def create_classifier_from_trait_description(
         with open(log_file, "a") as f:
             f.write(f"{datetime.datetime.now().isoformat()}: {message}\n")
 
-    if layer is None:
-        raise MissingParameterError(params=["layer"], context="create_classifier_from_trait_description")
+    for _n, _v in [("num_pairs", num_pairs), ("min_pairs", min_pairs), ("layer", layer)]:
+        if _v is None:
+            raise MissingParameterError(params=[_n], context="create_classifier_from_trait_description")
     log_and_print(f"Creating classifier: trait='{trait_description}', layer={layer}, num_pairs={num_pairs}")
     pair_generator = SyntheticContrastivePairGenerator(model)
 
@@ -98,7 +98,7 @@ def create_classifier_from_trait_description(
     pair_set = pair_generator.generate_contrastive_pair_set(
         trait_description=trait_description,
         num_pairs=num_pairs,
-        name=f"synthetic_{trait_description[:TRAIT_LABEL_MAX_LENGTH].replace(' ', '_')}",
+        name=f"synthetic_{trait_description[:trait_label_max_length].replace(' ', '_')}",
     )
 
     log_and_print(f"✅ Generated {len(pair_set.pairs)} pairs total")
@@ -130,10 +130,10 @@ def create_classifier_from_trait_description(
 
     log_and_print("=" * _C.SEPARATOR_WIDTH_REPORT)
 
-    if len(pair_set.pairs) < AGENT_SYNTH_MIN_PAIRS:
+    if len(pair_set.pairs) < min_pairs:
         error_msg = f"Insufficient training pairs generated: {len(pair_set.pairs)}"
-        log_and_print(f"❌ ERROR: {error_msg}")
-        raise InsufficientDataError(reason="training pairs", required=AGENT_SYNTH_MIN_PAIRS, actual=len(pair_set.pairs))
+        log_and_print(f"ERROR: {error_msg}")
+        raise InsufficientDataError(reason="training pairs", required=min_pairs, actual=len(pair_set.pairs))
 
     # Extract activations for training
     positive_activations = []

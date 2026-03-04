@@ -6,33 +6,33 @@ from argparse import Namespace
 from typing import List, Dict
 
 from datasets import load_dataset
-from wisent.core.utils.config_tools.constants import JSON_INDENT, PAIRS_NUM_PAIRS, DEFAULT_RANDOM_SEED, PAIRS_MIN_LENGTH, PAIRS_MAX_LENGTH
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 
 
 def generate_humanization_pairs(
-    num_pairs: int = PAIRS_NUM_PAIRS,
+    num_pairs: int,
+    min_length: int,
+    max_length: int,
     output_path: str = None,
-    seed: int = DEFAULT_RANDOM_SEED,
-    min_length: int = PAIRS_MIN_LENGTH,
-    max_length: int = PAIRS_MAX_LENGTH,
+    seed: int = None,
 ) -> List[Dict]:
     """Generate contrastive pairs from GPT-wiki-intro dataset.
-    
+
     Uses real human-written Wikipedia intros as positive examples
     and GPT-generated versions as negative examples.
-    
+
     Args:
         num_pairs: Number of pairs to generate
         output_path: Path to save pairs JSON (optional)
         seed: Random seed for reproducibility
         min_length: Minimum text length in characters
         max_length: Maximum text length in characters
-    
+
     Returns:
         List of contrastive pair dicts
     """
     random.seed(seed)
-    
+
     print(f"Loading GPT-wiki-intro dataset...")
     ds = load_dataset('aadityaubhat/GPT-wiki-intro', split='train')
     print(f"  Loaded {len(ds)} examples")
@@ -109,10 +109,10 @@ def execute_generate_humanization_pairs(args):
     """CLI entry point."""
     pairs = generate_humanization_pairs(
         num_pairs=args.num_pairs,
+        min_length=args.min_length,
+        max_length=args.max_length,
         output_path=args.output,
-        seed=getattr(args, 'seed', DEFAULT_RANDOM_SEED),
-        min_length=getattr(args, 'min_length', PAIRS_MIN_LENGTH),
-        max_length=getattr(args, 'max_length', PAIRS_MAX_LENGTH),
+        seed=args.seed,
     )
     return pairs
 
@@ -120,10 +120,10 @@ def execute_generate_humanization_pairs(args):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--num-pairs", type=int, default=PAIRS_NUM_PAIRS)
+    parser.add_argument("--num-pairs", type=int, required=True)
     parser.add_argument("--output", type=str, required=True)
-    parser.add_argument("--seed", type=int, default=DEFAULT_RANDOM_SEED)
-    parser.add_argument("--min-length", type=int, default=PAIRS_MIN_LENGTH)
-    parser.add_argument("--max-length", type=int, default=PAIRS_MAX_LENGTH)
+    parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--min-length", type=int, required=True)
+    parser.add_argument("--max-length", type=int, required=True)
     args = parser.parse_args()
     execute_generate_humanization_pairs(args)

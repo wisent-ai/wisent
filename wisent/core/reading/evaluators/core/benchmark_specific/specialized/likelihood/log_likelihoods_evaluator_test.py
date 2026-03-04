@@ -16,21 +16,21 @@ from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.core.reading.evaluators.benchmark_specific.log_likelihoods_evaluator import LogLikelihoodsEvaluator
 from wisent.core.reading.evaluators.benchmark_specific.log_likelihoods_evaluator_bc import LogLikelihoodsEvaluatorBC
 from wisent.extractors.lm_eval.lm_extractor_registry import get_extractor
-from wisent.core.utils.config_tools.constants import COMPARISON_DEFAULT_BATCH_SIZE, COMPARISON_MAX_BATCH_SIZE, DISPLAY_TRUNCATION_MEDIUM, EVAL_PAIR_LIMIT, SEPARATOR_WIDTH_WIDE, PROGRESS_LOG_INTERVAL_20
+from wisent.core.utils.config_tools.constants import COMPARISON_DEFAULT_BATCH_SIZE, COMPARISON_MAX_BATCH_SIZE, DISPLAY_TRUNCATION_MEDIUM, SEPARATOR_WIDTH_WIDE, PROGRESS_LOG_INTERVAL_20
 
 
 MODEL_NAME = "meta-llama/Llama-3.2-1B"
 TASK_NAME = "boolq"
-EVAL_LIMIT = EVAL_PAIR_LIMIT
+EVAL_LIMIT = 1500
 
 
-def run_lm_eval_evaluation(wisent_model, task_dict, task_name, limit):
+def run_lm_eval_evaluation(wisent_model, task_dict, task_name, limit, batch_size: int, max_batch_size: int):
     """Run official lm-eval evaluation."""
     lm = HFLM(
         pretrained=wisent_model.hf_model,
         tokenizer=wisent_model.tokenizer,
-        batch_size=COMPARISON_DEFAULT_BATCH_SIZE,
-        max_batch_size=COMPARISON_MAX_BATCH_SIZE,
+        batch_size=batch_size,
+        max_batch_size=max_batch_size,
     )
 
     results = evaluator.evaluate(
@@ -116,7 +116,10 @@ def main():
 
     # 1. Run lm-eval-harness
     print("1. Running lm-eval-harness...")
-    lm_eval_results = run_lm_eval_evaluation(wisent_model, task_dict, TASK_NAME, EVAL_LIMIT)
+    lm_eval_results = run_lm_eval_evaluation(
+        wisent_model, task_dict, TASK_NAME, EVAL_LIMIT,
+        batch_size=COMPARISON_DEFAULT_BATCH_SIZE, max_batch_size=COMPARISON_MAX_BATCH_SIZE,
+    )
     lm_eval_acc = lm_eval_results["results"][TASK_NAME].get("acc,none", 0.0)
     print(f"   Accuracy: {lm_eval_acc:.4f}\n")
 

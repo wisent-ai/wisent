@@ -7,9 +7,10 @@ from pathlib import Path
 from argparse import Namespace
 from typing import Tuple
 from wisent.core.utils.config_tools.constants import (
-    BLEND_DEFAULT, CLASSIFIER_TEST_SIZE, DEFAULT_LIMIT, JSON_INDENT,
-    VIZ_MLP_EPOCHS, CLASSIFIER_BATCH_SIZE, MLP_HIDDEN_DIM,
+    JSON_INDENT,
+    VIZ_MLP_EPOCHS,
 )
+from wisent.core import constants as _C
 
 
 def create_steering_object_from_pairs(args, tmpdir: Path) -> str:
@@ -74,12 +75,12 @@ def load_reference_activations(args) -> Tuple[torch.Tensor, torch.Tensor]:
         component=args.extraction_component,
         extraction_strategy=args.extraction_strategy,
         prompt_format=args.prompt_format,
-        limit=getattr(args, 'limit', DEFAULT_LIMIT),
+        limit=args.limit,
         database_url=getattr(args, 'database_url', None),
     )
 
 
-def train_classifier_and_predict(pos_ref, neg_ref, base_activations, steered_activations, classifier_type='mlp'):
+def train_classifier_and_predict(pos_ref, neg_ref, base_activations, steered_activations, log_frequency: int, test_size: float = None, classifier_type='mlp', mlp_hidden_dim: int = None, batch_size: int = None, learning_rate: float = None):
     """Train classifier on reference data and predict on response activations."""
     from wisent.core.reading.classifiers.models.logistic import LogisticClassifier
     from wisent.core.reading.classifiers.models.mlp import MLPClassifier
@@ -87,8 +88,19 @@ def train_classifier_and_predict(pos_ref, neg_ref, base_activations, steered_act
 
     X_train = torch.cat([pos_ref, neg_ref], dim=0).cpu().numpy()
     y_train = np.concatenate([np.ones(len(pos_ref)), np.zeros(len(neg_ref))])
-    classifier = MLPClassifier(device="cpu", hidden_dim=MLP_HIDDEN_DIM) if classifier_type == "mlp" else LogisticClassifier(device="cpu")
-    train_report = classifier.fit(X_train, y_train, config=ClassifierTrainConfig(test_size=CLASSIFIER_TEST_SIZE, num_epochs=VIZ_MLP_EPOCHS, batch_size=CLASSIFIER_BATCH_SIZE))
+    if classifier_type == "mlp":
+        if mlp_hidden_dim is None:
+            raise ValueError("mlp_hidden_dim is required when classifier_type is 'mlp'")
+        classifier = MLPClassifier(device="cpu", hidden_dim=mlp_hidden_dim)
+    else:
+        classifier = LogisticClassifier(device="cpu")
+    if batch_size is None:
+        raise ValueError("batch_size is required for train_classifier_and_predict")
+    if learning_rate is None:
+        raise ValueError("learning_rate is required for train_classifier_and_predict")
+    if test_size is None:
+        raise ValueError("test_size is required for train_classifier_and_predict")
+    train_report = classifier.fit(X_train, y_train, log_frequency=log_frequency, config=ClassifierTrainConfig(num_epochs=VIZ_MLP_EPOCHS, batch_size=batch_size, learning_rate=learning_rate, test_size=test_size))
     base_probs = classifier.predict_proba(base_activations.cpu().numpy())
     steered_probs = classifier.predict_proba(steered_activations.cpu().numpy())
     base_probs = base_probs if isinstance(base_probs, list) else [base_probs]
@@ -97,7 +109,8 @@ def train_classifier_and_predict(pos_ref, neg_ref, base_activations, steered_act
 
 
 def save_viz_summary(output_path: Path, args, base_evaluations, steered_evaluations,
-                     base_space_probs, steered_space_probs, train_report, base_data, steered_data):
+                     base_space_probs, steered_space_probs, train_report, base_data, steered_data,
+                     truthful_threshold: float = None):
     """Save JSON summary of visualization results."""
     base_truthful = sum(1 for e in base_evaluations if e == "TRUTHFUL")
     steered_truthful = sum(1 for e in steered_evaluations if e == "TRUTHFUL")
@@ -110,8 +123,8 @@ def save_viz_summary(output_path: Path, args, base_evaluations, steered_evaluati
         json.dump({"model": args.model, "task": args.task, "layer": args.layer, "strength": args.strength,
                    "text_evaluation": {"base_truthful": base_truthful, "steered_truthful": steered_truthful, "total": len(base_evaluations)},
                    "activation_space_location": {"classifier_accuracy": train_report.final.accuracy, "classifier_auc": train_report.final.auc,
-                       "base_in_truthful_region": sum(1 for p in base_space_probs if p >= BLEND_DEFAULT),
-                       "steered_in_truthful_region": sum(1 for p in steered_space_probs if p >= BLEND_DEFAULT),
+                       "base_in_truthful_region": len([p for p in base_space_probs if p >= truthful_threshold]),
+                       "steered_in_truthful_region": len([p for p in steered_space_probs if p >= truthful_threshold]),
                        "total": len(base_space_probs), "base_mean_prob": float(np.mean(base_space_probs)),
                        "steered_mean_prob": float(np.mean(steered_space_probs))},
                    "responses": all_responses}, f, indent=JSON_INDENT)

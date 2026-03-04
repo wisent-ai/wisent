@@ -28,16 +28,7 @@ from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
-from wisent.core.utils.config_tools.constants import (
-    TETNO_CONDITION_THRESHOLD,
-    TETNO_GATE_TEMPERATURE,
-    TETNO_ENTROPY_FLOOR,
-    TETNO_ENTROPY_CEILING,
-    TETNO_MAX_ALPHA,
-    DEFAULT_OPTIMIZATION_STEPS,
-    TECZA_LEARNING_RATE,
-    TETNO_THRESHOLD_SEARCH_STEPS,
-)
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
 
 __all__ = [
     "TETNOMethod",
@@ -50,6 +41,16 @@ from wisent.core.control.steering_methods.methods.advanced._tetno_types import (
 )
 from wisent.core.control.steering_methods.methods.advanced._tetno_training import TETNOTrainingMixin
 from wisent.core.control.steering_methods.methods.advanced._tetno_scaling import TETNOScalingMixin
+
+
+def _require(name: str, kwargs: dict):
+    """Raise ValueError if a required hyperparameter is missing."""
+    if name not in kwargs:
+        raise ValueError(
+            f"Parameter '{name}' is required. "
+            f"Run 'wisent optimize-steering auto' first, or pass it explicitly."
+        )
+    return kwargs[name]
 
 class TETNOMethod(TETNOTrainingMixin, TETNOScalingMixin, BaseSteeringMethod):
     """
@@ -82,19 +83,22 @@ class TETNOMethod(TETNOTrainingMixin, TETNOScalingMixin, BaseSteeringMethod):
             steering_layers=kwargs.get("steering_layers", None),  # Auto-resolve from num_layers
             num_layers=kwargs.get("num_layers", None),
             per_layer_scaling=kwargs.get("per_layer_scaling", True),
-            condition_threshold=kwargs.get("condition_threshold", TETNO_CONDITION_THRESHOLD),
-            gate_temperature=kwargs.get("gate_temperature", TETNO_GATE_TEMPERATURE),
+            condition_threshold=_require("condition_threshold", kwargs),
+            gate_temperature=_require("gate_temperature", kwargs),
             learn_threshold=kwargs.get("learn_threshold", True),
             use_entropy_scaling=kwargs.get("use_entropy_scaling", True),
-            entropy_floor=kwargs.get("entropy_floor", TETNO_ENTROPY_FLOOR),
-            entropy_ceiling=kwargs.get("entropy_ceiling", TETNO_ENTROPY_CEILING),
-            max_alpha=kwargs.get("max_alpha", TETNO_MAX_ALPHA),
-            optimization_steps=kwargs.get("optimization_steps", DEFAULT_OPTIMIZATION_STEPS),
-            learning_rate=kwargs.get("learning_rate", TECZA_LEARNING_RATE),
+            entropy_floor=_require("entropy_floor", kwargs),
+            entropy_ceiling=_require("entropy_ceiling", kwargs),
+            max_alpha=_require("max_alpha", kwargs),
+            optimization_steps=_require("optimization_steps", kwargs),
+            learning_rate=_require("learning_rate", kwargs),
             use_caa_init=kwargs.get("use_caa_init", True),
             normalize=kwargs.get("normalize", True),
-            threshold_search_steps=kwargs.get("threshold_search_steps", TETNO_THRESHOLD_SEARCH_STEPS),
+            threshold_search_steps=_require("threshold_search_steps", kwargs),
+            condition_margin=_require("condition_margin", kwargs),
+            min_layer_scale=_require("min_layer_scale", kwargs),
         )
+        self.log_interval: int = _require("log_interval", kwargs)
         self._training_logs: List[Dict[str, float]] = []
     
     def train(self, pair_set: ContrastivePairSet) -> LayerActivations:
@@ -156,7 +160,10 @@ class TETNOMethod(TETNOTrainingMixin, TETNOScalingMixin, BaseSteeringMethod):
             raise InsufficientDataError(reason="No behavior vectors could be trained")
         
         # 2. Train condition vector at sensor layer
-        condition_vector = self._train_condition_vector(condition_pairs)
+        condition_vector = self._train_condition_vector(
+            condition_pairs, log_interval=self.log_interval,
+            condition_margin=self.config.condition_margin,
+        )
         
         # 3. Learn per-layer scaling
         layer_scales = self._compute_layer_scales(behavior_vectors, behavior_pairs)
@@ -199,9 +206,9 @@ def compute_entropy(logits: torch.Tensor) -> torch.Tensor:
 
 def compute_intensity_from_entropy(
     entropy: torch.Tensor,
-    floor: float = TETNO_ENTROPY_FLOOR,
-    ceiling: float = TETNO_ENTROPY_CEILING,
-    max_alpha: float = TETNO_MAX_ALPHA,
+    max_alpha: float,
+    floor: float,
+    ceiling: float,
 ) -> torch.Tensor:
     """
     Compute steering intensity from entropy.

@@ -6,7 +6,7 @@ import os
 
 from wisent.core.primitives.models import get_generate_kwargs
 from wisent.data.contrastive_pairs import save_personalization_pairs, save_synthetic_pairs
-from wisent.core.utils.config_tools.constants import GENERATE_PAIRS_MIN_TOKENS, JSON_INDENT, SIMHASH_RELAXED_THRESHOLD_BITS, TOKENS_PER_PAIR_ESTIMATE, TOKENS_BASE_OFFSET, DISPLAY_TRUNCATION_SHORT, TRAIT_LABEL_MAX_LENGTH, TRAIT_NAME_MAX_LENGTH
+from wisent.core.utils.config_tools.constants import JSON_INDENT, DISPLAY_TRUNCATION_SHORT
 
 
 def execute_generate_pairs(args):
@@ -37,7 +37,7 @@ def execute_generate_pairs(args):
             print(f"\n⚙️  Initializing programmatic nonsense generator...")
             generator = ProgrammaticNonsenseGenerator(
                 nonsense_mode=nonsense_mode,
-                contrastive_set_name=f"nonsense_{nonsense_mode}_{args.trait[:TRAIT_LABEL_MAX_LENGTH].replace(' ', '_')}",
+                contrastive_set_name=f"nonsense_{nonsense_mode}_{args.trait[:args.trait_label_max_length].replace(' ', '_')}",
                 trait_label=args.trait[:DISPLAY_TRUNCATION_SHORT],
                 trait_description=args.trait,
             )
@@ -48,7 +48,7 @@ def execute_generate_pairs(args):
                 import time
                 start_time = time.time()
 
-            pair_set = generator.generate(num_pairs=args.num_pairs)
+            pair_set = generator.generate(nonsense_default_num_pairs=args.nonsense_default_num_pairs)
 
             if args.timing:
                 elapsed = time.time() - start_time
@@ -74,8 +74,8 @@ def execute_generate_pairs(args):
             # 2. Set up generation config
             # Scale max_new_tokens based on number of pairs (roughly 150 tokens per pair + buffer)
             gen_kwargs = get_generate_kwargs()
-            estimated_tokens = args.num_pairs * TOKENS_PER_PAIR_ESTIMATE + TOKENS_BASE_OFFSET
-            max_tokens = max(GENERATE_PAIRS_MIN_TOKENS, min(estimated_tokens, gen_kwargs["max_new_tokens"]))
+            estimated_tokens = args.num_pairs * args.tokens_per_pair_estimate + args.tokens_base_offset
+            max_tokens = max(args.generate_pairs_min_tokens, min(estimated_tokens, gen_kwargs["max_new_tokens"]))
 
             # Get generation config from centralized inference config
             generation_config = {**gen_kwargs, "max_new_tokens": max_tokens}
@@ -85,13 +85,18 @@ def execute_generate_pairs(args):
             from wisent.core.control.generation.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
 
             cleaning_steps = [
-                DeduperCleaner(deduper=SimHashDeduper(threshold_bits=SIMHASH_RELAXED_THRESHOLD_BITS)),  # Relaxed threshold to keep more diverse pairs
+                DeduperCleaner(deduper=SimHashDeduper(
+                    threshold_bits=args.simhash_relaxed_threshold_bits,
+                    word_ngram=args.dedup_word_ngram,
+                    char_ngram=args.dedup_char_ngram,
+                    num_bands=args.simhash_num_bands,
+                )),
             ]
             cleaner = PairsCleaner(steps=cleaning_steps)
 
             # 4. Set up components
             db_instructions = Default_DB_Instructions()
-            diversity = FastDiversity()
+            diversity = FastDiversity(seed=args.fast_diversity_seed, max_sample_size=args.diversity_max_sample_size)
 
             # 5. Create generator
             print(f"\n⚙️  Initializing generator...")
@@ -99,13 +104,13 @@ def execute_generate_pairs(args):
             generator = SyntheticContrastivePairsGenerator(
                 model=model,
                 generation_config=generation_config,
-                contrastive_set_name=f"synthetic_{args.trait[:TRAIT_LABEL_MAX_LENGTH].replace(' ', '_')}",
+                contrastive_set_name=f"synthetic_{args.trait[:args.trait_label_max_length].replace(' ', '_')}",
                 trait_description=args.trait,
                 trait_label=args.trait[:DISPLAY_TRUNCATION_SHORT],
                 db_instructions=db_instructions,
                 cleaner=cleaner,
                 diversity=diversity,
-                nonsense_mode=None,  # Not used for LLM-based generation
+                retry_multiplier=args.retry_multiplier,
             )
 
             # 6. Generate pairs
@@ -214,7 +219,7 @@ def execute_generate_pairs(args):
                 else:
                     stored_path = save_synthetic_pairs(
                         pairs=pair_set,
-                        name=args.trait[:TRAIT_NAME_MAX_LENGTH].replace(' ', '_'),
+                        name=args.trait[:args.trait_name_max_length].replace(' ', '_'),
                         model=getattr(args, 'model', None),
                         metadata=metadata,
                     )

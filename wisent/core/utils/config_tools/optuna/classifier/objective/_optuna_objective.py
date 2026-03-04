@@ -8,7 +8,6 @@ import torch
 from wisent.core.reading.classifiers.core.atoms import Classifier
 from wisent.core.utils import resolve_default_device, preferred_dtype
 from wisent.core.utils.config_tools.optuna.classifier._optuna_config import get_model_dtype
-from wisent.core.utils.config_tools.constants import OPTUNA_PRUNE_ACCURACY_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +115,7 @@ class OptunaObjectiveMixin:
         self.cache_misses += 1
 
         # Train new classifier
-        classifier = self._train_classifier(params, X, y, trial)
+        classifier = self._train_classifier(params, X, y, log_frequency=self.opt_config.log_frequency, trial=trial)
 
         if classifier is None:
             raise optuna.TrialPruned()
@@ -150,7 +149,7 @@ class OptunaObjectiveMixin:
         return score
 
     def _train_classifier(
-        self, params: dict[str, Any], X: np.ndarray, y: np.ndarray, trial: Optional[optuna.Trial] = None
+        self, params: dict[str, Any], X: np.ndarray, y: np.ndarray, log_frequency: int, trial: Optional[optuna.Trial] = None
     ) -> Optional[Classifier]:
         """
         Train a classifier with the given parameters.
@@ -180,6 +179,7 @@ class OptunaObjectiveMixin:
 
             # Train classifier
             training_kwargs = {
+                "log_frequency": log_frequency,
                 "num_epochs": params["num_epochs"],
                 "learning_rate": params["learning_rate"],
                 "batch_size": params["batch_size"],
@@ -199,7 +199,7 @@ class OptunaObjectiveMixin:
             print(f"Training results: {results}")
 
             accuracy = results.get("accuracy", 0)
-            if accuracy <= OPTUNA_PRUNE_ACCURACY_THRESHOLD:  # Only prune very poor performance
+            if accuracy <= self.opt_config.prune_accuracy_threshold:  # Only prune very poor performance
                 self.logger.debug(f"Classifier performance too low ({accuracy:.3f}), pruning")
                 print(f"Classifier pruned - accuracy too low: {accuracy:.3f}")
                 return None

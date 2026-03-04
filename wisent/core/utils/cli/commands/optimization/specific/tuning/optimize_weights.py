@@ -26,7 +26,7 @@ from dataclasses import dataclass
 
 import torch
 
-from wisent.core.utils.config_tools.constants import DEFAULT_CHECKPOINT_INTERVAL, DEFAULT_RANDOM_SEED, DISPLAY_TRUNCATION_EVAL, DISPLAY_TRUNCATION_SHORT
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_EVAL, DISPLAY_TRUNCATION_SHORT
 from wisent.core.utils.infra_tools.errors import UnknownTypeError, InsufficientDataError
 from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.core.reading.evaluators.steering_evaluators import (
@@ -173,12 +173,15 @@ def execute_optimize_weights(args):
         max_weight_range=max_weight_range,
         min_weight_range=min_weight_range,
         position_range=position_range,
+        weight_min_distance_fraction=args.weight_min_distance_fraction,
         method=args.method,
         components=args.components,
         norm_preserve=args.norm_preserve,
         optimize_direction_index=args.optimize_direction_index,
         target_metric=args.target_metric,
         target_value=args.target_value if args.early_stop else None,
+        kernel_center_divisor=args.kernel_center_divisor,
+        kernel_sigma_divisor=args.kernel_sigma_divisor,
     )
 
     # Create the optimizer
@@ -198,7 +201,7 @@ def execute_optimize_weights(args):
         direction=direction,
         sampler="tpe",
         pruner=None,
-        seed=DEFAULT_RANDOM_SEED,
+        seed=args.seed,
     )
 
     # Run optimization
@@ -206,7 +209,7 @@ def execute_optimize_weights(args):
     
     # Use checkpointing if checkpoint path is provided
     checkpoint_path = getattr(args, 'checkpoint', None)
-    checkpoint_interval = getattr(args, 'checkpoint_interval', DEFAULT_CHECKPOINT_INTERVAL)
+    checkpoint_interval = args.checkpoint_interval
     gcs_bucket = getattr(args, 'gcs_bucket', None)
 
     # Generate GCS key prefix for this optimization run

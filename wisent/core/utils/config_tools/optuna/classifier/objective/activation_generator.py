@@ -1,10 +1,7 @@
-"""
-Activation pre-generation module for efficient Optuna-based classifier optimization.
+"""Activation pre-generation for Optuna classifier optimization.
 
-This module generates activations once and stores them for reuse across all Optuna trials,
-significantly improving optimization performance by avoiding redundant activation extraction.
+Generates activations once and stores them for reuse across all Optuna trials.
 """
-
 import hashlib
 import logging
 import pickle
@@ -15,17 +12,16 @@ from typing import Any, Optional
 import numpy as np
 import torch
 
+from wisent.core.utils.config_tools.constants import ARCHITECTURE_MODULE_LIMIT
 from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 from wisent.core.primitives.model_interface.core.activations.activations import Activations
-from wisent.core.utils.config_tools.constants import CLASSIFIER_BATCH_SIZE
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class ActivationData:
     """Container for pre-generated activation data with Activations wrapper integration."""
-
     activations: torch.Tensor
     labels: torch.Tensor
     layer: int
@@ -102,11 +98,11 @@ class GenerationConfig:
     """Configuration for activation generation."""
 
     layer_search_range: tuple[int, int]
+    batch_size: int
     aggregation_methods: Optional[list[ExtractionStrategy]] = None
     cache_dir: Optional[str] = None
     device: Optional[str] = None
     dtype: Optional[torch.dtype] = None  # Auto-detect if None
-    batch_size: int = CLASSIFIER_BATCH_SIZE
 
     def __post_init__(self):
         if self.cache_dir is None:
@@ -165,7 +161,7 @@ class ActivationGenerator:
         self.logger.info(f"Generating activations for {len(contrastive_pairs)} contrastive pairs")
 
         # Initialize activation collector
-        collector = ActivationCollector(model=model)
+        collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
         activation_data = {}
 
         for layer in range(self.config.layer_search_range[0], self.config.layer_search_range[1] + 1):

@@ -7,7 +7,6 @@ from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.utils.config_tools.constants import HTTP_TIMEOUT_MEDIUM
 
 __all__ = ["FlamesExtractor"]
 
@@ -49,14 +48,16 @@ class FlamesExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "value_alignment"
 
-    def __init__(self, dimension: str | None = None):
+    def __init__(self, http_timeout: int, dimension: str | None = None):
         """
         Initialize FLAMES extractor.
 
         Args:
+            http_timeout: Timeout in seconds for HTTP requests.
             dimension: Optional filter for specific value dimension
         """
         super().__init__()
+        self.http_timeout = http_timeout
         self.dimension = dimension
 
     def extract_contrastive_pairs(
@@ -103,7 +104,7 @@ class FlamesExtractor(HuggingFaceBenchmarkExtractor):
     def _load_flames_data(self) -> list[dict[str, Any]]:
         """Load FLAMES data from GitHub AI45Lab/Flames."""
         try:
-            response = requests.get(FLAMES_GITHUB_URL, timeout=HTTP_TIMEOUT_MEDIUM)
+            response = requests.get(FLAMES_GITHUB_URL, timeout=self.http_timeout)
             response.raise_for_status()
 
             examples = []

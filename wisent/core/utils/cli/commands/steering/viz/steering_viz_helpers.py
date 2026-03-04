@@ -2,7 +2,7 @@
 
 import numpy as np
 import torch
-from typing import Tuple, Any
+from typing import Optional, Tuple, Any
 
 # Re-export behavioral collection functions from separate module
 from wisent.core.utils.cli.steering_behavioral import (
@@ -11,12 +11,13 @@ from wisent.core.utils.cli.steering_behavioral import (
     collect_behavioral_labels_all_layers,
 )
 
+from wisent.core import constants as _C
 from wisent.core.utils.config_tools.constants import (
     DISPLAY_TRUNCATION_DESCRIPTION,
     NORM_EPS, VIZ_LIMIT, VIZ_CLAMPING_MARGIN, VIZ_PROJECTION_COMPONENTS,
-    VIZ_REPLACEMENT_BLEND, MLP_HIDDEN_DIM, VIZ_MLP_EPOCHS,
+    VIZ_REPLACEMENT_BLEND, VIZ_MLP_EPOCHS,
     VIZ_DIRECTION_N_PCA, VIZ_DIRECTION_N_RANDOM_SEARCH,
-    CLASSIFIER_THRESHOLD, ADAPTIVE_STRENGTH_MULTIPLIER,
+    CHANCE_LEVEL_ACCURACY,
 )
 # Re-export from steering_viz_utils for backwards compatibility
 from wisent.core.utils.visualization.steering.steering_viz_utils import (
@@ -40,20 +41,20 @@ def select_steering_direction(
 
     For behavioral method, pass activations and labels from actual generation.
     Returns (steering_vector, description, accuracy).
-    Accuracy is the behavioral classifier accuracy (CLASSIFIER_THRESHOLD for non-behavioral methods).
+    Accuracy is the behavioral classifier accuracy (CHANCE_LEVEL_ACCURACY for non-behavioral methods).
     """
     from wisent.core.reading.modules.modules.steering.analysis.steering_discovery import generate_candidate_directions
 
     pos_ref_np = pos_ref.cpu().numpy()
     neg_ref_np = neg_ref.cpu().numpy()
 
-    acc = CLASSIFIER_THRESHOLD  # Default accuracy (random baseline) for non-behavioral methods
+    acc = CHANCE_LEVEL_ACCURACY  # Default accuracy (random baseline) for non-behavioral methods
 
     if direction_method == "mean_diff":
         steering_vector = (pos_ref.mean(dim=0) - neg_ref.mean(dim=0))
         desc = "naive mean(pos) - mean(neg)"
     elif direction_method == "pca_0":
-        candidates = generate_candidate_directions(pos_ref_np, neg_ref_np, n_random=0, n_pca=VIZ_DIRECTION_N_PCA)
+        candidates = generate_candidate_directions(pos_ref_np, neg_ref_np, steering_n_random=_C.BINARY_CLASS_NEGATIVE, steering_n_pca=VIZ_DIRECTION_N_PCA, concept_pca_components=VIZ_DIRECTION_N_PCA)
         pca_candidates = [(name, d) for name, d in candidates if name.startswith("pca_") and not name.endswith("_neg")]
         if pca_candidates:
             steering_vector = torch.from_numpy(pca_candidates[0][1]).float()
@@ -62,7 +63,7 @@ def select_steering_direction(
             steering_vector = (pos_ref.mean(dim=0) - neg_ref.mean(dim=0))
             desc = "fallback to mean_diff (no PCA components)"
     elif direction_method == "search":
-        candidates = generate_candidate_directions(pos_ref_np, neg_ref_np, n_random=VIZ_DIRECTION_N_RANDOM_SEARCH, n_pca=VIZ_DIRECTION_N_PCA)
+        candidates = generate_candidate_directions(pos_ref_np, neg_ref_np, steering_n_random=VIZ_DIRECTION_N_RANDOM_SEARCH, steering_n_pca=VIZ_DIRECTION_N_PCA, concept_pca_components=VIZ_DIRECTION_N_PCA)
         best_score = -float('inf')
         best_name = None
         best_direction = None
@@ -102,9 +103,19 @@ def create_steering_method(
     strength: float,
     pos_ref_np: np.ndarray,
     neg_ref_np: np.ndarray,
+    mlp_hidden_dim: int = None,
+    mlp_learning_rate: float = None,
+    *,
+    adaptive_strength_multiplier: float,
 ) -> Any:
     """
     Create and fit a steering method.
+
+    Args:
+        mlp_hidden_dim: Hidden dimension for MLP steering. Required when
+            steering_method_name is 'mlp'.
+        mlp_learning_rate: Learning rate for MLP steering. Required when
+            steering_method_name is 'mlp'.
 
     Returns fitted SteeringMethod instance, or None for default linear.
     """
@@ -124,9 +135,13 @@ def create_steering_method(
     elif steering_method_name == "contrast":
         method = ContrastSteering(strength=strength)
     elif steering_method_name == "mlp":
-        method = MLPSteering(hidden_dim=MLP_HIDDEN_DIM, epochs=VIZ_MLP_EPOCHS)
+        if mlp_hidden_dim is None:
+            raise ValueError("mlp_hidden_dim is required when steering_method_name is 'mlp'")
+        if mlp_learning_rate is None:
+            raise ValueError("mlp_learning_rate is required when steering_method_name is 'mlp'")
+        method = MLPSteering(hidden_dim=mlp_hidden_dim, epochs=VIZ_MLP_EPOCHS, learning_rate=mlp_learning_rate)
     elif steering_method_name == "adaptive":
-        method = AdaptiveSteering(max_strength=strength * ADAPTIVE_STRENGTH_MULTIPLIER)
+        method = AdaptiveSteering(max_strength=strength * adaptive_strength_multiplier)
     else:
         return None
 

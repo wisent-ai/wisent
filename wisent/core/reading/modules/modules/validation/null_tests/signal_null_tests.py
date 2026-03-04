@@ -5,12 +5,9 @@ import torch
 import numpy as np
 
 from wisent.core.utils.config_tools.constants import (
-    ZERO_THRESHOLD, DEFAULT_RANDOM_SEED, CONFIDENCE_LEVEL,
-    MAX_PAIRS_FOR_NULL_TEST, SIGNIFICANCE_ALPHA,
-    NULL_TEST_Z_SCORE_NORMALIZER, NULL_TEST_Z_SCORE_SIGNIFICANT,
-    NONSENSE_PAIRS_MIN, NONSENSE_PAIRS_MAX,
-    Z_CRITICAL_95, Z_CRITICAL_99,
-    SIGNIFICANCE_MARGIN, PCA_MAX_COMPONENTS_NULL,
+    ZERO_THRESHOLD, DEFAULT_RANDOM_SEED, CONFIDENCE_LEVEL, SIGNIFICANCE_ALPHA,
+    NULL_TEST_Z_SCORE_SIGNIFICANT, Z_CRITICAL_95, Z_CRITICAL_99, COMBO_OFFSET,
+    N_COMPONENTS_2D,
 )
 
 from wisent.core.reading.modules.utilities.metrics.probe.signal_metrics import (
@@ -42,6 +39,10 @@ def compute_signal_vs_null(
     neg_activations: torch.Tensor,
     metric_keys: List[str],
     n_permutations: int = None,
+    mlp_early_stopping_min_samples: int = None,
+    mlp_probe_max_iter: int = None,
+    *,
+    pca_max_components_null: int,
 ) -> Dict[str, Dict[str, float]]:
     """
     Compute signal metrics relative to permutation null distribution.
@@ -59,8 +60,8 @@ def compute_signal_vs_null(
 
     # Subsample pairs for permutation testing when dataset is large
     n_pairs = len(pos_np)
-    if n_pairs > MAX_PAIRS_FOR_NULL_TEST:
-        idx = np.random.RandomState(DEFAULT_RANDOM_SEED).choice(n_pairs, MAX_PAIRS_FOR_NULL_TEST, replace=False)
+    if n_pairs > 1000:
+        idx = np.random.RandomState(DEFAULT_RANDOM_SEED).choice(n_pairs, 1000, replace=False)
         idx.sort()
         pos_np = pos_np[idx]
         neg_np = neg_np[idx]
@@ -70,8 +71,8 @@ def compute_signal_vs_null(
 
     n_samples, n_features = X.shape
     # PCA reduce for high-dimensional concatenated data
-    pca_max = min(n_samples - 1, n_features, PCA_MAX_COMPONENTS_NULL)
-    if pca_max < n_features and pca_max >= 2:
+    pca_max = min(n_samples - COMBO_OFFSET, n_features, pca_max_components_null)
+    if pca_max < n_features and pca_max >= N_COMPONENTS_2D:
         from sklearn.decomposition import PCA
         X = PCA(n_components=pca_max, random_state=DEFAULT_RANDOM_SEED).fit_transform(X)
         n_features = pca_max
@@ -91,7 +92,10 @@ def compute_signal_vs_null(
     if "knn_pca_accuracy" in metric_keys:
         metric_fns["knn_pca_accuracy"] = lambda X, y: _knn_pca_accuracy(X, y, n_components=pca_components, k=k, cv=cv)
     if "mlp_probe_accuracy" in metric_keys:
-        metric_fns["mlp_probe_accuracy"] = lambda X, y: _mlp_accuracy(X, y, hidden=mlp_hidden, cv=cv)
+        metric_fns["mlp_probe_accuracy"] = lambda X, y: _mlp_accuracy(
+            X, y, hidden=mlp_hidden, cv=cv,
+            mlp_early_stopping_min_samples=mlp_early_stopping_min_samples,
+            mlp_probe_max_iter=mlp_probe_max_iter)
 
     for metric_name, metric_fn in metric_fns.items():
         real_score = metric_fn(X, y)
@@ -121,12 +125,13 @@ def compute_signal_vs_null(
 def compute_signal_vs_nonsense(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    model,
-    tokenizer,
+    model, tokenizer,
     metric_keys: List[str],
     device: str,
     layer: int = None,
-    n_nonsense_pairs: int = None,
+    mlp_early_stopping_min_samples: int = None,
+    nonsense_pairs_min: int = None, nonsense_pairs_max: int = None,
+    mlp_probe_max_iter: int = None,
 ) -> Dict[str, Dict[str, float]]:
     """
     Compare signal metrics against random token (nonsense) baseline.
@@ -140,8 +145,8 @@ def compute_signal_vs_nonsense(
     neg_np = neg_activations.cpu().numpy() if isinstance(neg_activations, torch.Tensor) else neg_activations
 
     n_samples = len(pos_np)
-    if n_nonsense_pairs is None:
-        n_nonsense_pairs = max(NONSENSE_PAIRS_MIN, min(n_samples, NONSENSE_PAIRS_MAX))
+    n_nonsense_pairs = max(nonsense_pairs_min, min(n_samples, nonsense_pairs_max))
+
 
     nonsense_pos, nonsense_neg = generate_nonsense_activations(
         model, tokenizer, device=device, n_pairs=n_nonsense_pairs, layer=layer,
@@ -169,7 +174,7 @@ def compute_signal_vs_nonsense(
     if "knn_accuracy" in metric_keys:
         real_score = _knn_accuracy(X_real, y_real, k=k, cv=cv)
         nonsense_score = _knn_accuracy(X_nonsense, y_nonsense, k=k_nonsense, cv=cv_nonsense)
-        z_score = (real_score - nonsense_score) / NULL_TEST_Z_SCORE_NORMALIZER
+        z_score = (real_score - nonsense_score) / 0.1
         results["knn_accuracy"] = {
             "real_score": real_score, "nonsense_score": nonsense_score,
             "z_score": z_score, "is_significant": z_score > NULL_TEST_Z_SCORE_SIGNIFICANT,
@@ -179,16 +184,18 @@ def compute_signal_vs_nonsense(
         pca_nonsense = _adaptive_pca_components(len(nonsense_pos_np) * 2, n_features)
         real_score = _knn_pca_accuracy(X_real, y_real, n_components=pca_components, k=k, cv=cv)
         nonsense_score = _knn_pca_accuracy(X_nonsense, y_nonsense, n_components=pca_nonsense, k=k_nonsense, cv=cv_nonsense)
-        z_score = (real_score - nonsense_score) / NULL_TEST_Z_SCORE_NORMALIZER
+        z_score = (real_score - nonsense_score) / 0.1
         results["knn_pca_accuracy"] = {
             "real_score": real_score, "nonsense_score": nonsense_score,
             "z_score": z_score, "is_significant": z_score > NULL_TEST_Z_SCORE_SIGNIFICANT,
         }
 
     if "mlp_probe_accuracy" in metric_keys:
-        real_score = _mlp_accuracy(X_real, y_real, hidden=mlp_hidden, cv=cv)
-        nonsense_score = _mlp_accuracy(X_nonsense, y_nonsense, hidden=mlp_hidden, cv=cv_nonsense)
-        z_score = (real_score - nonsense_score) / NULL_TEST_Z_SCORE_NORMALIZER
+        real_score = _mlp_accuracy(X_real, y_real, hidden=mlp_hidden, cv=cv,
+            mlp_early_stopping_min_samples=mlp_early_stopping_min_samples, mlp_probe_max_iter=mlp_probe_max_iter)
+        nonsense_score = _mlp_accuracy(X_nonsense, y_nonsense, hidden=mlp_hidden, cv=cv_nonsense,
+            mlp_early_stopping_min_samples=mlp_early_stopping_min_samples, mlp_probe_max_iter=mlp_probe_max_iter)
+        z_score = (real_score - nonsense_score) / 0.1
         results["mlp_probe_accuracy"] = {
             "real_score": real_score, "nonsense_score": nonsense_score,
             "z_score": z_score, "is_significant": z_score > NULL_TEST_Z_SCORE_SIGNIFICANT,
@@ -254,16 +261,18 @@ def compute_signal_with_bounds(
     metric_keys: List[str],
     n_permutations: int = None,
     confidence_level: float = CONFIDENCE_LEVEL,
+    mlp_early_stopping_min_samples: int = None,
+    mlp_probe_max_iter: int = None,
+    *,
+    pca_max_components_null: int,
+    significance_margin: float,
 ) -> Dict[str, Dict[str, float]]:
-    """
-    Compute signal metrics with estimation error bounds.
-
-    Instead of claiming "no guarantees", we bound estimation error:
-    - Accuracy estimate ± margin of error
-    - Effect size (Cohen's d) with confidence interval
-    - Comparison vs null is bounded, not "feasible/infeasible"
-    """
-    results = compute_signal_vs_null(pos_activations, neg_activations, metric_keys, n_permutations)
+    """Compute signal metrics with estimation error bounds."""
+    results = compute_signal_vs_null(
+        pos_activations, neg_activations, metric_keys, n_permutations,
+        mlp_early_stopping_min_samples=mlp_early_stopping_min_samples,
+        mlp_probe_max_iter=mlp_probe_max_iter,
+        pca_max_components_null=pca_max_components_null)
 
     pos_np = pos_activations.cpu().numpy() if isinstance(pos_activations, torch.Tensor) else pos_activations
     neg_np = neg_activations.cpu().numpy() if isinstance(neg_activations, torch.Tensor) else neg_activations
@@ -285,7 +294,7 @@ def compute_signal_with_bounds(
             "accuracy_upper": min(1.0, acc + margin),
             "margin_of_error": margin,
             "effect_size_cohens_d": effect_size,
-            "estimation_reliable": margin < SIGNIFICANCE_MARGIN,
+            "estimation_reliable": margin < significance_margin,
         })
 
     return results

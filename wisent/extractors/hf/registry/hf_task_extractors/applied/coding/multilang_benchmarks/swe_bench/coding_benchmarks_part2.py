@@ -9,7 +9,6 @@ import io
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.utils.config_tools.constants import HTTP_TIMEOUT_LONG
 from wisent.core.utils.infra_tools.errors import InvalidValueError
 
 log = setup_logger(__name__)
@@ -147,14 +146,17 @@ class SciCodeExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "scientific_computing"
 
-    def __init__(self, domain: str | None = None):
+    def __init__(self, http_timeout: int, domain: str | None = None):
         """
         Initialize SciCode extractor.
 
         Args:
+            http_timeout: Timeout in seconds for HTTP requests.
+        Args:
             domain: Optional filter for scientific domain (physics, chemistry, biology, etc.)
         """
         super().__init__()
+        self.http_timeout = http_timeout
         self.domain = domain
 
     def extract_contrastive_pairs(
@@ -202,7 +204,7 @@ class SciCodeExtractor(HuggingFaceBenchmarkExtractor):
     def _load_from_github(self) -> list[dict[str, Any]]:
         """Load SciCode data from GitHub ZIP archive."""
         try:
-            response = requests.get(SCICODE_GITHUB_URL, timeout=HTTP_TIMEOUT_LONG)
+            response = requests.get(SCICODE_GITHUB_URL, timeout=self.http_timeout)
             response.raise_for_status()
             
             all_problems = []

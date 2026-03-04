@@ -1,6 +1,6 @@
 """Parser for the 'steering-viz' command - steering effect visualization."""
 
-from wisent.core.utils.config_tools.constants import AUTOTUNE_VAL_SPLIT, COMPARISON_STEERING_LAYER
+from wisent.core.utils.config_tools.constants import COMPARISON_STEERING_LAYER
 
 
 def setup_steering_viz_parser(parser):
@@ -54,6 +54,18 @@ def setup_steering_viz_parser(parser):
         required=True,
         choices=["last_token", "first_token"],
         help="Token extraction strategy"
+    )
+    parser.add_argument(
+        "--db-pair-loading-limit",
+        type=int,
+        required=True,
+        help="Maximum pairs to load from database"
+    )
+    parser.add_argument(
+        "--db-activation-loading-limit",
+        type=int,
+        required=True,
+        help="Maximum activations to load from database"
     )
     parser.add_argument(
         "--database-url",
@@ -164,8 +176,8 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--val-split",
         type=float,
-        default=AUTOTUNE_VAL_SPLIT,
-        help="Fraction of test set to use for validation during autotune (default: 0.5)"
+        default=None,
+        help="Fraction of test set to use for validation during autotune (required when --autotune)"
     )
     parser.add_argument(
         "--interactive",
@@ -177,4 +189,40 @@ def setup_steering_viz_parser(parser):
         type=str,
         required=True,
         help="Device to run model on (e.g., 'cuda', 'mps' for Mac)"
+    )
+    parser.add_argument(
+        "--classifier-test-size",
+        type=float,
+        required=True,
+        help="Fraction of data to hold out for testing in classifier training",
+    )
+    parser.add_argument(
+        "--classifier-batch-size",
+        type=int,
+        required=True,
+        help="Batch size for classifier training",
+    )
+    parser.add_argument(
+        "--classifier-lr",
+        type=float,
+        required=True,
+        help="Learning rate for classifier training",
+    )
+    parser.add_argument(
+        "--mlp-hidden-dim",
+        type=int,
+        default=None,
+        help="Hidden dimension for MLP classifier (required when --space-classifier=mlp)",
+    )
+    parser.add_argument(
+        "--pacmap-neighbors-max", type=int, required=True,
+        help="Maximum number of PaCMAP neighbors for visualization",
+    )
+    parser.add_argument(
+        "--pacmap-neighbors-divisor", type=int, required=True,
+        help="Divisor for computing PaCMAP neighbors from sample count",
+    )
+    parser.add_argument(
+        "--pacmap-num-iters", type=int, required=True,
+        help="Number of PaCMAP iterations for visualization",
     )

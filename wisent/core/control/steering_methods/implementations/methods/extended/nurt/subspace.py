@@ -14,10 +14,6 @@ from typing import Tuple
 import torch
 from wisent.core.utils.config_tools.constants import (
     LOG_EPS,
-    DEFAULT_VARIANCE_THRESHOLD,
-    MIN_CONCEPT_DIM,
-    NURT_NUM_DIMS,
-    NURT_MAX_CONCEPT_DIM,
 )
 
 
@@ -31,27 +27,33 @@ __all__ = [
 def discover_concept_subspace(
     pos: torch.Tensor,
     neg: torch.Tensor,
-    num_dims: int = NURT_NUM_DIMS,
-    variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD,
+    variance_threshold: float,
+    nurt_num_dims: int,
+    nurt_max_concept_dim: int,
+    min_concept_dim: int = None,
 ) -> Tuple[torch.Tensor, torch.Tensor, int]:
     """
     Discover the concept subspace via SVD on difference vectors.
 
     Computes D = pos - neg, then SVD(D) = U S Vh.
     Selects top-k rows of Vh where cumulative variance exceeds threshold.
+    Uses nurt_num_dims for fixed dimensions when positive,
+    otherwise auto-selects from eigenvalue spectrum.
 
     Args:
         pos: Positive activations [N, hidden_dim].
         neg: Negative activations [N, hidden_dim].
-        num_dims: If > 0, use this exact number of dimensions.
-                  If 0, auto-select from eigenvalue spectrum.
         variance_threshold: Cumulative variance threshold for auto-selection.
+        nurt_num_dims: Number of concept subspace dimensions. Zero = auto.
+        nurt_max_concept_dim: Maximum concept subspace dimensions.
 
     Returns:
         Vh: Concept basis matrix [k, hidden_dim].
         S: Singular values [min(N, hidden_dim)].
         k: Number of selected dimensions.
     """
+    if min_concept_dim is None:
+        raise ValueError("min_concept_dim is required")
     D = pos.float() - neg.float()
 
     # Center the difference vectors
@@ -60,15 +62,15 @@ def discover_concept_subspace(
     # SVD
     U, S, Vh = torch.linalg.svd(D_centered, full_matrices=False)
 
-    if num_dims > 0:
-        k = min(num_dims, S.shape[0], NURT_MAX_CONCEPT_DIM)
-        k = max(k, MIN_CONCEPT_DIM)
+    if nurt_num_dims > 0:
+        k = min(nurt_num_dims, S.shape[0], nurt_max_concept_dim)
+        k = max(k, min_concept_dim)
     else:
         # Auto-select k from cumulative variance
         variance = S ** 2
         total_var = variance.sum()
         if total_var < LOG_EPS:
-            k = MIN_CONCEPT_DIM
+            k = min_concept_dim
         else:
             cumvar = torch.cumsum(variance, dim=0) / total_var
             # Find first index where cumulative variance exceeds threshold
@@ -77,8 +79,8 @@ def discover_concept_subspace(
                 k = above[0].item() + 1
             else:
                 k = S.shape[0]
-            # Clamp to [MIN_CONCEPT_DIM, NURT_MAX_CONCEPT_DIM]
-            k = max(MIN_CONCEPT_DIM, min(k, NURT_MAX_CONCEPT_DIM))
+            # Clamp to [min_concept_dim, nurt_max_concept_dim]
+            k = max(min_concept_dim, min(k, nurt_max_concept_dim))
 
     return Vh[:k], S, k
 

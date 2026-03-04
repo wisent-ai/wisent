@@ -24,14 +24,15 @@ class OptunaBigCodeEvaluator:
     using actual code execution instead of string comparison.
     """
 
-    def __init__(self, docker_executor=None):
+    def __init__(self, test_timeout: int, docker_executor=None):
         """
         Initialize the evaluator.
 
         Args:
+            test_timeout: Timeout in seconds for subprocess-based code execution
             docker_executor: Optional Docker executor for secure code execution
         """
-        self.bigcode_evaluator = BigCodeEvaluator(docker_executor)
+        self.bigcode_evaluator = BigCodeEvaluator(test_timeout=test_timeout, docker_executor=docker_executor)
         self.code_extractor = None  # Will be set per task
 
     def is_coding_task(self, task_name: str) -> bool:
@@ -185,11 +186,12 @@ class OptunaBigCodeEvaluator:
 _optuna_bigcode_evaluator = None
 
 
-def get_optuna_bigcode_evaluator(docker_executor=None) -> OptunaBigCodeEvaluator:
+def get_optuna_bigcode_evaluator(test_timeout: int, docker_executor=None) -> OptunaBigCodeEvaluator:
     """
     Get global OptunaBigCodeEvaluator instance.
 
     Args:
+        test_timeout: Timeout in seconds for subprocess-based code execution
         docker_executor: Optional Docker executor
 
     Returns:
@@ -197,5 +199,5 @@ def get_optuna_bigcode_evaluator(docker_executor=None) -> OptunaBigCodeEvaluator
     """
     global _optuna_bigcode_evaluator
     if _optuna_bigcode_evaluator is None:
-        _optuna_bigcode_evaluator = OptunaBigCodeEvaluator(docker_executor)
+        _optuna_bigcode_evaluator = OptunaBigCodeEvaluator(test_timeout=test_timeout, docker_executor=docker_executor)
     return _optuna_bigcode_evaluator

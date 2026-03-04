@@ -16,7 +16,7 @@ import numpy as np
 from torch.nn.modules.loss import _Loss
 from wisent.core.utils.infra_tools.errors import DuplicateNameError, InvalidRangeError, UnknownTypeError
 from wisent.core.utils import preferred_dtype
-from wisent.core.utils.config_tools.constants import CLASSIFIER_THRESHOLD, BASE_CLASS_NAME
+from wisent.core.utils.config_tools.constants import BASE_CLASS_NAME
 
 # Re-export config types
 from wisent.core.reading.classifiers.core._atoms_config import (
@@ -65,7 +65,7 @@ class BaseClassifier(ClassifierTrainingMixin, ClassifierInferenceMixin, Classifi
 
     def __init__(
         self,
-        threshold: float = CLASSIFIER_THRESHOLD,
+        threshold: float,
         device: str | None = None,
         dtype: torch.dtype | None = None,
     ) -> None:

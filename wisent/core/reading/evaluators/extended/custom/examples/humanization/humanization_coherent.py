@@ -10,7 +10,7 @@ is semantically relevant to the prompt.
 Usage:
     from wisent.core.reading.evaluators.custom.examples.humanization_coherent import HumanizationCoherentEvaluator
     
-    evaluator = HumanizationCoherentEvaluator()
+    evaluator = HumanizationCoherentEvaluator(coherence_threshold=0.3)
     result = evaluator("Some text to analyze", prompt="What was the question?")
 """
 
@@ -22,7 +22,7 @@ from typing import Any, Dict, Optional
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-from wisent.core.utils.config_tools.constants import HUMANIZATION_COHERENCE_THRESHOLD, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT
 from wisent.core.reading.evaluators.custom.custom_evaluator import (
     CustomEvaluator,
     CustomEvaluatorConfig,
@@ -60,14 +60,15 @@ class HumanizationCoherentEvaluator(CustomEvaluator):
     Final score = human_score if coherence passes threshold, otherwise 0.
     
     Args:
-        coherence_threshold: Minimum coherence score (0-1) to accept output (default: 0.3)
+        coherence_threshold: Minimum coherence score to accept output
         device: Device for models
     """
     
     def __init__(
         self,
-        coherence_threshold: float = HUMANIZATION_COHERENCE_THRESHOLD,
         device: Optional[str] = None,
+        *,
+        coherence_threshold: float,
     ):
         config = CustomEvaluatorConfig(
             name="humanization_coherent",
@@ -158,14 +159,15 @@ class HumanizationCoherentEvaluator(CustomEvaluator):
 
 
 def create_humanization_coherent_evaluator(
-    coherence_threshold: float = HUMANIZATION_COHERENCE_THRESHOLD,
     device: Optional[str] = None,
-    **kwargs
+    *,
+    coherence_threshold: float,
+    **kwargs,
 ) -> HumanizationCoherentEvaluator:
     """Create a humanization + coherence evaluator.
     
     Args:
-        coherence_threshold: Minimum coherence score (0-1) to accept (default: 0.3)
+        coherence_threshold: Minimum coherence score (0-1) to accept
         device: Device for models
     
     Returns:

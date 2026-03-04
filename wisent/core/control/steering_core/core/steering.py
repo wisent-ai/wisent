@@ -12,7 +12,7 @@ import torch.nn.functional as F
 # from wisent.core.reading.classifiers.core.atoms import Classifier
 
 from wisent.core.primitives.contrastive_pairs import ContrastivePairSet
-from wisent.core.utils.config_tools.constants import BLEND_DEFAULT, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT
 from .steering_method import CAA
 from wisent.core.utils.infra_tools.errors import (
     MissingParameterError,
@@ -39,7 +39,7 @@ class SteeringMethod(SteeringLoggingMixin, SteeringOptimizationMixin, SteeringEv
     For new vector-based steering, use steering_method.CAA directly.
     """
 
-    def __init__(self, method_type: SteeringType, device=None, threshold=BLEND_DEFAULT):
+    def __init__(self, method_type: SteeringType, device=None, threshold=None):
         self.method_type = method_type
         self.device = device
         self.threshold = threshold

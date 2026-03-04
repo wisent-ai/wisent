@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from torch.nn import Module
     from wisent.core.primitives.models.wisent_model import WisentModel
     from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.utils.config_tools.constants import GUIDED_VARIANCE_THRESHOLD, GUIDED_STRONG_SIGNAL, GUIDED_MODERATE_SIGNAL, SEPARATOR_WIDTH_WIDE
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_WIDE, ARCHITECTURE_MODULE_LIMIT
 from wisent.core.weight_modification.methods.guided import (
     GuidedModificationConfig, GuidedModificationResult, CollateralDamageReport)
 from wisent.core.weight_modification.methods._guided_diagnostics import compute_layer_diagnostics
@@ -57,30 +57,13 @@ def run_guided_modification(
     wisent_model: "WisentModel",
     config: Optional[GuidedModificationConfig] = None,
     components: Optional[List[str]] = None,
+    *,
+    guided_variance_threshold: float,
+    guided_strong_signal: float,
+    guided_moderate_signal: float,
+    blend_default: float,
 ) -> GuidedModificationResult:
-    """
-    Run guided weight modification using linearity diagnostics.
-    
-    This is the main entry point for data-driven weight modification.
-    
-    Pipeline:
-    1. Compute per-layer diagnostics (linear score, Fisher ratio, etc.)
-    2. Select layers based on mode (full, surgical, adaptive)
-    3. Compute layer weights based on diagnostics
-    4. Compute steering vectors for selected layers
-    5. Apply weight modification
-    6. Optionally validate collateral damage
-    
-    Args:
-        model: HuggingFace model to modify (in-place)
-        pairs: Contrastive pairs defining the concept to modify
-        wisent_model: WisentModel wrapper (for activation collection)
-        config: Configuration for guided modification
-        components: Weight components to modify
-        
-    Returns:
-        GuidedModificationResult with diagnostics and modification stats
-    """
+    """Run guided weight modification using linearity diagnostics."""
     from wisent.core.weight_modification.directional import project_weights
     
     cfg = config or GuidedModificationConfig()
@@ -102,6 +85,7 @@ def run_guided_modification(
         layers=None,  # All layers
         extraction_strategy=cfg.extraction_strategy,
         verbose=cfg.verbose,
+        blend_default=blend_default,
     )
     
     if not diagnostics:
@@ -122,7 +106,7 @@ def run_guided_modification(
         scores = [d.linear_score for d in diagnostics.values()]
         variance = torch.tensor(scores).var().item()
         
-        if variance > GUIDED_VARIANCE_THRESHOLD:  # High variance = some layers much better
+        if variance > guided_variance_threshold:  # High variance = some layers much better
             selected_layers = select_surgical_layers(diagnostics, cfg)
             mode_used = AblationMode.SURGICAL
         else:
@@ -144,7 +128,7 @@ def run_guided_modification(
     
     # Step 3: Compute layer weights
     if cfg.use_fisher_weights:
-        all_weights = compute_fisher_weights(diagnostics, cfg)
+        all_weights = compute_fisher_weights(diagnostics, cfg, blend_default=blend_default)
         layer_weights = {l: all_weights[l] for l in selected_layers if l in all_weights}
     else:
         # Use recommended weights from diagnostics
@@ -210,12 +194,12 @@ def run_guided_modification(
     best_layer = max(selected_layers, key=lambda l: diagnostics[l].linear_score)
     best_score = diagnostics[best_layer].linear_score
     
-    if best_score >= GUIDED_STRONG_SIGNAL:
+    if best_score >= guided_strong_signal:
         recommendation = (
             f"Strong linear signal detected. Modified {len(selected_layers)} layers "
             f"with {mode_used.value} mode. Best layer: {best_layer} (score={best_score:.3f})"
         )
-    elif best_score >= GUIDED_MODERATE_SIGNAL:
+    elif best_score >= guided_moderate_signal:
         recommendation = (
             f"Moderate linear signal. Modified {len(selected_layers)} layers. "
             f"Consider verifying results with benchmark evaluation."
@@ -249,7 +233,7 @@ def _compute_steering_vectors(
     from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
     from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
     
-    collector = ActivationCollector(model)
+    collector = ActivationCollector(model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
     strategy = ExtractionStrategy(extraction_strategy)
     
     pos_activations: Dict[int, List[Tensor]] = {l: [] for l in layers}

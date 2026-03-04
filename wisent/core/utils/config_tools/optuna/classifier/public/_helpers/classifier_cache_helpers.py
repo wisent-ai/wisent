@@ -3,6 +3,7 @@
 import hashlib
 import json
 import logging
+import operator
 import pickle
 import time
 from pathlib import Path
@@ -12,19 +13,18 @@ import torch
 
 from wisent.core.utils.config_tools.constants import (
     BYTES_PER_KB,
-    CACHE_WEIGHT_LAYER_PROXIMITY,
-    CACHE_WEIGHT_MODEL_NAME,
-    CACHE_WEIGHT_MODEL_TYPE,
-    CACHE_WEIGHT_TASK_NAME,
-    CLASSIFIER_CACHE_TOP_K,
-    HASH_SAMPLE_SIZE,
     JSON_INDENT,
-    LAYER_CACHE_DECAY_DENOMINATOR,
-    LAYER_CACHE_MIN_SCORE,
     HASH_DISPLAY_LENGTH,
+    SCORE_RANGE_MAX,
+    SCORE_RANGE_MIN,
     SECONDS_PER_HOUR,
     SECONDS_PER_DAY,
 )
+
+# These were formerly experiment constants. Callers must pass explicitly.
+# CACHE_WEIGHT_MODEL_NAME, CACHE_WEIGHT_TASK_NAME, CACHE_WEIGHT_MODEL_TYPE,
+# CACHE_WEIGHT_LAYER_PROXIMITY, LAYER_CACHE_DECAY_DENOMINATOR,
+# LAYER_CACHE_MIN_SCORE, CLASSIFIER_CACHE_TOP_K, HASH_SAMPLE_SIZE
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,14 @@ class ClassifierCacheHelpersMixin:
         task_name: str,
         model_type: Optional[str] = None,
         layer: Optional[int] = None,
-        top_k: int = CLASSIFIER_CACHE_TOP_K,
+        *,
+        top_k: int,
+        cache_weight_model_name: float,
+        cache_weight_task_name: float,
+        cache_weight_model_type: float,
+        cache_weight_layer_proximity: float,
+        layer_cache_decay_denominator: float,
+        layer_cache_min_score: float,
     ) -> list[tuple[str, CacheMetadata, float]]:
         """
         Find similar cached models based on configuration.
@@ -49,40 +56,36 @@ class ClassifierCacheHelpersMixin:
             model_type: Optional model type filter
             layer: Optional layer filter
             top_k: Maximum number of results
+            cache_weight_model_name: Weight for model name match
+            cache_weight_task_name: Weight for task name match
+            cache_weight_model_type: Weight for model type match
+            cache_weight_layer_proximity: Weight for layer proximity
+            layer_cache_decay_denominator: Denominator for layer distance decay
+            layer_cache_min_score: Minimum score to include a candidate
 
         Returns:
             List of (cache_key, metadata, similarity_score) tuples
         """
         candidates = []
-
+        _score_idx = len(("key", "meta"))  # index of score in tuple
         for cache_key, metadata in self.metadata.items():
-            # Calculate similarity score
-            score = 0.0
-
-            # Model name match (highest weight)
+            score = SCORE_RANGE_MIN
             if metadata.model_name == model_name:
-                score += CACHE_WEIGHT_MODEL_NAME
-
-            # Task name match
+                score += cache_weight_model_name
             if metadata.task_name == task_name:
-                score += CACHE_WEIGHT_TASK_NAME
-
-            # Model type match
+                score += cache_weight_task_name
             if model_type and metadata.model_type == model_type:
-                score += CACHE_WEIGHT_MODEL_TYPE
-
-            # Layer proximity
+                score += cache_weight_model_type
             if layer is not None:
                 layer_diff = abs(metadata.layer - layer)
-                layer_score = max(0, 1.0 - layer_diff / LAYER_CACHE_DECAY_DENOMINATOR)  # Decay with distance
-                score += CACHE_WEIGHT_LAYER_PROXIMITY * layer_score
-
-            # Only include models with some similarity
-            if score > LAYER_CACHE_MIN_SCORE:
+                layer_score = max(
+                    SCORE_RANGE_MIN,
+                    SCORE_RANGE_MAX - layer_diff / layer_cache_decay_denominator,
+                )
+                score += cache_weight_layer_proximity * layer_score
+            if score > layer_cache_min_score:
                 candidates.append((cache_key, metadata, score))
-
-        # Sort by similarity score and return top_k
-        candidates.sort(key=lambda x: x[2], reverse=True)
+        candidates.sort(key=operator.itemgetter(_score_idx), reverse=True)
         return candidates[:top_k]
 
     def clear_cache(self, keep_recent_hours: float = 0) -> int:
@@ -210,7 +213,7 @@ class ClassifierCacheHelpersMixin:
         # Save updated metadata
         self._save_metadata()
 
-    def compute_data_hash(self, X: torch.Tensor, y: torch.Tensor) -> str:
+    def compute_data_hash(self, X: torch.Tensor, y: torch.Tensor, *, hash_sample_size: int) -> str:
         """
         Compute hash of training data for cache key generation.
 
@@ -230,10 +233,10 @@ class ClassifierCacheHelpersMixin:
         if X.size(0) > 10:
             # Use tensor indexing instead of numpy.linspace
             sample_indices = torch.linspace(0, X.size(0) - 1, 10, dtype=torch.long)
-            x_sample = X[sample_indices].flatten()[:HASH_SAMPLE_SIZE]
+            x_sample = X[sample_indices].flatten()[:hash_sample_size]
             y_sample = y[sample_indices]
         else:
-            x_sample = X.flatten()[:HASH_SAMPLE_SIZE]
+            x_sample = X.flatten()[:hash_sample_size]
             y_sample = y
 
         # Convert tensor data to bytes for hashing (float32 required, bfloat16 not supported)

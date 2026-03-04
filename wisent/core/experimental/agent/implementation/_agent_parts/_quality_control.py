@@ -7,14 +7,14 @@ iterative improvement loop, and steered generation.
 """
 
 import time
-from wisent.core.utils.config_tools.constants import QUALITY_CONTROL_MAX_ATTEMPTS, CLASSIFIER_THRESHOLD, DISPLAY_TRUNCATION_COMPACT, SECONDS_PER_MINUTE
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT, SECONDS_PER_MINUTE
 
 
 class QualityControlMixin:
     """Mixin providing quality-controlled response generation."""
 
     async def respond_with_quality_control(
-        self, prompt: str, max_attempts: int = QUALITY_CONTROL_MAX_ATTEMPTS, time_budget_minutes: float = None
+        self, prompt: str, max_attempts: int = None, time_budget_minutes: float = None
     ) -> "QualityControlledResponse":
         """
         Generate response with iterative quality control and adaptive steering.
@@ -30,6 +30,8 @@ class QualityControlMixin:
             max_attempts: Maximum attempts to achieve acceptable quality
             time_budget_minutes: Time budget for classifier creation
         """
+        if max_attempts is None:
+            raise ValueError("max_attempts is required")
         from ..agent.diagnose.agent_classifier_decision import QualityControlledResponse
         from ..agent.timeout import TimeoutError, timeout_context
 
@@ -109,7 +111,7 @@ class QualityControlMixin:
             response = await self._generate_response(prompt)
             return QualityControlledResponse(
                 response_text=response,
-                final_quality_score=CLASSIFIER_THRESHOLD,
+                final_quality_score=classifier_params.classification_threshold,
                 attempts_needed=1,
                 classifier_params_used=classifier_params,
                 total_time_seconds=time.time() - start_time,
@@ -125,7 +127,7 @@ class QualityControlMixin:
             response = await self._generate_response(prompt)
             return QualityControlledResponse(
                 response_text=response,
-                final_quality_score=CLASSIFIER_THRESHOLD,
+                final_quality_score=classifier_params.classification_threshold,
                 attempts_needed=1,
                 classifier_params_used=classifier_params,
                 total_time_seconds=time.time() - start_time,

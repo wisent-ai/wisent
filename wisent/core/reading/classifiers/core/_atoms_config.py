@@ -15,7 +15,7 @@ import numpy as np
 from torch.nn.modules.loss import _Loss
 from wisent.core.utils.infra_tools.errors import DuplicateNameError, InvalidRangeError, UnknownTypeError
 from wisent.core.utils import preferred_dtype
-from wisent.core.utils.config_tools.constants import DEFAULT_CLASSIFIER_LR, CLASSIFIER_TEST_SIZE, CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, DEFAULT_RANDOM_SEED
+from typing import Optional as _Optional
 
 __all__ = [
     "ClassifierTrainConfig",
@@ -47,12 +47,12 @@ class ClassifierTrainConfig:
         random_state:
             random seed for data shuffling and initialization
     """
-    test_size: float = CLASSIFIER_TEST_SIZE
-    num_epochs: int = CLASSIFIER_NUM_EPOCHS
-    batch_size: int = CLASSIFIER_BATCH_SIZE
-    learning_rate: float = DEFAULT_CLASSIFIER_LR
+    num_epochs: int
+    batch_size: int
+    learning_rate: float
+    test_size: float
     monitor: Optional[str] = None
-    random_state: int = DEFAULT_RANDOM_SEED
+    random_state: _Optional[int] = None
 
 @dataclass(slots=True, frozen=True)
 class ClassifierMetrics:

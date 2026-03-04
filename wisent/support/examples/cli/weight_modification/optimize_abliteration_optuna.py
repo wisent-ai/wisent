@@ -49,7 +49,6 @@ import subprocess
 import sys
 
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_N_TRIALS,
     SEPARATOR_WIDTH_REPORT,
 )
 
@@ -92,7 +91,7 @@ def main():
     parser.add_argument(
         "--num-pairs",
         type=int,
-        default=DEFAULT_N_TRIALS,
+        default=None,
         help="Number of contrastive pairs for training",
     )
     parser.add_argument(
@@ -103,6 +102,10 @@ def main():
     )
 
     args = parser.parse_args()
+
+    # Validate required args
+    if args.num_pairs is None:
+        raise ValueError("--num-pairs is required")
 
     # Validate personalization requires trait
     if args.task.lower() == "personalization" and not args.trait:

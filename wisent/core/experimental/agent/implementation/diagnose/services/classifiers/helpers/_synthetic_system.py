@@ -3,7 +3,7 @@ import logging
 import time
 from typing import List, Tuple
 from wisent.core.reading.classifiers.core.atoms import ActivationClassifier
-from wisent.core.utils.config_tools.constants import AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_TIME_MULTIPLIER, AGENT_SYNTH_TRAIT_DISCOVERY_COST_S, AGENT_SYNTH_DATA_GEN_COST_PER_PAIR_S, AGENT_SYNTH_CLASSIFIER_TRAINING_COST_S, AGENT_SYNTH_PAIRS_PER_TRAIT, SECONDS_PER_MINUTE
+from wisent.core.utils.config_tools.constants import SECONDS_PER_MINUTE
 from wisent.core.utils.infra_tools.errors import MissingParameterError
 from wisent.core.experimental.agent.diagnose.classifiers._synthetic_classes import (
     TraitDiscoveryResult, SyntheticClassifierResult,
@@ -20,14 +20,22 @@ class SyntheticClassifierSystem:
     contrastive pairs, and applies them to response activations only.
     """
 
-    def __init__(self, model, layer: int = None):
+    def __init__(self, model, layer: int = None, min_pairs: int = None, time_multiplier: float = None, trait_discovery_cost_s: float = None, data_gen_cost_per_pair_s: float = None, classifier_training_cost_s: float = None):
+        for _n, _v in [("min_pairs", min_pairs), ("time_multiplier", time_multiplier), ("trait_discovery_cost_s", trait_discovery_cost_s), ("data_gen_cost_per_pair_s", data_gen_cost_per_pair_s), ("classifier_training_cost_s", classifier_training_cost_s)]:
+            if _v is None:
+                raise ValueError(f"{_n} is required")
         self.model = model
         self.layer = layer
+        self._min_pairs = min_pairs
+        self._time_multiplier = time_multiplier
+        self._trait_discovery_cost_s = trait_discovery_cost_s
+        self._data_gen_cost_per_pair_s = data_gen_cost_per_pair_s
+        self._classifier_training_cost_s = classifier_training_cost_s
         self.trait_discovery = AutomaticTraitDiscovery(model, layer=layer)
         self.classifier_factory = SyntheticClassifierFactory(model, layer=layer)
 
     def create_classifiers_for_prompt(
-        self, prompt: str, time_budget_minutes: float, pairs_per_trait: int = AGENT_SYNTH_PAIRS_PER_TRAIT
+        self, prompt: str, time_budget_minutes: float, pairs_per_trait: int = None
     ) -> Tuple[List[ActivationClassifier], TraitDiscoveryResult]:
         """
         Create synthetic classifiers for a prompt by discovering relevant traits.
@@ -41,32 +49,27 @@ class SyntheticClassifierSystem:
         Returns:
             Tuple of (list of trained classifiers, trait discovery result)
         """
+        if pairs_per_trait is None:
+            raise ValueError("pairs_per_trait is required")
         logging.info(f"Creating synthetic classifiers for prompt (budget: {time_budget_minutes:.1f} minutes)...")
 
         # Get cost estimates from device benchmarks
         try:
             from ..budget import estimate_task_time_direct
-
-            # Estimate costs for different operations (in seconds)
-            model_loading_cost = estimate_task_time_direct("model_loading", 1)  # Already loaded, minimal cost
-            trait_discovery_cost = AGENT_SYNTH_TRAIT_DISCOVERY_COST_S  # Estimate: simple text generation
-            data_generation_cost = estimate_task_time_direct("data_generation", 1)  # Per pair
-            classifier_training_cost = (
-                estimate_task_time_direct("classifier_training", 100) / 100
-            )  # Per classifier (benchmark is per 100)
-
+            model_loading_cost = estimate_task_time_direct("model_loading", 1)
+            trait_discovery_cost = self._trait_discovery_cost_s
+            data_generation_cost = estimate_task_time_direct("data_generation", 1)
+            classifier_training_cost = estimate_task_time_direct("classifier_training", 100) / 100
             logging.info("Cost estimates per unit:")
-            logging.info(f"• Trait discovery: ~{trait_discovery_cost:.0f}s")
-            logging.info(f"• Data generation: ~{data_generation_cost:.0f}s per pair")
-            logging.info(f"• Classifier training: ~{classifier_training_cost:.0f}s per classifier")
-
+            logging.info(f"Trait discovery: ~{trait_discovery_cost:.0f}s")
+            logging.info(f"Data generation: ~{data_generation_cost:.0f}s per pair")
+            logging.info(f"Classifier training: ~{classifier_training_cost:.0f}s per classifier")
         except Exception as e:
             logging.info(f"Could not get benchmark data: {e}")
-            logging.info("Using fallback estimates")
-            # Fallback estimates if benchmarks aren't available
-            trait_discovery_cost = AGENT_SYNTH_TRAIT_DISCOVERY_COST_S
-            data_generation_cost = AGENT_SYNTH_DATA_GEN_COST_PER_PAIR_S  # Per pair
-            classifier_training_cost = AGENT_SYNTH_CLASSIFIER_TRAINING_COST_S  # Per classifier
+            logging.info("Using configured estimates")
+            trait_discovery_cost = self._trait_discovery_cost_s
+            data_generation_cost = self._data_gen_cost_per_pair_s
+            classifier_training_cost = self._classifier_training_cost_s
 
         budget_seconds = time_budget_minutes * SECONDS_PER_MINUTE
 
@@ -74,7 +77,7 @@ class SyntheticClassifierSystem:
         logging.info("Discovering relevant traits for this prompt...")
 
         # Estimate if we have enough budget for even basic operations
-        min_required_time = trait_discovery_cost + (data_generation_cost * AGENT_SYNTH_TIME_MULTIPLIER) + classifier_training_cost
+        min_required_time = trait_discovery_cost + (data_generation_cost * self._time_multiplier) + classifier_training_cost
 
         if budget_seconds < min_required_time:
             logging.info(f"Budget ({budget_seconds:.0f}s) too small for full classifier training")
@@ -129,8 +132,8 @@ class SyntheticClassifierSystem:
 
             if total_estimated_cost > remaining_budget:
                 # Try with fewer pairs
-                max_affordable_pairs = max(AGENT_SYNTH_MIN_PAIRS, int((remaining_budget - classifier_training_cost) / data_generation_cost))
-                if max_affordable_pairs < AGENT_SYNTH_MIN_PAIRS:
+                max_affordable_pairs = max(self._min_pairs, int((remaining_budget - classifier_training_cost) / data_generation_cost))
+                if max_affordable_pairs < self._min_pairs:
                     logging.info(f"Insufficient budget ({remaining_budget:.0f}s) for training, skipping")
                     continue
                 logging.info(f"Reducing pairs from {pairs_per_trait} to {max_affordable_pairs} to fit budget")

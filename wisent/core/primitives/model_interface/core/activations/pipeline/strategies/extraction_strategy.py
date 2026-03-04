@@ -9,7 +9,7 @@ from enum import Enum
 from typing import Tuple, Optional
 import argparse
 import torch
-from wisent.core.utils.config_tools.constants import EXTRACTION_WEIGHTED_DECAY, ROLE_PLAY_TOKENS
+from wisent.core.utils.config_tools.constants import ROLE_PLAY_TOKENS
 
 class ExtractionStrategy(str, Enum):
     """
@@ -196,6 +196,7 @@ def extract_activation(
     answer_text: str,
     tokenizer,
     prompt_len: int,
+    weighted_decay: float = None,
 ) -> torch.Tensor:
     """
     Extract the activation vector based on strategy.
@@ -238,9 +239,11 @@ def extract_activation(
         return hidden_states[-1]
 
     elif strategy == ExtractionStrategy.CHAT_WEIGHTED:
+        if weighted_decay is None:
+            raise ValueError("weighted_decay is required for CHAT_WEIGHTED strategy")
         if num_answer_tokens > 0 and seq_len > num_answer_tokens:
             answer_hidden = hidden_states[-num_answer_tokens-1:-1]
-            weights = torch.exp(-torch.arange(answer_hidden.shape[0], dtype=answer_hidden.dtype, device=answer_hidden.device) * EXTRACTION_WEIGHTED_DECAY)
+            weights = torch.exp(-torch.arange(answer_hidden.shape[0], dtype=answer_hidden.dtype, device=answer_hidden.device) * weighted_decay)
             weights = weights / weights.sum()
             return (answer_hidden * weights.unsqueeze(1)).sum(dim=0)
         return hidden_states[-1]

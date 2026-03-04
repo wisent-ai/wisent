@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 from wisent.core.reading.classifiers.core.atoms import ActivationClassifier, Classifier
-from wisent.core.utils.config_tools.constants import CLASSIFIER_TRAINING_SAMPLES, CLASSIFIER_TEST_SIZE, CLASSIFIER_THRESHOLD, CLASSIFIER_MIN_TARGET_SCORE, LAYER_STRIDE_DEFAULT
+from wisent.core.utils.config_tools.constants import COMBO_OFFSET
 from wisent.core.utils.infra_tools.errors import ClassifierCreationError, InsufficientDataError
 
 from ...activations import Activations
@@ -22,6 +22,7 @@ from ...model import Model
 from ...model_persistence import ModelPersistence, create_classifier_metadata
 
 from ._create_helpers import BenchmarkMixin, DataGenerationMixin, ScoringMixin, TrainingMixin
+from ._create_helpers.create_classifier_scoring import ScoringConfig
 
 
 @dataclass
@@ -30,11 +31,11 @@ class TrainingConfig:
 
     issue_type: str
     layer: int
+    threshold: float
+    training_samples: int
+    test_split: float
     classifier_type: Optional[str] = None
-    threshold: float = CLASSIFIER_THRESHOLD
     model_name: str = ""
-    training_samples: int = CLASSIFIER_TRAINING_SAMPLES
-    test_split: float = CLASSIFIER_TEST_SIZE
     optimization_metric: Optional[str] = None
     save_path: Optional[str] = None
 
@@ -53,17 +54,15 @@ class TrainingResult:
 class ClassifierCreator(BenchmarkMixin, DataGenerationMixin, ScoringMixin, TrainingMixin):
     """Creates new classifiers on demand for the autonomous agent."""
 
-    def __init__(self, model: Model):
-        """
-        Initialize the classifier creator.
-
-        Args:
-            model: The language model to use for training
-        """
+    def __init__(self, model: Model, max_tasks_to_process: int, scoring_config: ScoringConfig):
+        """Initialize the classifier creator."""
         self.model = model
+        self.max_tasks_to_process = max_tasks_to_process
+        self.scoring_config = scoring_config
 
     def create_classifier_for_issue_type(
-        self, issue_type: str, layer: int, config: Optional[TrainingConfig] = None
+        self, issue_type: str, layer: int, time_budget_minutes: float,
+        task_search_limit: int, *, data_oversample_multiplier: int, config: Optional[TrainingConfig] = None,
     ) -> TrainingResult:
         """
         Create a new classifier for a specific issue type.
@@ -78,15 +77,14 @@ class ClassifierCreator(BenchmarkMixin, DataGenerationMixin, ScoringMixin, Train
         """
         print(f"Creating classifier for {issue_type} at layer {layer}...")
 
-        # Use provided config or create default
         if config is None:
-            config = TrainingConfig(issue_type=issue_type, layer=layer, model_name=self.model.name)
+            raise ValueError("TrainingConfig is required (threshold and training_samples must be specified)")
 
         start_time = time.time()
 
         # Generate training data
         print("   Generating training data...")
-        training_data = self._generate_training_data(issue_type, config.training_samples)
+        training_data = self._generate_training_data(issue_type, config.training_samples, time_budget_minutes, task_search_limit=task_search_limit, data_oversample_multiplier=data_oversample_multiplier)
 
         # Extract activations
         print("   Extracting activations...")
@@ -124,7 +122,8 @@ class ClassifierCreator(BenchmarkMixin, DataGenerationMixin, ScoringMixin, Train
         return result
 
     def create_multi_layer_classifiers(
-        self, issue_type: str, layers: List[int], save_base_path: Optional[str] = None
+        self, issue_type: str, layers: List[int], time_budget_minutes: float,
+        task_search_limit: int, *, data_oversample_multiplier: int, save_base_path: Optional[str] = None,
     ) -> Dict[int, TrainingResult]:
         """
         Create classifiers for multiple layers for the same issue type.
@@ -149,7 +148,7 @@ class ClassifierCreator(BenchmarkMixin, DataGenerationMixin, ScoringMixin, Train
                 save_path=f"{save_base_path}_layer_{layer}.pkl" if save_base_path else None,
             )
 
-            result = self.create_classifier_for_issue_type(issue_type, layer, config)
+            result = self.create_classifier_for_issue_type(issue_type, layer, time_budget_minutes, task_search_limit=task_search_limit, data_oversample_multiplier=data_oversample_multiplier, config=config)
             results[layer] = result
 
         print(f"   Created {len(results)} classifiers across layers {layers}")
@@ -159,9 +158,14 @@ class ClassifierCreator(BenchmarkMixin, DataGenerationMixin, ScoringMixin, Train
         self,
         issue_type: str,
         target_metric: str,
+        time_budget_minutes: float,
+        layer_stride: int,
+        task_search_limit: int,
+        *,
+        data_oversample_multiplier: int,
         layer_range: Tuple[int, int] = None,
         classifier_types: List[str] = None,
-        min_target_score: float = CLASSIFIER_MIN_TARGET_SCORE,
+        min_target_score: float = None,
     ) -> TrainingResult:
         """
         Optimize classifier by testing different configurations.
@@ -176,6 +180,8 @@ class ClassifierCreator(BenchmarkMixin, DataGenerationMixin, ScoringMixin, Train
         Returns:
             Best performing classifier configuration
         """
+        if min_target_score is None:
+            raise ValueError("min_target_score is required for optimize_classifier_for_performance")
         print(f"Optimizing classifier for {issue_type}...")
 
         if classifier_types is None:
@@ -195,7 +201,8 @@ class ClassifierCreator(BenchmarkMixin, DataGenerationMixin, ScoringMixin, Train
         best_result = None
         best_score = 0.0
 
-        layers_to_test = range(layer_range[0], layer_range[1] + 1, LAYER_STRIDE_DEFAULT)
+        start_layer, end_layer = layer_range
+        layers_to_test = range(start_layer, end_layer + COMBO_OFFSET, layer_stride)
 
         for layer in layers_to_test:
             for classifier_type in classifier_types:
@@ -207,7 +214,7 @@ class ClassifierCreator(BenchmarkMixin, DataGenerationMixin, ScoringMixin, Train
                 )
 
                 try:
-                    result = self.create_classifier_for_issue_type(issue_type, layer, config)
+                    result = self.create_classifier_for_issue_type(issue_type, layer, time_budget_minutes, task_search_limit=task_search_limit, data_oversample_multiplier=data_oversample_multiplier, config=config)
                     score = result.performance_metrics.get(target_metric, 0.0)
 
                     print(f"      Layer {layer}, {classifier_type}: {target_metric}={score:.3f}")
@@ -241,30 +248,17 @@ class ClassifierCreator(BenchmarkMixin, DataGenerationMixin, ScoringMixin, Train
 
 
 def create_classifier_on_demand(
-    model: Model,
-    issue_type: str,
-    layer: int = None,
-    save_path: str = None,
-    optimize: bool = False,
+    model: Model, issue_type: str, time_budget_minutes: float,
+    max_tasks_to_process: int, task_search_limit: int, scoring_config: ScoringConfig,
+    *, data_oversample_multiplier: int,
+    layer: int = None, save_path: str = None, optimize: bool = False,
 ) -> TrainingResult:
-    """
-    Convenience function to create a classifier on demand.
-
-    Args:
-        model: Language model to use
-        issue_type: Type of issue to detect
-        layer: Specific layer to use (auto-optimized if None)
-        save_path: Path to save the classifier
-        optimize: Whether to optimize for best performance
-
-    Returns:
-        TrainingResult with the created classifier
-    """
-    creator = ClassifierCreator(model)
+    """Convenience function to create a classifier on demand."""
+    creator = ClassifierCreator(model, max_tasks_to_process=max_tasks_to_process, scoring_config=scoring_config)
 
     if optimize or layer is None:
         # Optimize to find best configuration
-        result = creator.optimize_classifier_for_performance(issue_type, target_metric="f1")
+        result = creator.optimize_classifier_for_performance(issue_type, target_metric="f1", time_budget_minutes=time_budget_minutes, task_search_limit=task_search_limit, data_oversample_multiplier=data_oversample_multiplier)
 
         # Save if path provided
         if save_path:
@@ -284,4 +278,4 @@ def create_classifier_on_demand(
         model_name=model.name,
     )
 
-    return creator.create_classifier_for_issue_type(issue_type, layer, config)
+    return creator.create_classifier_for_issue_type(issue_type, layer, time_budget_minutes, task_search_limit=task_search_limit, data_oversample_multiplier=data_oversample_multiplier, config=config)

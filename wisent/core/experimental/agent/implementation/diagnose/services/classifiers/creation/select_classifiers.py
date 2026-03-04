@@ -17,7 +17,6 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 from ...model_persistence import ModelPersistence
 from wisent.core.utils.infra_tools.errors import NoSuitableClassifierError
-from wisent.core.utils.config_tools.constants import SELECT_F1_WEIGHT, SELECT_ACCURACY_WEIGHT, SELECT_MAX_CLASSIFIERS, CLASSIFIER_BONUS_SAMPLE_DENOM, CLASSIFIER_BONUS_MAX, CLASSIFIER_RECENCY_DAYS, CLASSIFIER_THRESHOLD, CLASSIFIER_RECENCY_BONUS
 
 
 from wisent.core.experimental.agent.diagnose.classifiers._select_classifiers_helpers import ClassifierSelectorHelpersMixin, auto_select_classifiers_for_agent  # noqa: F401
@@ -39,21 +38,34 @@ class SelectionCriteria:
     required_issue_types: List[str]
     preferred_layers: Optional[List[int]] = None
     min_performance_score: float = 0.0
-    max_classifiers: int = SELECT_MAX_CLASSIFIERS
+    max_classifiers: int = None
     model_name: Optional[str] = None
     task_type: Optional[str] = None
 
 
 class ClassifierSelector(ClassifierSelectorHelpersMixin):
     """Intelligent classifier selection system."""
-    
-    def __init__(self, search_paths: List[str] = None):
-        """
-        Initialize the classifier selector.
-        
-        Args:
-            search_paths: Directories to search for classifiers. Defaults to common locations.
-        """
+
+    def __init__(self, search_paths: List[str] = None, f1_weight: float = None, accuracy_weight: float = None, bonus_sample_denom: float = None, bonus_max: float = None, recency_days: int = None, recency_bonus: float = None):
+        """Initialize the classifier selector."""
+        if f1_weight is None:
+            raise ValueError("f1_weight is required for ClassifierSelector")
+        if accuracy_weight is None:
+            raise ValueError("accuracy_weight is required for ClassifierSelector")
+        if bonus_sample_denom is None:
+            raise ValueError("bonus_sample_denom is required for ClassifierSelector")
+        if bonus_max is None:
+            raise ValueError("bonus_max is required for ClassifierSelector")
+        if recency_days is None:
+            raise ValueError("recency_days is required for ClassifierSelector")
+        if recency_bonus is None:
+            raise ValueError("recency_bonus is required for ClassifierSelector")
+        self._f1_weight = f1_weight
+        self._accuracy_weight = accuracy_weight
+        self._bonus_sample_denom = bonus_sample_denom
+        self._bonus_max = bonus_max
+        self._recency_days = recency_days
+        self._recency_bonus = recency_bonus
         self.search_paths = search_paths or [
             "./models",
             "./optimization_results", 
@@ -131,7 +143,9 @@ class ClassifierSelector(ClassifierSelectorHelpersMixin):
             performance_score = self._calculate_performance_score(metadata)
             
             # Determine threshold
-            threshold = metadata.get('detection_threshold', CLASSIFIER_THRESHOLD)
+            if 'detection_threshold' not in metadata:
+                raise KeyError(f"Classifier metadata at {filepath} missing required 'detection_threshold' key")
+            threshold = metadata['detection_threshold']
             
             return ClassifierInfo(
                 path=filepath,
@@ -259,14 +273,14 @@ class ClassifierSelector(ClassifierSelectorHelpersMixin):
         accuracy = metadata.get('accuracy', metadata.get('training_accuracy', 0.0))
         
         if f1_score > 0:
-            score += f1_score * SELECT_F1_WEIGHT
+            score += f1_score * self._f1_weight
         elif accuracy > 0:
-            score += accuracy * SELECT_ACCURACY_WEIGHT
+            score += accuracy * self._accuracy_weight
         
         # Bonus for larger training sets
         training_samples = metadata.get('training_samples', 0)
         if training_samples > 0:
-            sample_bonus = min(training_samples / CLASSIFIER_BONUS_SAMPLE_DENOM, CLASSIFIER_BONUS_MAX)
+            sample_bonus = min(training_samples / self._bonus_sample_denom, self._bonus_max)
             score += sample_bonus
         
         # Bonus for recent training
@@ -275,8 +289,8 @@ class ClassifierSelector(ClassifierSelectorHelpersMixin):
                 from datetime import datetime
                 created_at = datetime.fromisoformat(metadata['created_at'])
                 days_old = (datetime.now() - created_at).days
-                if days_old < CLASSIFIER_RECENCY_DAYS:
-                    score += CLASSIFIER_RECENCY_BONUS
+                if days_old < self._recency_days:
+                    score += self._recency_bonus
             except:
                 pass
         

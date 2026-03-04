@@ -9,6 +9,7 @@ from the representation subdirectory.
 import torch
 import numpy as np
 from typing import Dict, Any, Tuple, Optional
+"""Formerly imported CV_FOLDS, PROBE_KNN_K are now required parameters."""
 
 # Import basic metric functions from the representation subdirectory
 from ..representation import (
@@ -26,6 +27,18 @@ from ..representation import (
 def analyze_representation_geometry(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
+    min_clusters: int,
+    *,
+    spectral_n_neighbors: int,
+    cv_folds: int,
+    probe_knn_k: int,
+    probe_min_per_class: int,
+    probe_mlp_hidden: int,
+    probe_mlp_alpha: float,
+    probe_validation_fraction: float,
+    knn_min_class_offset: int,
+    pca_max_components_null: int,
+    variance_explained_90pct: float,
 ) -> Dict[str, Any]:
     """
     Comprehensive geometric analysis of a representation.
@@ -58,9 +71,18 @@ def analyze_representation_geometry(
     results = {}
 
     # 1. Linear separability
-    linear_acc = compute_linear_probe_accuracy(pos_activations, neg_activations)
-    mlp_acc = compute_mlp_probe_accuracy(pos_activations, neg_activations)
-    knn_acc = compute_knn_accuracy(pos_activations, neg_activations)
+    linear_acc = compute_linear_probe_accuracy(
+        pos_activations, neg_activations, cv_folds, probe_min_per_class=probe_min_per_class,
+    )
+    mlp_acc = compute_mlp_probe_accuracy(
+        pos_activations, neg_activations, cv_folds,
+        probe_min_per_class=probe_min_per_class, probe_mlp_hidden=probe_mlp_hidden,
+        probe_mlp_alpha=probe_mlp_alpha, probe_validation_fraction=probe_validation_fraction,
+    )
+    knn_acc = compute_knn_accuracy(
+        pos_activations, neg_activations, k=probe_knn_k, n_folds=cv_folds,
+        knn_min_class_offset=knn_min_class_offset,
+    )
 
     results["separability"] = {
         "linear_probe_accuracy": linear_acc,
@@ -71,7 +93,7 @@ def analyze_representation_geometry(
 
     # 2. Cone structure (direction consistency)
     pair_quality = compute_pair_quality_metrics(pos_activations, neg_activations)
-    steerability = compute_steerability_metrics(pos_activations, neg_activations)
+    steerability = compute_steerability_metrics(pos_activations, neg_activations, min_clusters=min_clusters)
 
     results["cone_structure"] = {
         "alignment_mean": pair_quality.get("alignment_mean"),
@@ -82,7 +104,7 @@ def analyze_representation_geometry(
     }
 
     # 3. Intrinsic dimensionality
-    manifold = compute_manifold_metrics(pos_activations, neg_activations)
+    manifold = compute_manifold_metrics(pos_activations, neg_activations, n_neighbors=spectral_n_neighbors)
 
     results["dimensionality"] = {
         "variance_pc1": manifold.get("variance_pc1"),
@@ -122,7 +144,7 @@ def analyze_representation_geometry(
     }
 
     # 7. Noise comparison
-    noise = compute_noise_baseline_comparison(pos_activations, neg_activations)
+    noise = compute_noise_baseline_comparison(pos_activations, neg_activations, pca_max_components_null=pca_max_components_null, variance_explained_90pct=variance_explained_90pct)
 
     results["noise_comparison"] = {
         "actual_linear_probe": noise.get("actual", {}).get("linear_probe"),
@@ -153,6 +175,10 @@ def compute_all_representation_metrics(
     neg_activations_by_position: Optional[Dict[int, torch.Tensor]] = None,
     other_directions: Optional[Dict[str, np.ndarray]] = None,
     include_noise_baseline: bool = True,
+    *,
+    spectral_n_neighbors: int,
+    pca_max_components_null: int,
+    variance_explained_90pct: float,
 ) -> Dict[str, Any]:
     """
     Compute all representation metrics.
@@ -165,11 +191,11 @@ def compute_all_representation_metrics(
     results["magnitude"] = compute_magnitude_metrics(pos_activations, neg_activations)
     results["sparsity"] = compute_sparsity_metrics(pos_activations, neg_activations)
     results["pair_quality"] = compute_pair_quality_metrics(pos_activations, neg_activations)
-    results["manifold"] = compute_manifold_metrics(pos_activations, neg_activations)
+    results["manifold"] = compute_manifold_metrics(pos_activations, neg_activations, n_neighbors=spectral_n_neighbors)
 
     # Noise baseline comparison (detect if data has semantic content vs noise)
     if include_noise_baseline:
-        results["noise_comparison"] = compute_noise_baseline_comparison(pos_activations, neg_activations)
+        results["noise_comparison"] = compute_noise_baseline_comparison(pos_activations, neg_activations, pca_max_components_null=pca_max_components_null, variance_explained_90pct=variance_explained_90pct)
 
     # Optional: cross-layer consistency
     if activations_by_layer is not None:

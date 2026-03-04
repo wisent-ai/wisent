@@ -6,19 +6,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, Any, List, Tuple
 
-from wisent.core.utils.config_tools.constants import (
-    DIAG_NUM_COMPONENTS,
-    DEFAULT_OPTIMIZATION_STEPS,
-    GEO_DIAG_LINEAR_VARIANCE,
-    GEO_DIAG_CONE_THRESHOLD,
-    MAX_CLUSTERS,
-    GEO_DIAG_CLUSTER_SILHOUETTE,
-    MANIFOLD_NEIGHBORS,
-    GEO_DIAG_MANIFOLD_THRESHOLD,
-    GEO_DIAG_SPARSE_THRESHOLD,
-    GEO_DIAG_BIMODAL_DIP,
-    GEO_DIAG_ORTHOGONAL_THRESHOLD,
-)
 
 __all__ = [
     "StructureType",
@@ -53,38 +40,28 @@ class StructureScore:
 class GeometryAnalysisConfig:
     """Configuration for comprehensive geometry analysis."""
 
-    num_components: int = DIAG_NUM_COMPONENTS
+    num_components: int = None
     """Number of components/directions to analyze."""
 
-    optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
+    optimization_steps: int = None
     """Steps for optimization-based methods."""
 
-    linear_variance_threshold: float = GEO_DIAG_LINEAR_VARIANCE
-    """Variance explained threshold for linear structure."""
+    min_clusters: int = None
+    """Minimum number of clusters."""
 
-    cone_threshold: float = GEO_DIAG_CONE_THRESHOLD
-    """Cone score threshold."""
-
-    max_clusters: int = MAX_CLUSTERS
+    max_clusters: int = None
     """Maximum number of clusters to try."""
 
-    cluster_silhouette_threshold: float = GEO_DIAG_CLUSTER_SILHOUETTE
-    """Silhouette score threshold for cluster detection."""
+    kmeans_max_iterations: int = None
+    """Maximum iterations for k-means clustering."""
 
-    manifold_neighbors: int = MANIFOLD_NEIGHBORS
+    manifold_neighbors: int = None
     """Number of neighbors for manifold analysis."""
 
-    manifold_threshold: float = GEO_DIAG_MANIFOLD_THRESHOLD
-    """Score threshold for manifold structure."""
-
-    sparse_threshold: float = GEO_DIAG_SPARSE_THRESHOLD
-    """Fraction of active dimensions threshold."""
-
-    bimodal_dip_threshold: float = GEO_DIAG_BIMODAL_DIP
-    """P-value threshold for dip test."""
-
-    orthogonal_threshold: float = GEO_DIAG_ORTHOGONAL_THRESHOLD
-    """Max correlation for orthogonal subspaces."""
+    def __post_init__(self):
+        """Validate required fields."""
+        for _n, _v in [("num_components", self.num_components), ("optimization_steps", self.optimization_steps), ("min_clusters", self.min_clusters), ("max_clusters", self.max_clusters), ("manifold_neighbors", self.manifold_neighbors), ("kmeans_max_iterations", self.kmeans_max_iterations)]:
+            if _v is None: raise ValueError(f"{_n} is required in GeometryAnalysisConfig")
 
     use_universal_thresholds: bool = True
     """Whether to use thresholds tuned for universal subspace theory."""

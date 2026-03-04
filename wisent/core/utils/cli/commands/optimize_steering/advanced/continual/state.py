@@ -11,7 +11,7 @@ from typing import Dict, Optional, Tuple
 import torch
 
 from wisent.core.utils.cli.optimize_steering.continual.replay_buffer import ReplayBuffer
-from wisent.core.utils.config_tools.constants import DEFAULT_VARIANCE_THRESHOLD, JSON_INDENT, REPLAY_BUFFER_MAX_SIZE, EWC_PERTURBATION_SCALE, EWC_LEARNING_RATE
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 
 
 @dataclass
@@ -27,7 +27,7 @@ class ContinualState:
     task_vectors: Dict[str, Dict[int, torch.Tensor]] = field(default_factory=dict)
     fisher_info: Dict[str, Dict[int, torch.Tensor]] = field(default_factory=dict)
     old_vectors: Dict[str, Dict[int, torch.Tensor]] = field(default_factory=dict)
-    replay_buffer: ReplayBuffer = field(default_factory=lambda: ReplayBuffer(max_size=REPLAY_BUFFER_MAX_SIZE))
+    replay_buffer: Optional[ReplayBuffer] = None
     metrics: Dict[str, list] = field(default_factory=dict)
     current_cycle: int = 0
     task_priorities: Dict[str, float] = field(default_factory=dict)
@@ -36,7 +36,7 @@ class ContinualState:
 def decompose_into_shared_and_task(
     new_vectors: Dict[int, torch.Tensor],
     all_task_vectors: Dict[str, Dict[int, torch.Tensor]],
-    variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD,
+    variance_threshold: float,
 ) -> Tuple[Dict[int, torch.Tensor], Dict[int, torch.Tensor]]:
     """Decompose vectors into shared subspace component + task-specific residual.
 
@@ -207,9 +207,11 @@ def upload_to_gcs(local_path: str, bucket: str, prefix: str) -> None:
 def compute_fisher_information(
     vectors: Dict[int, torch.Tensor],
     perturbed_scores: Dict[int, Tuple[float, float]],
-    perturbation_scale: float = EWC_PERTURBATION_SCALE,
+    perturbation_scale: float = None,
 ) -> Dict[int, torch.Tensor]:
     """Diagonal Fisher approximation via score sensitivity to perturbations."""
+    if perturbation_scale is None:
+        raise ValueError("perturbation_scale is required")
     fisher: Dict[int, torch.Tensor] = {}
     for layer, vec in vectors.items():
         if layer not in perturbed_scores:
@@ -243,9 +245,11 @@ def ewc_constrained_update(
     fisher_all_tasks: Dict[str, Dict[int, torch.Tensor]],
     old_vectors_all_tasks: Dict[str, Dict[int, torch.Tensor]],
     ewc_lambda: float,
-    learning_rate: float = EWC_LEARNING_RATE,
+    learning_rate: float = None,
 ) -> Dict[int, torch.Tensor]:
     """Apply update with EWC constraint: shrink updates along Fisher-important directions."""
+    if learning_rate is None:
+        raise ValueError("learning_rate is required")
     result: Dict[int, torch.Tensor] = {}
     for layer in current_vectors:
         base_update = learning_rate * update_vectors.get(

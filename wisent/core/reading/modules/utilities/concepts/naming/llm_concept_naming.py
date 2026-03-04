@@ -2,7 +2,7 @@
 
 import json
 from typing import Dict, List, Any, Optional
-from wisent.core.utils.config_tools.constants import CONCEPT_NAMING_N_SAMPLES, DISPLAY_TRUNCATION_LARGE, DISPLAY_TRUNCATION_MEDIUM
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_LARGE, DISPLAY_TRUNCATION_MEDIUM
 
 # Global cache for Wisent instance
 _wisent_cache = {}
@@ -12,7 +12,7 @@ def format_naming_prompt(
     prompts: List[str],
     positives: List[str],
     negatives: List[str],
-    n_samples: int = CONCEPT_NAMING_N_SAMPLES,
+    n_samples: int,
 ) -> str:
     """Format a prompt for the LLM to name this concept cluster."""
 
@@ -111,6 +111,7 @@ def name_concept_with_llm(
     prompts: List[str],
     positives: List[str],
     negatives: List[str],
+    concept_naming_n_samples: int,
     model: str = "Qwen/Qwen3-8B",
     debug: bool = False,
 ) -> Dict[str, str]:
@@ -119,7 +120,7 @@ def name_concept_with_llm(
     if not prompts:
         return {"name": "empty_cluster", "description": "No samples available"}
 
-    prompt = format_naming_prompt(prompts, positives, negatives)
+    prompt = format_naming_prompt(prompts, positives, negatives, n_samples=concept_naming_n_samples)
 
     try:
         response = call_local_llm(prompt, model)
@@ -137,6 +138,7 @@ def name_all_concepts_with_llm(
     concepts: List[Dict[str, Any]],
     pair_texts: Dict[int, Dict[str, str]],
     cluster_labels,
+    concept_naming_n_samples: int,
     model: str = "Qwen/Qwen3-8B",
 ) -> List[Dict[str, Any]]:
     """Name all concepts using LLM."""
@@ -162,7 +164,7 @@ def name_all_concepts_with_llm(
             negatives = [p.get("negative", "") for p in pairs]
 
             print(f"  Naming concept {i+1} ({len(pairs)} pairs)...", flush=True)
-            naming = name_concept_with_llm(prompts, positives, negatives, model)
+            naming = name_concept_with_llm(prompts, positives, negatives, concept_naming_n_samples=concept_naming_n_samples, model=model)
 
             concept["name"] = naming["name"]
             concept["description"] = naming["description"]

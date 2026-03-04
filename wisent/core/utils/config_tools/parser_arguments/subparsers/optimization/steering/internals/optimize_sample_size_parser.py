@@ -1,6 +1,5 @@
 """Parser setup for the 'optimize-sample-size' command."""
 
-from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, CLASSIFIER_THRESHOLD
 
 
 def setup_sample_size_optimizer_parser(parser):
@@ -10,7 +9,7 @@ def setup_sample_size_optimizer_parser(parser):
     parser.add_argument("--layer", type=int, required=True, help="Layer index to use (REQUIRED)")
     # Classification-specific arguments
     parser.add_argument(
-        "--threshold", type=float, default=CLASSIFIER_THRESHOLD, help="Detection threshold for classification (default: 0.5)"
+        "--threshold", type=float, default=None, help="Detection threshold for classification (required)"
     )
 
     # Steering mode
@@ -41,7 +40,7 @@ def setup_sample_size_optimizer_parser(parser):
     )
     parser.add_argument("--test-size", type=int, required=True, help="Fixed test set size")
     parser.add_argument("--test-split", type=float, required=True, help="DEPRECATED: Use --test-size instead")
-    parser.add_argument("--seed", type=int, default=DEFAULT_RANDOM_SEED, help="Random seed for reproducibility (default: 42)")
+    parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility")
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of samples to load from dataset")
     parser.add_argument("--save-plot", action="store_true", help="Save performance plot")
     parser.add_argument("--no-save-config", action="store_true", help="Don't save optimal sample size to model config")
@@ -49,4 +48,17 @@ def setup_sample_size_optimizer_parser(parser):
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     parser.add_argument(
         "--force", action="store_true", help="Force optimization even without matching classifier parameters"
+    )
+    parser.add_argument(
+        "--classifier-test-size",
+        type=float,
+        required=True,
+        help="Fraction of data to hold out for testing in classifier training",
+    )
+    parser.add_argument("--classifier-epochs", type=int, required=True, help="Epochs for classifier training")
+    parser.add_argument("--classifier-batch-size", type=int, required=True, help="Batch size for classifier training")
+    parser.add_argument("--classifier-lr", type=float, required=True, help="Learning rate for classifier training")
+    parser.add_argument(
+        "--sample-loading-buffer", type=int, required=True,
+        help="Extra samples to load beyond max_train + test_size to account for filtering"
     )

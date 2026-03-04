@@ -7,8 +7,6 @@ from typing import Optional, Dict, Any, List
 from ..convenience import get_config_manager, save_steering_config, get_steering_config
 from .optimization_result import OptimizationResult, store_optimization, get_cached_optimization
 
-from wisent.core.utils.config_tools.constants import DEFAULT_SCORE
-
 class OptimizationCache:
     """Backward-compatible wrapper class for the unified config manager."""
 
@@ -24,7 +22,7 @@ class OptimizationCache:
         self, model: str, task: str, layer: int, strength: float,
         method: str, token_aggregation: str, prompt_strategy: str,
         metric: str,
-        score: float = DEFAULT_SCORE,
+        score: float = None,
         metadata: Optional[Dict[str, Any]] = None,
         set_as_default: bool = False,
     ) -> str:

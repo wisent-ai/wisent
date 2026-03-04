@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.control.steering_methods.methods.advanced._tecza_types import TECZAConfig
-from wisent.core.utils.config_tools.constants import NORM_EPS, TECZA_SEPARATION_MARGIN, TECZA_PERTURBATION_SCALE, TECZA_UNIVERSAL_BASIS_NOISE, TECZA_LOGGING_INTERVAL
+from wisent.core.utils.config_tools.constants import NORM_EPS, RECURSION_INITIAL_DEPTH, COMBO_OFFSET
 
 class TECZATrainingMixin:
     """Mixin: direction training, initialization, and loss."""
@@ -15,6 +15,7 @@ class TECZATrainingMixin:
         pos_tensor: torch.Tensor,
         neg_tensor: torch.Tensor,
         layer_name: str,
+        log_interval: int,
     ) -> Tuple[torch.Tensor, Dict[str, Any]]:
         """
         Train multiple directions for a single layer.
@@ -35,7 +36,6 @@ class TECZATrainingMixin:
             num_dirs, auto_details = compute_optimal_num_directions(
                 pos_tensor, neg_tensor,
                 variance_threshold=self.config.variance_threshold,
-                marginal_threshold=self.config.marginal_threshold,
                 max_directions=self.config.max_directions,
                 min_directions=1,
             )
@@ -78,7 +78,7 @@ class TECZATrainingMixin:
                 best_directions = directions.detach().clone()
             
             # Log
-            if step % TECZA_LOGGING_INTERVAL == 0 or step == self.config.optimization_steps - 1:
+            if step % log_interval == RECURSION_INITIAL_DEPTH or step == self.config.optimization_steps - COMBO_OFFSET:
                 self._training_logs.append({
                     "layer": layer_name,
                     "step": step,
@@ -119,7 +119,7 @@ class TECZATrainingMixin:
                 directions = initialize_from_universal_basis(
                     hidden_dim=hidden_dim,
                     num_directions=num_dirs,
-                    noise_scale=TECZA_UNIVERSAL_BASIS_NOISE,
+                    noise_scale=self.config.universal_basis_noise,
                 )
                 return directions
             except Exception:
@@ -136,7 +136,7 @@ class TECZATrainingMixin:
             
             # Initialize others as perturbations of CAA direction
             for i in range(1, num_dirs):
-                noise = torch.randn(hidden_dim, device=device) * TECZA_PERTURBATION_SCALE
+                noise = torch.randn(hidden_dim, device=device) * self.config.perturbation_scale
                 perturbed = caa_dir + noise
                 directions[i] = F.normalize(perturbed, p=2, dim=0)
         else:
@@ -172,7 +172,7 @@ class TECZATrainingMixin:
         
         # We want: pos_proj > neg_proj (positive examples project higher)
         # Loss: max(0, margin - (pos_mean - neg_mean))
-        margin = TECZA_SEPARATION_MARGIN
+        margin = self.config.separation_margin
         pos_mean = pos_proj.mean(dim=0)  # [K]
         neg_mean = neg_proj.mean(dim=0)  # [K]
         separation = pos_mean - neg_mean

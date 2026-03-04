@@ -7,14 +7,7 @@ import torch.nn.functional as F
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, LayerName
 from wisent.core.utils.config_tools.constants import (
-    NORM_EPS, ZERO_THRESHOLD, COMPARE_TOL, DEFAULT_VARIANCE_THRESHOLD,
-    UNIVERSAL_SUBSPACE_RANK, SUBSPACE_MIN_VECTORS,
-    SUBSPACE_DECAY_NORMALIZE, SUBSPACE_SPARSITY_THRESHOLD,
-    SUBSPACE_TOP_CONTRIB_THRESHOLD, SUBSPACE_DEFAULT_QUALITY,
-    SUBSPACE_QUALITY_W_CONCENTRATION, SUBSPACE_QUALITY_W_RANK,
-    SUBSPACE_QUALITY_W_DECAY,
-    QUALITY_SCORE_SPARSE, QUALITY_SCORE_CONCENTRATED,
-    QUALITY_SCORE_GOOD, QUALITY_SPARSITY_THRESHOLD,
+    NORM_EPS, ZERO_THRESHOLD, COMPARE_TOL,
     EIGENVALUE_DISPLAY_LIMIT,
 )
 
@@ -24,13 +17,13 @@ _LOG = setup_logger(__name__)
 class SubspaceAnalysisConfig:
     """Configuration for subspace analysis."""
     
-    n_components: int = UNIVERSAL_SUBSPACE_RANK
+    n_components: Optional[int] = None
     """Number of principal components to analyze."""
-    
-    variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD
-    """Variance explained threshold for quality check."""
 
-    min_vectors: int = SUBSPACE_MIN_VECTORS
+    variance_threshold: Optional[float] = None
+    """Variance explained threshold for quality check. Must be set by caller."""
+
+    min_vectors: Optional[int] = None
     """Minimum vectors needed for meaningful analysis."""
     
     normalize_vectors: bool = True
@@ -62,12 +55,14 @@ class SubspaceAnalysisResult:
     details: Dict[str, Any] = field(default_factory=dict)
     """Additional analysis details."""
     
-    def summary(self) -> str:
+    def summary(self, universal_subspace_rank: int = None) -> str:
         """Return a summary string."""
-        status = "✓ GOOD" if self.lies_in_subspace else "⚠ WARNING"
+        if universal_subspace_rank is None:
+            raise ValueError("universal_subspace_rank is required")
+        status = "GOOD" if self.lies_in_subspace else "WARNING"
         return (
             f"Subspace Analysis: {status}\n"
-            f"  Variance explained (top-{len(self.singular_values[:UNIVERSAL_SUBSPACE_RANK])}): {self.variance_explained:.1%}\n"
+            f"  Variance explained (top-{len(self.singular_values[:universal_subspace_rank])}): {self.variance_explained:.1%}\n"
             f"  Effective rank: {self.effective_rank}\n"
             f"  Quality score: {self.quality_score:.2f}"
         )
@@ -76,6 +71,11 @@ class SubspaceAnalysisResult:
 def analyze_steering_vector_subspace(
     vectors: List[torch.Tensor] | Dict[LayerName, torch.Tensor] | torch.Tensor,
     config: SubspaceAnalysisConfig | None = None,
+    universal_subspace_rank: int = None,
+    subspace_decay_normalize: float = None,
+    subspace_quality_w_concentration: float = None,
+    subspace_quality_w_rank: float = None,
+    subspace_quality_w_decay: float = None,
 ) -> SubspaceAnalysisResult:
     """
     Analyze whether steering vectors lie in a low-rank subspace.
@@ -93,9 +93,22 @@ def analyze_steering_vector_subspace(
     Returns:
         SubspaceAnalysisResult with quality metrics
     """
+    if universal_subspace_rank is None:
+        raise ValueError("universal_subspace_rank is required")
+    if subspace_decay_normalize is None:
+        raise ValueError("subspace_decay_normalize is required")
+    if subspace_quality_w_concentration is None:
+        raise ValueError("subspace_quality_w_concentration is required")
+    if subspace_quality_w_rank is None:
+        raise ValueError("subspace_quality_w_rank is required")
+    if subspace_quality_w_decay is None:
+        raise ValueError("subspace_quality_w_decay is required")
     log = bind(_LOG)
     cfg = config or SubspaceAnalysisConfig()
-    
+    if cfg.n_components is None:
+        raise ValueError("n_components is required in SubspaceAnalysisConfig")
+    if cfg.min_vectors is None:
+        raise ValueError("min_vectors is required in SubspaceAnalysisConfig")
     # Convert to tensor matrix
     if isinstance(vectors, dict):
         vector_list = [v.detach().float().reshape(-1) for v in vectors.values() if v is not None]
@@ -171,16 +184,16 @@ def analyze_steering_vector_subspace(
     # 3. Effective rank relative to universal subspace rank
     
     concentration_score = variance_explained_k
-    rank_score = max(0, 1 - (effective_rank - 1) / UNIVERSAL_SUBSPACE_RANK)
+    rank_score = max(0, 1 - (effective_rank - 1) / universal_subspace_rank)
     
     # Spectral decay rate (faster decay = better)
     if len(S) > 1:
         decay_rate = (S[0] / (S[1] + ZERO_THRESHOLD)).item()
-        decay_score = min(decay_rate / SUBSPACE_DECAY_NORMALIZE, 1.0)  # Normalize
+        decay_score = min(decay_rate / subspace_decay_normalize, 1.0)  # Normalize
     else:
         decay_score = 1.0
     
-    quality_score = SUBSPACE_QUALITY_W_CONCENTRATION * concentration_score + SUBSPACE_QUALITY_W_RANK * rank_score + SUBSPACE_QUALITY_W_DECAY * decay_score
+    quality_score = subspace_quality_w_concentration * concentration_score + subspace_quality_w_rank * rank_score + subspace_quality_w_decay * decay_score
     
     lies_in_subspace = variance_explained_k >= cfg.variance_threshold
     
@@ -216,7 +229,7 @@ def analyze_steering_vector_subspace(
 def check_vector_quality(
     vector: torch.Tensor,
     reference_vectors: Optional[List[torch.Tensor]] = None,
-    threshold: float = DEFAULT_VARIANCE_THRESHOLD,
+    threshold: float = None,
 ) -> Tuple[bool, float, str]:
     """
     Quick check if a single steering vector is high quality.
@@ -243,9 +256,11 @@ def check_vector_quality(
     
     # If reference vectors provided, check alignment
     if reference_vectors and len(reference_vectors) >= 3:
+        if threshold is None:
+            raise ValueError("threshold is required when reference_vectors are provided")
         all_vectors = reference_vectors + [vector]
         result = analyze_steering_vector_subspace(all_vectors)
-        
+
         if result.quality_score >= threshold:
             return True, result.quality_score, f"Vector aligns well with subspace (score={result.quality_score:.2f})"
         else:
@@ -254,17 +269,17 @@ def check_vector_quality(
     # Without reference, do basic quality checks
     # Check sparsity (too sparse = suspicious)
     sparsity = (vector.abs() < COMPARE_TOL).float().mean().item()
-    if sparsity > QUALITY_SPARSITY_THRESHOLD:
-        return False, QUALITY_SCORE_SPARSE, f"Vector is too sparse ({sparsity:.1%} zeros)"
-    
+    if sparsity > 0.99:
+        return False, 0.1, f"Vector is too sparse ({sparsity:.1%} zeros)"
+
     # Check concentration (variance should be spread reasonably)
     sorted_abs = vector.abs().sort(descending=True).values
     top_10_contribution = sorted_abs[:max(1, len(sorted_abs)//10)].sum() / (sorted_abs.sum() + ZERO_THRESHOLD)
-    
-    if top_10_contribution > QUALITY_SPARSITY_THRESHOLD:
-        return False, QUALITY_SCORE_CONCENTRATED, f"Vector is too concentrated (top 10% = {top_10_contribution:.1%})"
 
-    return True, QUALITY_SCORE_GOOD, "Vector passes basic quality checks"
+    if top_10_contribution > 0.99:
+        return False, 0.3, f"Vector is too concentrated (top 10% = {top_10_contribution:.1%})"
+
+    return True, 0.8, "Vector passes basic quality checks"
 
 
 # =============================================================================

@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import List, Optional, TYPE_CHECKING
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
-from wisent.core.utils.config_tools.constants import PROGRESS_REPORT_INTERVAL
+from wisent.core.utils.config_tools.constants import RECURSION_INITIAL_DEPTH, COMBO_OFFSET, ARCHITECTURE_MODULE_LIMIT
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from .cached_activations import CachedActivations, get_strategy_text_family
 from .raw_cached_activations import RawCachedActivations
@@ -24,6 +24,7 @@ def collect_and_cache_activations(
     pairs: List[ContrastivePair],
     benchmark: str,
     strategy: ExtractionStrategy,
+    report_interval: int,
     cache: Optional[ActivationCache] = None,
     cache_dir: Optional[str] = None,
     show_progress: bool = True,
@@ -53,7 +54,7 @@ def collect_and_cache_activations(
             print(f"Loading cached activations for {benchmark}/{strategy.value}")
         return cache.get(model.model_name, benchmark, strategy)
 
-    collector = ActivationCollector(model=model)
+    collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
 
     cached = CachedActivations(
         benchmark=benchmark,
@@ -63,7 +64,7 @@ def collect_and_cache_activations(
     )
 
     for i, pair in enumerate(pairs):
-        if show_progress and i % PROGRESS_REPORT_INTERVAL == 0:
+        if show_progress and i % report_interval == RECURSION_INITIAL_DEPTH:
             print(f"Collecting activations: {i+1}/{len(pairs)}", end="\r", flush=True)
 
         updated = collector.collect(pair, strategy=strategy, layers=None)
@@ -88,6 +89,7 @@ def collect_and_cache_raw_activations(
     pairs: List[ContrastivePair],
     benchmark: str,
     strategy: ExtractionStrategy,
+    report_interval: int,
     cache: Optional[RawActivationCache] = None,
     cache_dir: Optional[str] = None,
     show_progress: bool = True,
@@ -110,7 +112,7 @@ def collect_and_cache_raw_activations(
             print(f"Loading cached raw activations for {benchmark}/{text_family}")
         return cache.get(model.model_name, benchmark, text_family)
 
-    collector = ActivationCollector(model=model)
+    collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
 
     cached = RawCachedActivations(
         benchmark=benchmark,
@@ -120,7 +122,7 @@ def collect_and_cache_raw_activations(
     )
 
     for i, pair in enumerate(pairs):
-        if show_progress and i % PROGRESS_REPORT_INTERVAL == 0:
+        if show_progress and i % report_interval == RECURSION_INITIAL_DEPTH:
             print(f"Collecting raw activations: {i+1}/{len(pairs)}", end="\r", flush=True)
 
         raw_data = collector.collect_raw(pair, strategy=strategy, layers=None)

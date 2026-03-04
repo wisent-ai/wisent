@@ -29,6 +29,12 @@ def setup_multi_steer_parser(parser):
         help="Steering method to use for combination",
     )
 
+    # Steering scale
+    parser.add_argument(
+        "--combined-scale", type=float, required=True,
+        help="Initial steering scale for combining vectors",
+    )
+
     # Generation configuration
     parser.add_argument("--prompt", type=str, required=True, help="Prompt to generate with combined steering")
     parser.add_argument("--max-new-tokens", type=int, default=100, help="Maximum new tokens to generate (default: 100)")

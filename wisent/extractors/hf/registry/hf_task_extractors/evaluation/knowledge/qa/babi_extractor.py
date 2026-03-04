@@ -2,7 +2,7 @@
 from __future__ import annotations
 from typing import Any, Optional
 from wisent.core.utils.cli.cli_logger import setup_logger
-from wisent.core.utils.config_tools.constants import CONTEXT_MAX_PREVIEW, EXTRACTOR_DEFAULT_LIMIT
+from wisent.core.utils.config_tools.constants import CONTEXT_MAX_PREVIEW
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
@@ -21,7 +21,7 @@ class BABIExtractor(HuggingFaceBenchmarkExtractor):
         self.name = "babi"
         self.task = task if task is not None else "qa1"
 
-    def extract_contrastive_pairs(self, limit: int | None = EXTRACTOR_DEFAULT_LIMIT) -> list[ContrastivePair]:
+    def extract_contrastive_pairs(self, limit: int | None = None) -> list[ContrastivePair]:
         pairs: list[ContrastivePair] = []
 
         # bABI has multiple tasks (qa1-qa20)
@@ -112,7 +112,7 @@ class SciQExtractor(HuggingFaceBenchmarkExtractor):
         super().__init__()
         self.name = "sciq"
 
-    def extract_contrastive_pairs(self, limit: int | None = EXTRACTOR_DEFAULT_LIMIT) -> list[ContrastivePair]:
+    def extract_contrastive_pairs(self, limit: int | None = None) -> list[ContrastivePair]:
         pairs: list[ContrastivePair] = []
 
         try:

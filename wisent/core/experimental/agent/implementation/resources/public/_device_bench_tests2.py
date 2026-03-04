@@ -2,14 +2,13 @@
 import time
 import torch
 from typing import Dict, Any, Optional
-from wisent.core.utils.config_tools.constants import BENCH_TEST_SAMPLE_MIN
 from wisent.core.utils.infra_tools.infra.core.hardware import subprocess_timeout_s
 from wisent.core.utils import resolve_default_device
 
 class DeviceBenchTestsMixin2:
     """Mixin: steering and data generation tests."""
 
-    def run_steering_test(self, layer: int, steering_strength: float) -> float:
+    def run_steering_test(self, layer: int, steering_strength: float, bench_test_sample_min: int) -> float:
         """Benchmark steering performance using real CLI functionality."""
         print("   📊 Benchmarking steering performance...")
         
@@ -49,7 +48,7 @@ except Exception as e:
 '''
         test_script = test_script.replace("__LAYER__", str(layer))
         test_script = test_script.replace("__STRENGTH__", str(steering_strength))
-        test_script = test_script.replace("__BENCH_SAMPLE_MIN__", str(BENCH_TEST_SAMPLE_MIN))
+        test_script = test_script.replace("__BENCH_SAMPLE_MIN__", str(bench_test_sample_min))
         try:
             with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
                 f.write(test_script)

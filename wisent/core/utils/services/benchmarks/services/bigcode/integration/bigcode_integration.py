@@ -32,7 +32,8 @@ from wisent.core.utils.services.benchmarks.bigcode._bigcode_text_eval import Big
 class BigCodeEvaluator(BigCodeDockerMixin, BigCodeScriptsMixin, BigCodeTextEvalMixin):
     """Evaluates model outputs on BigCode benchmarks."""
 
-    def __init__(self, docker_executor=None):
+    def __init__(self, test_timeout: int, docker_executor=None):
+        self.test_timeout = test_timeout
         self.docker_executor = docker_executor
 
     def evaluate(self, task: BigCodeTask, generations: List[str], k_values: List[int] = list(BIGCODE_K_VALUES)) -> Dict[str, Any]:
@@ -78,7 +79,7 @@ class BigCodeEvaluator(BigCodeDockerMixin, BigCodeScriptsMixin, BigCodeTextEvalM
     def _execute_and_test(self, sample: Dict, generation: str, task_name: str) -> Dict:
         if self.docker_executor:
             return self._execute_in_docker(sample, generation, task_name)
-        return self._execute_in_subprocess(sample, generation, task_name)
+        return self._execute_in_subprocess(sample, generation, task_name, test_timeout=self.test_timeout)
 
     def _calculate_pass_at_k(self, execution_results: List[Dict], k: int) -> float:
         total_passed = 0
@@ -95,9 +96,9 @@ def get_bigcode_loader() -> BigCodeTaskLoader:
     return BigCodeTaskLoader()
 
 
-def get_bigcode_evaluator(docker_executor=None) -> BigCodeEvaluator:
+def get_bigcode_evaluator(test_timeout: int, docker_executor=None) -> BigCodeEvaluator:
     """Get BigCodeEvaluator instance."""
-    return BigCodeEvaluator(docker_executor=docker_executor)
+    return BigCodeEvaluator(test_timeout=test_timeout, docker_executor=docker_executor)
 
 
 def is_bigcode_task(task_name: str) -> bool:
@@ -110,7 +111,7 @@ def load_bigcode_task(task_name: str, limit: Optional[int] = None) -> BigCodeTas
     return get_bigcode_loader().load_task(task_name, limit=limit)
 
 
-def evaluate_bigcode_task(task: BigCodeTask, generations: List[str], docker_executor=None) -> Dict[str, Any]:
+def evaluate_bigcode_task(task: BigCodeTask, generations: List[str], test_timeout: int, docker_executor=None) -> Dict[str, Any]:
     """Evaluate BigCode task with generated code."""
-    evaluator = get_bigcode_evaluator(docker_executor=docker_executor)
+    evaluator = get_bigcode_evaluator(test_timeout=test_timeout, docker_executor=docker_executor)
     return evaluator.evaluate(task, generations)

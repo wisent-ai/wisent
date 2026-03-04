@@ -19,7 +19,7 @@ import torch
 import torch.nn as nn
 from transformers import AutoTokenizer, AutoConfig, AutoModel, PreTrainedModel
 
-from wisent.core.utils.config_tools.constants import NEAR_ZERO_TOL, MIN_RESPONSE_TEXT_LENGTH
+from wisent.core.utils.config_tools.constants import NEAR_ZERO_TOL
 from wisent.core.reading.evaluators.custom.custom_evaluator import (
     CustomEvaluator,
     CustomEvaluatorConfig,
@@ -69,13 +69,14 @@ class DesklibDetectorEvaluator(CustomEvaluator):
     Score is normalized to [0, 1] where higher = more human-like.
     """
     
-    def __init__(self, device: Optional[str] = None, max_length: int | None = None):
+    def __init__(self, min_response_text_length: int, device: Optional[str] = None):
         config = CustomEvaluatorConfig(
             name="desklib_detector",
             description="Desklib AI detector (RAID benchmark leader, higher = more human-like)",
         )
         super().__init__(name="desklib_detector", description=config.description, config=config)
 
+        self._min_response_text_length = min_response_text_length
         self.model_id = "desklib/ai-text-detector-v1.01"
 
         # Set device
@@ -89,10 +90,6 @@ class DesklibDetectorEvaluator(CustomEvaluator):
             self.device = torch.device("cpu")
 
         self._load_model()
-
-        if max_length is None:
-            max_length = self.tokenizer.model_max_length
-        self.max_length = max_length
     
     def _load_model(self):
         """Load the Desklib model and tokenizer."""
@@ -111,7 +108,7 @@ class DesklibDetectorEvaluator(CustomEvaluator):
             text,
             padding='max_length',
             truncation=True,
-            max_length=self.max_length,
+            max_length=self.tokenizer.model_max_length,
             return_tensors='pt'
         )
         input_ids = encoded['input_ids'].to(self.device)
@@ -129,7 +126,7 @@ class DesklibDetectorEvaluator(CustomEvaluator):
         
         Returns score where higher = more human-like.
         """
-        if len(response.strip()) < MIN_RESPONSE_TEXT_LENGTH:
+        if len(response.strip()) < self._min_response_text_length:
             logger.warning("Text too short for reliable detection")
             return {
                 "score": 0.5,
@@ -149,22 +146,21 @@ class DesklibDetectorEvaluator(CustomEvaluator):
 
 
 def create_desklib_detector_evaluator(
+    min_response_text_length: int,
     device: Optional[str] = None,
-    max_length: int | None = None,
     **kwargs
 ) -> DesklibDetectorEvaluator:
     """Create a Desklib detector evaluator.
-    
+
     Args:
         device: Device to run on (cuda, mps, cpu)
-        max_length: Max token length (default: tokenizer.model_max_length)
-    
+
     Returns:
         DesklibDetectorEvaluator instance
     """
-    return DesklibDetectorEvaluator(device=device, max_length=max_length)
+    return DesklibDetectorEvaluator(min_response_text_length=min_response_text_length, device=device)
 
 
 def create_evaluator(**kwargs) -> DesklibDetectorEvaluator:
     """Factory function for module-based loading."""
-    return create_desklib_detector_evaluator(**kwargs)
+    return create_desklib_detector_evaluator(min_response_text_length=kwargs.pop("min_response_text_length"), **kwargs)

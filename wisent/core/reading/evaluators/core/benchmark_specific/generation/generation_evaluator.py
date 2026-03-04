@@ -13,10 +13,9 @@ import logging
 from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
 from wisent.core.utils.infra_tools.errors import NumericalExtractionError, TextExtractionError
 from wisent.core.utils.config_tools.constants import (
-    COMPARE_TOL, EVAL_NLI_THRESHOLD, EVAL_NLI_CONF_CEILING,
-    EVAL_NLI_CONF_BASE, EVAL_NLI_CONF_SCALE, EVAL_EMB_THRESHOLD,
-    EVAL_EMB_CONF_CEILING, EVAL_EMB_CONF_BASE, EVAL_EMB_CONF_SCALE,
-    GEN_EVAL_HIGH_CONFIDENCE,
+    COMPARE_TOL,
+    GENERATION_EMBEDDING_WEIGHT,
+    GENERATION_NLI_WEIGHT,
 )
 from wisent.core.reading.evaluators.benchmark_specific._generation_evaluator_helpers import (
     GenerationEvaluatorHelpersMixin,
@@ -64,6 +63,21 @@ class GenerationEvaluator(GenerationEvaluatorHelpersMixin, BaseEvaluator):
     name = "generation"
     description = "Generation-based evaluator for text generation tasks"
 
+    def __init__(
+        self,
+        *,
+        generation_embedding_weight: float = GENERATION_EMBEDDING_WEIGHT,
+        generation_nli_weight: float = GENERATION_NLI_WEIGHT,
+    ):
+        """Initialize with semantic matching weights.
+
+        Args:
+            generation_embedding_weight: Weight for embedding similarity in reference comparison.
+            generation_nli_weight: Weight for NLI entailment in reference comparison.
+        """
+        self._generation_embedding_weight = generation_embedding_weight
+        self._generation_nli_weight = generation_nli_weight
+
     def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:
         """Evaluate generated response against expected answer.
 
@@ -97,7 +111,9 @@ class GenerationEvaluator(GenerationEvaluatorHelpersMixin, BaseEvaluator):
 
         if response and correct_answers and incorrect_answers:
             return self._compare_to_references(
-                response, correct_answers, incorrect_answers, task_name, answer_type
+                response, correct_answers, incorrect_answers, task_name, answer_type,
+                embedding_weight=self._generation_embedding_weight,
+                nli_weight=self._generation_nli_weight,
             )
 
         # If no choices, extract answer from generated response
@@ -269,16 +285,16 @@ class GenerationEvaluator(GenerationEvaluatorHelpersMixin, BaseEvaluator):
             if extracted_norm == expected_norm:
                 return True, expected, 1.0
             if extracted_norm in expected_norm or expected_norm in extracted_norm:
-                return True, expected, GEN_EVAL_HIGH_CONFIDENCE
+                return True, expected, 0.9
 
         for expected in expected_list:
             expected_str = str(expected)
             nli_score = self._nli_entailment(extracted, expected_str)
-            if nli_score is not None and nli_score >= EVAL_NLI_THRESHOLD:
-                confidence = min(EVAL_NLI_CONF_CEILING, EVAL_NLI_CONF_BASE + nli_score * EVAL_NLI_CONF_SCALE)
+            if nli_score is not None and nli_score >= 0.5:
+                confidence = min(0.85, 0.6 + nli_score * 0.3)
                 return True, expected, confidence
             emb_score = self._embedding_similarity(extracted, expected_str)
-            if emb_score is not None and emb_score >= EVAL_EMB_THRESHOLD:
-                confidence = min(EVAL_EMB_CONF_CEILING, EVAL_EMB_CONF_BASE + emb_score * EVAL_EMB_CONF_SCALE)
+            if emb_score is not None and emb_score >= 0.6:
+                confidence = min(0.8, 0.5 + emb_score * 0.3)
                 return True, expected, confidence
         return False, None, 0.0

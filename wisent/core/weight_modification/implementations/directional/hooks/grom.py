@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import torch
 from typing import TYPE_CHECKING
-from wisent.core.utils.config_tools.constants import GROM_GATE_TEMPERATURE, GROM_SENSOR_LAYER_DEFAULT, DEFAULT_LAYER_WEIGHT, SEPARATOR_WIDTH_STANDARD
-from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.infra_tools.errors import MissingParameterError
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -17,7 +17,7 @@ _LOG = setup_logger(__name__)
 class GROMRuntimeHooks:
     """Runtime hook system for GROM dynamic steering."""
 
-    def __init__(self, model: Module, grom_result, base_strength: float, gate_threshold: float = GROM_GATE_TEMPERATURE, use_soft_gating: bool = True):
+    def __init__(self, model: Module, grom_result, base_strength: float, gate_threshold: float, use_soft_gating: bool = True):
         self.model = model
         self.grom_result = grom_result
         self.base_strength = base_strength
@@ -41,7 +41,11 @@ class GROMRuntimeHooks:
             except (ValueError, IndexError):
                 pass
         sensor_layer_name = grom_result.metadata.get("sensor_layer")
-        self._sensor_layer_idx = self._layer_name_to_idx.get(sensor_layer_name, GROM_SENSOR_LAYER_DEFAULT)
+        if sensor_layer_name is None:
+            raise MissingParameterError(params=["sensor_layer"], context="GROM result metadata must contain sensor_layer")
+        self._sensor_layer_idx = self._layer_name_to_idx.get(sensor_layer_name)
+        if self._sensor_layer_idx is None:
+            raise MissingParameterError(params=["sensor_layer"], context=f"sensor_layer '{sensor_layer_name}' not found in layer order")
 
     def install(self) -> None:
         """Install forward hooks on the model."""
@@ -113,12 +117,15 @@ class GROMRuntimeHooks:
 
 
 def project_weights_grom(
-    model: Module, grom_result, base_strength: float, components: list[str] | None = None,
-    use_learned_intensities: bool = True, verbose: bool = True
+    model: Module, grom_result, base_strength: float, base_layer_weight: float,
+    components: list[str] | None = None,
+    use_learned_intensities: bool = True, verbose: bool = True,
 ) -> dict[str, int]:
     """Bake GROM effective directions into model weights using ADDITIVE steering."""
     from wisent.core.weight_modification.methods.additive import bake_steering_into_weights
     from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+    if base_layer_weight is None:
+        raise MissingParameterError(params=["base_layer_weight"], context="project_weights_grom requires base_layer_weight")
     log = bind(_LOG, num_layers=len(grom_result.directions))
     if components is None:
         components = ["self_attn.o_proj", "mlp.down_proj"]
@@ -132,12 +139,14 @@ def project_weights_grom(
         effective_vectors[layer_idx] = eff_dir
         if use_learned_intensities:
             dir_weights = grom_result.direction_weights.get(layer_name)
-            weight = 1.0 + (dir_weights.max() - dir_weights.min()).item() if dir_weights is not None else DEFAULT_LAYER_WEIGHT
+            if dir_weights is None:
+                raise KeyError(f"No direction_weights for '{layer_name}'")
+            weight = base_layer_weight + (dir_weights.max() - dir_weights.min()).item()
             layer_weights[layer_idx] = weight
     if verbose:
         print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}\nGROM WEIGHT MODIFICATION (ADDITIVE)\n{'='*SEPARATOR_WIDTH_STANDARD}")
         print(f"Layers: {len(effective_vectors)}, Components: {components}, Base strength: {base_strength}\n{'='*SEPARATOR_WIDTH_STANDARD}\n")
-    weighted_vectors = {layer_idx: vec * layer_weights.get(layer_idx, DEFAULT_LAYER_WEIGHT) if use_learned_intensities else vec
+    weighted_vectors = {layer_idx: vec * layer_weights[layer_idx] if use_learned_intensities else vec
                         for layer_idx, vec in effective_vectors.items()}
     steering_vectors = LayerActivations(weighted_vectors)
     stats = bake_steering_into_weights(model=model, steering_vectors=steering_vectors, alpha=base_strength, method="bias", components=components, verbose=verbose)

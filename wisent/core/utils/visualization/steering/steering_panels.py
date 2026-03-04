@@ -134,7 +134,7 @@ def plot_umap_panel(ax, pos, neg, base, steered, base_evals, steered_evals):
                           all_2d[n_pos+n_neg+len(base):], base_evals, steered_evals, "UMAP")
 
 
-def plot_pacmap_panel(ax, pos, neg, base, steered, base_evals, steered_evals):
+def plot_pacmap_panel(ax, pos, neg, base, steered, base_evals, steered_evals, *, pacmap_neighbors_max: int, pacmap_neighbors_divisor: int, pacmap_num_iters: int):
     """PaCMAP projection panel using pacmap_alt."""
     try:
         from .pacmap_alt import pacmap_embedding
@@ -142,7 +142,7 @@ def plot_pacmap_panel(ax, pos, neg, base, steered, base_evals, steered_evals):
         n = len(all_data)
         if n < 5:
             raise ValueError("Not enough samples")
-        all_2d = pacmap_embedding(all_data, n_components=_C.VIZ_N_COMPONENTS_2D, n_neighbors=min(_C.PACMAP_NEIGHBORS_MAX, n // _C.PACMAP_NEIGHBORS_DIVISOR), num_iters=_C.PACMAP_NUM_ITERS_DEFAULT)
+        all_2d = pacmap_embedding(all_data, n_components=_C.VIZ_N_COMPONENTS_2D, n_neighbors=min(pacmap_neighbors_max, n // pacmap_neighbors_divisor), num_iters=pacmap_num_iters)
         n_pos, n_neg = len(pos), len(neg)
         plot_projection_panel(ax, all_2d[:n_pos], all_2d[n_pos:n_pos+n_neg],
                               all_2d[n_pos+n_neg:n_pos+n_neg+len(base)],

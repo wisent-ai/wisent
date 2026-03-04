@@ -4,7 +4,7 @@ import random
 from typing import Any
 from datasets import load_dataset
 from wisent.core.utils.cli.cli_logger import setup_logger
-from wisent.core.utils.config_tools.constants import EXTRACTOR_DEFAULT_LIMIT, DISPLAY_TRUNCATION_LARGE
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_LARGE
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
@@ -74,8 +74,10 @@ class RefusalBenchExtractor(HuggingFaceBenchmarkExtractor):
             A list of ContrastivePair objects.
         """
         max_items = self._normalize_limit(limit)
+        if max_items is None:
+            raise ValueError("limit is required for RefusalBenchExtractor")
 
-        docs = self._load_and_perturb_nq()
+        docs = self._load_and_perturb_nq(load_limit=max_items)
         log.info(f"Created {len(docs)} RefusalBench perturbation examples")
 
         pairs: list[ContrastivePair] = []
@@ -97,21 +99,21 @@ class RefusalBenchExtractor(HuggingFaceBenchmarkExtractor):
 
         return pairs
 
-    def _load_and_perturb_nq(self) -> list[dict[str, Any]]:
+    def _load_and_perturb_nq(self, *, load_limit: int) -> list[dict[str, Any]]:
         """
         Load NaturalQuestions and apply RefusalBench-style perturbations.
-        
-        RefusalBench methodology: Transform answerable QA pairs into 
+
+        RefusalBench methodology: Transform answerable QA pairs into
         unanswerable ones using linguistic perturbations.
         """
         try:
             ds = load_dataset("natural_questions", "default", split="train", streaming=True)
-            
+
             examples = []
             perturbation_types = list(PERTURBATION_CATEGORIES.keys())
-            
+
             for i, item in enumerate(ds):
-                if i >= EXTRACTOR_DEFAULT_LIMIT:
+                if i >= load_limit:
                     break
                     
                 question = item.get("question", {}).get("text", "")

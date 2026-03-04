@@ -7,7 +7,7 @@ Split from populate_tasks_backup.py to meet 300-line limit.
 import os
 import sys
 import re
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 
 from wisent.core.utils.config_tools.constants import (DISPLAY_TOP_N_TINY, LLAMA_PAD_TOKEN_ID,
     MAX_BENCHMARKS_SINGLE)
@@ -22,7 +22,7 @@ def get_relevant_benchmarks_for_prompt(prompt: str, max_benchmarks: int = MAX_BE
 
     Args:
         prompt: The prompt to analyze (e.g., "I like food")
-        max_benchmarks: Maximum number of benchmarks to return (default: 1)
+        max_benchmarks: Maximum number of benchmarks to return
         existing_model: Optional pre-loaded model for generation
 
     Returns:

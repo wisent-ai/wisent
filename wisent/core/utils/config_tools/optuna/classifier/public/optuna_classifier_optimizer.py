@@ -19,7 +19,6 @@ from optuna.samplers import TPESampler
 from wisent.core.reading.classifiers.core.atoms import Classifier
 from wisent.core.utils import resolve_default_device, preferred_dtype
 from wisent.core.utils.infra_tools.errors import NoActivationDataError, ClassifierCreationError
-from wisent.core.utils.config_tools.constants import OPTUNA_PRUNER_STARTUP_TRIALS
 
 from .activation_generator import ActivationData, ActivationGenerator, GenerationConfig
 from .classifier_cache import CacheConfig, ClassifierCache
@@ -109,7 +108,7 @@ class OptunaClassifierOptimizer(OptunaObjectiveMixin, OptunaPruningMixin):
         # Step 2: Set up Optuna study
         sampler = TPESampler(seed=self.opt_config.sampler_seed)
         pruner = (
-            MedianPruner(n_startup_trials=OPTUNA_PRUNER_STARTUP_TRIALS, n_warmup_steps=self.opt_config.pruning_patience)
+            MedianPruner(n_startup_trials=self.opt_config.pruner_startup_trials, n_warmup_steps=self.opt_config.pruning_patience)
             if self.opt_config.enable_pruning
             else None
         )

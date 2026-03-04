@@ -6,14 +6,13 @@ Extracted from wisent.core.primitives.models.modalities.__init__ to keep files u
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from pathlib import Path
 
 import torch
 import numpy as np
 
 from wisent.core.primitives.models.modalities.text_content import Modality, ModalityContent
-from wisent.core.utils.config_tools.constants import DEFAULT_AUDIO_SAMPLE_RATE, DEFAULT_VIDEO_FPS
 from wisent.core.utils.infra_tools.errors import (
     NoWaveformDataError,
     NoPixelDataError,
@@ -33,7 +32,7 @@ class AudioContent(ModalityContent):
         file_path: Optional path to audio file
     """
     waveform: torch.Tensor | np.ndarray | None = None
-    sample_rate: int = DEFAULT_AUDIO_SAMPLE_RATE
+    sample_rate: Optional[int] = None
     file_path: Path | str | None = None
     modality: Modality = field(default=Modality.AUDIO, init=False)
 
@@ -57,12 +56,12 @@ class AudioContent(ModalityContent):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "AudioContent":
         return cls(
-            sample_rate=data.get("sample_rate", DEFAULT_AUDIO_SAMPLE_RATE),
+            sample_rate=data.get("sample_rate"),
             file_path=data.get("file_path"),
         )
 
     @classmethod
-    def from_file(cls, file_path: str | Path, sample_rate: int = DEFAULT_AUDIO_SAMPLE_RATE) -> "AudioContent":
+    def from_file(cls, file_path: str | Path, sample_rate: int = None) -> "AudioContent":
         """Load audio from file (requires torchaudio or librosa)."""
         try:
             import torchaudio
@@ -137,7 +136,7 @@ class VideoContent(ModalityContent):
         file_path: Optional path to video file
     """
     frames: torch.Tensor | List[torch.Tensor] | np.ndarray | None = None
-    fps: float = DEFAULT_VIDEO_FPS
+    fps: Optional[float] = None
     file_path: Path | str | None = None
     modality: Modality = field(default=Modality.VIDEO, init=False)
 
@@ -171,7 +170,7 @@ class VideoContent(ModalityContent):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "VideoContent":
         return cls(
-            fps=data.get("fps", DEFAULT_VIDEO_FPS),
+            fps=data.get("fps"),
             file_path=data.get("file_path"),
         )
 

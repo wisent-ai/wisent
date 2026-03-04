@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from typing import List, Dict, Any, Callable, Awaitable
 from .diagnose import AnalysisResult
 from wisent.core.utils.infra_tools.errors import ImprovementMethodUnknownError, TrainingDataGenerationError
-from wisent.core.utils.config_tools.constants import AGENT_IMPROVEMENT_THRESHOLD, AGENT_SYNTH_PAIRS_PER_ISSUE
 
 
 @dataclass
@@ -28,17 +27,25 @@ class ImprovementResult:
 class ResponseSteering:
     """Handles response improvement and steering for autonomous agents."""
     
-    def __init__(self, generate_response_func: Callable[[str], Awaitable[str]], 
-                 analyze_response_func: Callable[[str, str], Awaitable[AnalysisResult]]):
+    def __init__(self, generate_response_func: Callable[[str], Awaitable[str]],
+                 analyze_response_func: Callable[[str, str], Awaitable[AnalysisResult]],
+                 improvement_threshold: float = None, synth_pairs_per_issue: int = None):
         """
         Initialize the steering system.
-        
+
         Args:
             generate_response_func: Async function to generate new responses
             analyze_response_func: Async function to analyze responses
+            improvement_threshold: Minimum improvement score to consider success
+            synth_pairs_per_issue: Number of synthetic pairs per issue type
         """
+        for _n, _v in [("improvement_threshold", improvement_threshold), ("synth_pairs_per_issue", synth_pairs_per_issue)]:
+            if _v is None:
+                raise ValueError(f"{_n} is required")
         self.generate_response = generate_response_func
         self.analyze_response = analyze_response_func
+        self._improvement_threshold = improvement_threshold
+        self._synth_pairs_per_issue = synth_pairs_per_issue
     
     async def improve_response(self, prompt: str, response: str, analysis: AnalysisResult) -> ImprovementResult:
         """Attempt to improve the response."""
@@ -81,7 +88,7 @@ class ResponseSteering:
         
         # Success if issues were resolved OR quality improved significantly
         issue_resolution_success = issues_resolved > issues_added
-        quality_improvement_success = improvement_score > AGENT_IMPROVEMENT_THRESHOLD
+        quality_improvement_success = improvement_score > self._improvement_threshold
         overall_success = issue_resolution_success or quality_improvement_success
         
         # Success metrics (can be enabled for debugging)
@@ -142,7 +149,7 @@ Ensure your response avoids the types of errors shown in the correction examples
         
         # Success if issues were resolved OR quality improved significantly
         issue_resolution_success = issues_resolved > issues_added
-        quality_improvement_success = improvement_score > AGENT_IMPROVEMENT_THRESHOLD
+        quality_improvement_success = improvement_score > self._improvement_threshold
         overall_success = issue_resolution_success or quality_improvement_success
         
         # Success metrics (can be enabled for debugging)
@@ -195,7 +202,7 @@ Ensure your response avoids the types of errors shown in the correction examples
                 # Generate pairs for each issue type
                 synthetic_pairs = generator.generate_contrastive_pair_set(
                     trait_description=trait_description,
-                    num_pairs=AGENT_SYNTH_PAIRS_PER_ISSUE,  # Generate pairs per issue
+                    num_pairs=self._synth_pairs_per_issue,  # Generate pairs per issue
                     name=f"steering_{issue}"
                 )
                 

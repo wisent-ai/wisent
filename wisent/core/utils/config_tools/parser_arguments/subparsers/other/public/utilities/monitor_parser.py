@@ -1,7 +1,5 @@
 """Parser setup for the 'monitor' command."""
 
-from wisent.core import constants as _C
-
 
 def setup_monitor_parser(parser):
     """Set up the monitor subcommand parser."""
@@ -10,10 +8,8 @@ def setup_monitor_parser(parser):
     parser.add_argument("--benchmark", action="store_true", help="Run performance benchmarks")
     parser.add_argument("--test-gpu", action="store_true", help="Test GPU availability and memory")
     parser.add_argument("--continuous", action="store_true", help="Continuous monitoring mode (Ctrl+C to stop)")
-    parser.add_argument("--interval", type=float, default=_C.MONITOR_DEFAULT_INTERVAL, help="Monitoring interval in seconds (default: 1.0)")
+    parser.add_argument("--interval", type=float, required=True, help="Monitoring interval in seconds")
     parser.add_argument("--export-csv", type=str, default=None, help="Export monitoring data to CSV file")
-    parser.add_argument(
-        "--duration", type=int, default=_C.MONITOR_DEFAULT_DURATION, help="Duration for continuous monitoring in seconds (default: 60)"
-    )
+    parser.add_argument("--duration", type=int, required=True, help="Duration for continuous monitoring in seconds")
     parser.add_argument("--track-gpu", action="store_true", help="Include GPU monitoring (requires CUDA)")
     parser.add_argument("--detailed", action="store_true", help="Show detailed monitoring information")

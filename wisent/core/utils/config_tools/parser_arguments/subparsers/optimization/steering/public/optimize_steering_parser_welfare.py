@@ -1,5 +1,4 @@
 """Welfare and universal subparsers for optimize-steering."""
-from wisent.core.utils.config_tools.constants import DEFAULT_N_TRIALS
 from wisent.core.control.steering_methods.registry import SteeringMethodRegistry
 AVAILABLE_METHODS = [m.upper() for m in SteeringMethodRegistry.list_methods()]
 
@@ -97,7 +96,7 @@ def setup_welfare_universal_parsers(steering_subparsers):
     welfare_parser.add_argument(
         "--n-trials",
         type=int,
-        default=DEFAULT_N_TRIALS,
+        default=None,
         help="Number of Optuna trials when using --search-strategy optuna (default: 100)"
     )
     welfare_parser.add_argument(
@@ -105,6 +104,12 @@ def setup_welfare_universal_parsers(steering_subparsers):
         type=int,
         required=True,
         help="Sample limit for optimization"
+    )
+    welfare_parser.add_argument(
+        "--layer-stride",
+        type=int,
+        required=True,
+        help="Stride for layer selection when auto-selecting layers"
     )
 
     # ==========================================================================
@@ -142,7 +147,7 @@ def setup_welfare_universal_parsers(steering_subparsers):
     universal_parser.add_argument(
         "--limit",
         type=int,
-        default=DEFAULT_N_TRIALS,
+        default=None,
         help="Maximum samples to use (default: 100)"
     )
     universal_parser.add_argument(

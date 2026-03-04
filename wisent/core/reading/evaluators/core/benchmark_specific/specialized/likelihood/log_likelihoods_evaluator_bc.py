@@ -10,6 +10,7 @@ import torch
 from typing import Any, List
 
 from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.utils.config_tools.constants import MIN_CHOICES_VALIDATION
 from wisent.core.utils.infra_tools.errors.error_handler import (
     ModelNotProvidedError,
     validate_choices,
@@ -83,7 +84,7 @@ class LogLikelihoodsEvaluatorBC(BaseEvaluator):
             task_name=task_name
         )
 
-        validate_choices(choices, task_name=task_name, min_choices=2)
+        validate_choices(choices, task_name=task_name, min_choices=MIN_CHOICES_VALIDATION)
 
         return self._evaluate_log_likelihood(
             model, question, choices, expected, steering_plan

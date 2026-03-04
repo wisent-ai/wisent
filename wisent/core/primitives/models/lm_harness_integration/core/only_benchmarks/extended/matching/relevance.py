@@ -5,19 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Optional
 
-from wisent.core.utils.config_tools.constants import (
-    BENCHMARK_LOADING_TIME_DEFAULT,
-    JSON_INDENT,
-    RELEVANCE_CONTENT_MATCH_SCORE,
-    RELEVANCE_FAST_HIGH_SCORING_BONUS,
-    RELEVANCE_HIGH_SCORING_BONUS,
-    RELEVANCE_MEDIUM_SCORING_BONUS,
-    RELEVANCE_POPULAR_BENCHMARK_BONUS,
-    RELEVANCE_PRIORITY_BONUS_FAST_HIGH,
-    RELEVANCE_PRIORITY_BONUS_HIGH,
-    RELEVANCE_PRIORITY_BONUS_MEDIUM,
-    RELEVANCE_TAG_MATCH_SCORE,
-)
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 from .descriptions import BENCHMARK_DESCRIPTIONS
 from .filtering import apply_priority_filtering
 
@@ -72,55 +60,55 @@ def _fallback_semantic_matching(
         # Content matching
         if any(word in prompt_lower for word in ["what is", "who is", "where is", "capital"]):
             if any(word in description_lower for word in ["knowledge", "factual", "trivia"]):
-                score += RELEVANCE_CONTENT_MATCH_SCORE
+                score += 3
                 reasons.append("factual knowledge match")
 
         if any(word in prompt_lower for word in ["code", "program", "python", "function"]):
             if any(word in description_lower for word in ["code", "programming", "python"]):
-                score += RELEVANCE_CONTENT_MATCH_SCORE
+                score += 3
                 reasons.append("programming match")
 
         if any(word in prompt_lower for word in ["math", "calculate", "solve", "number"]):
             if any(word in description_lower for word in ["math", "arithmetic", "calculation"]):
-                score += RELEVANCE_CONTENT_MATCH_SCORE
+                score += 3
                 reasons.append("mathematics match")
 
         if any(word in prompt_lower for word in ["doctor", "medicine", "health", "symptom"]):
             if any(word in description_lower for word in ["medical", "health", "clinical"]):
-                score += RELEVANCE_CONTENT_MATCH_SCORE
+                score += 3
                 reasons.append("medical match")
 
         # Tag matching
         for tag in tags:
             if tag == "general knowledge" and any(w in prompt_lower for w in ["what", "who", "where"]):
-                score += RELEVANCE_TAG_MATCH_SCORE
+                score += 2
                 reasons.append("general knowledge tag")
             elif tag == "coding" and any(w in prompt_lower for w in ["code", "program"]):
-                score += RELEVANCE_TAG_MATCH_SCORE
+                score += 2
                 reasons.append("coding tag")
             elif tag == "mathematics" and any(w in prompt_lower for w in ["math", "calculate"]):
-                score += RELEVANCE_TAG_MATCH_SCORE
+                score += 2
                 reasons.append("mathematics tag")
             elif tag == "medical" and any(w in prompt_lower for w in ["health", "medicine"]):
-                score += RELEVANCE_TAG_MATCH_SCORE
+                score += 2
                 reasons.append("medical tag")
 
         # Popular benchmark bonus
         popular = ["mmlu", "truthfulqa_mc1", "gsm8k", "humaneval", "hellaswag", "gpqa", "gpqa_main_zeroshot"]
         if benchmark_name in popular:
-            score += RELEVANCE_POPULAR_BENCHMARK_BONUS
+            score += 0.5
             reasons.append("popular benchmark")
 
         # Priority bonuses
         benchmark_priority = benchmark_config.get("priority", "unknown")
         if prefer_fast and benchmark_priority == "high":
-            score += RELEVANCE_FAST_HIGH_SCORING_BONUS
+            score += 1.0
             reasons.append("fast benchmark bonus")
         elif benchmark_priority == "high":
-            score += RELEVANCE_HIGH_SCORING_BONUS
+            score += 0.3
             reasons.append("high priority")
         elif benchmark_priority == "medium":
-            score += RELEVANCE_MEDIUM_SCORING_BONUS
+            score += 0.1
             reasons.append("medium priority")
 
         if score > 0:
@@ -133,7 +121,7 @@ def _fallback_semantic_matching(
                 "task": benchmark_config.get("task", benchmark_name),
                 "groups": benchmark_config.get("groups", []),
                 "priority": benchmark_config.get("priority", "unknown"),
-                "loading_time": benchmark_config.get("loading_time", BENCHMARK_LOADING_TIME_DEFAULT),
+                "loading_time": benchmark_config["loading_time"],
             })
 
     if prefer_fast:
@@ -209,11 +197,11 @@ def find_most_relevant_benchmarks(
 
                 benchmark_priority = benchmark_config.get("priority", "unknown")
                 if prefer_fast and benchmark_priority == "high":
-                    priority_bonus += RELEVANCE_PRIORITY_BONUS_FAST_HIGH
+                    priority_bonus += 0.15
                 elif benchmark_priority == "high":
-                    priority_bonus += RELEVANCE_PRIORITY_BONUS_HIGH
+                    priority_bonus += 0.05
                 elif benchmark_priority == "medium":
-                    priority_bonus += RELEVANCE_PRIORITY_BONUS_MEDIUM
+                    priority_bonus += 0.02
 
                 adjusted_score = base_score + priority_bonus
 
@@ -226,7 +214,7 @@ def find_most_relevant_benchmarks(
                     "task": benchmark_config.get("task", benchmark_name),
                     "groups": benchmark_config.get("groups", []),
                     "priority": benchmark_config.get("priority", "unknown"),
-                    "loading_time": benchmark_config.get("loading_time", BENCHMARK_LOADING_TIME_DEFAULT),
+                    "loading_time": benchmark_config["loading_time"],
                 })
 
         if prefer_fast:

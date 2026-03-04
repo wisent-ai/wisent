@@ -5,12 +5,12 @@ import torch
 from pathlib import Path
 from typing import Optional
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
-from wisent.core.utils.infra_tools.errors import MissingParameterError
+from wisent.core.utils.infra_tools.errors import MissingParameterError, InsufficientDataError
 from wisent.core.weight_modification.export._generic import (
     load_steered_model,
     _save_standalone_loader,
 )
-from wisent.core.utils.config_tools.constants import BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, JSON_INDENT
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 
 _LOG = setup_logger(__name__)
 
@@ -219,17 +219,24 @@ def load_wicher_model(
         }
 
 
+        _REQUIRED_KEYS = ["num_steps", "alpha", "eta", "beta", "alpha_decay"]
+        for key in _REQUIRED_KEYS:
+            if wicher_data.get(key) is None:
+                raise InsufficientDataError(
+                    reason=f"Missing '{key}' in saved data. Re-export the WICHER model.",
+                )
+
         hooks = WicherRuntimeHooks(
             model=model,
             concept_directions=concept_directions,
             concept_bases=concept_bases,
             component_variances=component_variances,
             layer_variance=layer_variance,
-            num_steps=wicher_data.get("num_steps", BROYDEN_DEFAULT_NUM_STEPS),
-            alpha=wicher_data.get("alpha", BROYDEN_DEFAULT_ALPHA),
-            eta=wicher_data.get("eta", BROYDEN_DEFAULT_ETA),
-            beta=wicher_data.get("beta", BROYDEN_DEFAULT_BETA),
-            alpha_decay=wicher_data.get("alpha_decay", BROYDEN_DEFAULT_ALPHA_DECAY),
+            num_steps=wicher_data["num_steps"],
+            alpha=wicher_data["alpha"],
+            eta=wicher_data["eta"],
+            beta=wicher_data["beta"],
+            alpha_decay=wicher_data["alpha_decay"],
             base_strength=wicher_data["base_strength"],
         )
         hooks.install()

@@ -5,7 +5,6 @@ import torch
 from typing import Any, Dict, Optional, TYPE_CHECKING
 from wisent.core.primitives.contrastive_pairs import ContrastivePairSet
 from wisent.core.utils.infra_tools.errors import NoTrainedVectorsError, InsufficientDataError
-from wisent.core.utils.config_tools.constants import CLASSIFIER_THRESHOLD
 
 if TYPE_CHECKING:
     from wisent.core.control.steering_core.steering import SteeringType
@@ -128,7 +127,7 @@ class SteeringEvalIOMixin:
         method_type: SteeringType,
         contrastive_pair_set: ContrastivePairSet,
         device: Optional[str] = None,
-        threshold: float = CLASSIFIER_THRESHOLD,
+        threshold: float,
         **training_kwargs,
     ) -> "SteeringMethod":
         """

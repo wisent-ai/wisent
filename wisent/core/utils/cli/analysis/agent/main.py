@@ -3,8 +3,7 @@
 import sys
 import time
 
-from wisent.core.utils.infra_tools.errors import UnknownTypeError
-from wisent.core.utils.config_tools.constants import AGENT_CLASSIFIER_EPOCHS, DEFAULT_CLASSIFIER_LR
+from wisent.core.utils.infra_tools.errors import UnknownTypeError, MissingParameterError
 
 
 def execute_agent(args):
@@ -65,7 +64,21 @@ def execute_synthetic_pairs_classifier_steering_strategy(args):
         model=model,
         prompt=args.prompt,
         time_budget=args.time_budget,
-        verbose=args.verbose
+        max_workers=args.max_workers,
+        trait_label_max_length=args.trait_label_max_length,
+        verbose=args.verbose,
+        agent_synth_min_pairs=args.agent_synth_min_pairs,
+        agent_synth_time_multiplier=args.agent_synth_time_multiplier,
+        generate_pairs_min_tokens=args.generate_pairs_min_tokens,
+        simhash_default_threshold_bits=args.simhash_default_threshold_bits,
+        tokens_per_pair_estimate=args.tokens_per_pair_estimate,
+        tokens_base_offset=args.tokens_base_offset,
+        dedup_word_ngram=args.dedup_word_ngram,
+        dedup_char_ngram=args.dedup_char_ngram,
+        simhash_num_bands=args.simhash_num_bands,
+        fast_diversity_seed=args.fast_diversity_seed,
+        diversity_max_sample_size=args.diversity_max_sample_size,
+        retry_multiplier=args.retry_multiplier,
     )
 
     # Step 2: Train classifier on the pairs
@@ -74,14 +87,15 @@ def execute_synthetic_pairs_classifier_steering_strategy(args):
         pair_set=pair_set,
         target_layer=target_layer,
         verbose=args.verbose,
-        classifier_epochs=getattr(args, 'classifier_epochs', AGENT_CLASSIFIER_EPOCHS),
-        classifier_lr=getattr(args, 'classifier_lr', DEFAULT_CLASSIFIER_LR),
-        classifier_batch_size=getattr(args, 'classifier_batch_size', None),
+        classifier_epochs=args.classifier_epochs,
+        classifier_lr=args.classifier_lr,
         token_aggregation=getattr(args, 'token_aggregation', 'average'),
         prompt_strategy=getattr(args, 'prompt_strategy', 'chat_template'),
         normalize_layers=getattr(args, 'normalize_layers', False),
         return_full_sequence=getattr(args, 'return_full_sequence', False),
-        classifier_type=args.classifier_type
+        classifier_type=args.classifier_type,
+        classifier_batch_size=args.classifier_batch_size,
+        classifier_test_size=args.classifier_test_size,
     )
 
     # Step 3: Generate and evaluate unsteered response

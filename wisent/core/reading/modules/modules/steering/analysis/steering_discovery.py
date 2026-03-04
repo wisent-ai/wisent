@@ -4,7 +4,8 @@ import numpy as np
 import torch
 from typing import List, Dict, Tuple, Optional, Callable
 from dataclasses import dataclass
-from wisent.core.utils.config_tools.constants import NORM_EPS, STEERING_N_RANDOM, STEERING_N_PCA, DEFAULT_RANDOM_SEED, CONCEPT_PCA_COMPONENTS, DEFAULT_SCALE_FACTOR
+from wisent.core import constants as _C
+from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_RANDOM_SEED
 
 
 @dataclass
@@ -91,8 +92,10 @@ def search_directions(
 def generate_candidate_directions(
     pos_activations: np.ndarray,
     neg_activations: np.ndarray,
-    n_random: int = STEERING_N_RANDOM,
-    n_pca: int = STEERING_N_PCA,
+    *,
+    steering_n_random: int,
+    steering_n_pca: int,
+    concept_pca_components: int,
 ) -> List[Tuple[str, np.ndarray]]:
     """Generate candidate steering directions to search."""
     from sklearn.decomposition import PCA
@@ -110,7 +113,7 @@ def generate_candidate_directions(
     # 3. PCA components of the difference vectors
     n_pairs = min(len(pos_activations), len(neg_activations))
     diffs = pos_activations[:n_pairs] - neg_activations[:n_pairs]
-    n_pca_actual = min(n_pca, n_pairs - 1, diffs.shape[1])
+    n_pca_actual = min(steering_n_pca, n_pairs - _C.COMBO_OFFSET, diffs.shape[_C.COMBO_OFFSET])
     if n_pca_actual > 0:
         pca = PCA(n_components=n_pca_actual, random_state=DEFAULT_RANDOM_SEED)
         pca.fit(diffs)
@@ -125,9 +128,9 @@ def generate_candidate_directions(
     pca_all.fit(all_acts)
 
     rng = np.random.RandomState(DEFAULT_RANDOM_SEED)
-    for i in range(n_random):
+    for i in range(steering_n_random):
         # Random combination of top PCA components
-        weights = rng.randn(min(CONCEPT_PCA_COMPONENTS, len(pca_all.components_)))
+        weights = rng.randn(min(concept_pca_components, len(pca_all.components_)))
         direction = np.zeros(all_acts.shape[1])
         for j, w in enumerate(weights):
             direction += w * pca_all.components_[j]
@@ -197,7 +200,7 @@ def search_layers(
 
             # Steered response
             steered_resp = adapter.forward_with_steering(
-                formatted, steering_vectors=steering_vectors, config=SteeringConfig(scale=DEFAULT_SCALE_FACTOR)
+                formatted, steering_vectors=steering_vectors, config=SteeringConfig(scale=strength)
             )
             steered_resp = _extract_response(steered_resp)
             steered_eval = evaluate_fn(steered_resp)

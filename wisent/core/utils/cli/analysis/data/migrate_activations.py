@@ -1,5 +1,18 @@
 """CLI executor for the migrate-activations command."""
 import sys
+from typing import Dict
+
+
+def _build_hf_retry_config(args) -> Dict:
+    """Build hf_retry_config dict from parsed CLI args."""
+    return {
+        "max_retries": args.hf_max_retries,
+        "base_wait": args.hf_base_wait,
+        "backoff_max_exponent": args.hf_backoff_max_exp,
+        "jitter_min": args.hf_jitter_min,
+        "jitter_max": args.hf_jitter_max,
+        "retryable_patterns": tuple(args.hf_retryable_pattern),
+    }
 
 
 def _create_hf_repo():
@@ -42,11 +55,12 @@ def execute_migrate_activations(args):
             combo_end=args.combo_end,
             skip_pair_texts=args.skip_pair_texts,
             reverse=args.reverse,
+            hf_retry_config=_build_hf_retry_config(args),
         )
 
     elif action == "consolidate":
         from wisent.core.reading.modules.utilities.data.sources.hf.hf_writers import consolidate_index
-        consolidate_index(dry_run=args.dry_run)
+        consolidate_index(hf_retry_config=_build_hf_retry_config(args), dry_run=args.dry_run)
 
     elif action == "single":
         from wisent.core.reading.modules.utilities.data.sources.hf.migration import migrate_activation_table
@@ -54,6 +68,7 @@ def execute_migrate_activations(args):
             model_name=args.model,
             task_name=args.benchmark,
             strategy=args.strategy,
+            hf_retry_config=_build_hf_retry_config(args),
             database_url=args.database_url,
             dry_run=args.dry_run,
         )
@@ -63,6 +78,7 @@ def execute_migrate_activations(args):
         from wisent.core.reading.modules.utilities.data.sources.hf.migration import migrate_pair_texts
         count = migrate_pair_texts(
             task_name=args.benchmark,
+            hf_retry_config=_build_hf_retry_config(args),
             database_url=args.database_url,
             dry_run=args.dry_run,
         )
@@ -74,6 +90,8 @@ def execute_migrate_activations(args):
             model_name=args.model,
             task_name=args.benchmark,
             prompt_format=args.prompt_format,
+            hf_retry_config=_build_hf_retry_config(args),
+            chunk_size=args.chunk_size,
             database_url=args.database_url,
             dry_run=args.dry_run,
         )

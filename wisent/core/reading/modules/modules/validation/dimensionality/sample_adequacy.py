@@ -4,11 +4,7 @@ import numpy as np
 from typing import Dict, Any
 from wisent.core.utils.config_tools.constants import (
     ZERO_THRESHOLD, STAT_ALPHA, TARGET_POWER,
-    SAMPLE_RATIO_ADEQUATE, SAMPLE_RATIO_GOOD, SAMPLE_RATIO_ACCEPTABLE,
-    SAMPLE_RATIO_MARGINAL,
     EFFECT_SIZE_SMALL, EFFECT_SIZE_MEDIUM, EFFECT_SIZE_LARGE,
-    POWER_ANALYSIS_MIN_N, POWER_ANALYSIS_STEP, SAMPLE_ADEQUACY_MAX_N,
-    CLASSIFIER_THRESHOLD, PCA_QUALITY_COMPONENTS,
 )
 
 
@@ -16,6 +12,11 @@ def compute_sample_dimension_ratio(
     n_samples: int,
     ambient_dim: int,
     effective_dim: float,
+    *,
+    sample_ratio_adequate: int,
+    sample_ratio_good: int,
+    sample_ratio_acceptable: int,
+    sample_ratio_marginal: int,
 ) -> Dict[str, Any]:
     """
     Check if sample size is adequate for dimensionality.
@@ -29,15 +30,15 @@ def compute_sample_dimension_ratio(
     ratio = n_samples / ambient_dim if ambient_dim > 0 else float('inf')
     eff_ratio = n_samples / effective_dim if effective_dim > 0 else float('inf')
 
-    if eff_ratio >= SAMPLE_RATIO_ADEQUATE:
+    if eff_ratio >= sample_ratio_adequate:
         adequate, warning, severity = True, None, "none"
-    elif eff_ratio >= SAMPLE_RATIO_GOOD:
+    elif eff_ratio >= sample_ratio_good:
         adequate, warning, severity = True, None, "none"
-    elif eff_ratio >= SAMPLE_RATIO_ACCEPTABLE:
+    elif eff_ratio >= sample_ratio_acceptable:
         adequate = True
         warning = f"Marginal sample size: n/d_eff={eff_ratio:.1f}. Consider regularization."
         severity = "mild"
-    elif eff_ratio >= SAMPLE_RATIO_MARGINAL:
+    elif eff_ratio >= sample_ratio_marginal:
         adequate = False
         warning = f"Low sample size: n/d_eff={eff_ratio:.1f}. High variance expected."
         severity = "moderate"
@@ -58,7 +59,7 @@ def compute_sample_dimension_ratio(
     }
 
 
-def compute_effective_sample_size(X: np.ndarray, method: str) -> Dict[str, Any]:
+def compute_effective_sample_size(X: np.ndarray, method: str, *, pca_quality_components: int) -> Dict[str, Any]:
     """Compute effective sample size accounting for correlation."""
     n, d = X.shape
     X_centered = X - X.mean(axis=0)
@@ -98,7 +99,7 @@ def compute_effective_sample_size(X: np.ndarray, method: str) -> Dict[str, Any]:
         "avg_abs_correlation": float(avg_abs_corr),
         "eigenvalue_decay_rate": float(decay_rate),
         "condition_number": float(min(cond, 1e10)),
-        "top_5_eigenvalues": eigenvalues[:PCA_QUALITY_COMPONENTS].tolist() if len(eigenvalues) >= PCA_QUALITY_COMPONENTS else eigenvalues.tolist(),
+        "top_5_eigenvalues": eigenvalues[:pca_quality_components].tolist() if len(eigenvalues) >= pca_quality_components else eigenvalues.tolist(),
         "n_eff_ratio": float(n_eff / n) if n > 0 else 1.0,
     }
 
@@ -106,6 +107,9 @@ def compute_effective_sample_size(X: np.ndarray, method: str) -> Dict[str, Any]:
 def recommend_sample_size(
     effective_dim: float,
     target_effect_size: str,
+    power_analysis_min_n: int = None,
+    power_analysis_step: int = None,
+    sample_adequacy_max_n: int = None,
     target_power: float = TARGET_POWER,
     alpha: float = STAT_ALPHA,
 ) -> Dict[str, Any]:
@@ -115,9 +119,9 @@ def recommend_sample_size(
     Args:
         effective_dim: Effective dimension of the activation space (measure with
             participation_ratio, effective_rank, or compute_effective_dimensions)
-        target_power: Desired statistical power (default 0.80)
-        target_effect_size: "small" (d=0.2), "medium" (d=0.5), or "large" (d=0.8)
-        alpha: Significance level (default 0.05)
+        target_power: Desired statistical power (defaults to TARGET_POWER)
+        target_effect_size: "small", "medium", or "large"
+        alpha: Significance level (defaults to STAT_ALPHA)
 
     Returns:
         Dict with recommended sample sizes for different effect sizes.
@@ -130,19 +134,26 @@ def recommend_sample_size(
     """
     from scipy import stats
 
+    for _pn, _pv in [("power_analysis_min_n", power_analysis_min_n),
+                      ("power_analysis_step", power_analysis_step),
+                      ("sample_adequacy_max_n", sample_adequacy_max_n)]:
+        if _pv is None:
+            raise ValueError(f"{_pn} is required")
     effect_sizes = {"small": EFFECT_SIZE_SMALL, "medium": EFFECT_SIZE_MEDIUM, "large": EFFECT_SIZE_LARGE}
-    d = effect_sizes.get(target_effect_size, CLASSIFIER_THRESHOLD)
+    if target_effect_size not in effect_sizes:
+        raise ValueError(f"Unknown target_effect_size '{target_effect_size}'. Must be one of: {list(effect_sizes.keys())}")
+    d = effect_sizes[target_effect_size]
 
     def required_n(eff_d: float, effect: float, power: float, a: float) -> int:
         """Compute required n for target power at given effect size."""
-        for test_n in range(POWER_ANALYSIS_MIN_N, SAMPLE_ADEQUACY_MAX_N, POWER_ANALYSIS_STEP):
+        for test_n in range(power_analysis_min_n, sample_adequacy_max_n, power_analysis_step):
             df = max(1, min(test_n - 2, test_n - eff_d - 1))
             t_crit = stats.t.ppf(1 - a / 2, df)
             n_per_group = test_n / 2
             test_power = 1 - stats.t.cdf(t_crit, df, loc=effect * np.sqrt(n_per_group / 2))
             if test_power >= power:
                 return test_n
-        return SAMPLE_ADEQUACY_MAX_N
+        return sample_adequacy_max_n
 
     recommended = required_n(effective_dim, d, target_power, alpha)
     n_for_small = required_n(effective_dim, effect_sizes["small"], target_power, alpha)
@@ -168,6 +179,10 @@ def recommend_sample_size_from_data(
     pos: np.ndarray,
     neg: np.ndarray,
     target_effect_size: str,
+    *,
+    power_analysis_min_n: int,
+    power_analysis_step: int,
+    sample_adequacy_max_n: int,
     target_power: float = TARGET_POWER,
     alpha: float = STAT_ALPHA,
 ) -> Dict[str, Any]:
@@ -188,7 +203,7 @@ def recommend_sample_size_from_data(
         Dict with recommendations based on measured effective dimension.
 
     Example:
-        >>> # After collecting 50 pilot pairs
+        >>> # After collecting pilot pairs
         >>> rec = recommend_sample_size_from_data(pos_activations, neg_activations)
         >>> print(f"Need {rec['recommended_pairs']} pairs total")
     """
@@ -209,8 +224,11 @@ def recommend_sample_size_from_data(
     # Get recommendation using measured effective dim
     rec = recommend_sample_size(
         effective_dim=measured_effective_dim,
-        target_power=target_power,
         target_effect_size=target_effect_size,
+        power_analysis_min_n=power_analysis_min_n,
+        power_analysis_step=power_analysis_step,
+        sample_adequacy_max_n=sample_adequacy_max_n,
+        target_power=target_power,
         alpha=alpha,
     )
 
@@ -223,6 +241,11 @@ def recommend_sample_size_from_data(
 
 def compare_extraction_strategies(
     activations_by_strategy: Dict[str, tuple],
+    target_effect_size: str,
+    *,
+    power_analysis_min_n: int,
+    power_analysis_step: int,
+    sample_adequacy_max_n: int,
     target_power: float = TARGET_POWER,
 ) -> Dict[str, Dict[str, Any]]:
     """
@@ -250,7 +273,7 @@ def compare_extraction_strategies(
     results = {}
 
     for strategy_name, (pos, neg) in activations_by_strategy.items():
-        rec = recommend_sample_size_from_data(pos, neg, target_power=target_power)
+        rec = recommend_sample_size_from_data(pos, neg, target_effect_size, power_analysis_min_n=power_analysis_min_n, power_analysis_step=power_analysis_step, sample_adequacy_max_n=sample_adequacy_max_n, target_power=target_power)
         results[strategy_name] = rec
 
     # Sort by effective dimension (lower is better)

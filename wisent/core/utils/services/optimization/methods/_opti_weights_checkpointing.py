@@ -10,7 +10,7 @@ import optuna
 import torch
 
 from wisent.core.utils.services.optimization.core.atoms import Direction, HPOConfig, HPORun
-from wisent.core.utils.config_tools.constants import DEFAULT_CHECKPOINT_INTERVAL, JSON_INDENT, WEIGHT_MIN_DISTANCE_FRACTION
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 
 class WeightsCheckpointingMixin:
     """Mixin providing checkpointing support for WeightsOptimizer."""
@@ -25,7 +25,7 @@ class WeightsCheckpointingMixin:
         strength = params["strength"] * params["max_weight"]
         max_weight_position = params["max_weight_position"] * (self.num_layers - 1)
         min_weight = params["min_weight"]
-        min_weight_distance = WEIGHT_MIN_DISTANCE_FRACTION * (self.num_layers - 1)
+        min_weight_distance = self.config.weight_min_distance_fraction * (self.num_layers - 1)
 
         if hasattr(self.model, "model"):
             layers = self.model.model.layers
@@ -105,7 +105,7 @@ class WeightsCheckpointingMixin:
         self,
         cfg: HPOConfig,
         checkpoint_path: str | None = None,
-        checkpoint_interval: int = DEFAULT_CHECKPOINT_INTERVAL,
+        checkpoint_interval: int = None,
         output_dir: str | None = None,
         tokenizer: Any = None,
         gcs_bucket: str | None = None,
@@ -120,13 +120,15 @@ class WeightsCheckpointingMixin:
         arguments:
             cfg: HPOConfig object with optimization settings.
             checkpoint_path: Path to save/load checkpoint file.
-            checkpoint_interval: Save checkpoint every N trials (default: 5).
+            checkpoint_interval: Save checkpoint every N trials.
             output_dir: Directory to save best model periodically.
             tokenizer: Tokenizer to save with model.
 
         returns:
             HPORun object with the results of the optimization.
         """
+        if checkpoint_interval is None:
+            raise ValueError("checkpoint_interval is required")
         start_trial = 0
         existing_trials = []
 

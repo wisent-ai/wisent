@@ -12,12 +12,6 @@ from ..convenience import (
     get_config_manager,
 )
 
-from wisent.core.utils.config_tools.constants import (
-    DEFAULT_SCORE, BLEND_DEFAULT,
-    PAIRS_NUM_PAIRS, BROYDEN_DEFAULT_ALPHA,
-    WEIGHT_MOD_DEFAULT_COMPONENTS,
-)
-
 @dataclass
 class WeightModificationResult:
     """Backward-compatible result class for weight modification cache."""
@@ -26,21 +20,21 @@ class WeightModificationResult:
     trait_label: str
     method: Optional[str] = None
     max_weight: Optional[float] = None
-    min_weight: float = DEFAULT_SCORE
-    max_weight_position: float = BLEND_DEFAULT
-    min_weight_distance: float = BLEND_DEFAULT
+    min_weight: float = None
+    max_weight_position: float = None
+    min_weight_distance: float = None
     strength: Optional[float] = None
-    num_pairs: int = PAIRS_NUM_PAIRS
-    alpha: float = BROYDEN_DEFAULT_ALPHA
+    num_pairs: Optional[int] = None
+    alpha: Optional[float] = None
     additive_method: Optional[str] = None
-    components: List[str] = field(default_factory=lambda: list(WEIGHT_MOD_DEFAULT_COMPONENTS))
+    components: Optional[List[str]] = None
     normalize_vectors: bool = True
     norm_preserve: bool = True
     use_biprojection: bool = True
     use_kernel: bool = True
-    score: float = DEFAULT_SCORE
+    score: float = None
     metric: Optional[str] = None
-    baseline_score: float = DEFAULT_SCORE
+    baseline_score: float = None
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     output_dir: str = ""
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -48,14 +42,14 @@ class WeightModificationResult:
 
 def store_weight_modification(
     model: str, task: str, trait_label: str,
-    method: str, additive_method: str, metric: str,
-    max_weight: Optional[float] = None, min_weight: float = DEFAULT_SCORE,
-    max_weight_position: float = BLEND_DEFAULT, min_weight_distance: float = BLEND_DEFAULT,
-    strength: Optional[float] = None, num_pairs: int = PAIRS_NUM_PAIRS, alpha: float = BROYDEN_DEFAULT_ALPHA,
+    method: str, additive_method: str, metric: str, num_pairs: int,
+    max_weight: Optional[float] = None, min_weight: float = None,
+    max_weight_position: float = None, min_weight_distance: float = None,
+    strength: Optional[float] = None, alpha: Optional[float] = None,
     components: Optional[List[str]] = None,
     normalize_vectors: bool = True, norm_preserve: bool = True,
     use_biprojection: bool = True, use_kernel: bool = True,
-    score: float = DEFAULT_SCORE, baseline_score: float = DEFAULT_SCORE,
+    score: float = None, baseline_score: float = None,
     output_dir: str = "", metadata: Optional[Dict[str, Any]] = None,
     set_as_default: bool = False,
 ) -> str:

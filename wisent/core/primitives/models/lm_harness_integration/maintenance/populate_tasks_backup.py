@@ -47,10 +47,10 @@ def test_prompt_benchmark_matching(test_prompt: str = "I like food"):
     return results
 
 
-def test_sample_retrieval(task_name: str):
+def test_sample_retrieval(task_name: str, timeout: int):
     """Test function to demonstrate the get_task_samples_for_analysis function."""
     print(f"\n=== Testing Sample Retrieval for '{task_name}' ===")
-    result = get_task_samples_for_analysis(task_name, num_samples=BENCH_TEST_SAMPLE_SIZE)
+    result = get_task_samples_for_analysis(task_name, timeout=timeout, num_samples=BENCH_TEST_SAMPLE_SIZE)
     if "error" in result:
         print(f"Error: {result['error']}")
         return False
@@ -85,7 +85,7 @@ def test_sample_retrieval(task_name: str):
     return True
 
 
-def test_specific_task():
+def test_specific_task(timeout: int):
     """Test the specific problematic task for error handling."""
     print("\nTesting specific problematic tasks...")
     test_tasks = [
@@ -95,7 +95,7 @@ def test_specific_task():
     for task_name in test_tasks:
         print(f"\nTesting task: {task_name}")
         try:
-            result = get_task_samples_for_analysis(task_name, num_samples=BENCH_TEST_SAMPLE_SIZE)
+            result = get_task_samples_for_analysis(task_name, timeout=timeout, num_samples=BENCH_TEST_SAMPLE_SIZE)
             print(f"Result keys: {list(result.keys())}")
             if 'error' in result:
                 print(f"Error: {result['error']}")
@@ -113,12 +113,12 @@ def test_specific_task():
             traceback.print_exc()
 
 
-def main():
+def main(timeout: int):
     """Main function to populate tasks.json."""
     if len(sys.argv) > 1 and sys.argv[1] == "test":
         task_name = sys.argv[2] if len(sys.argv) > 2 else "truthfulqa_mc1"
         print(f"Running in TEST MODE")
-        success = test_sample_retrieval(task_name)
+        success = test_sample_retrieval(task_name, timeout=timeout)
         if success:
             print(f"\nTest completed successfully!")
         else:
@@ -211,7 +211,12 @@ def _print_summary_statistics(current_data):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "test":
-        test_specific_task()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--timeout", type=int, required=True, help="HTTP timeout in seconds")
+    parser.add_argument("mode", nargs="?", default="run")
+    args = parser.parse_args()
+    if args.mode == "test":
+        test_specific_task(timeout=args.timeout)
     else:
-        main()
+        main(timeout=args.timeout)

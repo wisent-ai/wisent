@@ -8,7 +8,8 @@ import sys
 import json
 from typing import Dict, List
 
-from wisent.core.utils.config_tools.constants import DEFAULT_TIMEOUT_QUICK, DISPLAY_TOP_N_MINI, HTTP_STATUS_OK
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_MINI, HTTP_STATUS_OK
+from wisent.core.utils.infra_tools.infra.core.hardware import docker_code_exec_timeout_s
 
 # Import the tag determination function
 from populate_tasks import get_benchmark_tags_with_llama
@@ -52,7 +53,7 @@ def update_benchmark_tags():
             
             readme_content = ""
             try:
-                response = requests.get(readme_url, timeout=DEFAULT_TIMEOUT_QUICK)
+                response = requests.get(readme_url, timeout=docker_code_exec_timeout_s())
                 if response.status_code == HTTP_STATUS_OK:
                     readme_content = response.text
             except:

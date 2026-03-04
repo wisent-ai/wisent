@@ -22,8 +22,7 @@ from wisent.core.utils import get_layer_combinations
 from wisent.core.utils.services.benchmarks import get_all_benchmarks
 from wisent.core.primitives.model_interface.core.activations.activation_cache import ActivationCache, CachedActivations
 from wisent.core.utils.config_tools.constants import (
-    GEO_PAIRS_PER_BENCHMARK, DEFAULT_RANDOM_SEED,
-    GEO_MAX_LAYER_COMBO_SIZE, GEO_ESTIMATED_TIME_PER_EXTRACTION,
+    DEFAULT_RANDOM_SEED,
     JSON_INDENT, SECONDS_PER_HOUR,
 )
 
@@ -31,25 +30,18 @@ from wisent.core.utils.config_tools.constants import (
 @dataclass
 class GeometrySearchConfig:
     """Configuration for a single geometry search run."""
-    
-    # Pairs settings
-    pairs_per_benchmark: int = GEO_PAIRS_PER_BENCHMARK
-    random_seed: int = DEFAULT_RANDOM_SEED
-    
-    # Layer settings
-    max_layer_combo_size: int = GEO_MAX_LAYER_COMBO_SIZE
-    
+
+    pairs_per_benchmark: int
+    max_layer_combo_size: int
+    estimated_time_per_extraction_seconds: float
     # Caching
     cache_activations: bool = True
     cache_dir: Optional[str] = None
-    
-    # Estimation
-    estimated_time_per_extraction_seconds: float = GEO_ESTIMATED_TIME_PER_EXTRACTION  # ~2 min per (benchmark, strategy)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             "pairs_per_benchmark": self.pairs_per_benchmark,
-            "random_seed": self.random_seed,
+            "random_seed": DEFAULT_RANDOM_SEED,
             "max_layer_combo_size": self.max_layer_combo_size,
             "cache_activations": self.cache_activations,
             "cache_dir": self.cache_dir,
@@ -104,24 +96,24 @@ class GeometrySearchSpace:
     
     def __init__(
         self,
+        config: GeometrySearchConfig,
         models: Optional[List[str]] = None,
         strategies: Optional[List[ExtractionStrategy]] = None,
         benchmarks: Optional[List[str]] = None,
-        config: Optional[GeometrySearchConfig] = None,
     ):
         """
         Initialize the search space.
-        
+
         Args:
+            config: Search configuration (pairs, caching, etc.) - required.
             models: List of model names to test. Defaults to DEFAULT_MODELS.
             strategies: List of extraction strategies. Defaults to INSTRUCT_STRATEGIES.
             benchmarks: List of benchmarks. Defaults to all available benchmarks.
-            config: Search configuration (pairs, caching, etc.)
         """
+        self.config = config
         self.models = models or self.DEFAULT_MODELS
         self.strategies = strategies or self.INSTRUCT_STRATEGIES
         self.benchmarks = benchmarks or get_all_benchmarks()
-        self.config = config or GeometrySearchConfig()
     
     def get_layer_combinations_for_model(self, model_name: str, num_layers: int) -> List[List[int]]:
         """
@@ -224,19 +216,3 @@ class GeometrySearchSpace:
             return cls.from_dict(json.load(f))
 
 
-# Default search space instance
-DEFAULT_SEARCH_SPACE = GeometrySearchSpace()
-
-
-if __name__ == "__main__":
-    # Print summary of default search space
-    space = GeometrySearchSpace()
-    print(space.summary())
-    print()
-    
-    # Example with 16 layers (Llama-3.2-1B)
-    num_layers = 16
-    layer_combos = space.get_layer_combinations_for_model("test", num_layers)
-    print(f"For a {num_layers}-layer model:")
-    print(f"  Layer combinations: {len(layer_combos)}")
-    print(f"  Total configs to test: {space.get_total_configurations(num_layers)}")

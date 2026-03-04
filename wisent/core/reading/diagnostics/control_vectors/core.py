@@ -9,11 +9,8 @@ from typing import Mapping
 import torch
 
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap
+from wisent.core.utils.config_tools.constants import NORM_EPS
 from ..base import DiagnosticsIssue, DiagnosticsReport, MetricReport
-from wisent.core.utils.config_tools.constants import (
-    NORM_EPS, MIN_NORM_THRESHOLD, NEAR_ZERO_TOL,
-    CONTROL_VECTOR_MAX_ZERO_FRACTION,
-)
 
 __all__ = [
     "ControlVectorDiagnosticsConfig",
@@ -26,10 +23,7 @@ __all__ = [
 class ControlVectorDiagnosticsConfig:
     """Thresholds and options for control vector diagnostics."""
 
-    min_norm: float = MIN_NORM_THRESHOLD
     max_norm: float | None = None
-    zero_value_threshold: float = NORM_EPS
-    max_zero_fraction: float = CONTROL_VECTOR_MAX_ZERO_FRACTION
     warn_on_missing: bool = True
 
 
@@ -44,10 +38,14 @@ def _to_layer_activations(
 
 def run_control_vector_diagnostics(
     vectors: LayerActivations | RawActivationMap | Mapping[str, object] | None,
+    min_norm_threshold: float,
     config: ControlVectorDiagnosticsConfig | None = None,
+    control_vector_max_zero_fraction: float = None,
+    control_vector_critical_zero_fraction: float = None,
 ) -> DiagnosticsReport:
     """Evaluate steering/control vectors for basic health metrics."""
-
+    for _n, _v in [("control_vector_max_zero_fraction", control_vector_max_zero_fraction), ("control_vector_critical_zero_fraction", control_vector_critical_zero_fraction)]:
+        if _v is None: raise ValueError(f"{_n} is required")
     cfg = config or ControlVectorDiagnosticsConfig()
     activations = _to_layer_activations(vectors)
 
@@ -99,7 +97,7 @@ def run_control_vector_diagnostics(
         norms.append(norm_value)
 
         zero_fraction = (
-            float((flat.abs() <= cfg.zero_value_threshold).sum().item())
+            float((flat.abs() <= NORM_EPS).sum().item())
             / float(flat.numel())
         )
         zero_fractions.append(zero_fraction)
@@ -109,13 +107,13 @@ def run_control_vector_diagnostics(
             "zero_fraction": zero_fraction,
         }
 
-        if norm_value < cfg.min_norm:
+        if norm_value < min_norm_threshold:
             issues.append(
                 DiagnosticsIssue(
                     metric="control_vectors",
                     severity="critical",
                     message=f"Layer {layer} control vector norm {norm_value:.3e} "
-                    f"below minimum {cfg.min_norm}",
+                    f"below minimum {min_norm_threshold}",
                     details={"layer": layer, "norm": norm_value},
                 )
             )
@@ -131,15 +129,15 @@ def run_control_vector_diagnostics(
                 )
             )
 
-        if zero_fraction >= cfg.max_zero_fraction:
-            severity = "critical" if zero_fraction >= 1.0 - NEAR_ZERO_TOL else "warning"
+        if zero_fraction >= control_vector_max_zero_fraction:
+            severity = "critical" if zero_fraction >= control_vector_critical_zero_fraction else "warning"
             issues.append(
                 DiagnosticsIssue(
                     metric="control_vectors",
                     severity=severity,
                     message=(
                         f"Layer {layer} control vector is {zero_fraction:.3%} "
-                        f"zero-valued, exceeding allowed {cfg.max_zero_fraction:.3%}"
+                        f"zero-valued, exceeding allowed {control_vector_max_zero_fraction:.3%}"
                     ),
                     details={"layer": layer, "zero_fraction": zero_fraction},
                 )
@@ -171,6 +169,7 @@ def run_control_vector_diagnostics(
 
 def run_control_steering_diagnostics(
     steering_vectors: list[RawActivationMap] | RawActivationMap | None,
+    min_norm_threshold: float,
 ) -> list[DiagnosticsReport]:
     """Run diagnostics on one or more steering vectors."""
     if steering_vectors is None:
@@ -179,5 +178,5 @@ def run_control_steering_diagnostics(
     if not isinstance(steering_vectors, list):
         steering_vectors = [steering_vectors]
 
-    reports = [run_control_vector_diagnostics(vec) for vec in steering_vectors]
+    reports = [run_control_vector_diagnostics(vec, min_norm_threshold=min_norm_threshold) for vec in steering_vectors]
     return reports

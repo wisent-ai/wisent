@@ -1,11 +1,15 @@
 """Evaluator creation for optimize-weights."""
 from typing import Any, Callable
 
-from wisent.core.utils.config_tools.constants import DEFAULT_NUM_EVAL_PROMPTS
 from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.core.reading.evaluators.steering_evaluators import (
     SteeringEvaluatorFactory,
     EvaluatorConfig,
+)
+from wisent.core.utils.config_tools.constants import (
+    PERSONALIZATION_DIFFERENCE_WEIGHT,
+    PERSONALIZATION_QUALITY_WEIGHT,
+    PERSONALIZATION_ALIGNMENT_WEIGHT,
 )
 from wisent.core.utils.cli.optimization.specific.optimize_weights_pooled import _create_pooled_evaluator
 
@@ -73,12 +77,26 @@ def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None,
         task=task if evaluator_type == "task" else None,
         eval_prompts_path=getattr(args, 'eval_prompts', None),
         eval_topics=getattr(args, 'eval_topics', None),
-        num_eval_prompts=getattr(args, 'num_eval_prompts', DEFAULT_NUM_EVAL_PROMPTS),
     )
 
     # Create shared evaluator
     shared_evaluator = SteeringEvaluatorFactory.create(
-        eval_config, model_name, wisent_model, positive_examples, negative_examples
+        eval_config, model_name, wisent_model, positive_examples, negative_examples,
+        fast_diversity_seed=args.fast_diversity_seed,
+        diversity_max_sample_size=args.diversity_max_sample_size,
+        min_sentence_length=args.min_sentence_length,
+        nonsense_min_tokens=args.nonsense_min_tokens,
+        quality_min_response_length=args.quality_min_response_length,
+        quality_repetition_ratio_threshold=args.quality_repetition_ratio_threshold,
+        quality_bigram_repeat_threshold=args.quality_bigram_repeat_threshold,
+        quality_bigram_repeat_penalty=args.quality_bigram_repeat_penalty,
+        quality_special_char_ratio_threshold=args.quality_special_char_ratio_threshold,
+        quality_special_char_penalty=args.quality_special_char_penalty,
+        quality_char_repeat_count=args.quality_char_repeat_count,
+        quality_char_repeat_penalty=args.quality_char_repeat_penalty,
+        difference_weight=PERSONALIZATION_DIFFERENCE_WEIGHT,
+        quality_weight=PERSONALIZATION_QUALITY_WEIGHT,
+        alignment_weight=PERSONALIZATION_ALIGNMENT_WEIGHT,
     )
     
     # Pre-generate baseline responses BEFORE optimization modifies the model weights
@@ -142,7 +160,7 @@ def _create_custom_evaluator(args, model_name: str) -> Callable:
     elif getattr(args, 'trait', None):
         # Use default prompts from PersonalizationEvaluator
         from wisent.core.reading.evaluators.steering_evaluators import PersonalizationEvaluator
-        num_prompts = getattr(args, 'num_eval_prompts', DEFAULT_NUM_EVAL_PROMPTS)
+        num_prompts = args.num_eval_prompts
         eval_prompts = PersonalizationEvaluator.DEFAULT_PROMPTS[:num_prompts]
     else:
         # Default generic prompts

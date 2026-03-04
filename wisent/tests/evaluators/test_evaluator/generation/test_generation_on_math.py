@@ -2,16 +2,19 @@
 
 from datasets import load_dataset
 from wisent.core.reading.evaluators.benchmark_specific.generation_evaluator import GenerationEvaluator
-from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT, NUM_EXAMPLES_DEFAULT, SEPARATOR_WIDTH_REPORT
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT, SEPARATOR_WIDTH_REPORT, GENERATION_EMBEDDING_WEIGHT, GENERATION_NLI_WEIGHT
 
 # Load dataset
 ds = load_dataset("qwedsacf/competition_math", split="train")
 
 # Initialize evaluator
-evaluator = GenerationEvaluator()
+evaluator = GenerationEvaluator(
+    generation_embedding_weight=GENERATION_EMBEDDING_WEIGHT,
+    generation_nli_weight=GENERATION_NLI_WEIGHT,
+)
 
 # Test on a few examples
-num_examples = NUM_EXAMPLES_DEFAULT
+num_examples = 5
 
 print("=" * SEPARATOR_WIDTH_REPORT)
 print("Testing GenerationEvaluator answer extraction on competition_math")

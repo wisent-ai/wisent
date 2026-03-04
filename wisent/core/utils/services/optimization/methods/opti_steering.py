@@ -13,14 +13,7 @@ from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 
 from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.core.utils.infra_tools.errors import NoCandidateLayersError
-from wisent.core.utils.config_tools.constants import (
-    STEERING_OPTI_SAMPLE_SIZE,
-    STEERING_OPTI_BATCH_SIZE,
-    STEERING_OPTI_JUDGE_MAX_TOKENS,
-    STEERING_ALPHA_MIN,
-    STEERING_ALPHA_MAX,
-    BINARY_CLASSIFICATION_THRESHOLD,
-)
+from wisent.core import constants as _C
 
 __all__ = [
     "Prompt",
@@ -62,11 +55,13 @@ class SteeringOptimizer(BaseOptimizer):
         judge_wm: WisentModel,
         val_prompts: ContrastivePairSet,
         vectors_by_layer: dict[str | int, Any],
+        batch_size: int,
+        judge_max_tokens: int,
+        min_norm_threshold: float,
         judge_prompt_builder: Callable[[str, str, str], list[ChatMessage]] = build_judge_prompt,
-        alpha_range: tuple[float, float] = (STEERING_ALPHA_MIN, STEERING_ALPHA_MAX),
+        alpha_range: tuple[float, float] = (_C.STEERING_ALPHA_MIN, _C.STEERING_ALPHA_MAX),
         candidate_layers: Sequence[str | int] | None = None,
-        sample_size: int = STEERING_OPTI_SAMPLE_SIZE,
-        batch_size: int = STEERING_OPTI_BATCH_SIZE,
+        sample_size: int,
         normalize_vectors: bool = True,
         gen_kwargs: dict[str, Any] | None = None,
         judge_kwargs: dict[str, Any] | None = None,
@@ -90,8 +85,9 @@ class SteeringOptimizer(BaseOptimizer):
         self.sample_size = int(sample_size)
         self.batch_size = max(1, int(batch_size))
         self.normalize_vectors = bool(normalize_vectors)
+        self.min_norm_threshold = min_norm_threshold
         self.gen_kwargs = dict(gen_kwargs or {})
-        self.judge_kwargs = dict(judge_kwargs or {"max_new_tokens": STEERING_OPTI_JUDGE_MAX_TOKENS})
+        self.judge_kwargs = dict(judge_kwargs or {"max_new_tokens": judge_max_tokens})
 
     def _objective(self, trial: optuna.Trial) -> float:
         layer = trial.suggest_categorical("layer", self.candidate_layers)
@@ -115,7 +111,7 @@ class SteeringOptimizer(BaseOptimizer):
             base_out = self.wm.generate(batch, use_steering=False, **self.gen_kwargs)
 
             # STEERED
-            self.wm.set_steering_from_raw({str(layer): vec}, scale=float(alpha), normalize=self.normalize_vectors)
+            self.wm.set_steering_from_raw({str(layer): vec}, scale=float(alpha), min_norm_threshold=self.min_norm_threshold, normalize=self.normalize_vectors)
             try:
                 steered_out = self.wm.generate(batch, use_steering=True, **self.gen_kwargs)
             finally:
@@ -125,7 +121,7 @@ class SteeringOptimizer(BaseOptimizer):
             flips = [] 
             for p, A, B in zip(batch, base_out, steered_out):
                 q = next((m["content"] for m in p if m.get("role") == "user"), "")
-                flip = random.random() < BINARY_CLASSIFICATION_THRESHOLD
+                flip = random.random() < 0.5
                 if flip:
                     jp = self.judge_prompt_builder(q, B, A) 
                 else:

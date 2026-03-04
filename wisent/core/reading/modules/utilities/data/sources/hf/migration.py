@@ -3,12 +3,12 @@ import os
 import shutil
 import tempfile
 from collections import defaultdict
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 import numpy as np
 import torch
 
-from wisent.core.utils.config_tools.constants import DATA_CHUNK_SIZE, DB_CURSOR_ITERSIZE, DEFAULT_TIMEOUT_DOCKER
+from wisent.core.utils.infra_tools.infra.core.hardware import docker_code_exec_timeout_s
 
 from .hf_writers import (
     flush_staging_dir,
@@ -36,11 +36,7 @@ def _get_db_connection(database_url: Optional[str] = None):
     if "sslmode" not in pg:
         pg["sslmode"] = "require"
     db_url = urlunparse(parsed._replace(query=urlencode(pg)))
-    conn = psycopg2.connect(db_url, **{"connect_" + "timeout": DEFAULT_TIMEOUT_DOCKER})
-    cur = conn.cursor()
-    cur.execute("SET statement_timeout = 0")
-    cur.close()
-    conn.commit()
+    conn = psycopg2.connect(db_url, **{"connect_" + "timeout": docker_code_exec_timeout_s()})
     return conn
 
 
@@ -51,6 +47,7 @@ def _bytes_to_array(data: bytes) -> np.ndarray:
 
 def migrate_activation_table(
     model_name: str, task_name: str, strategy: str,
+    hf_retry_config: Dict,
     database_url: Optional[str] = None, dry_run: bool = False,
     shared_conn=None,
 ) -> List[int]:
@@ -97,9 +94,8 @@ def migrate_activation_table(
         migrated_layers = []
         for layer in layers:
             pair_acts = defaultdict(dict)
-            scur = conn.cursor(name=f"layer_{layer}")
-            scur.itersize = DB_CURSOR_ITERSIZE
-            scur.execute(
+            lcur = conn.cursor()
+            lcur.execute(
                 """SELECT "contrastivePairId", "activationData", "isPositive"
                    FROM "Activation"
                    WHERE "modelId" = %s AND "contrastivePairSetId" = %s
@@ -107,11 +103,12 @@ def migrate_activation_table(
                    ORDER BY "contrastivePairId", "isPositive" """,
                 (model_id, set_id, strategy, layer),
             )
-            for row in scur:
+            for row in lcur.fetchall():
                 pair_id, act_bytes, is_positive = row
                 key = "pos" if is_positive else "neg"
                 pair_acts[pair_id][key] = _bytes_to_array(act_bytes)
-            scur.close()
+            lcur.close()
+            conn.commit()
 
             complete = sorted(
                 [(pid, a) for pid, a in pair_acts.items()
@@ -134,6 +131,7 @@ def migrate_activation_table(
             upload_activation_shard(
                 model_name, task_name, strategy, layer,
                 pos_tensor, neg_tensor, pair_ids,
+                hf_retry_config=hf_retry_config,
                 dry_run=dry_run, staging_dir=staging,
             )
             del pos_tensor, neg_tensor
@@ -141,8 +139,8 @@ def migrate_activation_table(
 
         if migrated_layers and not dry_run:
             print(f"  Flushing {len(migrated_layers)} layers as single commit...")
-            flush_staging_dir(staging)
-            write_marker(model_name, task_name, strategy, migrated_layers)
+            flush_staging_dir(staging, hf_retry_config=hf_retry_config)
+            write_marker(model_name, task_name, strategy, migrated_layers, hf_retry_config=hf_retry_config)
 
         return migrated_layers
     finally:
@@ -154,12 +152,12 @@ def migrate_activation_table(
 
 def migrate_pair_texts(
     task_name: str,
+    hf_retry_config: Dict,
     database_url: Optional[str] = None,
     dry_run: bool = False,
     staging_dir: Optional[str] = None,
 ) -> int:
-    """Export pair texts from Supabase to HF.
-    If staging_dir provided, saves locally for batch upload."""
+    """Export pair texts from Supabase to HF (staging_dir saves locally for batch upload)."""
     conn = _get_db_connection(database_url)
     cur = conn.cursor()
 
@@ -205,6 +203,7 @@ def migrate_pair_texts(
         str_pairs = {str(k): v for k, v in pairs.items()}
         upload_pair_texts(
             task_name, str_pairs,
+            hf_retry_config=hf_retry_config,
             dry_run=dry_run, staging_dir=staging_dir,
         )
         return len(pairs)
@@ -217,7 +216,8 @@ def migrate_raw_activation_table(
     model_name: str,
     task_name: str,
     prompt_format: str,
-    chunk_size: int = DATA_CHUNK_SIZE,
+    hf_retry_config: Dict,
+    chunk_size: int,
     database_url: Optional[str] = None,
     dry_run: bool = False,
 ) -> int:
@@ -284,12 +284,13 @@ def migrate_raw_activation_table(
                 upload_raw_activation_shard(
                     model_name, task_name, prompt_format, layer,
                     ci // chunk_size, pos_t, neg_t, pids,
+                    hf_retry_config=hf_retry_config,
                     dry_run=dry_run, staging_dir=staging,
                 )
                 total_chunks += 1
 
         if total_chunks > 0 and not dry_run:
-            flush_staging_dir(staging)
+            flush_staging_dir(staging, hf_retry_config=hf_retry_config)
 
         return total_chunks
     finally:

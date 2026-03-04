@@ -6,7 +6,7 @@ import json
 from typing import Any, Dict
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
-from wisent.core.utils.config_tools.constants import COMPARE_TOL, EVAL_HARNESS_NUM_SAMPLES, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.utils.config_tools.constants import COMPARE_TOL, DISPLAY_TRUNCATION_COMPACT
 from wisent.core import constants as _C
 
 logger = logging.getLogger(__name__)
@@ -15,16 +15,19 @@ logger = logging.getLogger(__name__)
 class LMEvalHarnessGroundTruth:
     """Ground truth evaluator using lm-eval-harness tasks."""
 
-    def __init__(self, task_name: str, evaluation_method: str = None, model=None):
+    def __init__(self, task_name: str, test_timeout: int, evaluation_method: str = None, model=None, *, train_ratio: float):
         self.task_name = task_name
+        self.test_timeout = test_timeout
         self.evaluation_method = evaluation_method
         self.model = model
+        self.train_ratio = train_ratio
         if not self.evaluation_method:
             self.evaluation_method = self._get_evaluation_method_for_task(task_name)
 
-    def evaluate_classifier_on_task(self, classifier, task_name: str, num_samples: int = EVAL_HARNESS_NUM_SAMPLES,
+    def evaluate_classifier_on_task(self, classifier, task_name: str,
                                      model=None, *, layer: int, token_aggregation: str) -> Dict[str, Any]:
         """Evaluate a classifier on the specified lm-eval task."""
+        num_samples = 100
         evaluation_model = model or self.model
         if self.evaluation_method == "log-likelihoods":
             return self._evaluate_log_likelihoods(classifier, task_name, num_samples, evaluation_model, layer, token_aggregation)
@@ -36,7 +39,7 @@ class LMEvalHarnessGroundTruth:
             return evaluate_perplexity(self, classifier, task_name, num_samples, evaluation_model, layer, token_aggregation)
         if self.evaluation_method == "code-execution":
             from .code_execution import evaluate_code_execution
-            return evaluate_code_execution(self, classifier, task_name, num_samples, evaluation_model, layer, token_aggregation)
+            return evaluate_code_execution(self, classifier, task_name, num_samples, evaluation_model, layer, token_aggregation, test_timeout=self.test_timeout, train_ratio=self.train_ratio)
         return {"ground_truth": "UNKNOWN", "method_used": "lm-eval-harness-unsupported", "confidence": 0.0,
                 "details": f"Unsupported evaluation method: {self.evaluation_method}",
                 "task_name": task_name, "evaluation_method": self.evaluation_method}
@@ -47,7 +50,7 @@ class LMEvalHarnessGroundTruth:
         try:
             from ..log_likelihoods_evaluator import LogLikelihoodsEvaluator
             evaluator = LogLikelihoodsEvaluator(task_name, model=model)
-            results = evaluator.evaluate_classifier_on_task(classifier, task_name, num_samples=num_samples,
+            results = evaluator.evaluate_classifier_on_task(classifier, task_name,
                                                             model=model, layer=layer, token_aggregation=token_aggregation)
             print(results)
             return results
@@ -95,7 +98,7 @@ class LMEvalHarnessGroundTruth:
         """Load data from TaskInterface tasks."""
         try:
             from wisent.core.control.tasks.base.task_interface import get_task
-            task = get_task(task_name)
+            task = get_task(task_name, train_ratio=self.train_ratio)
             docs = task.load_data(limit=num_samples)
             return docs, task
         except Exception as e:

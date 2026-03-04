@@ -6,7 +6,6 @@ from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.utils.config_tools.constants import HTTP_TIMEOUT_MEDIUM
 from wisent.core.utils.infra_tools.infra.core.hardware import subprocess_timeout_s
 
 __all__ = ["AiderPolyglotExtractor"]
@@ -41,14 +40,16 @@ class AiderPolyglotExtractor(HuggingFaceBenchmarkExtractor):
 
     evaluator_name = "code_editing"
 
-    def __init__(self, language: Optional[str] = None):
+    def __init__(self, http_timeout: int, language: Optional[str] = None):
         """
         Initialize Aider Polyglot extractor.
 
         Args:
+            http_timeout: Timeout in seconds for HTTP requests.
             language: Target programming language (python, javascript, java, cpp, go, rust)
         """
         super().__init__()
+        self.http_timeout = http_timeout
         resolved = language if language is not None else "python"
         if resolved not in AIDER_POLYGLOT_LANGUAGES:
             raise ValueError(f"Language must be one of {AIDER_POLYGLOT_LANGUAGES}")
@@ -89,7 +90,7 @@ class AiderPolyglotExtractor(HuggingFaceBenchmarkExtractor):
         try:
             # Get list of exercises
             exercises_url = f"{AIDER_GITHUB_API}/{self.language}/exercises/practice"
-            response = requests.get(exercises_url, timeout=HTTP_TIMEOUT_MEDIUM)
+            response = requests.get(exercises_url, timeout=self.http_timeout)
             response.raise_for_status()
             
             exercise_dirs = response.json()

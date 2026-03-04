@@ -17,7 +17,7 @@ from wisent.core.reading.modules.runner.geometry_runner import (
     analyze_with_nonsense_baseline,
 )
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
-from wisent.core.utils.config_tools.constants import PAIR_COUNT_ABLATION_SERIES, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM, JSON_INDENT
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM, JSON_INDENT
 from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.examples.scripts._discovery_utils import (
     gcs_sync_download,
@@ -32,7 +32,7 @@ from wisent.examples.scripts._category_analysis import (
 )
 
 
-def run_discovery_for_model(model_name: str, output_dir: Path, with_nonsense_baseline: bool = False, with_pairs_ablation: bool = False):
+def run_discovery_for_model(model_name: str, output_dir: Path, report_interval: int, *, pair_count_ablation_series: tuple, pairs_ablation_default_min: int, with_nonsense_baseline: bool = False, with_pairs_ablation: bool = False):
     """Run discovery for a single model with resume support."""
     categories = load_categorized_benchmarks()
     category_info = load_category_directions()
@@ -101,8 +101,6 @@ def run_discovery_for_model(model_name: str, output_dir: Path, with_nonsense_bas
         
         # Create search space for this category
         cat_config = GeometrySearchConfig(
-            pairs_per_benchmark=search_space.config.pairs_per_benchmark,
-            max_layer_combo_size=search_space.config.max_layer_combo_size,
             cache_dir=cache_dir,
         )
         
@@ -114,7 +112,7 @@ def run_discovery_for_model(model_name: str, output_dir: Path, with_nonsense_bas
         )
         
         # Run geometry search
-        runner = GeometryRunner(cat_space, model, cache_dir=cache_dir)
+        runner = GeometryRunner(cat_space, model, report_interval=report_interval, cache_dir=cache_dir, train_ratio=args.train_ratio)
         
         try:
             # Check if we can load existing results (upgrade mode)
@@ -171,9 +169,9 @@ def run_discovery_for_model(model_name: str, output_dir: Path, with_nonsense_bas
                 for benchmark in benchmarks:
                     try:
                         ablation = run_pairs_ablation(
-                            runner, benchmark, mid_layer, 
+                            runner, benchmark, mid_layer,
                             ExtractionStrategy.CHAT_LAST,
-                            pair_counts=list(PAIR_COUNT_ABLATION_SERIES)
+                            pair_counts=list(pair_count_ablation_series),
                         )
                         if ablation:
                             pairs_ablation[benchmark] = ablation
@@ -184,6 +182,7 @@ def run_discovery_for_model(model_name: str, output_dir: Path, with_nonsense_bas
             
             cat_result = analyze_category_results(
                 results, cat_name, description, benchmarks,
+                pairs_ablation_default_min=pairs_ablation_default_min,
                 nonsense_analysis=nonsense_analysis if with_nonsense_baseline else None,
                 pairs_ablation=pairs_ablation if with_pairs_ablation else None,
             )

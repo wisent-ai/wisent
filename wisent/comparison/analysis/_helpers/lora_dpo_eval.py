@@ -8,18 +8,11 @@ from __future__ import annotations
 import gc
 import json
 from pathlib import Path
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import torch
 
-from wisent.core.utils.config_tools.constants import (
-    COMPARISON_DEFAULT_BATCH_SIZE,
-    COMPARISON_MAX_BATCH_SIZE,
-    COMPARISON_NUM_PAIRS,
-    COMPARISON_STEERING_LAYER,
-    COMPARISON_STEERING_SCALES,
-    DEFAULT_SPLIT_RATIO, JSON_INDENT,
-)
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 from wisent.comparison.utils import (
     generate_contrastive_pairs,
     create_test_only_task,
@@ -40,9 +33,12 @@ def evaluate_lora_dpo(
     task: str,
     extraction_strategy: str,
     device: str,
-    train_ratio: float = DEFAULT_SPLIT_RATIO,
-    batch_size: int = COMPARISON_DEFAULT_BATCH_SIZE,
-    max_batch_size: int = COMPARISON_MAX_BATCH_SIZE,
+    batch_size: int,
+    max_batch_size: int,
+    log_interval: int,
+    min_norm_threshold: float,
+    *,
+    train_ratio: float,
     limit: int | None = None,
     output_dir: str | Path = None,
     num_train_pairs: int | None = None,
@@ -55,18 +51,16 @@ def evaluate_lora_dpo(
     max_length: int | None = None,
     max_prompt_length: int | None = None,
     with_steering: bool = False,
-    steering_method: Optional[str] = None,
-    steering_layers: str = str(COMPARISON_STEERING_LAYER),
-    steering_num_pairs: int = COMPARISON_NUM_PAIRS,
-    steering_scales: list[float] | None = None,
+    steering_method: str | None = None,
+    steering_layers: str,
+    steering_num_pairs: int,
+    steering_scales: tuple[float, ...],
 ) -> dict:
     """Evaluate a trained DPO LoRA adapter."""
     from wisent.core.primitives.models.wisent_model import WisentModel
     from wisent.comparison.lora import apply_lora_to_model, remove_lora
 
     lora_path = Path(lora_path)
-    if steering_scales is None:
-        steering_scales = list(COMPARISON_STEERING_SCALES)
 
     task_dict = create_test_only_task(task, train_ratio=train_ratio)
     wisent_model = WisentModel(model_name=model_name, device=device)
@@ -74,14 +68,14 @@ def evaluate_lora_dpo(
     base_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, limit)
     base_acc_lm_eval = extract_accuracy(base_results, task)
     print(f"Base accuracy (lm-eval): {base_acc_lm_eval:.4f}")
-    base_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, limit)
+    base_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=limit)
     print(f"Base accuracy (LL): {base_acc_ll:.4f}")
 
     apply_lora_to_model(wisent_model, lora_path)
     lora_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, limit)
     lora_acc_lm_eval = extract_accuracy(lora_results, task)
     print(f"DPO-LoRA accuracy (lm-eval): {lora_acc_lm_eval:.4f}")
-    lora_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, limit)
+    lora_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=limit)
     print(f"DPO-LoRA accuracy (LL): {lora_acc_ll:.4f}")
 
     results = {
@@ -105,6 +99,8 @@ def evaluate_lora_dpo(
             steering_method, steering_layers, steering_num_pairs,
             steering_scales, extraction_strategy,
             batch_size, max_batch_size, limit, device,
+            log_interval=log_interval,
+            min_norm_threshold=min_norm_threshold,
         )
 
     remove_lora(wisent_model)
@@ -132,6 +128,8 @@ def _run_steering_eval(
     steering_method, steering_layers, steering_num_pairs,
     steering_scales, extraction_strategy,
     batch_size, max_batch_size, limit, device,
+    log_interval: int,
+    min_norm_threshold: float,
 ):
     """Run optional steering evaluation on top of DPO-LoRA."""
     from wisent.core.weight_modification.trainers.steering_trainer import WisentSteeringTrainer
@@ -158,7 +156,7 @@ def _run_steering_eval(
     trainer = WisentSteeringTrainer(
         model=wisent_model, pair_set=pair_set, steering_method=steering_method_obj,
     )
-    result = trainer.run(layers_spec=steering_layers, strategy=strategy, accept_low_quality_vector=True)
+    result = trainer.run(layers_spec=steering_layers, min_norm_threshold=min_norm_threshold, strategy=strategy, accept_low_quality_vector=True)
 
     steering_vectors = {}
     for layer_name, tensor in result.steered_vectors.to_dict().items():
@@ -173,10 +171,10 @@ def _run_steering_eval(
         "scales": {},
     }
     for scale in steering_scales:
-        apply_steering_to_model(wisent_model, steering_data, scale=scale)
+        apply_steering_to_model(wisent_model, steering_data, scale=scale, min_norm_threshold=min_norm_threshold)
         steer_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, limit)
         steer_acc_lm_eval = extract_accuracy(steer_results, task)
-        steer_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, limit)
+        steer_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=limit)
         remove_steering(wisent_model)
         results["steering"]["scales"][str(scale)] = {
             "accuracy_lm_eval": steer_acc_lm_eval, "accuracy_ll": steer_acc_ll,

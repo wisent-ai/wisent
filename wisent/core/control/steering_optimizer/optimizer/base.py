@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Any
 
 from wisent.core.utils.config_tools.config import ModelConfigManager
 from wisent.core.utils.infra_tools.errors import MissingParameterError
-from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, OPTIMIZER_CONSISTENCY_THRESHOLD
+from wisent.core.utils.config_tools.constants import SCORE_RANGE_MAX
 
 from ..types import SteeringOptimizationResult, SteeringOptimizationSummary
 
@@ -138,13 +138,16 @@ class SteeringOptimizerBase:
             config['task_specific_steering'] = {}
 
         for task_result in summary.task_results:
-            config['task_specific_steering'][task_result.task_name] = {
+            task_entry = {
                 'method': task_result.best_steering_method,
                 'layer': task_result.best_steering_layer,
                 'strength': task_result.best_steering_strength,
                 'score': task_result.steering_effectiveness_score,
-                'parameters': task_result.optimal_parameters
+                'parameters': task_result.optimal_parameters,
             }
+            if task_result.optimal_parameters:
+                task_entry['method_params'] = task_result.optimal_parameters
+            config['task_specific_steering'][task_result.task_name] = task_entry
 
         self.config_manager.update_model_config(self.model_name, config)
         logger.info(f"Steering optimization results saved for {self.model_name}")
@@ -187,7 +190,9 @@ class SteeringOptimizerBase:
         layer: int,
         strength: float,
         method_params: Dict[str, Any],
-        test_samples: List[Dict[str, Any]]
+        test_samples: List[Dict[str, Any]],
+        *,
+        optimizer_consistency_threshold: float,
     ) -> Dict[str, float]:
         """
         Evaluate how effectively steering changes model outputs.
@@ -209,12 +214,12 @@ class SteeringOptimizerBase:
             layer=layer,
             strength=strength,
             limit=len(test_samples),
-            split_ratio=DEFAULT_SPLIT_RATIO
+            split_ratio=0.8
         )
 
         return {
             'effectiveness_score': score,
             'accuracy': score,
-            'consistency': 1.0 if score > OPTIMIZER_CONSISTENCY_THRESHOLD else OPTIMIZER_CONSISTENCY_THRESHOLD,
+            'consistency': SCORE_RANGE_MAX if score > optimizer_consistency_threshold else optimizer_consistency_threshold,
             'direction_accuracy': score
         }

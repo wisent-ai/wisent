@@ -7,14 +7,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, List
 
-from wisent.core.utils.config_tools.constants import (
-    BLEND_DEFAULT,
-    BROYDEN_DEFAULT_ALPHA,
-    DEFAULT_LAYER_CONFIG,
-    DEFAULT_SCORE,
-    DETECTION_THRESHOLD,
-    PAIRS_NUM_PAIRS,
-)
 from ..types import ClassificationConfig, SteeringConfig, WeightModificationConfig, TraitConfig, ModelConfig
 
 
@@ -28,11 +20,11 @@ class TraitsMixin:
         classifier_type: str,
         prompt_construction_strategy: str,
         optimization_method: str,
-        layer: int = DEFAULT_LAYER_CONFIG,
-        detection_threshold: float = DETECTION_THRESHOLD,
-        accuracy: float = DEFAULT_SCORE,
-        f1_score: float = DEFAULT_SCORE, precision: float = DEFAULT_SCORE,
-        recall: float = DEFAULT_SCORE,
+        layer: int,
+        detection_threshold: float,
+        accuracy: float = None,
+        f1_score: float = None, precision: float = None,
+        recall: float = None,
         set_as_default: bool = False,
     ) -> Path:
         """Save classification config for a trait."""
@@ -63,9 +55,9 @@ class TraitsMixin:
         self, model_name: str, trait_name: str, method: str,
         token_aggregation: str, prompt_strategy: str, normalize_mode: str,
         optimization_method: str, metric: str,
-        layer: int = DEFAULT_LAYER_CONFIG,
+        layer: int,
         strength: Optional[float] = None,
-        score: float = DEFAULT_SCORE,
+        score: float = None,
         set_as_default: bool = False,
     ) -> Path:
         """Save steering config for a trait."""
@@ -94,16 +86,17 @@ class TraitsMixin:
         self, model_name: str, trait_name: str, method: str,
         additive_method: str,
         optimization_method: str,
+        num_pairs: int,
         max_weight: Optional[float] = None, min_weight: Optional[float] = None,
-        max_weight_position: float = BLEND_DEFAULT,
-        min_weight_distance: float = BLEND_DEFAULT,
-        strength: Optional[float] = None, num_pairs: int = PAIRS_NUM_PAIRS,
-        alpha: float = BROYDEN_DEFAULT_ALPHA,
+        max_weight_position: float = None,
+        min_weight_distance: float = None,
+        strength: Optional[float] = None,
+        alpha: Optional[float] = None,
         components: Optional[List[str]] = None,
         normalize_vectors: bool = True, norm_preserve: bool = True,
         use_biprojection: bool = True, use_kernel: bool = True,
-        score: float = DEFAULT_SCORE,
-        baseline_score: float = DEFAULT_SCORE, output_dir: str = "",
+        score: float = None,
+        baseline_score: float = None, output_dir: str = "",
         set_as_default: bool = False,
     ) -> Path:
         """Save weight modification config for a trait."""
@@ -111,12 +104,14 @@ class TraitsMixin:
         weight_mod = WeightModificationConfig(
             method=method, max_weight=max_weight, min_weight=min_weight,
             max_weight_position=max_weight_position, min_weight_distance=min_weight_distance,
-            strength=strength, num_pairs=num_pairs, alpha=alpha, additive_method=additive_method,
+            strength=strength, num_pairs=num_pairs, additive_method=additive_method,
             components=components or ["self_attn.o_proj", "mlp.down_proj"],
             normalize_vectors=normalize_vectors, norm_preserve=norm_preserve,
             use_biprojection=use_biprojection, use_kernel=use_kernel,
             score=score, baseline_score=baseline_score, output_dir=output_dir,
         )
+        if alpha is not None:
+            weight_mod.alpha = alpha
         if trait_name not in config.traits:
             config.traits[trait_name] = TraitConfig(trait_name=trait_name)
         config.traits[trait_name].weight_modification = weight_mod

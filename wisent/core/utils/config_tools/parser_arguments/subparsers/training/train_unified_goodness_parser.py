@@ -2,7 +2,6 @@
 
 import argparse
 
-from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, STEERING_EVAL_SCALES_DEFAULT
 
 
 def setup_train_unified_goodness_parser(parser: argparse.ArgumentParser) -> None:
@@ -75,13 +74,13 @@ def setup_train_unified_goodness_parser(parser: argparse.ArgumentParser) -> None
     parser.add_argument(
         "--train-ratio",
         type=float,
-        default=DEFAULT_SPLIT_RATIO,
-        help="Fraction of pairs used for training vs evaluation (default: 0.8)"
+        required=True,
+        help="Fraction of pairs used for training vs evaluation",
     )
     parser.add_argument(
         "--seed",
         type=int,
-        default=DEFAULT_RANDOM_SEED,
+        default=None,
         help="Random seed for reproducibility (default: 42)"
     )
 
@@ -128,8 +127,8 @@ def setup_train_unified_goodness_parser(parser: argparse.ArgumentParser) -> None
     parser.add_argument(
         "--evaluate-steering-scales",
         type=str,
-        default=STEERING_EVAL_SCALES_DEFAULT,
-        help="Comma-separated steering scales to evaluate (default: 0.0,0.5,1.0,1.5,2.0)"
+        required=True,
+        help="Comma-separated steering scales to evaluate",
     )
 
     # Output options
@@ -144,6 +143,14 @@ def setup_train_unified_goodness_parser(parser: argparse.ArgumentParser) -> None
         type=str,
         default=None,
         help="Save evaluation report to this JSON file"
+    )
+
+    # Progress reporting
+    parser.add_argument(
+        "--report-interval",
+        type=int,
+        required=True,
+        help="How often to report progress during activation collection (in batches)"
     )
 
     # Display options

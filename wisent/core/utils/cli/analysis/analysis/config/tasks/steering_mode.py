@@ -4,10 +4,11 @@ import sys
 import torch
 
 from wisent.core.primitives.models import get_generate_kwargs
-from wisent.core.utils.config_tools.constants import JSON_INDENT, NORM_EPS, CLASSIFIER_THRESHOLD, DEFAULT_SCORE, GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS, GEOMETRY_CV_FOLDS, DISPLAY_TRUNCATION_COMPACT, ENRICHMENT_MAX_PAIRS, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import JSON_INDENT, NORM_EPS, DISPLAY_TRUNCATION_COMPACT, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.infra_tools.errors import MissingParameterError
 
 
-def execute_steering_mode(args, model, train_pair_set, test_pair_set, collector, extraction_strategy):
+def execute_steering_mode(args, model, train_pair_set, test_pair_set, collector, extraction_strategy, min_norm_threshold: float, min_clusters: int = None, *, geometry_cv_folds: int, subsample_threshold: int, pca_dims_limit: int):
     """Execute steering mode - train and evaluate steering vectors."""
     from wisent.core.reading.evaluators.rotator import EvaluatorRotator
 
@@ -26,7 +27,10 @@ def execute_steering_mode(args, model, train_pair_set, test_pair_set, collector,
 
     if steering_vector is None:
         steering_vector = _compute_steering_vector(
-            args, model, train_pair_set, collector, extraction_strategy, layer, layer_str
+            args, model, train_pair_set, collector, extraction_strategy, layer, layer_str,
+            min_clusters=min_clusters, spectral_n_neighbors=args.spectral_n_neighbors,
+            geometry_cv_folds=args.geometry_cv_folds, subsample_threshold=args.subsample_threshold,
+            pca_dims_limit=args.pca_dims_limit,
         )
 
     print(f"\n🔧 Initializing evaluator for task '{task_name}'...")
@@ -34,7 +38,7 @@ def execute_steering_mode(args, model, train_pair_set, test_pair_set, collector,
     EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.benchmark_specific")
     evaluator = EvaluatorRotator(evaluator=None, task_name=task_name, autoload=False)
 
-    return _evaluate_steering(args, model, test_pair_set, steering_vector, layer, layer_str, evaluator, task_name)
+    return _evaluate_steering(args, model, test_pair_set, steering_vector, layer, layer_str, evaluator, task_name, min_norm_threshold=min_norm_threshold)
 
 
 def _load_steering_vector(args, layer, layer_str):
@@ -58,7 +62,7 @@ def _load_steering_vector(args, layer, layer_str):
         return steering_vector
 
 
-def _compute_steering_vector(args, model, train_pair_set, collector, extraction_strategy, layer, layer_str):
+def _compute_steering_vector(args, model, train_pair_set, collector, extraction_strategy, layer, layer_str, min_clusters: int = None, *, spectral_n_neighbors: int, geometry_cv_folds: int, subsample_threshold: int, pca_dims_limit: int):
     """Compute steering vector from training data using zwiad."""
     from wisent.core.reading.modules import compute_geometry_metrics, compute_recommendation, compute_concept_coherence
 
@@ -87,13 +91,13 @@ def _compute_steering_vector(args, model, train_pair_set, collector, extraction_
     neg_tensor = torch.stack(negative_activations)
 
     print(f"\n🔍 Running zwiad geometry analysis...")
-    metrics = compute_geometry_metrics(pos_tensor, neg_tensor, n_folds=GEOMETRY_CV_FOLDS)
+    metrics = compute_geometry_metrics(pos_tensor, neg_tensor, min_clusters=min_clusters, n_folds=geometry_cv_folds, spectral_n_neighbors=spectral_n_neighbors, subsample_threshold=subsample_threshold, pca_dims_limit=pca_dims_limit)
     recommendation = compute_recommendation(metrics)
     recommended_method = recommendation.get("recommended_method", "CAA").upper()
-    confidence = recommendation.get("confidence", CLASSIFIER_THRESHOLD)
+    confidence = recommendation["confidence"]
     coherence = compute_concept_coherence(pos_tensor, neg_tensor)
 
-    print(f"   ├─ Linear probe accuracy: {metrics.get('linear_probe_accuracy', DEFAULT_SCORE):.3f}")
+    print(f"   ├─ Linear probe accuracy: {metrics['linear_probe_accuracy']:.3f}")
     print(f"   ├─ Concept coherence:     {coherence:.3f}")
     print(f"   └─ Recommendation:        {recommended_method} (confidence={confidence:.2f})")
 
@@ -118,10 +122,10 @@ def _train_steering_method(args, model, method, pos_tensor, neg_tensor, layer, c
         return steering_vector
 
     elif method == "GROM":
-        return _train_grom(model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor)
+        return _train_grom(args, model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor, args.enrichment_max_pairs)
 
     elif method == "TECZA":
-        return _train_tecza(model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor)
+        return _train_tecza(args, model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor, args.enrichment_max_pairs)
 
     else:
         print(f"   ⚠️  Unknown method {method}, using CAA")
@@ -130,16 +134,19 @@ def _train_steering_method(args, model, method, pos_tensor, neg_tensor, layer, c
         return steering_vector
 
 
-def _train_grom(model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor):
+def _train_grom(args, model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor, enrichment_max_pairs: int):
     """Train GROM steering vector."""
     from wisent.core.control.steering_methods.methods.grom import GROMMethod
     from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 
     all_layers = [str(i) for i in range(1, model.num_layers + 1)]
-    enriched_pairs = [collector.collect(pair, strategy=extraction_strategy, layers=all_layers) for pair in train_pair_set.pairs[:ENRICHMENT_MAX_PAIRS]]
+    enriched_pairs = [collector.collect(pair, strategy=extraction_strategy, layers=all_layers) for pair in train_pair_set.pairs[:enrichment_max_pairs]]
     pair_set = ContrastivePairSet(pairs=enriched_pairs, name="grom_training")
 
-    grom_method = GROMMethod(model=model, num_directions=GROM_NUM_DIRECTIONS, manifold_method="pca",
+    grom_num_directions = getattr(args, 'grom_num_directions', None)
+    if grom_num_directions is None:
+        raise MissingParameterError(params=["grom_num_directions"], context="GROM training requires --grom-num-directions")
+    grom_method = GROMMethod(model=model, num_directions=grom_num_directions, manifold_method="pca",
                                steering_layers=[int(l) for l in all_layers], sensor_layer=1)
     grom_result = grom_method.train_grom(pair_set)
     layer_key = f"layer_{layer}"
@@ -155,16 +162,31 @@ def _train_grom(model, layer, collector, extraction_strategy, train_pair_set, po
     return steering_vector
 
 
-def _train_tecza(model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor):
+def _train_tecza(args, model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor, enrichment_max_pairs: int):
     """Train TECZA steering vector."""
     from wisent.core.control.steering_methods.methods.advanced import TECZAMethod
     from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 
     all_layers = [str(i) for i in range(1, model.num_layers + 1)]
-    enriched_pairs = [collector.collect(pair, strategy=extraction_strategy, layers=all_layers) for pair in train_pair_set.pairs[:ENRICHMENT_MAX_PAIRS]]
+    enriched_pairs = [collector.collect(pair, strategy=extraction_strategy, layers=all_layers) for pair in train_pair_set.pairs[:enrichment_max_pairs]]
     pair_set = ContrastivePairSet(pairs=enriched_pairs, name="tecza_training")
 
-    tecza_method = TECZAMethod(model=model.hf_model, num_directions=TECZA_NUM_DIRECTIONS)
+    def _rq(name):
+        val = getattr(args, name, None)
+        if val is None:
+            raise MissingParameterError(params=[name], context=f"TECZA training requires --{name.replace('_', '-')}")
+        return val
+    tecza_method = TECZAMethod(
+        model=model.hf_model, num_directions=_rq('tecza_num_directions'),
+        optimization_steps=_rq('tecza_optimization_steps'), learning_rate=_rq('tecza_learning_rate'),
+        retain_weight=_rq('tecza_retain_weight'), independence_weight=_rq('tecza_independence_weight'),
+        min_cosine_similarity=_rq('tecza_min_cosine_sim'), max_cosine_similarity=_rq('tecza_max_cosine_sim'),
+        variance_threshold=_rq('tecza_variance_threshold'), marginal_threshold=_rq('tecza_marginal_threshold'),
+        max_directions=_rq('tecza_max_directions'), ablation_weight=_rq('tecza_ablation_weight'),
+        addition_weight=_rq('tecza_addition_weight'), separation_margin=_rq('tecza_separation_margin'),
+        perturbation_scale=_rq('tecza_perturbation_scale'), universal_basis_noise=_rq('tecza_universal_basis_noise'),
+        log_interval=_rq('tecza_log_interval'),
+    )
     tecza_result = tecza_method.train(pair_set)
     layer_key = f"layer_{layer}"
 
@@ -178,7 +200,7 @@ def _train_tecza(model, layer, collector, extraction_strategy, train_pair_set, p
     return steering_vector
 
 
-def _evaluate_steering(args, model, test_pair_set, steering_vector, layer, layer_str, evaluator, task_name):
+def _evaluate_steering(args, model, test_pair_set, steering_vector, layer, layer_str, evaluator, task_name, min_norm_threshold):
     """Evaluate steering effectiveness on test set."""
     import os
     import json
@@ -201,7 +223,7 @@ def _evaluate_steering(args, model, test_pair_set, steering_vector, layer, layer
             eval_kwargs.update({k: v for k, v in pair.metadata.items() if v is not None and k not in eval_kwargs})
         base_correct = evaluator.evaluate(**eval_kwargs).ground_truth == "TRUTHFUL"
 
-        model.set_steering_from_raw({layer_str: steering_vector}, scale=steering_strength, normalize=False)
+        model.set_steering_from_raw({layer_str: steering_vector}, scale=steering_strength, min_norm_threshold=min_norm_threshold, normalize=False)
         resp_steer = model.generate([messages], **get_generate_kwargs())[0]
         model.clear_steering()
 

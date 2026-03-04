@@ -25,6 +25,8 @@ class BigBenchExtractor(LMEvalBenchmarkExtractor):
         self,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
+        *,
+        train_ratio: float,
     ) -> list[ContrastivePair]:
         """
         Build contrastive pairs from BIG-Bench docs.
@@ -68,7 +70,7 @@ class BigBenchExtractor(LMEvalBenchmarkExtractor):
             if max_items and len(docs) > max_items:
                 docs = docs[:max_items]
         else:
-            docs = self.load_docs(lm_eval_task_data, max_items)
+            docs = self.load_docs(lm_eval_task_data, max_items, train_ratio=train_ratio)
 
         pairs: list[ContrastivePair] = []
 

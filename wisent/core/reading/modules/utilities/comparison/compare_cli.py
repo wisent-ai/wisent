@@ -123,10 +123,12 @@ def execute_compare_steering(args):
         labels.append(_get_label(obj))
         print(f"   {path} -> {labels[-1]}")
 
+    min_clusters = getattr(args, 'min_clusters', None)
     # Run comparison
     result = compare_steering_objects(
         objects=objects,
         labels=labels,
+        min_clusters=min_clusters,
         layers=layers,
     )
 

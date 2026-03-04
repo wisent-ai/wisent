@@ -5,13 +5,7 @@ import torch
 import torch.nn.functional as F
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.utils.config_tools.constants import (
-    MAX_CLUSTERS, MANIFOLD_NEIGHBORS, GROM_ADAPT_CONE_THRESHOLD,
-    GROM_ADAPT_LINEAR_DIRECTIONS, GROM_ADAPT_MAX_DIRECTIONS,
-    GROM_ADAPT_MANIFOLD_THRESHOLD, GROM_ADAPT_COMPLEX_DIRECTIONS,
-    GROM_CAA_ALIGNMENT_THRESHOLD, GROM_CAA_SIMILARITY_SKIP,
-    GROM_SIGNIFICANT_DIRECTIONS_DEFAULT,
-)
+from wisent.core.utils.config_tools.constants import COMBO_OFFSET, RECURSION_INITIAL_DEPTH  # noqa: E501
 from wisent.core.control.steering_methods.methods.grom._config import GeometryAdaptation
 
 def _analyze_and_adapt_geometry_impl(
@@ -19,6 +13,7 @@ def _analyze_and_adapt_geometry_impl(
     buckets: Dict[LayerName, Tuple[List[torch.Tensor], List[torch.Tensor]]],
     layer_names: List[LayerName],
     hidden_dim: int,
+    default_score: float,
 ) -> GeometryAdaptation:
     """
     Analyze geometry of activations and adapt GROM configuration.
@@ -54,8 +49,8 @@ def _analyze_and_adapt_geometry_impl(
     # Run geometry detection
     geo_config = GeometryAnalysisConfig(
         num_components=self.config.num_directions,
-        max_clusters=MAX_CLUSTERS,
-        manifold_neighbors=min(MANIFOLD_NEIGHBORS, len(pos_list) - 1),
+        max_clusters=self.config.max_clusters,
+        manifold_neighbors=min(self.config.manifold_neighbors, len(pos_list) - COMBO_OFFSET),
     )
     geo_result = detect_geometry_structure(pos_tensor, neg_tensor, geo_config)
 
@@ -71,38 +66,46 @@ def _analyze_and_adapt_geometry_impl(
     adapted_num_directions = original_num_directions
     gating_enabled = True
 
-    linear_score = structure_scores.get("linear", 0)
-    cone_score = structure_scores.get("cone", 0)
-    manifold_score = structure_scores.get("manifold", 0)
+    linear_score = structure_scores.get("linear", default_score)
+    cone_score = structure_scores.get("cone", default_score)
+    manifold_score = structure_scores.get("manifold", default_score)
 
-    # Adaptation 1: Simplify if linear
+    # Simplify if linear
     if linear_score > self.config.linear_threshold:
         if self.config.auto_num_directions:
-            adapted_num_directions = GROM_ADAPT_LINEAR_DIRECTIONS
-            adaptations.append(f"Reduced num_directions to {GROM_ADAPT_LINEAR_DIRECTIONS} (linear score={linear_score:.2f})")
+            adapted_num_directions = self.config.adapt_linear_directions
+            adaptations.append(f"Reduced num_directions to {self.config.adapt_linear_directions} (linear score={linear_score:.2f})")
 
         if self.config.skip_gating_if_linear:
             gating_enabled = False
             adaptations.append("Disabled gating network (linear structure)")
 
-    # Adaptation 2: Adjust directions based on cone structure
-    elif cone_score > GROM_ADAPT_CONE_THRESHOLD and self.config.auto_num_directions:
+    # Adjust directions based on cone structure
+    elif cone_score > self.config.adapt_cone_threshold and self.config.auto_num_directions:
         # Cone structure benefits from multiple directions
         cone_details = geo_result.all_scores.get("cone")
         if cone_details and hasattr(cone_details, "details"):
-            sig_dirs = cone_details.details.get("significant_directions", GROM_SIGNIFICANT_DIRECTIONS_DEFAULT)
-            adapted_num_directions = max(2, min(sig_dirs + 1, GROM_ADAPT_MAX_DIRECTIONS))
+            sig_dirs = cone_details.details.get(
+                "significant_directions", self.config.significant_directions_default,
+            )
+            adapted_num_directions = max(
+                self.config.min_adapted_directions,
+                min(sig_dirs + COMBO_OFFSET, self.config.adapt_max_directions),
+            )
             if adapted_num_directions != original_num_directions:
                 adaptations.append(
                     f"Adjusted num_directions to {adapted_num_directions} based on cone structure"
                 )
 
-    # Adaptation 3: Increase directions for complex structures
-    elif (manifold_score > GROM_ADAPT_MANIFOLD_THRESHOLD or structure_scores.get("orthogonal", 0) > GROM_ADAPT_CONE_THRESHOLD):
-        if self.config.auto_num_directions and adapted_num_directions < GROM_ADAPT_COMPLEX_DIRECTIONS:
-            adapted_num_directions = GROM_ADAPT_COMPLEX_DIRECTIONS
+    # Increase directions for complex structures
+    elif (
+        manifold_score > self.config.adapt_manifold_threshold
+        or structure_scores.get("orthogonal", default_score) > self.config.adapt_cone_threshold
+    ):
+        if self.config.auto_num_directions and adapted_num_directions < self.config.adapt_complex_directions:
+            adapted_num_directions = self.config.adapt_complex_directions
             adaptations.append(
-                f"Increased num_directions to {GROM_ADAPT_COMPLEX_DIRECTIONS} for manifold/orthogonal structure"
+                f"Increased num_directions to {self.config.adapt_complex_directions} for manifold/orthogonal structure"
             )
 
     if not adaptations:
@@ -168,8 +171,9 @@ def _initialize_directions_impl(
                     cos_with_caa = (candidate * caa_dir).sum().abs()
 
                     # If too similar to CAA, try next PCA component
-                    if cos_with_caa > GROM_CAA_SIMILARITY_SKIP and pca_idx + 1 < pca_dirs.shape[0]:
-                        pca_idx += 1
+                    next_idx = pca_idx + COMBO_OFFSET
+                    if cos_with_caa > self.config.caa_similarity_skip and next_idx < pca_dirs.shape[RECURSION_INITIAL_DEPTH]:
+                        pca_idx = next_idx
                         candidate = F.normalize(pca_dirs[pca_idx], p=2, dim=0)
 
                     dirs[i] = candidate

@@ -3,7 +3,7 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
 
-from wisent.core.utils.config_tools.constants import BLEU_MAX_N_GRAM
+from wisent.core.utils.config_tools.constants import BLEU_MAX_N_GRAM, COMBO_OFFSET
 
 logger = logging.getLogger(__name__)
 
@@ -94,10 +94,10 @@ class BigCodeTextEvalMixin:
         bleu = sacrebleu.sentence_bleu(hypothesis, [reference])
         return bleu.score / 100.0  # Normalize to [0, 1]
     
-    def _compute_simple_bleu(self, hypothesis: str, reference: str, max_n: int = BLEU_MAX_N_GRAM) -> float:
+    def _compute_simple_bleu(self, hypothesis: str, reference: str) -> float:
         """
         Compute simple BLEU score without external dependencies.
-        
+
         Uses smoothed BLEU to handle short sequences.
         """
         from collections import Counter
@@ -115,7 +115,7 @@ class BigCodeTextEvalMixin:
         
         # Compute n-gram precisions
         precisions = []
-        for n in range(1, min(max_n + 1, len(hyp_tokens) + 1)):
+        for n in range(COMBO_OFFSET, min(BLEU_MAX_N_GRAM + COMBO_OFFSET, len(hyp_tokens) + COMBO_OFFSET)):
             hyp_ngrams = get_ngrams(hypothesis, n)
             ref_ngrams = get_ngrams(reference, n)
             

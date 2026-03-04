@@ -18,24 +18,8 @@ from typing import List, Dict, Any, Optional, Tuple
 import torch
 import numpy as np
 
-from wisent.core.utils.config_tools.constants import (
-    CV_FOLDS,
-    NORM_EPS,
-    VQ_ALIGNMENT_MIN_CRITICAL,
-    VQ_ALIGNMENT_STD_WARNING,
-    VQ_CONVERGENCE_CRITICAL,
-    VQ_CONVERGENCE_WARNING,
-    VQ_CV_SCORE_CRITICAL,
-    VQ_CV_SCORE_WARNING,
-    VQ_MIN_PAIRS,
-    VQ_PCA_VARIANCE_CRITICAL,
-    VQ_PCA_VARIANCE_WARNING,
-    VQ_SILHOUETTE_CRITICAL,
-    VQ_SILHOUETTE_WARNING,
-    VQ_SNR_CRITICAL,
-    VQ_SNR_WARNING,
-)
 from ..base import DiagnosticsIssue, DiagnosticsReport, MetricReport
+"""Formerly imported CV_FOLDS is now a required parameter."""
 
 __all__ = [
     "VectorQualityConfig",
@@ -46,42 +30,28 @@ __all__ = [
 
 @dataclass(slots=True)
 class VectorQualityConfig:
-    """Thresholds for vector quality diagnostics.
-    
-    Based on empirical analysis with Italian/English steering vectors:
-    - Good vectors typically show: convergence > 0.9, CV > 0.7, SNR > 50, PC1 > 40%
-    - Thresholds are set to catch clearly problematic vectors while allowing reasonable ones
-    """
-    
-    # Convergence thresholds (similarity between 50% and 100% of pairs)
-    convergence_critical: float = VQ_CONVERGENCE_CRITICAL
-    convergence_warning: float = VQ_CONVERGENCE_WARNING
+    """Configuration for vector quality diagnostics thresholds."""
 
-    # Cross-validation score thresholds
-    cv_score_critical: float = VQ_CV_SCORE_CRITICAL
-    cv_score_warning: float = VQ_CV_SCORE_WARNING
+    vq_convergence_critical: float = None
+    vq_convergence_warning: float = None
+    vq_cv_score_critical: float = None
+    vq_cv_score_warning: float = None
+    vq_snr_critical: float = None
+    vq_snr_warning: float = None
+    vq_pca_variance_critical: float = None
+    vq_pca_variance_warning: float = None
+    vq_alignment_std_warning: float = None
+    vq_alignment_min_critical: float = None
+    vq_silhouette_critical: float = None
+    vq_silhouette_warning: float = None
+    vq_min_pairs: int = None
+    vq_warnings_fair_threshold: int = None
 
-    # Signal-to-noise ratio thresholds
-    snr_critical: float = VQ_SNR_CRITICAL
-    snr_warning: float = VQ_SNR_WARNING
-
-    # PCA PC1 variance explained thresholds (in high-dim space, 10-20% can be good)
-    pca_variance_critical: float = VQ_PCA_VARIANCE_CRITICAL
-    pca_variance_warning: float = VQ_PCA_VARIANCE_WARNING
-
-    # Pair alignment thresholds (std of alignments)
-    alignment_std_warning: float = VQ_ALIGNMENT_STD_WARNING
-    alignment_min_critical: float = VQ_ALIGNMENT_MIN_CRITICAL
-
-    # Clustering silhouette thresholds (can be low in high-dim space)
-    silhouette_critical: float = VQ_SILHOUETTE_CRITICAL
-    silhouette_warning: float = VQ_SILHOUETTE_WARNING
-
-    # Minimum pairs required for quality analysis
-    min_pairs_for_analysis: int = VQ_MIN_PAIRS
-
-    # Number of CV folds
-    cv_folds: int = CV_FOLDS
+    def __post_init__(self):
+        """Validate all fields are provided."""
+        for name in self.__slots__:
+            if getattr(self, name) is None:
+                raise ValueError(f"{name} is required in VectorQualityConfig")
 
 
 @dataclass
@@ -142,7 +112,8 @@ def _cosine_similarity(a: torch.Tensor, b: torch.Tensor) -> float:
 
 def _create_vector_from_diffs(diffs: torch.Tensor, normalize: bool = True) -> torch.Tensor:
     """Create steering vector by averaging difference vectors."""
-    vec = diffs.mean(dim=0)
+    from wisent.core.utils.config_tools.constants import NORM_EPS, PARSER_DEFAULT_LAYER_START
+    vec = diffs.mean(dim=PARSER_DEFAULT_LAYER_START)
     if normalize and torch.norm(vec) > NORM_EPS:
         vec = vec / torch.norm(vec)
     return vec
@@ -153,96 +124,101 @@ def _compute_convergence(
     config: VectorQualityConfig
 ) -> Tuple[float, float, float, List[DiagnosticsIssue]]:
     """Check if vector converges as more pairs are added."""
+    from wisent.core.utils.config_tools.constants import COMBO_OFFSET, COMBO_BASE
     issues = []
     n = len(difference_vectors)
-    
-    if n < config.min_pairs_for_analysis:
+
+    if n < config.vq_min_pairs:
         return None, None, None, issues
-    
-    # Create vectors from 50%, 75%, and 100% of pairs
-    n_50 = max(1, n // 2)
-    n_75 = max(1, int(n * VQ_CONVERGENCE_WARNING))
-    
-    vec_50 = _create_vector_from_diffs(difference_vectors[:n_50])
-    vec_75 = _create_vector_from_diffs(difference_vectors[:n_75])
-    vec_100 = _create_vector_from_diffs(difference_vectors)
-    
-    sim_50_100 = _cosine_similarity(vec_50, vec_100)
-    sim_75_100 = _cosine_similarity(vec_75, vec_100)
-    convergence = sim_50_100  # Primary metric
-    
-    if convergence < config.convergence_critical:
+
+    # Create vectors from half, three-quarter, and full sets of pairs
+    n_half = max(COMBO_OFFSET, n // COMBO_BASE)
+    n_three_quarter = max(COMBO_OFFSET, int(n * config.vq_convergence_warning))
+
+    vec_half = _create_vector_from_diffs(difference_vectors[:n_half])
+    vec_three_quarter = _create_vector_from_diffs(difference_vectors[:n_three_quarter])
+    vec_full = _create_vector_from_diffs(difference_vectors)
+
+    sim_half_full = _cosine_similarity(vec_half, vec_full)
+    sim_three_quarter_full = _cosine_similarity(vec_three_quarter, vec_full)
+    convergence = sim_half_full  # Primary metric
+
+    if convergence < config.vq_convergence_critical:
         issues.append(DiagnosticsIssue(
             metric="convergence",
             severity="critical",
-            message=f"Vector not converged: 50% vs 100% similarity = {convergence:.3f} (< {config.convergence_critical})",
-            details={"sim_50_100": sim_50_100, "sim_75_100": sim_75_100}
+            message=f"Vector not converged: half vs full similarity = {convergence:.3f} (< {config.vq_convergence_critical})",
+            details={"sim_half_full": sim_half_full, "sim_three_quarter_full": sim_three_quarter_full}
         ))
-    elif convergence < config.convergence_warning:
+    elif convergence < config.vq_convergence_warning:
         issues.append(DiagnosticsIssue(
             metric="convergence",
             severity="warning",
-            message=f"Vector may not be fully converged: 50% vs 100% similarity = {convergence:.3f}",
-            details={"sim_50_100": sim_50_100, "sim_75_100": sim_75_100}
+            message=f"Vector may not be fully converged: half vs full similarity = {convergence:.3f}",
+            details={"sim_half_full": sim_half_full, "sim_three_quarter_full": sim_three_quarter_full}
         ))
-    
-    return convergence, sim_50_100, sim_75_100, issues
+
+    return convergence, sim_half_full, sim_three_quarter_full, issues
 
 
 def _compute_cross_validation(
     difference_vectors: torch.Tensor,
-    config: VectorQualityConfig
+    config: VectorQualityConfig,
+    default_score: float,
+    *,
+    cv_folds: int,
 ) -> Tuple[float, float, List[float], List[DiagnosticsIssue]]:
-    """5-fold cross-validation to test generalization."""
+    """Cross-validation to test generalization."""
+    from wisent.core.utils.config_tools.constants import COMBO_OFFSET
     issues = []
     n = len(difference_vectors)
-    
-    if n < config.min_pairs_for_analysis:
+
+    if n < config.vq_min_pairs:
         return None, None, [], issues
-    
-    n_folds = min(config.cv_folds, n)
+
+    n_folds = min(cv_folds, n)
     fold_size = n // n_folds
-    
-    if fold_size < 1:
+
+    if fold_size < COMBO_OFFSET:
         return None, None, [], issues
-    
+
     cv_scores = []
     indices = list(range(n))
-    
+
     for fold in range(n_folds):
         test_start = fold * fold_size
-        test_end = test_start + fold_size if fold < n_folds - 1 else n
+        test_end = test_start + fold_size if fold < n_folds - COMBO_OFFSET else n
         test_indices = indices[test_start:test_end]
         train_indices = [i for i in indices if i not in test_indices]
-        
+
         if not train_indices or not test_indices:
             continue
-        
+
         train_vec = _create_vector_from_diffs(difference_vectors[train_indices])
         test_sims = [_cosine_similarity(difference_vectors[i], train_vec) for i in test_indices]
         cv_scores.append(statistics.mean(test_sims))
-    
+
     if not cv_scores:
         return None, None, [], issues
-    
+
     cv_mean = statistics.mean(cv_scores)
-    cv_std = statistics.stdev(cv_scores) if len(cv_scores) > 1 else 0.0
-    
-    if cv_mean < config.cv_score_critical:
+    cv_std = statistics.stdev(cv_scores) if len(cv_scores) > COMBO_OFFSET else default_score
+
+    if cv_mean < config.vq_cv_score_critical:
         issues.append(DiagnosticsIssue(
             metric="cross_validation",
             severity="critical",
-            message=f"Poor cross-validation score: {cv_mean:.3f} (< {config.cv_score_critical}). Vector does not generalize.",
+            message=f"Poor cross-validation score: {cv_mean:.3f} (< {config.vq_cv_score_critical}). Vector does not generalize.",
             details={"cv_mean": cv_mean, "cv_std": cv_std}
         ))
-    elif cv_mean < config.cv_score_warning:
+    elif cv_mean < config.vq_cv_score_warning:
         issues.append(DiagnosticsIssue(
             metric="cross_validation",
             severity="warning",
             message=f"Low cross-validation score: {cv_mean:.3f}. Vector may not generalize well.",
             details={"cv_mean": cv_mean, "cv_std": cv_std}
         ))
-    
+
     return cv_mean, cv_std, cv_scores, issues
 
 

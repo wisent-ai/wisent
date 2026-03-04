@@ -2,7 +2,7 @@
 import re
 import multiprocessing
 from latex2sympy2_extended import latex2sympy
-from wisent.core.utils.config_tools.constants import DEFAULT_TIMEOUT_MATH_SCRIPT, ROUNDING_PRECISION
+from wisent.core.utils.config_tools.constants import ROUNDING_PRECISION
 from wisent.core.reading.evaluators.benchmark_specific.math_parsing._scripts_constants import (
     STRIP_EXCEPTIONS,
 )
@@ -145,7 +145,7 @@ def symbolic_equal(a, b):
 def symbolic_equal_process(a, b, output_queue):
     result = symbolic_equal(a, b)
     output_queue.put(result)
-def call_with_timeout(func, *args, timeout=DEFAULT_TIMEOUT_MATH_SCRIPT, **kwargs):
+def call_with_timeout(func, *args, timeout: int, **kwargs):
     output_queue = multiprocessing.Queue()
     process_args = args + (output_queue,)
     process = multiprocessing.Process(target=func, args=process_args, kwargs=kwargs)

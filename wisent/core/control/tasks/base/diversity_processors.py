@@ -1,46 +1,45 @@
 """
-Logits processors for ensuring diverse, non-repetitive responses across conversation turns.
+Logits processors for ensuring diverse, non-repetitive responses
+across conversation turns.
 """
 
 import torch
 from typing import List, Set, Dict, Any
 from collections import deque
 from wisent.core.utils.config_tools.constants import (
-    DIVERSITY_OPENER_PENALTY, DIVERSITY_OPENER_CUTOFF_POS,
-    DIVERSITY_TRIE_PENALTY, DIVERSITY_TRIE_MAX_DEPTH,
-    DIVERSITY_LEDGER_MAX_ITEMS, DIVERSITY_SAMPLE_K,
-    DIVERSITY_MIN_CLAUSE_LENGTH, DIVERSITY_MAX_CLAUSE_LENGTH,
-    DIVERSITY_WINDOW_SIZE,
+    COMBO_OFFSET, PARSER_DEFAULT_LAYER_START,
 )
 
 
 class OpenerPenaltyProcessor:
     """
-    Penalize common repetitive openers for the first few generated positions only.
-    Prevents the model from always starting responses the same way.
+    Penalize common repetitive openers for the first few generated
+    positions only. Prevents the model from always starting responses
+    the same way.
     """
-    def __init__(self, tokenizer, openers: List[str], penalty: float = DIVERSITY_OPENER_PENALTY, cutoff_pos: int = DIVERSITY_OPENER_CUTOFF_POS):
-        """
-        Args:
-            tokenizer: HuggingFace tokenizer
-            openers: List of opener phrases to penalize (e.g. ["I don't", "Then you've"])
-            penalty: Logit penalty to apply (negative = discourage)
-            cutoff_pos: Only apply penalty for first N token positions
-        """
+    def __init__(
+        self, tokenizer, openers: List[str], *,
+        penalty: float, cutoff_pos: int,
+    ):
+        if penalty is None:
+            raise ValueError("penalty is required")
+        if cutoff_pos is None:
+            raise ValueError("cutoff_pos is required")
         self.tok = tokenizer
         self.penalty = penalty
         self.cutoff_pos = cutoff_pos
         self.first_tokens: Set[int] = set()
 
-        # Extract first token of each opener phrase
         for s in openers:
             ids = self.tok.encode(s, add_special_tokens=False)
             if ids:
-                self.first_tokens.add(ids[0])
+                self.first_tokens.add(ids[PARSER_DEFAULT_LAYER_START])
 
-    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.FloatTensor:
+    def __call__(
+        self, input_ids: torch.LongTensor, scores: torch.FloatTensor,
+    ) -> torch.FloatTensor:
         """Apply penalty to opener tokens if within cutoff position."""
-        cur_pos = input_ids.shape[1]
+        cur_pos = input_ids.shape[COMBO_OFFSET]
         if cur_pos < self.cutoff_pos:
             for t in self.first_tokens:
                 scores[:, t] += self.penalty
@@ -49,57 +48,48 @@ class OpenerPenaltyProcessor:
 
 class TriePenaltyProcessor:
     """
-    Cross-turn pattern blocker: if the current suffix matches any ledger path,
-    penalize the next token that would continue that path.
-
-    This prevents the model from repeating multi-token patterns across different
-    conversation turns, even when those patterns are paraphrased.
+    Cross-turn pattern blocker: if the current suffix matches any
+    ledger path, penalize the next token that would continue that path.
     """
-    def __init__(self, tokenizer, ledger_token_seqs: List[List[int]],
-                 penalty: float = DIVERSITY_TRIE_PENALTY, max_depth: int = DIVERSITY_TRIE_MAX_DEPTH):
-        """
-        Args:
-            tokenizer: HuggingFace tokenizer
-            ledger_token_seqs: List of token sequences to penalize (from recent responses)
-            penalty: Logit penalty to apply
-            max_depth: Maximum token sequence length to track
-        """
+    def __init__(
+        self, tokenizer, ledger_token_seqs: List[List[int]], *,
+        penalty: float, max_depth: int,
+    ):
+        if penalty is None:
+            raise ValueError("penalty is required")
+        if max_depth is None:
+            raise ValueError("max_depth is required")
         self.tok = tokenizer
         self.penalty = penalty
         self.trie: Dict[int, Any] = {}
         self.max_depth = max_depth
 
-        # Build trie from ledger sequences
         for seq in ledger_token_seqs:
             node = self.trie
-            for tid in seq[:max_depth]:
+            for tid in seq[:self.max_depth]:
                 node = node.setdefault(tid, {})
             node.setdefault("_end", True)
 
-    def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor) -> torch.FloatTensor:
-        """Apply penalty to continuation tokens that match trie paths."""
-        # Assume batch size 1 for simplicity (extend if batching)
-        ids = input_ids[0].tolist()
-
-        # Walk back up to max_depth and see if a trie path continues
+    def __call__(
+        self, input_ids: torch.LongTensor, scores: torch.FloatTensor,
+    ) -> torch.FloatTensor:
+        """Apply penalty to continuation tokens matching trie paths."""
+        ids = input_ids[PARSER_DEFAULT_LAYER_START].tolist()
         depth = min(self.max_depth, len(ids))
 
-        # Try all suffix lengths (greedy from longer to shorter)
-        for L in range(depth, 0, -1):
+        for big_l in range(
+            depth, PARSER_DEFAULT_LAYER_START, -COMBO_OFFSET
+        ):
             node = self.trie
-            suffix = ids[-L:]
+            suffix = ids[-big_l:]
             ok = True
-
-            # Try to match suffix in trie
             for tid in suffix:
                 if tid in node:
                     node = node[tid]
                 else:
                     ok = False
                     break
-
             if ok:
-                # Penalize all next-token options that would continue this path
                 for next_tid in node.keys():
                     if next_tid == "_end":
                         continue
@@ -110,91 +100,89 @@ class TriePenaltyProcessor:
 
 
 class PhraseLedger:
-    """
-    Rolling buffer of recent assistant responses for cross-turn pattern detection.
-    Keeps track of phrases to avoid repeating across conversation.
-    """
-    def __init__(self, max_items: int = DIVERSITY_LEDGER_MAX_ITEMS):
-        """
-        Args:
-            max_items: Maximum number of phrases to keep in memory
-        """
+    """Rolling buffer of recent assistant responses."""
+    def __init__(
+        self, *, max_items: int, sample_k: int,
+        min_clause_length: int, max_clause_length: int,
+        window_size: int,
+    ):
+        if max_items is None:
+            raise ValueError("max_items is required")
+        if sample_k is None:
+            raise ValueError("sample_k is required")
+        if min_clause_length is None:
+            raise ValueError("min_clause_length is required")
+        if max_clause_length is None:
+            raise ValueError("max_clause_length is required")
+        if window_size is None:
+            raise ValueError("window_size is required")
         self.buf = deque(maxlen=max_items)
+        self._max_items = max_items
+        self._sample_k = sample_k
+        self._min_cl = min_clause_length
+        self._max_cl = max_clause_length
+        self._ws = window_size
 
     def add(self, text: str):
         """Add a new response to the ledger."""
         self.buf.append(text.lower())
 
-    def sample(self, k: int = DIVERSITY_SAMPLE_K) -> List[str]:
-        """
-        Sample k distinct clauses from recent responses.
-        Returns shorter, meaningful clauses to inject into prompts.
-        """
+    def sample(self) -> List[str]:
+        """Sample distinct clauses from recent responses."""
         out, seen = [], set()
         for t in reversed(self.buf):
             for clause in t.split("."):
                 c = clause.strip()
-                if DIVERSITY_MIN_CLAUSE_LENGTH <= len(c) <= DIVERSITY_MAX_CLAUSE_LENGTH and c not in seen:
-                    out.append(c)
-                    seen.add(c)
-                    if len(out) >= k:
-                        return out
+                if self._min_cl <= len(c) <= self._max_cl:
+                    if c not in seen:
+                        out.append(c)
+                        seen.add(c)
+                        if len(out) >= self._sample_k:
+                            return out
         return out
 
-    def to_token_sequences(self, tokenizer, window_size: int = DIVERSITY_WINDOW_SIZE) -> List[List[int]]:
-        """
-        Convert ledger phrases to token sequences for trie processor.
-
-        Args:
-            tokenizer: HuggingFace tokenizer
-            window_size: Size of sliding window for token sequences
-
-        Returns:
-            List of token sequences (each window_size tokens long)
-        """
-        ledger_token_seqs = []
-        for t in list(self.buf)[:DIVERSITY_LEDGER_MAX_ITEMS]:
+    def to_token_sequences(self, tokenizer) -> List[List[int]]:
+        """Convert ledger phrases to token sequences."""
+        seqs = []
+        for t in list(self.buf)[:self._max_items]:
             ids = tokenizer.encode(t, add_special_tokens=False)
-            # Sliding windows of window_size tokens
-            for i in range(0, max(0, len(ids) - window_size + 1), window_size):
-                ledger_token_seqs.append(ids[i:i + window_size])
-        return ledger_token_seqs
-
-
-def build_diversity_processors(tokenizer, phrase_ledger: PhraseLedger = None,
-                               bad_openers: List[str] = None) -> list:
-    """
-    Build a list of logits processors for ensuring response diversity.
-
-    Args:
-        tokenizer: HuggingFace tokenizer
-        phrase_ledger: Optional PhraseLedger with recent responses
-        bad_openers: Optional list of opener phrases to penalize
-
-    Returns:
-        List of logits processors to pass to model.generate()
-    """
-    processors = []
-
-    # Default bad openers if not provided
-    if bad_openers is None:
-        bad_openers = [
-            "I don't", "But know this", "Then you", "Then you've",
-            "Then you have", "What are you willing",
-        ]
-
-    # Add opener penalty processor
-    if bad_openers:
-        processors.append(
-            OpenerPenaltyProcessor(tokenizer, bad_openers, penalty=DIVERSITY_OPENER_PENALTY, cutoff_pos=DIVERSITY_OPENER_CUTOFF_POS)
-        )
-
-    # Add trie penalty processor if we have a ledger
-    if phrase_ledger and len(phrase_ledger.buf) > 0:
-        ledger_token_seqs = phrase_ledger.to_token_sequences(tokenizer, window_size=DIVERSITY_WINDOW_SIZE)
-        if ledger_token_seqs:
-            processors.append(
-                TriePenaltyProcessor(tokenizer, ledger_token_seqs, penalty=DIVERSITY_TRIE_PENALTY, max_depth=DIVERSITY_TRIE_MAX_DEPTH)
+            rng_end = max(
+                PARSER_DEFAULT_LAYER_START,
+                len(ids) - self._ws + COMBO_OFFSET,
             )
+            for i in range(
+                PARSER_DEFAULT_LAYER_START, rng_end, self._ws,
+            ):
+                seqs.append(ids[i:i + self._ws])
+        return seqs
 
+
+def build_diversity_processors(
+    tokenizer, *,
+    opener_penalty: float, opener_cutoff_pos: int,
+    trie_penalty: float, trie_max_depth: int,
+    phrase_ledger: PhraseLedger = None,
+) -> list:
+    """Build logits processors for ensuring response diversity."""
+    processors = []
+    bad_openers = [
+        "I don't", "But know this", "Then you",
+        "Then you've", "Then you have",
+        "What are you willing",
+    ]
+    processors.append(
+        OpenerPenaltyProcessor(
+            tokenizer, bad_openers,
+            penalty=opener_penalty, cutoff_pos=opener_cutoff_pos,
+        )
+    )
+    if phrase_ledger and len(phrase_ledger.buf) > PARSER_DEFAULT_LAYER_START:
+        ledger_seqs = phrase_ledger.to_token_sequences(tokenizer)
+        if ledger_seqs:
+            processors.append(
+                TriePenaltyProcessor(
+                    tokenizer, ledger_seqs,
+                    penalty=trie_penalty, max_depth=trie_max_depth,
+                )
+            )
     return processors

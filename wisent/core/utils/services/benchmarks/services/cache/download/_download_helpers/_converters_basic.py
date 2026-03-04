@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List
 
-from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_TINY, MAX_INCORRECT_PER_CORRECT
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_TINY
 
 
 class BasicConvertersMixin:
@@ -166,7 +166,7 @@ class BasicConvertersMixin:
 
         pairs = []
         for correct in correct_answers:
-            for incorrect in incorrect_answers[:MAX_INCORRECT_PER_CORRECT]:  # Limit incorrect per correct
+            for incorrect in incorrect_answers[:self.max_incorrect_per_correct]:  # Limit incorrect per correct
                 pairs.append(
                     {
                         "context": question,

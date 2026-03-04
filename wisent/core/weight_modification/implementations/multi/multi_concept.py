@@ -22,7 +22,6 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any, TYPE_CHECKING
 from enum import Enum
 
-from wisent.core.utils.config_tools.constants import WM_MAX_INTERFERENCE
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
@@ -85,7 +84,7 @@ class MultiConceptConfig:
     """Order for Gram-Schmidt: 'priority', 'variance', or 'sequential'."""
     
     # Interference handling
-    max_interference: float = WM_MAX_INTERFERENCE
+    max_interference: float = None
     """Maximum allowed cosine similarity between concept directions."""
     
     warn_on_interference: bool = True
@@ -102,6 +101,10 @@ class MultiConceptConfig:
     # General
     verbose: bool = True
     """Print progress information."""
+
+    def __post_init__(self):
+        if self.max_interference is None:
+            raise ValueError("max_interference is required")
 
 
 @dataclass

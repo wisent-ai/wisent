@@ -12,7 +12,11 @@ from wisent.core.utils.cli.optimize_steering.hierarchical_config import (
 )
 from wisent.core.utils.cli.optimize_steering.pipeline import run_pipeline, OptimizationResult
 from wisent.core.utils.cli.optimize_steering.method_configs import MethodConfig
-from wisent.core.utils.config_tools.constants import DEFAULT_LIMIT, DEFAULT_SCORE, DISPLAY_TOP_N_TINY, JSON_INDENT, SEPARATOR_WIDTH_WIDE
+
+from wisent.core.utils.config_tools.constants import (
+    DISPLAY_TOP_N_TINY,
+    JSON_INDENT, SEPARATOR_WIDTH_WIDE,
+)
 
 
 def run_hierarchical_optimization(
@@ -20,7 +24,9 @@ def run_hierarchical_optimization(
     task: str,
     methods: List[str],
     num_layers: int,
-    limit: int = DEFAULT_LIMIT,
+    min_clusters: int,
+    limit: int,
+    default_score: float,
     device: Optional[str] = None,
     enriched_pairs_file: Optional[str] = None,
     output_dir: Optional[str] = None,
@@ -33,13 +39,18 @@ def run_hierarchical_optimization(
     Returns dict mapping method -> HierarchicalResult
     """
     if search_config is None:
-        search_config = HierarchicalConfig()
+        raise ValueError(
+            "search_config (HierarchicalConfig) is required. "
+            "No built-in defaults for GROM/TECZA/TETNO search params."
+        )
+    if search_config.layer_sweep_strength is None:
+        raise ValueError("search_config.layer_sweep_strength is required")
 
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
 
     # Count configs
-    config_counts = count_hierarchical_configs(methods, num_layers, search_config)
+    config_counts = count_hierarchical_configs(methods, num_layers, search_config, min_clusters=min_clusters)
     total_configs = sum(c["total"] for c in config_counts.values())
 
     print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
@@ -101,7 +112,7 @@ def run_hierarchical_optimization(
                 except Exception as e:
                     if verbose:
                         print(f"  {progress} Layer {layer}: ERROR - {e}")
-                    score = DEFAULT_SCORE
+                    score = default_score
 
                 stage1_results.append({"layer": layer, "score": score})
 
@@ -147,7 +158,7 @@ def run_hierarchical_optimization(
                 except Exception as e:
                     if verbose:
                         print(f"  {progress} Strength {strength}: ERROR - {e}")
-                    score = DEFAULT_SCORE
+                    score = default_score
 
                 stage2_results.append({"strength": strength, "score": score})
 
@@ -190,7 +201,7 @@ def run_hierarchical_optimization(
                 except Exception as e:
                     if verbose:
                         print(f"  {progress} {params}: ERROR - {e}")
-                    score = DEFAULT_SCORE
+                    score = default_score
 
                 stage3_results.append({"params": params, "score": score})
 

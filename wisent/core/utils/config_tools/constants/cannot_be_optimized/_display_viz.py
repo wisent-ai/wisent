@@ -1,5 +1,4 @@
 """Display, visualization, and formatting constants."""
-from wisent.core.utils.config_tools.constants.cannot_be_optimized._infrastructure import *  # noqa: F401,F403
 
 # --- Separator widths (print formatting) ---
 SEPARATOR_WIDTH_COMPACT = 30
@@ -87,7 +86,6 @@ VIZ_FONTSIZE_SUPTITLE = 14
 # --- Visualization line widths ---
 VIZ_LINEWIDTH_FINE = 0.5
 VIZ_LINEWIDTH_HAIRLINE = 1
-VIZ_LINEWIDTH_THIN = 0.8
 VIZ_LINEWIDTH_NORMAL = 2
 # --- Visualization alpha values ---
 VIZ_ALPHA_LIGHT = 0.3
@@ -98,7 +96,6 @@ VIZ_ALPHA_HIGH = 0.7
 VIZ_HISTOGRAM_ALPHA = 0.5
 VIZ_BBOX_ALPHA = 0.8
 # --- Visualization marker sizes ---
-VIZ_MARKER_SIZE_TINY = 10
 VIZ_MARKER_SIZE_XS = 20
 VIZ_MARKER_SIZE_SMALL = 30
 VIZ_MARKER_SIZE_MOVEMENT = 40
@@ -124,7 +121,6 @@ HEATMAP_TEXT_CONTRAST_THRESHOLD = 0.5
 # --- Visualization histogram bins ---
 VIZ_HISTOGRAM_BINS = 30
 VIZ_HISTOGRAM_BINS_20 = 20
-VIZ_HISTOGRAM_BINS_LARGE = 50
 # --- Visualization positioning ---
 VIZ_TEXT_BOX_LEFT = 0.02
 VIZ_TEXT_BOX_RIGHT = 0.98

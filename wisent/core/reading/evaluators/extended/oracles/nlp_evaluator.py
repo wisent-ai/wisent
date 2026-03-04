@@ -2,7 +2,7 @@ import re
 from typing import Any, Mapping
 
 from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.utils.config_tools.constants import COMPARE_TOL, NLI_MARGIN, NLI_ENT_MIN, EMB_DELTA_MIN, EMB_MATCH_MIN, NLI_ENTAILMENT_THRESHOLD, NLP_EVAL_CONFIDENCE_BASE, NLI_REVERSE_ENTAILMENT_THRESHOLD, NLI_CONFIDENCE_BASE_WEIGHT, NLI_CONFIDENCE_SCALE_WEIGHT, NLP_EMB_CONFIDENCE_CAP, NLP_EMB_CONFIDENCE_BASE, ROUNDING_PRECISION
+from wisent.core.utils.config_tools.constants import COMPARE_TOL, ROUNDING_PRECISION
 from wisent.core.reading.evaluators.oracles._helpers._nlp_evaluator_helpers import (
     NLPEvaluatorHelpersMixin,
 )
@@ -28,10 +28,18 @@ class NLPEvaluator(NLPEvaluatorHelpersMixin, BaseEvaluator):
     description = "Robust NLP evaluator (rules + NLI cross-encoder + embeddings)."
     task_names = ()
 
-    NLI_MARGIN = NLI_MARGIN
-    NLI_ENT_MIN = NLI_ENT_MIN
-    EMB_DELTA_MIN = EMB_DELTA_MIN
-    EMB_MATCH_MIN = EMB_MATCH_MIN
+    def __init__(
+        self,
+        *,
+        nli_margin: float,
+        nli_ent_min: float,
+        emb_delta_min: float,
+        emb_match_min: float,
+    ) -> None:
+        self._nli_margin = nli_margin
+        self._nli_ent_min = nli_ent_min
+        self._emb_delta_min = emb_delta_min
+        self._emb_match_min = emb_match_min
 
     _ALIASES = {
         "a": 1, "1": 1, "one": 1, "first": 1, "1st": 1,
@@ -154,11 +162,11 @@ class NLPEvaluator(NLPEvaluatorHelpersMixin, BaseEvaluator):
             meta["nli"]["margin"] = round(margin, ROUNDING_PRECISION)
             meta["nli"]["pred_idx"] = pred_idx
             if (pred_idx in (1, 2)
-                    and ent_scores[pred_idx - 1] >= self.NLI_ENT_MIN
-                    and margin >= self.NLI_MARGIN):
+                    and ent_scores[pred_idx - 1] >= self._nli_ent_min
+                    and margin >= self._nli_margin):
                 if exp_idx in (1, 2):
                     ok = (pred_idx == exp_idx)
-                    confidence = float(min(1.0, NLP_EVAL_CONFIDENCE_BASE + margin)) if ok else 0.0
+                    confidence = float(min(1.0, 0.75 + margin)) if ok else 0.0
                     return self._result(
                         ok, confidence,
                         "NLI cross-encoder decision (categorical)", meta)
@@ -171,11 +179,11 @@ class NLPEvaluator(NLPEvaluatorHelpersMixin, BaseEvaluator):
             meta["nli"]["entail_exp_to_resp"] = (
                 round(ent_rev, ROUNDING_PRECISION) if ent_rev is not None else None)
             if ent is not None:
-                if (ent >= max(self.NLI_ENT_MIN, NLI_ENTAILMENT_THRESHOLD) or
-                        (ent_rev is not None and ent_rev >= NLI_REVERSE_ENTAILMENT_THRESHOLD)):
+                if (ent >= max(self._nli_ent_min, 0.45) or
+                        (ent_rev is not None and ent_rev >= 0.50)):
                     ok = True
                     confidence = float(
-                        min(1.0, NLI_CONFIDENCE_BASE_WEIGHT + NLI_CONFIDENCE_SCALE_WEIGHT * max(ent or 0.0,
+                        min(1.0, 0.7 + 0.3 * max(ent or 0.0,
                                                    ent_rev or 0.0)))
                     return self._result(
                         ok, confidence,
@@ -193,12 +201,12 @@ class NLPEvaluator(NLPEvaluatorHelpersMixin, BaseEvaluator):
             if sA is not None and sB is not None:
                 delta = abs(sA - sB)
                 meta["emb"]["delta"] = round(delta, ROUNDING_PRECISION)
-                if (delta >= self.EMB_DELTA_MIN
-                        and max(sA, sB) >= self.EMB_MATCH_MIN):
+                if (delta >= self._emb_delta_min
+                        and max(sA, sB) >= self._emb_match_min):
                     pred_idx = 1 if sA > sB else 2
                     if exp_idx in (1, 2):
                         ok = (pred_idx == exp_idx)
-                        confidence = float(min(NLP_EMB_CONFIDENCE_CAP, NLP_EMB_CONFIDENCE_BASE + delta))
+                        confidence = float(min(0.8, 0.5 + delta))
                         return self._result(
                             ok, confidence,
                             "Embedding similarity decision (categorical)",
@@ -208,11 +216,11 @@ class NLPEvaluator(NLPEvaluatorHelpersMixin, BaseEvaluator):
             s = self._emb_sim(cleaned, exp_textnormalize_text)
             meta["emb"]["cos_sim"] = (
                 round(s, ROUNDING_PRECISION) if s is not None else None)
-            if s is not None and s >= self.EMB_MATCH_MIN:
+            if s is not None and s >= self._emb_match_min:
                 ok = True
                 confidence = float(min(
-                    0.8, 0.5 + 0.5 * (s - self.EMB_MATCH_MIN)
-                    / max(COMPARE_TOL, (1 - self.EMB_MATCH_MIN))))
+                    0.8, 0.5 + 0.5 * (s - self._emb_match_min)
+                    / max(COMPARE_TOL, (1 - self._emb_match_min))))
                 return self._result(
                     ok, confidence,
                     "Embedding similarity decision (text)", meta)

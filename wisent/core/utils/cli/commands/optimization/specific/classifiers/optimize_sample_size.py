@@ -12,7 +12,7 @@ from wisent.core.reading.classifiers.models.logistic import LogisticClassifier
 from wisent.core.reading.classifiers.core.atoms import ClassifierTrainConfig
 from wisent.core.reading.evaluators.rotator import EvaluatorRotator
 from wisent.core.primitives.models import get_generate_kwargs
-from wisent.core.utils.config_tools.constants import DEFAULT_CLASSIFIER_LR, CLASSIFIER_TEST_SIZE, CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, OPTIMIZE_ACCURACY_THRESHOLD_MULT, AUTOTUNE_VAL_SPLIT, SAMPLE_LOADING_BUFFER, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD, ARCHITECTURE_MODULE_LIMIT
 
 
 def execute_optimize_sample_size(args):
@@ -39,11 +39,14 @@ def execute_optimize_sample_size(args):
 
         print(f"Loading task '{args.task}'...")
         max_train_samples = max(args.sample_sizes)
-        total_limit = max_train_samples + args.test_size + SAMPLE_LOADING_BUFFER
+        total_limit = max_train_samples + args.test_size + args.sample_loading_buffer
 
         loader = LMEvalDataLoader()
+        autotune_val_split = getattr(args, 'autotune_val_split', None)
+        if autotune_val_split is None:
+            raise ValueError("autotune_val_split is required")
         result = loader._load_one_task(
-            task_name=args.task, split_ratio=AUTOTUNE_VAL_SPLIT, seed=args.seed,
+            task_name=args.task, split_ratio=autotune_val_split, seed=args.seed,
             limit=total_limit, training_limit=None, testing_limit=None
         )
 
@@ -69,7 +72,7 @@ def execute_optimize_sample_size(args):
         print(f"\nCollecting test activations (ONCE)...")
         layer_str = str(args.layer)
         extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
-        collector = ActivationCollector(model=model)
+        collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
 
         X_test_list, y_test_list = [], []
         print(f"   Collecting activations for {len(test_pairs)} test pairs...")
@@ -144,7 +147,9 @@ def execute_optimize_sample_size(args):
 
             X_train = np.array(X_train_list); y_train = np.array(y_train_list)
             classifier = LogisticClassifier(threshold=args.threshold, device=args.device)
-            train_config = ClassifierTrainConfig(test_size=CLASSIFIER_TEST_SIZE, num_epochs=CLASSIFIER_NUM_EPOCHS, batch_size=CLASSIFIER_BATCH_SIZE, learning_rate=DEFAULT_CLASSIFIER_LR, monitor='f1', random_state=args.seed)
+            if not hasattr(args, 'classifier_test_size') or args.classifier_test_size is None:
+                raise ValueError("--classifier-test-size is required for optimize-sample-size")
+            train_config = ClassifierTrainConfig(num_epochs=args.classifier_epochs, batch_size=args.classifier_batch_size, learning_rate=args.classifier_lr, test_size=args.classifier_test_size, monitor='f1', random_state=args.seed)
             classifier.fit(X_train, y_train, config=train_config)
 
             correct, total = 0, 0
@@ -163,7 +168,7 @@ def execute_optimize_sample_size(args):
         accuracies = np.array([r['accuracy'] for r in results])
         sample_sizes = np.array([r['sample_size'] for r in results])
         max_accuracy = np.max(accuracies)
-        threshold = max_accuracy * OPTIMIZE_ACCURACY_THRESHOLD_MULT
+        threshold = max_accuracy * 0.95
         good_indices = np.where(accuracies >= threshold)[0]
         optimal_idx = good_indices[0] if len(good_indices) > 0 else np.argmax(accuracies)
         optimal_size = sample_sizes[optimal_idx]

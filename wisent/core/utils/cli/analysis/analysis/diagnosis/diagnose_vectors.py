@@ -8,7 +8,7 @@ import math
 import torch
 from wisent.core.utils import preferred_dtype
 from wisent.core import constants as _C
-from wisent.core.utils.config_tools.constants import NEAR_ZERO_TOL, CONE_THRESHOLD, CONE_DIRECTIONS, DIAG_NUM_COMPONENTS, MAX_CLUSTERS, MANIFOLD_NEIGHBORS
+from wisent.core.utils.config_tools.constants import NEAR_ZERO_TOL
 from wisent.core.utils.cli.analysis.diagnosis.diagnose_vectors_analysis import (
     _run_cone_analysis, _run_geometry_analysis,
 )
@@ -96,7 +96,7 @@ def execute_diagnose_vectors(args):
         # Normalization check
         if normalized == True or normalized == 'true':
             print(f"\n✅ Normalization Check:")
-            non_unit = [s for s in layer_stats if abs(s['l2_norm'] - 1.0) > _C.DIAG_NORM_TOLERANCE]
+            non_unit = [s for s in layer_stats if abs(s['l2_norm'] - 1.0) > args.diag_norm_tolerance]
             if len(non_unit) == 0:
                 print(f"   All vectors have unit L2 norm (≈1.0)")
             else:
@@ -109,13 +109,13 @@ def execute_diagnose_vectors(args):
         warnings = []
 
         for stats in layer_stats:
-            if stats['zero_pct'] > _C.DIAG_ZERO_PCT_THRESHOLD:
+            if stats['zero_pct'] > args.diag_zero_pct_threshold:
                 warnings.append(f"Layer {stats['layer']}: {stats['zero_pct']:.1f}% zeros (may be too sparse)")
-            if abs(stats['mean']) > _C.DIAG_MEAN_MAGNITUDE_THRESHOLD:
+            if abs(stats['mean']) > args.diag_mean_magnitude_threshold:
                 warnings.append(f"Layer {stats['layer']}: mean = {stats['mean']:.4f} (unusually large)")
-            if stats['l2_norm'] < _C.DIAG_NORM_MIN:
+            if stats['l2_norm'] < args.diag_norm_min:
                 warnings.append(f"Layer {stats['layer']}: very small L2 norm ({stats['l2_norm']:.6f})")
-            if stats['l2_norm'] > _C.DIAG_NORM_MAX:
+            if stats['l2_norm'] > args.diag_norm_max:
                 warnings.append(f"Layer {stats['layer']}: very large L2 norm ({stats['l2_norm']:.2f})")
 
         if len(warnings) == 0:
@@ -143,11 +143,21 @@ def execute_diagnose_vectors(args):
         # Cone structure analysis (if requested)
         if hasattr(args, 'check_cone') and args.check_cone:
             if hasattr(args, 'activations_file') and args.activations_file:
+                cone_threshold = getattr(args, 'cone_threshold', None)
+                if cone_threshold is None:
+                    raise ValueError("'cone_threshold' is required. Pass --cone-threshold or run 'wisent optimize-steering auto' first.")
+                cone_directions = getattr(args, 'cone_directions', None)
+                if cone_directions is None:
+                    raise ValueError("'cone_directions' is required. Pass --cone-directions or run 'wisent optimize-steering auto' first.")
+                min_cosine_similarity = getattr(args, 'grom_min_cosine_sim', None)
+                if min_cosine_similarity is None:
+                    raise ValueError("'grom_min_cosine_sim' is required. Pass --grom-min-cosine-sim or run 'wisent optimize-steering auto' first.")
                 _run_cone_analysis(
-                    args.activations_file, 
+                    args.activations_file,
                     args.verbose,
-                    getattr(args, 'cone_threshold', CONE_THRESHOLD),
-                    getattr(args, 'cone_directions', CONE_DIRECTIONS)
+                    cone_threshold,
+                    cone_directions,
+                    min_cosine_similarity=min_cosine_similarity,
                 )
             else:
                 print(f"\n⚠️  Cone Analysis: Requires --activations-file with positive/negative activations")
@@ -156,12 +166,21 @@ def execute_diagnose_vectors(args):
         # Comprehensive geometry analysis (if requested)
         if hasattr(args, 'detect_geometry') and args.detect_geometry:
             if hasattr(args, 'activations_file') and args.activations_file:
+                num_components = getattr(args, 'num_components', None)
+                if num_components is None:
+                    raise ValueError("'num_components' is required. Pass --num-components or run 'wisent optimize-steering auto' first.")
+                max_clusters = getattr(args, 'max_clusters', None)
+                if max_clusters is None:
+                    raise ValueError("'max_clusters' is required. Pass --max-clusters or run 'wisent optimize-steering auto' first.")
+                manifold_neighbors = getattr(args, 'manifold_neighbors', None)
+                if manifold_neighbors is None:
+                    raise ValueError("'manifold_neighbors' is required. Pass --manifold-neighbors or run 'wisent optimize-steering auto' first.")
                 _run_geometry_analysis(
                     args.activations_file,
                     args.verbose,
-                    getattr(args, 'cone_directions', CONE_DIRECTIONS),
-                    getattr(args, 'max_clusters', MAX_CLUSTERS),
-                    getattr(args, 'manifold_neighbors', MANIFOLD_NEIGHBORS),
+                    num_components,
+                    max_clusters,
+                    manifold_neighbors,
                 )
             else:
                 print(f"\n⚠️  Geometry Analysis: Requires --activations-file with positive/negative activations")

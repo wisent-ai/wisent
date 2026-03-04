@@ -7,23 +7,26 @@ import torch.nn.functional as F
 from wisent.core.control.steering_methods._steering_object_base import (
     BaseSteeringObject, SteeringObjectMetadata, LayerName,
 )
-from wisent.core.utils.config_tools.constants import GROM_HIDDEN_DIM, GROM_ROUTER_HIDDEN_DIM, GROM_ROUTER_TEMPERATURE, GROM_MAX_ALPHA, GROM_GATE_TEMPERATURE
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
+from wisent.core.utils.config_tools.constants import COMBO_OFFSET, RECURSION_INITIAL_DEPTH
 
 class GROMGateNetwork(nn.Module):
     """Serializable gate network for GROM."""
-    
-    def __init__(self, input_dim: int, hidden_dim: int = GROM_HIDDEN_DIM):
+
+    def __init__(self, input_dim: int, hidden_dim: int, *, shrink_factor: int):
         super().__init__()
+        shrunk_dim = hidden_dim // shrink_factor
+        self.shrink_factor = shrink_factor
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.LayerNorm(hidden_dim),
             nn.GELU(),
-            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.Linear(hidden_dim, shrunk_dim),
             nn.GELU(),
-            nn.Linear(hidden_dim // 2, 1),
+            nn.Linear(shrunk_dim, COMBO_OFFSET),
         )
     
-    def forward(self, h: torch.Tensor, temperature: float = GROM_ROUTER_TEMPERATURE) -> torch.Tensor:
+    def forward(self, h: torch.Tensor, temperature: float) -> torch.Tensor:
         if h.dim() == 1:
             h = h.unsqueeze(0)
         logit = self.net(h).squeeze(-1)
@@ -33,7 +36,7 @@ class GROMGateNetwork(nn.Module):
 class GROMIntensityNetwork(nn.Module):
     """Serializable intensity network for GROM."""
     
-    def __init__(self, input_dim: int, num_layers: int, hidden_dim: int = GROM_ROUTER_HIDDEN_DIM, max_alpha: float = GROM_MAX_ALPHA):
+    def __init__(self, input_dim: int, num_layers: int, hidden_dim: int, max_alpha: float):
         super().__init__()
         self.max_alpha = max_alpha
         self.num_layers = num_layers
@@ -74,8 +77,8 @@ class GROMSteeringObject(BaseSteeringObject):
         gate_network: Optional[GROMGateNetwork],
         intensity_network: GROMIntensityNetwork,
         layer_order: List[int],
-        gate_temperature: float = GROM_GATE_TEMPERATURE,
-        max_alpha: float = GROM_MAX_ALPHA,
+        gate_temperature: float,
+        max_alpha: float,
     ):
         super().__init__(metadata)
         self.directions = directions
@@ -147,7 +150,8 @@ class GROMSteeringObject(BaseSteeringObject):
             'gate_network_state': self.gate_network.state_dict() if self.gate_network else None,
             'gate_network_config': {
                 'input_dim': self.metadata.hidden_dim,
-                'hidden_dim': self.gate_network.net[0].out_features,  # Infer from first layer
+                'hidden_dim': self.gate_network.net[RECURSION_INITIAL_DEPTH].out_features,
+                'shrink_factor': self.gate_network.shrink_factor,
             } if self.gate_network else None,
             'intensity_network_state': self.intensity_network.state_dict(),
             'intensity_network_config': {
@@ -192,16 +196,24 @@ class GROMSteeringObject(BaseSteeringObject):
         gate_network = None
         if data.get('gate_network_state') and data.get('gate_network_config'):
             config = data['gate_network_config']
-            gate_network = GROMGateNetwork(config['input_dim'], config.get('hidden_dim', GROM_HIDDEN_DIM))
+            if 'hidden_dim' not in config:
+                raise InsufficientDataError(reason="hidden_dim missing from gate_network_config. Re-train the steering object.")
+            if 'shrink_factor' not in config:
+                raise InsufficientDataError(reason="shrink_factor missing from gate_network_config. Re-train the steering object.")
+            gate_network = GROMGateNetwork(config['input_dim'], config['hidden_dim'], shrink_factor=config['shrink_factor'])
             gate_network.load_state_dict(convert_state_dict(data['gate_network_state']))
         
         # Reconstruct intensity network
         int_config = data['intensity_network_config']
+        if 'hidden_dim' not in int_config:
+            raise InsufficientDataError(reason="hidden_dim missing from intensity_network_config. Re-train the steering object.")
+        if 'max_alpha' not in int_config:
+            raise InsufficientDataError(reason="max_alpha missing from intensity_network_config. Re-train the steering object.")
         intensity_network = GROMIntensityNetwork(
             int_config['input_dim'],
             int_config['num_layers'],
-            int_config.get('hidden_dim', GROM_ROUTER_HIDDEN_DIM),
-            int_config.get('max_alpha', GROM_MAX_ALPHA),
+            int_config['hidden_dim'],
+            int_config['max_alpha'],
         )
         intensity_network.load_state_dict(convert_state_dict(data['intensity_network_state']))
         
@@ -212,8 +224,8 @@ class GROMSteeringObject(BaseSteeringObject):
             gate_network=gate_network,
             intensity_network=intensity_network,
             layer_order=data['layer_order'],
-            gate_temperature=data.get('gate_temperature', GROM_GATE_TEMPERATURE),
-            max_alpha=data.get('max_alpha', GROM_MAX_ALPHA),
+            gate_temperature=data['gate_temperature'],
+            max_alpha=data['max_alpha'],
         )
 
 

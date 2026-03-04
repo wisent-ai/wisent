@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict
 
 from wisent.core.primitives.model_interface.core.activations.activations import Activations
-from wisent.core.utils.config_tools.constants import CODE_CORRECTNESS_THRESHOLD, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT, SPLIT_RATIO_FULL, CHANCE_LEVEL_ACCURACY
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT, SPLIT_RATIO_FULL, CHANCE_LEVEL_ACCURACY, DEFAULT_RANDOM_SEED
 from wisent.core.primitives.models.core.layer import Layer
 from wisent.core.primitives.models import get_generate_kwargs
 from wisent.core.utils import get_all_docs_from_task, create_deterministic_split
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def evaluate_generic_code_execution(evaluator, classifier, task_name: str, num_samples: int, model, layer: int,
-                                     token_aggregation: str) -> Dict[str, Any]:
+                                     token_aggregation: str, *, train_ratio: float) -> Dict[str, Any]:
     """Evaluate generic code execution tasks (non-BigCode) like LiveCodeBench."""
     try:
         logger.info(f"GENERIC CODE EXECUTION EVALUATION: {task_name}")
@@ -22,10 +22,10 @@ def evaluate_generic_code_execution(evaluator, classifier, task_name: str, num_s
         task_data = model.load_lm_eval_task(task_name, shots=0, limit=num_samples)
         all_docs, split_counts = get_all_docs_from_task(task_data)
         if all_docs:
-            _, docs = create_deterministic_split(all_docs, task_name)
+            _, docs = create_deterministic_split(all_docs, task_name, train_ratio=train_ratio)
             logger.info(f"Using {len(docs)} test docs from unified split (total: {len(all_docs)}, original splits: {split_counts})")
         else:
-            docs, _ = model.split_task_data(task_data, split_ratio=SPLIT_RATIO_FULL)
+            docs, _ = model.split_task_data(task_data, split_ratio=SPLIT_RATIO_FULL, random_seed=DEFAULT_RANDOM_SEED)
         if not docs:
             return evaluator._error_result(f"No documents retrieved from task: {task_name}")
         logger.info(f"Retrieved {len(docs)} documents from {task_name}")
@@ -67,7 +67,7 @@ def evaluate_generic_code_execution(evaluator, classifier, task_name: str, num_s
 
 
 def evaluate_code_execution(evaluator, classifier, task_name: str, num_samples: int, model, layer: int,
-                             token_aggregation: str) -> Dict[str, Any]:
+                             token_aggregation: str, test_timeout: int, *, train_ratio: float) -> Dict[str, Any]:
     """Evaluate classifier using code execution approach for BigCode tasks."""
     try:
         logger.debug(f"CODE EXECUTION EVALUATION: {task_name}")
@@ -76,7 +76,7 @@ def evaluate_code_execution(evaluator, classifier, task_name: str, num_samples: 
         if not is_bigcode_task(task_name):
             if SecureCodeEvaluator.is_code_execution_task(task_name):
                 logger.info(f"Task {task_name} is a non-BigCode code execution task")
-                return evaluate_generic_code_execution(evaluator, classifier, task_name, num_samples, model, layer, token_aggregation)
+                return evaluate_generic_code_execution(evaluator, classifier, task_name, num_samples, model, layer, token_aggregation, train_ratio=train_ratio)
             logger.warning(f"Task {task_name} is not a code execution task, falling back to text generation")
             from .text_generation import evaluate_text_generation
             return evaluate_text_generation(evaluator, classifier, task_name, num_samples, model, layer, token_aggregation)
@@ -101,7 +101,7 @@ def evaluate_code_execution(evaluator, classifier, task_name: str, num_samples: 
             docker_executor = OptimizedDockerExecutor()
         except Exception as e:
             logger.warning(f"Docker executor not available: {e}")
-        evaluator_obj = get_bigcode_evaluator(docker_executor)
+        evaluator_obj = get_bigcode_evaluator(test_timeout=test_timeout, docker_executor=docker_executor)
         generations_for_eval = [[code] for code in generated_codes]
         evaluation_results = evaluator_obj.evaluate(bigcode_task, generations_for_eval, k_values=[1])
         pass_rate = evaluation_results.get("pass_at_k", {}).get("pass@1", 0.0)
@@ -133,7 +133,7 @@ def evaluate_code_execution(evaluator, classifier, task_name: str, num_samples: 
             except Exception as e:
                 logger.error(f"Error classifying generated code {i}: {e}")
                 classification_results.append({"classifier_score": 0.5, "code_passed": False, "error": str(e)})
-        correct_predictions = sum(1 for r in classification_results if (r["classifier_score"] > CODE_CORRECTNESS_THRESHOLD and r["code_passed"]) or (r["classifier_score"] <= CODE_CORRECTNESS_THRESHOLD and not r["code_passed"]))
+        correct_predictions = sum(1 for r in classification_results if (r["classifier_score"] > 0.5 and r["code_passed"]) or (r["classifier_score"] <= 0.5 and not r["code_passed"]))
         classifier_accuracy = correct_predictions / len(classification_results) if classification_results else 0.0
         return {"ground_truth": "CODE_EXECUTION", "method_used": "bigcode-evaluation",
                 "confidence": classifier_accuracy, "pass_rate": pass_rate,

@@ -26,6 +26,8 @@ class BabiExtractor(LMEvalBenchmarkExtractor):
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
         preferred_doc: str | None = None,
+        *,
+        train_ratio: float,
     ) -> list[ContrastivePair]:
         """
         Build contrastive pairs from Babi docs.
@@ -46,7 +48,7 @@ class BabiExtractor(LMEvalBenchmarkExtractor):
         if preferred_doc is None:
             preferred_doc = "test"
 
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc, train_ratio=train_ratio)
 
         pairs: list[ContrastivePair] = []
 

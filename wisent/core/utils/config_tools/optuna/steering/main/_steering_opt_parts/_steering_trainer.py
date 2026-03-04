@@ -57,7 +57,7 @@ class SteeringMethodTrainer(ABC):
         batch_size: int,
         max_length: int,
         task_name: str,
-        max_new_tokens: int = None,
+        max_new_tokens: int = None, *, train_ratio: float,
     ) -> Tuple[List[str], List[str]]:
         """Apply steering and generate predictions for evaluation."""
 
@@ -119,7 +119,7 @@ class SteeringTrainer(SteeringMethodTrainer):
         batch_size: int,
         max_length: int,
         task_name: str,
-        max_new_tokens: int = None,
+        max_new_tokens: int = None, *, train_ratio: float,
     ) -> Tuple[List[str], List[str]]:
         """Apply steering and generate predictions using task extractor."""
 
@@ -127,7 +127,7 @@ class SteeringTrainer(SteeringMethodTrainer):
         ground_truths = []
 
         # Get the task and its extractor
-        task = get_task(task_name)
+        task = get_task(task_name, train_ratio=train_ratio)
         extractor = task.get_extractor()
 
         # Pre-extract all questions and answers (optimization)
