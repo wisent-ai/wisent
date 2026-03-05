@@ -60,14 +60,8 @@ class ClassifierInferenceStrategy(str, Enum):
     
     @classmethod
     def default(cls) -> "ClassifierInferenceStrategy":
-        """Return the empirically validated best strategy.
-
-        See VALIDATED_INFERENCE_STRATEGY in validated_defaults.py.
-        """
-        from wisent.core.control.steering_methods.configs.validated_defaults import (
-            VALIDATED_INFERENCE_STRATEGY,
-        )
-        return cls(VALIDATED_INFERENCE_STRATEGY)
+        """Return the default strategy (last_token performs best, unvalidated)."""
+        return cls.LAST_TOKEN
     
     @classmethod
     def list_all(cls) -> list[str]:

@@ -21,13 +21,6 @@ SteeringMethodParameter, not here.
 # signal breadth) across all model x benchmark combinations.
 VALIDATED_EXTRACTION_STRATEGY = "chat_last"
 
-# Classifier inference strategy: last_token
-# Source: classifier_inference_strategy.py empirical testing
-# Study: three models x four tasks.
-# last_token is the best performer; all other strategies
-# (all_mean, all_max, first_token) scored at or near chance.
-VALIDATED_INFERENCE_STRATEGY = "last_token"
-
 # ------------------------------------------------------------------ #
 # Steering method defaults (empty until proven)                        #
 # ------------------------------------------------------------------ #
