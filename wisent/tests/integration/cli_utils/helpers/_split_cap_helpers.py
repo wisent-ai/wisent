@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_REPORT, SPLIT_RATIO_HALF, SPLIT_RATIO_70
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_REPORT, SPLIT_RATIO_HALF
 
 
 @dataclass
@@ -17,7 +17,7 @@ def _get_split_fn():
     return _split_and_cap
 
 
-def test_split_and_cap_deterministic():
+def test_split_and_cap_deterministic(split_ratio: float):
     """Test 5: Deterministic splitting with seed"""
     _split_and_cap = _get_split_fn()
 
@@ -25,17 +25,17 @@ def test_split_and_cap_deterministic():
 
     # First split
     train1, test1 = _split_and_cap(
-        items=items, split_ratio=SPLIT_RATIO_70, caps=Caps(train=1000, test=1000),
+        items=items, split_ratio=split_ratio, caps=Caps(train=1000, test=1000),
         seed=123, verbose=False,
     )
     # Second split with same seed
     train2, test2 = _split_and_cap(
-        items=items, split_ratio=SPLIT_RATIO_70, caps=Caps(train=1000, test=1000),
+        items=items, split_ratio=split_ratio, caps=Caps(train=1000, test=1000),
         seed=123, verbose=False,
     )
     # Third split with different seed
     train3, test3 = _split_and_cap(
-        items=items, split_ratio=SPLIT_RATIO_70, caps=Caps(train=1000, test=1000),
+        items=items, split_ratio=split_ratio, caps=Caps(train=1000, test=1000),
         seed=456, verbose=False,
     )
 
@@ -98,14 +98,14 @@ def test_split_and_cap_different_ratios():
         assert len(test) == expected_test, f"Incorrect test size for ratio {ratio}"
 
 
-def test_split_and_cap_preserves_data():
+def test_split_and_cap_preserves_data(split_ratio: float):
     """Test 8: Data preservation (no loss or duplication)"""
     _split_and_cap = _get_split_fn()
 
     items = [{"id": i, "value": f"val_{i}"} for i in range(73)]  # Odd number
 
     train, test = _split_and_cap(
-        items=items, split_ratio=SPLIT_RATIO_70, caps=Caps(train=1000, test=1000),
+        items=items, split_ratio=split_ratio, caps=Caps(train=1000, test=1000),
         seed=999, verbose=False,
     )
 

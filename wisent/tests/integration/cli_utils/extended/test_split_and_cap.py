@@ -87,14 +87,19 @@ def test_split_and_cap_both_caps():
 
 
 if __name__ == "__main__":
+    import argparse
+    import functools
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--split-ratio", type=float, required=True, help="Train/test split ratio")
+    cli_args = parser.parse_args()
     success = run_all_tests([
         test_split_and_cap_basic,
         test_split_and_cap_with_train_cap,
         test_split_and_cap_with_test_cap,
         test_split_and_cap_both_caps,
-        test_split_and_cap_deterministic,
+        functools.partial(test_split_and_cap_deterministic, split_ratio=cli_args.split_ratio),
         test_split_and_cap_edge_cases,
         test_split_and_cap_different_ratios,
-        test_split_and_cap_preserves_data,
+        functools.partial(test_split_and_cap_preserves_data, split_ratio=cli_args.split_ratio),
     ])
     exit(0 if success else 1)
