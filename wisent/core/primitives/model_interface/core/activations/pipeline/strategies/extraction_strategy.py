@@ -72,8 +72,14 @@ class ExtractionStrategy(str, Enum):
 
     @classmethod
     def default(cls) -> "ExtractionStrategy":
-        """Return the default strategy (chat_last is most commonly used)."""
-        return cls.CHAT_LAST
+        """Return the empirically validated best strategy.
+
+        See VALIDATED_EXTRACTION_STRATEGY in validated_defaults.py.
+        """
+        from wisent.core.control.steering_methods.configs.validated_defaults import (
+            VALIDATED_EXTRACTION_STRATEGY,
+        )
+        return cls(VALIDATED_EXTRACTION_STRATEGY)
 
     @classmethod
     def list_all(cls) -> list[str]:

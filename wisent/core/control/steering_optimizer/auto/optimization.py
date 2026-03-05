@@ -10,9 +10,8 @@ from typing import Dict, List, Optional, Any
 import torch
 
 from wisent.core.utils.config_tools.config import ModelConfigManager
-from wisent.core.utils.config_tools.constants import (
-    SEPARATOR_WIDTH_WIDE, ARCHITECTURE_MODULE_LIMIT,
-)
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_WIDE, ARCHITECTURE_MODULE_LIMIT
+from wisent.core.control.steering_methods.configs.validated_defaults import VALIDATED_EXTRACTION_STRATEGY
 from .training import train_recommended_method
 from .grid_search import run_grid_search
 
@@ -283,7 +282,7 @@ def _save_config(
             save_steering_config(
                 model_name=model_name,
                 method=method,
-                token_aggregation="chat_last",
+                token_aggregation=VALIDATED_EXTRACTION_STRATEGY,
                 prompt_strategy="default",
                 normalize_mode="l2",
                 strategy="auto",
