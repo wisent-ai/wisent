@@ -12,7 +12,6 @@ from typing import Any, Dict, Optional
 
 from .validated_defaults import (
     VALIDATED_EXTRACTION_STRATEGY,
-    VALIDATED_INFERENCE_STRATEGY,
     VALIDATED_METHOD_DEFAULTS,
 )
 
@@ -73,6 +72,5 @@ __all__ = [
     "load_validated_method_defaults",
     "load_model_task_config",
     "VALIDATED_EXTRACTION_STRATEGY",
-    "VALIDATED_INFERENCE_STRATEGY",
     "VALIDATED_METHOD_DEFAULTS",
 ]
