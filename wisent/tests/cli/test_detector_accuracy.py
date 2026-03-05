@@ -14,7 +14,7 @@ from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 from wisent.extractors.lm_eval.lm_extractor_registry import get_extractor
-from wisent.core.utils.config_tools.constants import NORM_EPS, TEST_DETECTOR_DEFAULT_LAYER, PROGRESS_LOG_INTERVAL_10, ARCHITECTURE_MODULE_LIMIT
+from wisent.core.utils.config_tools.constants import NORM_EPS, PROGRESS_LOG_INTERVAL_10
 from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
@@ -27,9 +27,10 @@ def main():
     parser.add_argument("--task", required=True)
     parser.add_argument("--model", required=True)
     parser.add_argument("--num-pairs", type=int, required=True)
-    parser.add_argument("--layer", type=int, default=TEST_DETECTOR_DEFAULT_LAYER)
+    parser.add_argument("--layer", type=int, required=True)
     parser.add_argument("--geometry-num-components", type=int, required=True)
     parser.add_argument("--geometry-optimization-steps", type=int, required=True)
+    parser.add_argument("--architecture-module-limit", type=int, required=True)
     args = parser.parse_args()
 
     print(f"Loading model {args.model}...")
@@ -40,7 +41,7 @@ def main():
     pairs = extractor.extract_contrastive_pairs(limit=args.num_pairs)
 
     print(f"Collecting activations from layer {args.layer}...")
-    collector = ActivationCollector(model=wisent_model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model=wisent_model, architecture_module_limit=args.architecture_module_limit)
     
     pos_activations = []
     neg_activations = []

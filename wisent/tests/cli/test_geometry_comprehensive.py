@@ -32,6 +32,8 @@ def run_comprehensive_geometry_analysis(
     model: str,
     num_pairs: int,
     output_dir: str | None = None,
+    *,
+    preflight_thresholds,
 ):
     """Run comprehensive geometry analysis across full search space."""
     from wisent.core.primitives.models.wisent_model import WisentModel
@@ -249,8 +251,7 @@ def run_comprehensive_geometry_analysis(
                     print("\nSteering method compatibility:")
                     for method in ["caa", "grom", "tecza", "tetno"]:
                         try:
-                            from wisent.core.control.steering_methods._helpers.preflight_helpers import PreflightThresholds
-                            check = run_preflight_check(pos_tensor, neg_tensor, method, thresholds=PreflightThresholds())
+                            check = run_preflight_check(pos_tensor, neg_tensor, method, thresholds=preflight_thresholds)
                             print(f"  {method.upper()}: {check.compatibility_score:.0%} compatible")
                             if check.warnings:
                                 for w in check.warnings[:2]:

@@ -9,8 +9,6 @@ from pathlib import Path
 from typing import Dict, Optional, Any
 
 import torch
-from wisent.core.utils.config_tools.constants import SIMILARITY_THRESHOLD
-
 from wisent.core.utils import resolve_default_device
 
 
@@ -82,7 +80,7 @@ def generate_personalization_vectors(args, verbose: bool = False) -> Dict[int, t
     vector_args.trait = args.trait
     vector_args.model = args.model
     vector_args.num_pairs = args.num_pairs
-    vector_args.similarity_threshold = getattr(args, 'similarity_threshold', SIMILARITY_THRESHOLD)
+    vector_args.similarity_threshold = args.similarity_threshold
     vector_args.layers = str(args.layers) if args.layers is not None else "all"
     vector_args.method = getattr(args, 'steering_method', 'caa')
     vector_args.normalize = args.normalize_vectors

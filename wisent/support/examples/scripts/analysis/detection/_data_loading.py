@@ -8,10 +8,10 @@ import torch
 from datasets import load_dataset
 
 from wisent.core.primitives.models.wisent_model import WisentModel
-from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, N_BOOTSTRAP_DEFAULT, PROGRESS_LOG_INTERVAL_20
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, PROGRESS_LOG_INTERVAL_20
 
 
-def load_truthfulqa_pairs(n_pairs: int = N_BOOTSTRAP_DEFAULT, seed: int = DEFAULT_RANDOM_SEED) -> List[Dict]:
+def load_truthfulqa_pairs(n_pairs: int, seed: int = DEFAULT_RANDOM_SEED) -> List[Dict]:
     """Load contrastive pairs from TruthfulQA."""
     random.seed(seed)
     ds = load_dataset("truthfulqa/truthful_qa", "generation", split="validation")
@@ -33,7 +33,7 @@ def load_truthfulqa_pairs(n_pairs: int = N_BOOTSTRAP_DEFAULT, seed: int = DEFAUL
     return pairs
 
 
-def load_hellaswag_pairs(n_pairs: int = N_BOOTSTRAP_DEFAULT, seed: int = DEFAULT_RANDOM_SEED) -> List[Dict]:
+def load_hellaswag_pairs(n_pairs: int, seed: int = DEFAULT_RANDOM_SEED) -> List[Dict]:
     """Load contrastive pairs from HellaSwag."""
     random.seed(seed)
     ds = load_dataset("Rowan/hellaswag", split="validation")

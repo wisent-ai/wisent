@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 from wisent.core.weight_modification.methods.guided import (
     LayerDiagnostics,
 )
-from wisent.core.utils.config_tools.constants import NORM_EPS, SEPARATOR_WIDTH_STANDARD, CHANCE_LEVEL_ACCURACY, ARCHITECTURE_MODULE_LIMIT
+from wisent.core.utils.config_tools.constants import NORM_EPS, SEPARATOR_WIDTH_STANDARD, CHANCE_LEVEL_ACCURACY
 from wisent.core.weight_modification.methods._guided_scoring import (
     _compute_knn_accuracy,
     _compute_fisher_ratio,
@@ -34,6 +34,7 @@ def compute_layer_diagnostics(
     *,
     probe_knn_k: int,
     blend_default: float,
+    architecture_module_limit: int,
 ) -> Dict[int, LayerDiagnostics]:
     """
     Compute linearity diagnostics for each layer.
@@ -61,7 +62,7 @@ def compute_layer_diagnostics(
     
     log = bind(_LOG)
     
-    collector = ActivationCollector(model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model, architecture_module_limit=architecture_module_limit)
     num_layers = model.hf_model.config.num_hidden_layers
     
     if layers is None:

@@ -6,17 +6,15 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 from wisent.core.utils.cli.optimization.core.method_optimizer_config import OptimizationConfig
-from wisent.core.utils.config_tools.constants import ARCHITECTURE_MODULE_LIMIT
+from wisent.core.utils.config_tools.constants import (
+    SENSOR_STRIDE_MIN,
+    SENSOR_RANGE_START,
+    SENSOR_LAST_OFFSET,
+)
 from wisent.core.control.steering_methods.registry import SteeringMethodRegistry
+from wisent.core.control.steering_methods.configs import param_ranges as _pr
 
 logger = logging.getLogger(__name__)
-
-
-def _require_custom(custom: dict, key: str):
-    """Require a key in custom method params dict."""
-    if key not in custom:
-        raise ValueError(f"custom_method_params must include '{key}'")
-    return custom[key]
 
 
 def _log(self, msg: str):
@@ -34,6 +32,7 @@ def generate_search_space(
     custom_method_params: Optional[Dict[str, List[Any]]] = None,
     evidence_reductions: Optional[Dict] = None,
     *,
+    sensor_stride_divisor: int,
     auto_default_strengths: tuple,
 ) -> List[OptimizationConfig]:
     """
@@ -73,7 +72,7 @@ def generate_search_space(
             logger.info("Evidence: strength -> %s", strengths)
 
     # Get method-specific parameter ranges
-    method_param_ranges = self._get_method_param_ranges(custom_method_params)
+    method_param_ranges = self._get_method_param_ranges(custom_method_params, sensor_stride_divisor=sensor_stride_divisor)
 
     # Apply evidence reductions to method-specific params
     if evidence_reductions and method_param_ranges:
@@ -145,63 +144,36 @@ def _get_full_layers(self, num_layers: int) -> List[int]:
     return list(range(num_layers))
 
 
+def _compute_sensor_defaults(self, *, sensor_stride_divisor: int) -> list:
+    """Compute default sensor layer candidates from model."""
+    nl = self.model.num_layers
+    stride = max(SENSOR_STRIDE_MIN, nl // sensor_stride_divisor)
+    return sorted(set(
+        list(range(SENSOR_RANGE_START, nl, stride)) + [nl - SENSOR_LAST_OFFSET]
+    ))
+
+
 def _get_method_param_ranges(
     self,
-    custom: Optional[Dict[str, List[Any]]] = None,
+    custom: Optional[Dict[str, List[Any]]] = None, *, sensor_stride_divisor: int,
 ) -> Dict[str, List[Any]]:
-    """Get method-specific parameter ranges."""
+    """Get method-specific parameter ranges via dispatch."""
     custom = custom or {}
-
-    if self.method_name == "caa":
-        return {
-            "normalize": custom.get("normalize", [True]),
-        }
-
-    elif self.method_name == "tecza":
-        return {
-            "num_directions": _require_custom(custom, "num_directions"),
-            "optimization_steps": _require_custom(custom, "optimization_steps"),
-            "retain_weight": _require_custom(custom, "retain_weight"),
-            "learning_rate": _require_custom(custom, "learning_rate"),
-            "independence_weight": _require_custom(custom, "independence_weight"),
-            "use_caa_init": custom.get("use_caa_init", [True]),
-        }
-
-    elif self.method_name == "tetno":
-        nl = self.model.num_layers
-        sensor_defaults = sorted(set(
-                list(range(0, nl, max(1, nl // 4))) + [nl - 1]
-            ))
-        return {
-            "sensor_layer": custom.get("sensor_layer", sensor_defaults),
-            "steering_layers": _require_custom(custom, "steering_layers"),
-            "condition_threshold": _require_custom(custom, "condition_threshold"),
-            "gate_temperature": _require_custom(custom, "gate_temperature"),
-            "per_layer_scaling": custom.get("per_layer_scaling", [True, False]),
-            "use_entropy_scaling": custom.get("use_entropy_scaling", [True, False]),
-            "max_alpha": _require_custom(custom, "max_alpha"),
-        }
-
-    elif self.method_name == "grom":
-        nl = self.model.num_layers
-        sensor_defaults = sorted(set(
-                list(range(0, nl, max(1, nl // 4))) + [nl - 1]
-            ))
-        return {
-            "num_directions": _require_custom(custom, "num_directions"),
-            "sensor_layer": custom.get("sensor_layer", sensor_defaults),
-            "steering_layers": _require_custom(custom, "steering_layers"),
-            "gate_hidden_dim": _require_custom(custom, "gate_hidden_dim"),
-            "intensity_hidden_dim": _require_custom(custom, "intensity_hidden_dim"),
-            "optimization_steps": _require_custom(custom, "optimization_steps"),
-            "behavior_weight": _require_custom(custom, "behavior_weight"),
-            "retain_weight": _require_custom(custom, "retain_weight"),
-            "sparse_weight": _require_custom(custom, "sparse_weight"),
-            "max_alpha": _require_custom(custom, "max_alpha"),
-        }
-
-    # Default for unknown methods - empty params
-    return {}
+    name = self.method_name
+    # Methods needing sensor_defaults get them from model
+    if name in ("tetno", "grom"):
+        sd = self._compute_sensor_defaults(sensor_stride_divisor=sensor_stride_divisor)
+        fn = getattr(_pr, f"{name}_ranges", None)
+        if fn is None:
+            raise ValueError(f"No param ranges for '{name}'")
+        return fn(custom, sd)
+    fn = getattr(_pr, f"{name}_ranges", None)
+    if fn is None:
+        raise ValueError(
+            f"No param ranges for method '{name}'. "
+            f"Add {name}_ranges to param_ranges.py."
+        )
+    return fn(custom)
 
 
 def _generate_param_combinations(
@@ -249,7 +221,7 @@ def _determine_activation_layers(
 def collect_activations(
     self,
     pairs: ContrastivePairSet,
-    config: OptimizationConfig,
+    config: OptimizationConfig, *, architecture_module_limit: int,
 ) -> ContrastivePairSet:
     """
     Collect activations for a pair set using the given config.
@@ -262,7 +234,7 @@ def collect_activations(
         ContrastivePairSet with activations populated
     """
     # Store activations on CPU - GROM and other methods expect CPU tensors for training
-    collector = ActivationCollector(model=self.model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT, store_device="cpu")
+    collector = ActivationCollector(model=self.model, architecture_module_limit=architecture_module_limit, store_device="cpu")
 
     updated_pairs = []
     for pair in pairs.pairs:
@@ -285,9 +257,20 @@ def _load_evidence_reductions(self, task_name: str):
     return {}
 
 def _build_default_method_params(method_name: str):
-    """Build default custom_method_params dict for a given method."""
-    if method_name == "tetno":
-        raise ValueError("TETNO search params must be provided via custom_method_params. No built-in defaults.")
-    if method_name == "grom":
-        raise ValueError("GROM search params must be provided via custom_method_params. No built-in defaults.")
+    """Build default custom_method_params dict for a given method.
+
+    No method has built-in defaults. All required params must come
+    from optimization runs or explicit user config. CAA is the only
+    method that can run without custom params (normalize defaults
+    to True in the definition).
+    """
+    from wisent.core.control.steering_methods.configs.loader import (
+        get_required_param_names,
+    )
+    required = get_required_param_names(method_name)
+    if required:
+        raise ValueError(
+            f"{method_name.upper()} requires custom_method_params "
+            f"for: {required}. No built-in defaults exist."
+        )
     return None

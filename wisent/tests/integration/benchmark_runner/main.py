@@ -17,9 +17,7 @@ from tqdm import tqdm
 from wisent.core.utils.infra_tools.data.livecodebench_loader import LiveCodeBenchLoader
 from wisent.core.primitives.models.core.wisent_model import Model
 from wisent.core.primitives.models.config import get_generate_kwargs
-from wisent.core.utils.config_tools.constants import (
-    TEST_DEFAULT_LIMIT, JSON_INDENT,
-)
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 
 # Check and print datasets version
 import datasets
@@ -103,7 +101,7 @@ def main():
                        help="HuggingFace model name")
     parser.add_argument("--release-version", required=True,
                        help="LiveCodeBench release version")
-    parser.add_argument("--limit", type=int, default=TEST_DEFAULT_LIMIT,
+    parser.add_argument("--limit", type=int, required=True,
                        help="Limit number of problems to process")
     parser.add_argument("--max-tokens", type=int, default=512,
                        help="Maximum tokens to generate per problem")

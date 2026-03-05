@@ -8,7 +8,31 @@
     },
     "global_unvalidated": [
       "classifier_inference_strategy"
-    ]
+    ],
+    "per_method_extraction": {
+      "caa": {"component": "residual_stream", "strategy": "chat_last", "layer_mode": "single"},
+      "ostrze": {"component": "residual_stream", "strategy": "chat_last", "layer_mode": "single"},
+      "mlp": {"component": "residual_stream", "strategy": "chat_last", "layer_mode": "single"},
+      "tecza": {"component": "residual_stream", "strategy": "chat_last", "layer_mode": "single"},
+      "tetno": {"component": "residual_stream", "strategy": "chat_last", "layer_mode": "sensor_plus_steering"},
+      "grom": {"component": "residual_stream", "strategy": "chat_last", "layer_mode": "sensor_plus_steering"},
+      "nurt": {"component": "residual_stream", "strategy": "chat_last", "layer_mode": "single"},
+      "szlak": {"component": "q_proj+k_proj", "strategy": "chat_last", "layer_mode": "single"},
+      "wicher": {"component": "residual_stream", "strategy": "chat_last", "layer_mode": "single"},
+      "przelom": {"component": "q_proj+k_proj", "strategy": "chat_last", "layer_mode": "single"}
+    },
+    "per_method_application": {
+      "caa": {"mode": "additive"},
+      "ostrze": {"mode": "additive"},
+      "mlp": {"mode": "additive"},
+      "tecza": {"mode": "additive"},
+      "tetno": {"mode": "gated"},
+      "grom": {"mode": "gated"},
+      "nurt": {"mode": "flow"},
+      "szlak": {"mode": "transport"},
+      "wicher": {"mode": "broyden"},
+      "przelom": {"mode": "transport"}
+    }
   },
   "ostrze": {
     "C": {"type": "float", "description": "Regularization strength (inverse). Smaller = stronger regularization"}

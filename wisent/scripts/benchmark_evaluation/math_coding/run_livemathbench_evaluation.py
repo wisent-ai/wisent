@@ -17,7 +17,7 @@ Metrics computed following the LiveMathBench paper (arxiv.org/abs/2412.13147):
 Default parameters:
 - n (num_samples): 48 - total samples generated per problem for G-Pass@k computation
 - k_values: [4, 8, 16] - number of samples to select for metric computation
-- tau_values: [0.25, 0.5, 0.75, 1.0] - threshold fractions for G-Pass@k
+- tau_values: LIVEMATHBENCH_TAU_VALUES - threshold fractions for G-Pass@k
   - tau=0.25, k=16 means at least 4 of 16 samples must be correct
   - tau=0.5, k=16 means at least 8 of 16 samples must be correct
   - tau=1.0, k=16 means all 16 samples must be correct
@@ -35,7 +35,7 @@ from typing import Optional
 from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.core.primitives.models.config import get_generate_kwargs
 from wisent.core.utils.config_tools.constants import (
-    LIVEMATHBENCH_K_VALUES_SMALL,
+    LIVEMATHBENCH_K_VALUES,
     LIVEMATHBENCH_TAU_VALUES,
 )
 from wisent.core.reading.evaluators.benchmark_specific.livemathbench_evaluator import (
@@ -164,7 +164,7 @@ if __name__ == "__main__":
         dataset_config="amc_en",
         limit=3,  # Limit to 3 problems for testing
         num_samples=16,  # Reduced samples for testing
-        k_values=list(LIVEMATHBENCH_K_VALUES_SMALL),
+        k_values=list(LIVEMATHBENCH_K_VALUES),
         tau_values=list(LIVEMATHBENCH_TAU_VALUES),
         skip_sampling=False,
         eval_mode="llm_judge",

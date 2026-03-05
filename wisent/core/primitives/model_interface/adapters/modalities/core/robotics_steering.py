@@ -7,7 +7,7 @@ from wisent.core.primitives.model_interface.adapters.base import SteeringConfig
 from wisent.core.primitives.models.modalities import RobotState, RobotAction, RobotTrajectory
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
-from wisent.core.utils.config_tools.constants import TEMPORAL_RAMP_MIN, TEMPORAL_RAMP_MAX
+from wisent.core.utils.config_tools.constants import TEMPORAL_RAMP_MAX
 
 __all__ = [
     "forward_with_steering_robotics", "generate_unsteered_robotics",
@@ -66,7 +66,7 @@ def rollout_robotics(
 
 def compute_trajectory_steering_vector(
     adapter, positive_trajectory: RobotTrajectory, negative_trajectory: RobotTrajectory,
-    layer: str, aggregation: str,
+    layer: str, aggregation: str, *, temporal_ramp_min: float,
 ) -> torch.Tensor:
     """Compute steering vector from trajectory pairs."""
     pos_activations = []
@@ -86,10 +86,10 @@ def compute_trajectory_steering_vector(
         pos_agg = pos_tensor[-1]
         neg_agg = neg_tensor[-1]
     elif aggregation == "weighted":
-        weights = torch.linspace(TEMPORAL_RAMP_MIN, TEMPORAL_RAMP_MAX, len(pos_activations))
+        weights = torch.linspace(temporal_ramp_min, TEMPORAL_RAMP_MAX, len(pos_activations))
         weights = weights / weights.sum()
         pos_agg = (pos_tensor * weights.view(-1, 1, 1)).sum(dim=0)
-        weights = torch.linspace(TEMPORAL_RAMP_MIN, TEMPORAL_RAMP_MAX, len(neg_activations))
+        weights = torch.linspace(temporal_ramp_min, TEMPORAL_RAMP_MAX, len(neg_activations))
         weights = weights / weights.sum()
         neg_agg = (neg_tensor * weights.view(-1, 1, 1)).sum(dim=0)
     else:

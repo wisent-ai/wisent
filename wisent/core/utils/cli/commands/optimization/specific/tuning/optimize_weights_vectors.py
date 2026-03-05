@@ -4,7 +4,6 @@ import os
 import tempfile
 
 import torch
-from wisent.core.utils.config_tools.constants import SIMILARITY_THRESHOLD
 from wisent.core.utils import resolve_default_device
 from wisent.core.utils.cli.optimization.specific.optimize_weights_training import _train_multi_direction_method
 
@@ -58,7 +57,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 output=temp_output,
                 model=args.model,
                 device=args.device,
-                similarity_threshold=getattr(args, 'similarity_threshold', SIMILARITY_THRESHOLD),
+                similarity_threshold=args.similarity_threshold,
                 verbose=False,
                 timing=False,
                 layers=args.layers,
@@ -85,7 +84,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 output=temp_output,
                 model=args.model,
                 device=args.device,
-                similarity_threshold=getattr(args, 'similarity_threshold', SIMILARITY_THRESHOLD),
+                similarity_threshold=args.similarity_threshold,
                 verbose=False,
                 timing=False,
                 layers=args.layers,
@@ -115,7 +114,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 output=temp_output,
                 model=args.model,
                 device=args.device,
-                similarity_threshold=getattr(args, 'similarity_threshold', SIMILARITY_THRESHOLD),
+                similarity_threshold=args.similarity_threshold,
                 verbose=False,
                 timing=False,
                 layers=args.layers,
@@ -212,7 +211,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 output=temp_output,
                 model=args.model,
                 device=args.device,
-                similarity_threshold=getattr(args, 'similarity_threshold', SIMILARITY_THRESHOLD),
+                similarity_threshold=args.similarity_threshold,
                 verbose=False,
                 timing=False,
                 layers=args.layers,

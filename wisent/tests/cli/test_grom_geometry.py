@@ -22,7 +22,7 @@ except ImportError:
     pytest = None
 
 
-def test_grom_geometry_on_truthfulqa(*, geometry_optimization_steps: int):
+def test_grom_geometry_on_truthfulqa(*, geometry_optimization_steps: int, preflight_thresholds):
     """Test GROM geometry adaptation on truthfulqa_gen task."""
     with tempfile.TemporaryDirectory() as tmpdir:
         pairs_file = os.path.join(tmpdir, "pairs.json")
@@ -104,10 +104,8 @@ def test_grom_geometry_on_truthfulqa(*, geometry_optimization_steps: int):
         
         # Pre-flight checks
         print("[Step 4] Running pre-flight checks...")
-        from wisent.core.control.steering_methods._helpers.preflight_helpers import PreflightThresholds
-        _pf_thresholds = PreflightThresholds()
-        caa_check = run_preflight_check(pos_tensor, neg_tensor, "caa", thresholds=_pf_thresholds)
-        grom_check = run_preflight_check(pos_tensor, neg_tensor, "grom", thresholds=_pf_thresholds)
+        caa_check = run_preflight_check(pos_tensor, neg_tensor, "caa", thresholds=preflight_thresholds)
+        grom_check = run_preflight_check(pos_tensor, neg_tensor, "grom", thresholds=preflight_thresholds)
         
         print(f"   CAA: {caa_check.compatibility_score:.0%} compatible")
         print(f"   GROM: {grom_check.compatibility_score:.0%} compatible")
@@ -169,7 +167,7 @@ def test_geometry_detection_synthetic(*, hidden_dim: int, n_samples: int):
     print(f"Linear detection: {result.all_scores['linear'].score:.3f}")
 
 
-def test_preflight_checks(*, hidden_dim: int, n_samples: int):
+def test_preflight_checks(*, hidden_dim: int, n_samples: int, preflight_thresholds):
     """Test pre-flight check system."""
     from wisent.core.control.steering_methods.preflight import run_preflight_check
 
@@ -181,10 +179,8 @@ def test_preflight_checks(*, hidden_dim: int, n_samples: int):
     pos = base.unsqueeze(0) * 3 + torch.randn(n_samples, hidden_dim) * 0.05
     neg = base.unsqueeze(0) * -3 + torch.randn(n_samples, hidden_dim) * 0.05
 
-    from wisent.core.control.steering_methods._helpers.preflight_helpers import PreflightThresholds
-    _pf_thresholds = PreflightThresholds()
-    caa_result = run_preflight_check(pos, neg, "caa", thresholds=_pf_thresholds)
-    grom_result = run_preflight_check(pos, neg, "grom", thresholds=_pf_thresholds)
+    caa_result = run_preflight_check(pos, neg, "caa", thresholds=preflight_thresholds)
+    grom_result = run_preflight_check(pos, neg, "grom", thresholds=preflight_thresholds)
     
     # For linear data, CAA should be highly compatible
     assert caa_result.compatibility_score > 0.8, f"CAA should be compatible for linear: {caa_result.compatibility_score}"
@@ -231,6 +227,14 @@ def test_grom_adaptation_linear(*, hidden_dim: int, n_samples: int):
     print(f"Gating: {adaptation.gating_enabled}")
 
 
+def _build_preflight_thresholds_from_file(path: str):
+    """Load PreflightThresholds from a JSON file with all required fields."""
+    from wisent.core.control.steering_methods._helpers.preflight_helpers import PreflightThresholds
+    with open(path, "r") as fh:
+        data = json.load(fh)
+    return PreflightThresholds(**data)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="GROM geometry tests")
     parser.add_argument("--hidden-dim", type=int, required=True,
@@ -239,15 +243,19 @@ if __name__ == "__main__":
                         help="Number of synthetic samples for test data")
     parser.add_argument("--geometry-optimization-steps", type=int, required=True,
                         help="Optimization steps for geometry detection")
+    parser.add_argument("--preflight-thresholds-file", type=str, required=True,
+                        help="JSON file with all PreflightThresholds fields")
     cli_args = parser.parse_args()
 
+    pf_thresholds = _build_preflight_thresholds_from_file(
+        cli_args.preflight_thresholds_file,
+    )
     test_kwargs = dict(hidden_dim=cli_args.hidden_dim, n_samples=cli_args.n_samples)
 
     print("Running GROM geometry tests...\n")
 
     for label, fn in [
         ("Geometry detection with synthetic data", test_geometry_detection_synthetic),
-        ("Pre-flight checks", test_preflight_checks),
         ("GROM adaptation for linear data", test_grom_adaptation_linear),
     ]:
         print("=" * SEPARATOR_WIDTH_STANDARD)
@@ -257,9 +265,18 @@ if __name__ == "__main__":
         print("PASSED\n")
 
     print("=" * SEPARATOR_WIDTH_STANDARD)
+    print("Pre-flight checks")
+    print("=" * SEPARATOR_WIDTH_STANDARD)
+    test_preflight_checks(**test_kwargs, preflight_thresholds=pf_thresholds)
+    print("PASSED\n")
+
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     print("Full GROM geometry on truthfulqa_gen")
     print("=" * SEPARATOR_WIDTH_STANDARD)
-    test_grom_geometry_on_truthfulqa(geometry_optimization_steps=cli_args.geometry_optimization_steps)
+    test_grom_geometry_on_truthfulqa(
+        geometry_optimization_steps=cli_args.geometry_optimization_steps,
+        preflight_thresholds=pf_thresholds,
+    )
     print("PASSED\n")
 
     print("\nAll tests passed!")

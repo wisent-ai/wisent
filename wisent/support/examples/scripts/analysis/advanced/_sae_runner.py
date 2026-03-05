@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 from wisent.examples.scripts._sae import train_sparse_autoencoder
-from wisent.core.utils.config_tools.constants import SAE_L1_COEF_DEFAULT, SAE_N_EPOCHS_DEFAULT, SAE_HIDDEN_DIM_MULTIPLIER, SAE_TOP_K_ANALYSIS, DISPLAY_TOP_N_SMALL, JSON_INDENT
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_SMALL, JSON_INDENT
 from wisent.examples.scripts._sae_analysis import (
     analyze_sae_features,
     visualize_sae_analysis,
@@ -21,9 +21,10 @@ def run_sae_analysis(
     device: str,
     lr: float,
     batch_size: int,
-    hidden_dim_multiplier: int = SAE_HIDDEN_DIM_MULTIPLIER,
-    l1_coef: float = SAE_L1_COEF_DEFAULT,
-    n_epochs: int = SAE_N_EPOCHS_DEFAULT,
+    hidden_dim_multiplier: int,
+    l1_coef: float,
+    n_epochs: int,
+    top_k: int,
 ) -> Dict:
     """
     Run full SAE analysis on collected activations.
@@ -93,7 +94,7 @@ def run_sae_analysis(
     
     # Analyze features
     print(f"\nAnalyzing SAE features...")
-    sae_results = analyze_sae_features(sae, concept_activations, top_k=SAE_TOP_K_ANALYSIS, device=device)
+    sae_results = analyze_sae_features(sae, concept_activations, top_k=top_k, device=device)
     
     # Print summary
     print(f"\n{'='*60}")

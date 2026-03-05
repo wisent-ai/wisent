@@ -18,7 +18,7 @@ import sys
 import time
 from pathlib import Path
 
-from wisent.core.utils.config_tools.constants import QWEN3_4B_DEFAULT_LAYER, JSON_INDENT
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 
 from control_vector_generator import ControlVectorGenerator
 
@@ -65,7 +65,7 @@ def main():
     parser.add_argument(
         '--layer',
         type=int,
-        default=QWEN3_4B_DEFAULT_LAYER,
+        required=True,
         help='Layer index to extract activations from'
     )
 

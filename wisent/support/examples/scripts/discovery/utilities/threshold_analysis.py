@@ -7,7 +7,6 @@ from dataclasses import asdict
 import numpy as np
 
 from wisent.core.utils.config_tools.constants import (
-    THRESHOLD_HIDDEN_DIM_LARGE,
     SEPARATOR_WIDTH_WIDE,
     SEPARATOR_WIDTH_STANDARD,
     JSON_INDENT,
@@ -23,7 +22,7 @@ from wisent.examples.scripts.threshold_analysis_helpers import (
 )
 
 
-def run_threshold_analysis(model_name: str, *, json_array_limit: int, synthetic_n_samples: int, cv_folds: int, probe_knn_k: int, null_sample_size: int, gap_threshold_candidates: list, existence_threshold_grid: list):
+def run_threshold_analysis(model_name: str, *, json_array_limit: int, synthetic_n_samples: int, cv_folds: int, probe_knn_k: int, null_sample_size: int, gap_threshold_candidates: list, existence_threshold_grid: list, threshold_hidden_dim_large: int):
     """
     Run full threshold analysis.
 
@@ -50,7 +49,7 @@ def run_threshold_analysis(model_name: str, *, json_array_limit: int, synthetic_
     
     # 1. Generate null distribution
     print("\n1. Generating null distribution...")
-    null_knn, null_linear = generate_null_distribution(None, n_samples=null_sample_size, hidden_dim=THRESHOLD_HIDDEN_DIM_LARGE, probe_knn_k=probe_knn_k, cv_folds=cv_folds, null_sample_size=null_sample_size)
+    null_knn, null_linear = generate_null_distribution(None, n_samples=null_sample_size, hidden_dim=threshold_hidden_dim_large, probe_knn_k=probe_knn_k, cv_folds=cv_folds, null_sample_size=null_sample_size)
     
     print(f"   Null kNN: mean={np.mean(null_knn):.3f}, std={np.std(null_knn):.3f}")
     print(f"   Null linear: mean={np.mean(null_linear):.3f}, std={np.std(null_linear):.3f}")

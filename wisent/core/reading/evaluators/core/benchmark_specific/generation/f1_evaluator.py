@@ -7,7 +7,7 @@ from typing import Any, Set
 import logging
 
 from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.utils.config_tools.constants import CHANCE_LEVEL_ACCURACY, F1_THRESHOLD
+from wisent.core.utils.config_tools.constants import CHANCE_LEVEL_ACCURACY
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class F1Evaluator(BaseEvaluator):
     def __init__(
         self,
         *,
-        f1_threshold: float = F1_THRESHOLD,
+        f1_threshold: float,
     ) -> None:
         self._f1_threshold = f1_threshold
 

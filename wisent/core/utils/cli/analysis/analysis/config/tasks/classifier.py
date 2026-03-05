@@ -7,16 +7,16 @@ import torch
 
 from wisent.core.primitives.models import get_generate_kwargs
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
-from wisent.core.utils.config_tools.constants import JSON_INDENT, PROGRESS_LOG_INTERVAL_10, ARCHITECTURE_MODULE_LIMIT
+from wisent.core.utils.config_tools.constants import JSON_INDENT, PROGRESS_LOG_INTERVAL_10
 
 
-def collect_activations(args, model, pair_set, ActivationCollector, ExtractionStrategy):
+def collect_activations(args, model, pair_set, ActivationCollector, ExtractionStrategy, *, architecture_module_limit: int):
     """Collect activations from all pairs."""
     layer = int(args.layer) if isinstance(args.layer, str) else args.layer
     layer_str = str(layer)
 
     print(f"\n🧠 Extracting activations from layer {layer}...")
-    collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
     extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
     print(f"   Extraction strategy: {extraction_strategy.value}")
 
@@ -116,7 +116,7 @@ def train_classifier(args, activations, LogisticClassifier, MLPClassifier, Class
     return classifier, report
 
 
-def evaluate_classifier(args, model, classifier, test_pairs, activations, task_name, eval_task_name, DetectionHandler, DetectionAction, evaluate_quality, max_regeneration_attempts: int):
+def evaluate_classifier(args, model, classifier, test_pairs, activations, task_name, eval_task_name, DetectionHandler, DetectionAction, evaluate_quality, max_regeneration_attempts: int, *, architecture_module_limit: int):
     """Evaluate classifier on real model generations."""
     from wisent.core.reading.evaluators.rotator import EvaluatorRotator
     from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
@@ -135,7 +135,7 @@ def evaluate_classifier(args, model, classifier, test_pairs, activations, task_n
     enable_quality_check = hasattr(args, 'enable_quality_check') and args.enable_quality_check
     quality_threshold = getattr(args, 'quality_threshold', 50.0)
 
-    gen_collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    gen_collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
     generation_results = []
 
     for i, pair in enumerate(test_pairs.pairs):

@@ -63,6 +63,24 @@ MLP_DEFINITION = SteeringMethodDefinition(
             action="store_true",
             cli_flag="--mlp-normalize",
         ),
+        SteeringMethodParameter(
+            name="mlp_input_divisor",
+            type=int,
+            help="Divisor to reduce hidden_dim for input projection",
+            cli_flag="--mlp-input-divisor",
+        ),
+        SteeringMethodParameter(
+            name="gating_hidden_dim_divisor",
+            type=int,
+            help="Divisor for gating layer hidden dimension",
+            cli_flag="--mlp-gating-hidden-dim-divisor",
+        ),
+        SteeringMethodParameter(
+            name="mlp_early_stopping_patience",
+            type=int,
+            help="Early stopping patience (epochs without improvement)",
+            cli_flag="--mlp-early-stopping-patience",
+        ),
     ],
 )
 
@@ -117,6 +135,18 @@ NURT_DEFINITION = SteeringMethodDefinition(
             help="Velocity network hidden dim (0 = auto from concept_dim)",
             cli_flag="--nurt-hidden-dim",
         ),
+        SteeringMethodParameter(name="max_concept_dim", type=int,
+            help="Maximum concept subspace dimensionality",
+            cli_flag="--nurt-max-concept-dim"),
+        SteeringMethodParameter(name="lr_min", type=float,
+            help="Minimum learning rate for cosine annealing scheduler",
+            cli_flag="--nurt-lr-min"),
+        SteeringMethodParameter(name="weight_decay", type=float,
+            help="Weight decay for AdamW optimizer",
+            cli_flag="--nurt-weight-decay"),
+        SteeringMethodParameter(name="max_grad_norm", type=float,
+            help="Maximum gradient norm for clipping",
+            cli_flag="--nurt-max-grad-norm"),
     ],
 )
 
@@ -141,6 +171,9 @@ SZLAK_DEFINITION = SteeringMethodDefinition(
             help="Number of nearest source points for inference interpolation",
             cli_flag="--szlak-inference-k",
         ),
+        SteeringMethodParameter(name="max_iter", type=int,
+            help="Maximum Sinkhorn iterations",
+            cli_flag="--szlak-max-iter"),
     ],
 )
 

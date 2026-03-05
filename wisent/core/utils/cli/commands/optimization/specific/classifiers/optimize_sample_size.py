@@ -12,10 +12,10 @@ from wisent.core.reading.classifiers.models.logistic import LogisticClassifier
 from wisent.core.reading.classifiers.core.atoms import ClassifierTrainConfig
 from wisent.core.reading.evaluators.rotator import EvaluatorRotator
 from wisent.core.primitives.models import get_generate_kwargs
-from wisent.core.utils.config_tools.constants import PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD, ARCHITECTURE_MODULE_LIMIT
+from wisent.core.utils.config_tools.constants import PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
 
 
-def execute_optimize_sample_size(args):
+def execute_optimize_sample_size(args, *, architecture_module_limit: int):
     """Execute the optimize-sample-size command - find optimal training sample size."""
 
     print(f"\n{'='*80}")
@@ -72,7 +72,7 @@ def execute_optimize_sample_size(args):
         print(f"\nCollecting test activations (ONCE)...")
         layer_str = str(args.layer)
         extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
-        collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+        collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
 
         X_test_list, y_test_list = [], []
         print(f"   Collecting activations for {len(test_pairs)} test pairs...")

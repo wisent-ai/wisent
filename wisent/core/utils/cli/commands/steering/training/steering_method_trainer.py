@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import torch
 
 from wisent.core.control.steering_methods.registry import SteeringMethodRegistry
-from wisent.core.utils.config_tools.constants import ARCHITECTURE_MODULE_LIMIT
+
 from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
@@ -112,16 +112,19 @@ class UnifiedSteeringTrainer:
         model,
         method_name: str,
         method_params: Optional[Dict[str, Any]] = None,
+        *,
+        architecture_module_limit: int,
     ):
         self.model = model
         self.method_name = method_name.lower()
         self.method_params = method_params or {}
+        self._architecture_module_limit = architecture_module_limit
         self._collector = None
     
     @property
     def collector(self) -> ActivationCollector:
         if self._collector is None:
-            self._collector = ActivationCollector(model=self.model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+            self._collector = ActivationCollector(model=self.model, architecture_module_limit=self._architecture_module_limit)
         return self._collector
     
     def train_for_layer(

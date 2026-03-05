@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from torch.nn import Module
     from wisent.core.primitives.models.wisent_model import WisentModel
     from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_WIDE, ARCHITECTURE_MODULE_LIMIT
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_WIDE
 from wisent.core.weight_modification.methods.guided import (
     GuidedModificationConfig, GuidedModificationResult, CollateralDamageReport)
 from wisent.core.weight_modification.methods._guided_diagnostics import compute_layer_diagnostics
@@ -62,6 +62,7 @@ def run_guided_modification(
     guided_strong_signal: float,
     guided_moderate_signal: float,
     blend_default: float,
+    architecture_module_limit: int,
 ) -> GuidedModificationResult:
     """Run guided weight modification using linearity diagnostics."""
     from wisent.core.weight_modification.directional import project_weights
@@ -86,6 +87,7 @@ def run_guided_modification(
         extraction_strategy=cfg.extraction_strategy,
         verbose=cfg.verbose,
         blend_default=blend_default,
+        architecture_module_limit=architecture_module_limit,
     )
     
     if not diagnostics:
@@ -149,6 +151,7 @@ def run_guided_modification(
         layers=selected_layers,
         extraction_strategy=cfg.extraction_strategy,
         normalize=cfg.normalize_vectors,
+        architecture_module_limit=architecture_module_limit,
     )
     
     if cfg.verbose:
@@ -228,12 +231,14 @@ def _compute_steering_vectors(
     layers: List[int],
     extraction_strategy: str,
     normalize: bool,
+    *,
+    architecture_module_limit: int,
 ) -> Dict[int, Tensor]:
     """Compute steering vectors (difference of means) for specified layers."""
     from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
     from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
     
-    collector = ActivationCollector(model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model, architecture_module_limit=architecture_module_limit)
     strategy = ExtractionStrategy(extraction_strategy)
     
     pos_activations: Dict[int, List[Tensor]] = {l: [] for l in layers}

@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
 
 from wisent.core.utils.infra_tools.errors import NoActivationDataError, InsufficientDataError
-from wisent.core.utils.config_tools.constants import JSON_INDENT, ARCHITECTURE_MODULE_LIMIT
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,9 @@ class HyperparameterEvaluateMixin:
         token_targeting_strategy: str,
         threshold: float,
         classifier_type: str,
-        device: str = None
+        device: str = None,
+        *,
+        architecture_module_limit: int,
     ) -> Dict[str, Any]:
         """Evaluate a single hyperparameter combination."""
         import torch
@@ -107,7 +109,7 @@ class HyperparameterEvaluateMixin:
             prompt_construction_strategy, ExtractionStrategy.CHAT_LAST
         )
 
-        collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+        collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
         layer_str = str(layer)
         train_pos_acts = []
         train_neg_acts = []

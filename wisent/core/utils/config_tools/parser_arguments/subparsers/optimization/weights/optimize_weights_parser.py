@@ -161,6 +161,18 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
         "--quality-char-repeat-penalty", type=float, required=True,
         help="Penalty multiplier for character repetition"
     )
+    parser.add_argument(
+        "--personalization-difference-weight", type=float, required=True,
+        help="Weight for difference score in personalization evaluation"
+    )
+    parser.add_argument(
+        "--personalization-quality-weight", type=float, required=True,
+        help="Weight for quality score in personalization evaluation"
+    )
+    parser.add_argument(
+        "--personalization-alignment-weight", type=float, required=True,
+        help="Weight for alignment score in personalization evaluation"
+    )
     # ==========================================================================
     # MODEL CONFIGURATION
     # ==========================================================================

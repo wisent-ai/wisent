@@ -3,8 +3,7 @@ from __future__ import annotations
 import logging
 from typing import List, Dict, Any
 from wisent.core.utils.config_tools.constants import (
-    ARCHITECTURE_MODULE_LIMIT,
-    COMBO_OFFSET, PROGRESS_LOG_INTERVAL_25, RECURSION_INITIAL_DEPTH,
+    COMBO_OFFSET, RECURSION_INITIAL_DEPTH,
 )
 
 logger = logging.getLogger(__name__)
@@ -13,6 +12,8 @@ logger = logging.getLogger(__name__)
 def train_recommended_method(
     wisent_model: Any, pairs: List[Any], method: str, layer: int,
     verbose: bool = False, *,
+    architecture_module_limit: int,
+    progress_log_interval: int,
     tetno_condition_threshold: float, tetno_gate_temperature: float,
     tetno_max_alpha: float, tetno_entropy_floor: float,
     tetno_entropy_ceiling: float, tetno_threshold_search_steps: int,
@@ -53,12 +54,12 @@ def train_recommended_method(
     all_layers = [str(i) for i in range(COMBO_OFFSET, num_layers + COMBO_OFFSET)]
     if verbose:
         print(f"   Collecting activations for {len(pairs)} pairs...")
-    collector = ActivationCollector(model=wisent_model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model=wisent_model, architecture_module_limit=architecture_module_limit)
     enriched_pairs = []
     for i, pair in enumerate(pairs):
         enriched = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST, layers=all_layers)
         enriched_pairs.append(enriched)
-        if verbose and (i + COMBO_OFFSET) % PROGRESS_LOG_INTERVAL_25 == RECURSION_INITIAL_DEPTH:
+        if verbose and (i + COMBO_OFFSET) % progress_log_interval == RECURSION_INITIAL_DEPTH:
             print(f"     {i + COMBO_OFFSET}/{len(pairs)} pairs processed")
     pair_set = ContrastivePairSet(pairs=enriched_pairs, name=f"{method.lower()}_training")
     if verbose:

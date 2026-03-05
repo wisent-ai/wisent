@@ -120,6 +120,7 @@ def execute_optimize_steering(args):
                 "tecza_universal_basis_noise": args.tecza_universal_basis_noise,
                 "tecza_optimization_steps": args.tecza_optimization_steps,
             },
+            architecture_module_limit=args.architecture_module_limit, progress_log_interval=args.progress_log_interval,
             train_ratio=args.train_ratio,
         )
 

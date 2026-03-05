@@ -1,8 +1,5 @@
 """Parser for the 'steering-viz' command - steering effect visualization."""
 
-from wisent.core.utils.config_tools.constants import COMPARISON_STEERING_LAYER
-
-
 def setup_steering_viz_parser(parser):
     """Set up the steering-viz command parser."""
     parser.add_argument(
@@ -20,8 +17,8 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--layer",
         type=int,
-        default=COMPARISON_STEERING_LAYER,
-        help="Layer to visualize (default: 12)"
+        required=True,
+        help="Layer to visualize"
     )
     parser.add_argument(
         "--strength",

@@ -36,7 +36,6 @@ _IMPORT_MAP = {
     'execute_optimize_classification': '.optimization.specific.optimize_classification',
     'execute_optimize_sample_size': '.optimization.specific.optimize_sample_size',
     'execute_optimize_weights': '.optimization.specific.optimize_weights',
-    'execute_tune_recommendation': '.optimization.specific.tune_recommendation',
     'execute_create_steering_object': '.steering.core.create_steering_object',
     'execute_multi_steer': '.steering.core.multi_steer',
     'execute_verify_steering': '.steering.core.verify_steering',

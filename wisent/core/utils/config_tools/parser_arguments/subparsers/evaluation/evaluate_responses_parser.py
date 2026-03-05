@@ -63,3 +63,27 @@ def setup_evaluate_responses_parser(parser):
         "--quality-char-repeat-penalty", type=float, required=True,
         help="Penalty multiplier for character repetition"
     )
+    parser.add_argument(
+        "--f1-threshold", type=float, required=True,
+        help="F1 score threshold for token-level evaluator"
+    )
+    parser.add_argument(
+        "--generation-embedding-weight", type=float, required=True,
+        help="Weight for embedding similarity in generation evaluator"
+    )
+    parser.add_argument(
+        "--generation-nli-weight", type=float, required=True,
+        help="Weight for NLI entailment in generation evaluator"
+    )
+    parser.add_argument(
+        "--personalization-difference-weight", type=float, required=True,
+        help="Weight for difference score in personalization evaluation"
+    )
+    parser.add_argument(
+        "--personalization-quality-weight", type=float, required=True,
+        help="Weight for quality score in personalization evaluation"
+    )
+    parser.add_argument(
+        "--personalization-alignment-weight", type=float, required=True,
+        help="Weight for alignment score in personalization evaluation"
+    )

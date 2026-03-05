@@ -8,11 +8,6 @@ import logging
 from typing import Optional
 
 from wisent.core.primitives.models import get_generate_kwargs
-from wisent.core.utils.config_tools.constants import (
-    PERSONALIZATION_DIFFERENCE_WEIGHT,
-    PERSONALIZATION_QUALITY_WEIGHT,
-    PERSONALIZATION_ALIGNMENT_WEIGHT,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -63,9 +58,9 @@ class PersonalizationEvaluator:
         quality_special_char_penalty: float,
         quality_char_repeat_count: int,
         quality_char_repeat_penalty: float,
-        difference_weight: float = PERSONALIZATION_DIFFERENCE_WEIGHT,
-        quality_weight: float = PERSONALIZATION_QUALITY_WEIGHT,
-        alignment_weight: float = PERSONALIZATION_ALIGNMENT_WEIGHT,
+        difference_weight: float,
+        quality_weight: float,
+        alignment_weight: float,
     ):
         from wisent.core.reading.evaluators.steering_evaluators import BaseSteeringEvaluator
         BaseSteeringEvaluator.__init__(self, config, model_name)

@@ -6,6 +6,7 @@ Uses BaseRotator for common plugin discovery and resolution logic.
 
 from __future__ import annotations
 
+import inspect
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Type, Union
@@ -36,6 +37,7 @@ class EvaluatorRotator(BaseRotator[BaseEvaluator]):
         task_name: Optional[str] = None,
         evaluators_location: Union[str, Path] = "wisent.core.reading.evaluators.oracles",
         autoload: bool = True,
+        evaluator_kwargs: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Initialize the evaluator rotator.
@@ -45,8 +47,10 @@ class EvaluatorRotator(BaseRotator[BaseEvaluator]):
             task_name: Optional task name for auto-selecting evaluator.
             evaluators_location: Module path or directory for evaluator discovery.
             autoload: Whether to auto-discover evaluators on init.
+            evaluator_kwargs: Keyword arguments passed to evaluator constructors.
         """
         self._task_name = task_name
+        self._evaluator_kwargs = evaluator_kwargs or {}
 
         # Initialize base class (will call _resolve via super().__init__)
         super().__init__(
@@ -167,7 +171,13 @@ class EvaluatorRotator(BaseRotator[BaseEvaluator]):
             f"'{self._task_name}' (from extractor)"
         )
         cls = BaseEvaluator.get(evaluator_name)
-        return cls()
+        sig = inspect.signature(cls.__init__)
+        accepted = set(sig.parameters.keys()) - {"self"}
+        filtered_kwargs = {
+            k: v for k, v in self._evaluator_kwargs.items()
+            if k in accepted
+        }
+        return cls(**filtered_kwargs)
 
     def use(self, evaluator: Union[str, BaseEvaluator, Type[BaseEvaluator]]) -> None:
         """Switch to a different evaluator."""

@@ -4,10 +4,10 @@ import sys
 
 from wisent.core.primitives.models import get_generate_kwargs
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
-from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_STANDARD, ARCHITECTURE_MODULE_LIMIT
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_STANDARD
 
 
-def execute_tasks(args):
+def execute_tasks(args, *, architecture_module_limit: int):
     """Execute the tasks command - train classifier or steering on benchmark tasks."""
     from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
     from wisent.core.primitives.models.wisent_model import WisentModel
@@ -87,7 +87,7 @@ def execute_tasks(args):
 
     # Handle steering mode
     if steering_mode:
-        collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+        collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
         extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
         return execute_steering_mode(args, model, train_pair_set, test_pair_set, collector, extraction_strategy, min_norm_threshold=args.min_norm_threshold, min_clusters=getattr(args, 'min_clusters', None), geometry_cv_folds=args.geometry_cv_folds, subsample_threshold=args.subsample_threshold, pca_dims_limit=args.pca_dims_limit)
 

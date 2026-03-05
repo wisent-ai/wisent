@@ -8,7 +8,7 @@ import torch
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.core.utils import resolve_default_device
-from .method_training import get_all_layers, auto_select_steering_method
+from .method_training import get_all_layers
 from .vector_loading import (
     load_vectors_from_file, generate_personalization_vectors,
     generate_multi_benchmark_vectors, generate_task_vectors,
@@ -29,7 +29,8 @@ def execute_modify_weights(args):
         args.task = expand_task_if_skill_or_risk(args.task)
     log = bind(_LOG)
     start_time = time.time()
-    needs_auto_selection = (args.method == "auto" or getattr(args, 'steering_method', 'auto') == "auto")
+    if args.method == "auto" or getattr(args, 'steering_method', 'auto') == "auto":
+        raise ValueError("Auto method selection has been removed. Specify --method and --steering-method explicitly.")
     # Auto-select weight-modification components from extraction component
     extraction_component = getattr(args, 'extraction_component', 'residual_stream')
     if getattr(args, 'components', None) is None and extraction_component != 'residual_stream':
@@ -43,11 +44,9 @@ def execute_modify_weights(args):
         print(f"Model: {args.model}")
         print(f"Output: {args.output_dir}")
         print("=" * _C.SEPARATOR_WIDTH_REPORT + "\n")
-    steering_vectors = _load_or_generate_vectors(args, needs_auto_selection)
+    steering_vectors = _load_or_generate_vectors(args)
     harmless_vectors = _load_harmless_vectors(args)
     wisent_model, model, tokenizer = _load_model(args)
-    if needs_auto_selection and args.task:
-        steering_vectors = _run_auto_selection(args, wisent_model, steering_vectors, min_clusters=getattr(args, 'min_clusters', None), min_pairs_for_linearity=args.min_pairs_for_linearity)
     if getattr(args, 'guided', False):
         execute_guided_modification(args, wisent_model, model, tokenizer)
         return
@@ -128,12 +127,8 @@ def execute_modify_weights(args):
     _print_timing(args, start_time)
     _print_summary(args, stats)
 
-def _load_or_generate_vectors(args, needs_auto_selection: bool) -> Optional[Dict[int, torch.Tensor]]:
+def _load_or_generate_vectors(args) -> Optional[Dict[int, torch.Tensor]]:
     """Load or generate steering vectors based on arguments."""
-    if needs_auto_selection and not args.steering_vectors:
-        if args.verbose:
-            print("Skipping initial vector generation (will generate after auto-selection)\n")
-        return None
     if args.steering_vectors:
         if args.verbose:
             print(f"Loading steering vectors from {args.steering_vectors}...")
@@ -205,40 +200,6 @@ def _load_model(args):
     if args.verbose:
         print(f"Model loaded with {wisent_model.num_layers} layers\n")
     return wisent_model, model, tokenizer
-
-def _run_auto_selection(args, wisent_model, steering_vectors, min_clusters: int = None, *, min_pairs_for_linearity: int):
-    """Run auto-selection and generate CAA vectors if needed."""
-    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
-    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
-    from wisent.core.control.steering_methods.methods.caa import CAAMethod
-    from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
-    pairs = _generate_pairs(args, wisent_model)
-    if pairs and len(pairs) >= min_pairs_for_linearity:
-        steering_method, modification_method, _ = auto_select_steering_method(
-            pairs, wisent_model, min_clusters=min_clusters, verbose=args.verbose,
-            spectral_n_neighbors=args.spectral_n_neighbors,
-            geometry_cv_folds=args.geometry_cv_folds,
-            min_layer_activations_for_geometry=args.min_layer_activations_for_geometry,
-            method_selection_sample_size=args.method_selection_sample_size,
-            layer_sampling_divisor=args.layer_sampling_divisor,
-        )
-        args.steering_method = steering_method
-        args.method = modification_method
-        if modification_method == "directional" and steering_vectors is None:
-            collector = ActivationCollector(model=wisent_model, architecture_module_limit=_C.ARCHITECTURE_MODULE_LIMIT)
-            all_layers = get_all_layers(wisent_model)
-            enriched_pairs = [collector.collect(p, strategy=ExtractionStrategy.default(), layers=all_layers) for p in pairs]
-            pair_set = ContrastivePairSet(pairs=enriched_pairs, name="auto_caa")
-            caa_method = CAAMethod()
-            caa_result = caa_method.train(pair_set)
-            steering_vectors = {}
-            for layer_name, vector in caa_result.directions.items():
-                layer_idx = int(layer_name.replace("layer_", "")) if "layer_" in str(layer_name) else int(layer_name)
-                steering_vectors[layer_idx] = vector
-    else:
-        args.steering_method = "grom"
-        args.method = "grom"
-    return steering_vectors
 
 def _generate_pairs(args, wisent_model):
     """Generate contrastive pairs for training."""

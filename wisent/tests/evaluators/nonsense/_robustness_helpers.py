@@ -2,8 +2,6 @@
 
 import argparse
 
-from wisent.core.utils.config_tools.constants import TEST_DEFAULT_LIMIT
-
 
 def main():
     """Main function for robustness testing."""
@@ -15,8 +13,8 @@ def main():
         help="Model to test"
     )
     parser.add_argument(
-        "--limit", type=int, default=TEST_DEFAULT_LIMIT,
-        help="Number of samples to test (default: 10)"
+        "--limit", type=int, required=True,
+        help="Number of samples to test"
     )
     parser.add_argument(
         "--verbose", action="store_true",

@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Any
 import torch
 
 from wisent.core.utils.config_tools.config import ModelConfigManager
-from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_WIDE, ARCHITECTURE_MODULE_LIMIT
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_WIDE, AXIS_ROWS, SEARCH_INIT_NEGATIVE, COMBO_OFFSET, SCORE_RANGE_MIN
 from wisent.core.control.steering_methods.configs.validated_defaults import VALIDATED_EXTRACTION_STRATEGY
 from .training import train_recommended_method
 from .grid_search import run_grid_search
@@ -39,7 +39,7 @@ def run_auto_steering_optimization(
     auto_n_folds: int = None,
     auto_min_pairs_split: int = None,
     auto_layer_divisor: int = None, spectral_n_neighbors: int = None,
-    subsample_threshold: int = None, pca_dims_limit: int = None, *, train_ratio: float,
+    subsample_threshold: int = None, pca_dims_limit: int = None, *, architecture_module_limit: int, progress_log_interval: int, train_ratio: float,
 ) -> Dict[str, Any]:
     """Automatically optimize steering using zwiad geometry analysis."""
     _required = {"max_time_minutes": max_time_minutes, "strength_range": strength_range,
@@ -66,10 +66,17 @@ def run_auto_steering_optimization(
         return {"error": f"Could not generate enough pairs for {task_name}"}
     if verbose:
         print(f"Generated {len(pairs)} contrastive pairs\n")
-    recommended_method, confidence, reasoning, metrics, coherence = _run_zwiad_analysis(
+    metrics, coherence, best_lpa = _run_zwiad_analysis(
         wisent_model, pairs, num_layers, min_clusters=min_clusters, verbose=verbose,
-        spectral_n_neighbors=spectral_n_neighbors, subsample_threshold=subsample_threshold, pca_dims_limit=pca_dims_limit,
+        architecture_module_limit=architecture_module_limit, spectral_n_neighbors=spectral_n_neighbors, subsample_threshold=subsample_threshold, pca_dims_limit=pca_dims_limit,
+        layer_divisor=auto_layer_divisor, sample_size=auto_sample_size, min_pairs=auto_min_pairs, n_folds=auto_n_folds,
     )
+
+    if not methods_to_test:
+        raise ValueError("methods_to_test is required (no auto-selection)")
+    recommended_method = methods_to_test[AXIS_ROWS].upper()
+    confidence = best_lpa
+    reasoning = [f"User-specified method: {recommended_method}"]
 
     # Determine search space
     layers_to_test = _get_layers_to_test(layer_range, num_layers)
@@ -86,11 +93,9 @@ def run_auto_steering_optimization(
     grom_kw = {f"grom_{k}": v for k, v in grom_params.items()}
     tetno_kw = {f"tetno_{k}": v for k, v in tetno_params.items()}
     steering_result = train_recommended_method(
-        wisent_model=wisent_model, pairs=pairs,
-        method=recommended_method, layer=first_layer, verbose=verbose,
-        **tetno_kw,
-        **grom_kw,
-        **(tecza_params or {}),
+        wisent_model=wisent_model, pairs=pairs, method=recommended_method, layer=first_layer, verbose=verbose,
+        architecture_module_limit=architecture_module_limit, progress_log_interval=progress_log_interval,
+        **tetno_kw, **grom_kw, **(tecza_params or {}),
     )
 
     eval_pairs = pairs[len(pairs)//2:] if len(pairs) > auto_min_pairs_split else pairs
@@ -139,22 +144,22 @@ def _generate_pairs(task_name: str, limit: int, *, train_ratio: float) -> List:
         return []
 
 
-def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, min_clusters: int, verbose: bool, *, spectral_n_neighbors: int, subsample_threshold: int, pca_dims_limit: int) -> tuple:
+def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, min_clusters: int, verbose: bool, *, architecture_module_limit: int, spectral_n_neighbors: int, subsample_threshold: int, pca_dims_limit: int, layer_divisor: int, sample_size: int, min_pairs: int, n_folds: int) -> tuple:
     """Run zwiad geometry analysis on collected activations."""
     from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
     from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
-    from wisent.core.reading.modules import compute_geometry_metrics, compute_recommendation, compute_concept_coherence
+    from wisent.core.reading.modules import compute_geometry_metrics, compute_concept_coherence
 
     if verbose:
         print("Collecting activations for geometry analysis...", flush=True)
 
-    candidate_layers = list(range(0, num_layers, max(1, num_layers // auto_layer_divisor)))
-    if (num_layers - 1) not in candidate_layers:
-        candidate_layers.append(num_layers - 1)
+    candidate_layers = list(range(AXIS_ROWS, num_layers, max(COMBO_OFFSET, num_layers // layer_divisor)))
+    if (num_layers - COMBO_OFFSET) not in candidate_layers:
+        candidate_layers.append(num_layers - COMBO_OFFSET)
     candidate_layer_strs = [str(l) for l in candidate_layers]
 
-    collector = ActivationCollector(model=wisent_model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
-    sample_pairs = pairs[:min(auto_sample_size, len(pairs))]
+    collector = ActivationCollector(model=wisent_model, architecture_module_limit=architecture_module_limit)
+    sample_pairs = pairs[:min(sample_size, len(pairs))]
     layer_pos = {l: [] for l in candidate_layer_strs}
     layer_neg = {l: [] for l in candidate_layer_strs}
 
@@ -168,16 +173,15 @@ def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, min_clu
             if neg_act is not None:
                 layer_neg[l].append(neg_act)
 
-    # Pick the layer with the strongest linear probe signal
-    best_lpa, best_layer = -1.0, candidate_layer_strs[0]
+    best_lpa, best_layer = SEARCH_INIT_NEGATIVE, candidate_layer_strs[AXIS_ROWS]
     best_metrics = None
     for l in candidate_layer_strs:
-        if len(layer_pos[l]) < auto_min_pairs or len(layer_neg[l]) < auto_min_pairs:
+        if len(layer_pos[l]) < min_pairs or len(layer_neg[l]) < min_pairs:
             continue
         pt = torch.stack(layer_pos[l])
         nt = torch.stack(layer_neg[l])
-        m = compute_geometry_metrics(pt, nt, min_clusters=min_clusters, n_folds=auto_n_folds, spectral_n_neighbors=spectral_n_neighbors, subsample_threshold=subsample_threshold, pca_dims_limit=pca_dims_limit)
-        lpa = m.get('linear_probe_accuracy', 0.0)
+        m = compute_geometry_metrics(pt, nt, min_clusters=min_clusters, n_folds=n_folds, spectral_n_neighbors=spectral_n_neighbors, subsample_threshold=subsample_threshold, pca_dims_limit=pca_dims_limit)
+        lpa = m.get('linear_probe_accuracy', SCORE_RANGE_MIN)
         if lpa > best_lpa:
             best_lpa, best_metrics, best_layer = lpa, m, l
 
@@ -190,18 +194,12 @@ def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, min_clu
     pos_tensor = torch.stack(layer_pos[best_layer])
     neg_tensor = torch.stack(layer_neg[best_layer])
     metrics = best_metrics
-    recommendation = compute_recommendation(metrics)
     coherence = compute_concept_coherence(pos_tensor, neg_tensor)
-
-    recommended_method = recommendation["recommended_method"].upper()
-    confidence = recommendation["confidence"]
-    reasoning = recommendation["reasoning"]
 
     if verbose:
         print(f"   Repscan: Linear accuracy: {metrics['linear_probe_accuracy']:.3f}")
-        print(f"   Recommendation: {recommended_method} (confidence={confidence:.2f})")
 
-    return recommended_method, confidence, reasoning, metrics, coherence
+    return metrics, coherence, best_lpa
 
 
 def _get_layers_to_test(layer_range: Optional[str], num_layers: int) -> List[int]:

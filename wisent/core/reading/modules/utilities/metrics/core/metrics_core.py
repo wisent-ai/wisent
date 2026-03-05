@@ -22,7 +22,6 @@ from ..direction.direction_metrics import (
 )
 from ..direction.multi_direction import compute_multi_direction_accuracy
 from wisent.core.reading.modules.modules.steering.analysis.steerability import compute_steerability_metrics
-from wisent.core.reading.modules.modules.steering.analysis.steering_recommendation import compute_steering_recommendation
 from wisent.core.reading.modules.modules.geo_utils.icd import compute_icd
 from wisent.core.reading.modules.utilities.concepts import detect_multiple_concepts, compute_concept_coherence
 from wisent.core.reading.modules.utilities.signal_analysis.signal_analysis import compute_signal_to_noise
@@ -285,12 +284,5 @@ def compute_geometry_metrics(
     visualizations = generate_metrics_visualizations(pos_reduced, neg_reduced, metrics)
     if visualizations:
         metrics["visualizations"] = visualizations
-
-    # Generate recommendation
-    recommendation = compute_steering_recommendation(metrics)
-    metrics["recommended_method"] = recommendation.get("recommended_method", "CAA")
-    metrics["recommendation_confidence"] = recommendation["confidence"]
-    metrics["recommendation_reasoning"] = recommendation.get("reasoning", [])
-    metrics["method_scores"] = recommendation.get("method_scores", {})
 
     return metrics

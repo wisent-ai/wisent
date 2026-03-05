@@ -3,7 +3,7 @@
 import os
 import json
 import sys
-from wisent.core.utils.config_tools.constants import THRESHOLD_RANGE_SHORT, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_STANDARD
 
 
 # ============================================================================
@@ -106,7 +106,7 @@ def select_tasks_by_criteria(args):
 # Hyperparameter optimization functions
 # ============================================================================
 
-def execute_optimization(args, model, LMEvalDataLoader):
+def execute_optimization(args, model, LMEvalDataLoader, *, threshold_range_short: list):
     """Handle --optimize flag for hyperparameter optimization."""
     from wisent.core.utils.services.optimization.hyperparameter_optimizer import HyperparameterOptimizer, OptimizationConfig
 
@@ -124,7 +124,7 @@ def execute_optimization(args, model, LMEvalDataLoader):
         aggregation_methods=['average', 'final', 'first', 'max'],
         prompt_construction_strategies=['multiple_choice', 'role_playing', 'direct_completion', 'instruction_following'],
         token_targeting_strategies=['choice_token', 'continuation_token', 'last_token', 'first_token', 'mean_pooling'],
-        threshold_range=list(THRESHOLD_RANGE_SHORT),
+        threshold_range=list(threshold_range_short),
         classifier_types=[args.classifier_type],
         metric=getattr(args, 'optimize_metric', 'f1'),
         max_combinations=args.optimize_max_combinations

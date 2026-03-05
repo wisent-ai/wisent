@@ -13,9 +13,6 @@ from wisent.core.utils.config_tools.constants import (
     JSON_INDENT,
     SEPARATOR_WIDTH_MAX,
     CHANCE_LEVEL_ACCURACY,
-    PERSONALIZATION_DIFFERENCE_WEIGHT,
-    PERSONALIZATION_QUALITY_WEIGHT,
-    PERSONALIZATION_ALIGNMENT_WEIGHT,
 )
 from wisent.core.utils.config_tools.config import save_classification_config
 from wisent.core.reading.evaluators.steering_evaluators import SteeringEvaluatorFactory, EvaluatorConfig
@@ -61,9 +58,9 @@ def execute_optimize_classification(args):
                 quality_special_char_penalty=args.quality_special_char_penalty,
                 quality_char_repeat_count=args.quality_char_repeat_count,
                 quality_char_repeat_penalty=args.quality_char_repeat_penalty,
-                difference_weight=PERSONALIZATION_DIFFERENCE_WEIGHT,
-                quality_weight=PERSONALIZATION_QUALITY_WEIGHT,
-                alignment_weight=PERSONALIZATION_ALIGNMENT_WEIGHT,
+                difference_weight=args.personalization_difference_weight,
+                quality_weight=args.personalization_quality_weight,
+                alignment_weight=args.personalization_alignment_weight,
             )
         print(f"Using {evaluator_type} evaluator for optimization\n")
     from wisent.core.primitives.models.wisent_model import WisentModel

@@ -1,3 +1,4 @@
+import argparse
 import re
 from datasets import load_dataset
 from evaluate import load
@@ -82,11 +83,16 @@ print("Comparing extraction methods on competition_math dataset:")
 print("="*60)
 
 from wisent.core.reading.evaluators.benchmark_specific.generation_evaluator import GenerationEvaluator
-from wisent.core.utils.config_tools.constants import COMPARE_TOL, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT, GENERATION_EMBEDDING_WEIGHT, GENERATION_NLI_WEIGHT
+from wisent.core.utils.config_tools.constants import COMPARE_TOL, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT
+
+_parser = argparse.ArgumentParser()
+_parser.add_argument("--generation-embedding-weight", type=float, required=True)
+_parser.add_argument("--generation-nli-weight", type=float, required=True)
+_args = _parser.parse_args()
 
 evaluator = GenerationEvaluator(
-    generation_embedding_weight=GENERATION_EMBEDDING_WEIGHT,
-    generation_nli_weight=GENERATION_NLI_WEIGHT,
+    generation_embedding_weight=_args.generation_embedding_weight,
+    generation_nli_weight=_args.generation_nli_weight,
 )
 ds = load_dataset('qwedsacf/competition_math', split='train')
 

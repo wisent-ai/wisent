@@ -44,7 +44,8 @@ def test_coding_benchmark(
     Returns:
         True if all evaluations correct, False otherwise
     """
-    limit = limit if limit is not None else _C.TEST_DEFAULT_LIMIT
+    if limit is None:
+        raise ValueError("limit is required and must be explicitly provided")
     try:
         print(f"\n{'='*60}")
         print(f"Testing coding benchmark: {task_name}")

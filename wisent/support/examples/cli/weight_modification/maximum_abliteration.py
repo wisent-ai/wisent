@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from wisent.core.utils.config_tools.constants import ABLITERATION_BASELINE_ACC, SEPARATOR_WIDTH_REPORT
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_REPORT
 from wisent.examples.cli.weight_modification.maximum_abliteration_helpers import (
     AbliterationConfig,
     evaluate_model,
@@ -23,7 +23,7 @@ def maximum_abliteration(
     task: str,
     model: str,
     output_dir: str,
-    baseline_acc: float = ABLITERATION_BASELINE_ACC,
+    baseline_acc: float,
     *,
     full_eval_limit: int,
 ):
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     parser.add_argument("--task", required=True, help="Task name")
     parser.add_argument("--model", required=True, help="Model name")
     parser.add_argument("--output-dir", required=True, help="Output directory")
-    parser.add_argument("--baseline", type=float, default=ABLITERATION_BASELINE_ACC, help="Baseline accuracy")
+    parser.add_argument("--baseline", type=float, required=True, help="Baseline accuracy")
     parser.add_argument("--eval-limit", type=int, required=True, help="Evaluation limit")
 
     args = parser.parse_args()

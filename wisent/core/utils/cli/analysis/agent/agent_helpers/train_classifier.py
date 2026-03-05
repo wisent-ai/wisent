@@ -5,7 +5,7 @@ import torch
 from wisent.core.reading.classifiers.core.atoms import ClassifierTrainReport
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
 from wisent.core.utils import preferred_dtype
-from wisent.core.utils.config_tools.constants import ARCHITECTURE_MODULE_LIMIT
+
 
 
 def _torch_dtype_to_numpy(torch_dtype: torch.dtype):
@@ -63,6 +63,8 @@ def train_classifier_on_pairs(
     verbose: bool = False,
     normalize_layers: bool = False,
     return_full_sequence: bool = False,
+    *,
+    architecture_module_limit: int,
 ):
     """
     Train a classifier on activations from contrastive pairs.
@@ -112,7 +114,7 @@ def train_classifier_on_pairs(
     prompt_construction_strategy = _map_prompt_strategy(prompt_strategy)
 
     # Collect activations for all pairs
-    collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
     target_layers = [str(target_layer)]
     layer_key = target_layers[0]
 

@@ -151,7 +151,7 @@ def test_editability(pos: torch.Tensor, neg: torch.Tensor, *, eot_temperature: f
 
 def select_intervention(
     signal: SignalTestResult, geometry: GeometryTestResult,
-    decomposition: DecompositionTestResult, metrics: Optional[Dict[str, Any]] = None,
+    decomposition: DecompositionTestResult,
     editability: Optional[EditabilityTestResult] = None, *,
     zwiad_score_primary: float, zwiad_score_secondary: float, zwiad_score_tertiary: float,
     zwiad_editability_threshold: float, zwiad_przelom_bonus_max: float,
@@ -162,40 +162,14 @@ def select_intervention(
     _nosig_msg = f"No signal (p > {STAT_ALPHA})"
     if not signal.passed:
         return InterventionResult("NONE", zwiad_score_tertiary, [_nosig_msg], _all)
-    if metrics:
-        from ..steering.analysis.steering_recommendation import compute_steering_recommendation
-        rec = compute_steering_recommendation(metrics)
-        reasoning = rec["reasoning"]
-        reasoning.append(f"Z: {signal.max_z_score:.2f}, p: {signal.min_p_value:.4f}, gap: {geometry.gap:.3f}")
-        scores = rec["method_scores"]
-        scores.setdefault("PRZELOM", zwiad_score_tertiary)
-        if editability and editability.composite_editability > zwiad_editability_threshold:
-            scores["PRZELOM"] = max(scores["PRZELOM"], zwiad_przelom_bonus_max)
-            reasoning.append(f"High EOT editability ({editability.composite_editability:.2f}) -> PRZELOM viable")
-        return InterventionResult(rec["recommended_method"], round(rec["confidence"], ROUNDING_PRECISION), reasoning, scores)
-    scores = dict(_all)
-    reasoning = []
-    is_linear = geometry.diagnosis.startswith("LINEAR")
-    is_frag = decomposition.is_fragmented
-    n = decomposition.n_concepts
-    if is_linear and not is_frag:
-        scores["CAA"], scores["Ostrze"], scores["Concept Flow"] = zwiad_score_primary, zwiad_score_tertiary, zwiad_score_tertiary
-        recommended, msg = "CAA", "Linear + single concept -> CAA"
-    elif is_linear and is_frag:
-        scores["TECZA"], scores["GROM"], scores["Concept Flow"] = zwiad_score_primary, zwiad_score_tertiary, zwiad_score_secondary
-        recommended, msg = "TECZA", f"Linear + {n} concepts -> TECZA"
-    elif not is_linear and not is_frag:
-        scores["MLP"], scores["Ostrze"], scores["TETNO"], scores["Concept Flow"] = zwiad_score_primary, zwiad_score_tertiary, zwiad_score_tertiary, zwiad_score_tertiary
-        recommended, msg = "MLP", "Nonlinear + single -> MLP"
-    else:
-        scores["GROM"], scores["TETNO"], scores["Concept Flow"] = zwiad_score_primary, zwiad_score_tertiary, zwiad_score_secondary
-        recommended, msg = "GROM", f"Nonlinear + {n} concepts -> GROM"
-    reasoning.append(msg)
-    if editability and editability.composite_editability > zwiad_editability_threshold:
-        scores["PRZELOM"] = max(scores["PRZELOM"], zwiad_przelom_bonus_max)
-        reasoning.append(f"High EOT editability ({editability.composite_editability:.2f}) -> PRZELOM viable")
-    reasoning.append(f"Z: {signal.max_z_score:.2f}, p: {signal.min_p_value:.4f}, gap: {geometry.gap:.3f}")
-    return InterventionResult(recommended, zwiad_score_secondary, reasoning, scores)
+    reasoning = [
+        f"geometry: {geometry.diagnosis}",
+        f"n_concepts: {decomposition.n_concepts}, fragmented: {decomposition.is_fragmented}",
+        f"Z: {signal.max_z_score:.2f}, p: {signal.min_p_value:.4f}, gap: {geometry.gap:.3f}",
+    ]
+    if editability:
+        reasoning.append(f"editability: {editability.composite_editability:.2f}")
+    return InterventionResult("PENDING", zwiad_score_tertiary, reasoning, _all)
 
 _GEO_FIELDS = ["linear_accuracy", "nonlinear_accuracy", "gap", "diagnosis", "confidence", "p_value",
     "gap_ci_lower", "gap_ci_upper", "n_diagnostics_passed", "n_diagnostics_total", "t_statistic",
