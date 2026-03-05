@@ -221,7 +221,7 @@ class MultimodalAdapter(BaseAdapter[MultimodalContent, Union[str, torch.Tensor]]
             else:
                 raise AdapterError("Model output format not recognized")
 
-    def decode(self, latent: torch.Tensor) -> str:
+    def decode(self, latent: torch.Tensor, *, display_token_limit: int) -> str:
         from wisent.core.primitives.model_interface.adapters.modalities.multimodal_decode import (
             decode_llava, decode_qwen_vl, decode_idefics, decode_generic,
         )
@@ -231,13 +231,13 @@ class MultimodalAdapter(BaseAdapter[MultimodalContent, Union[str, torch.Tensor]]
                 latent = latent.unsqueeze(0)
             latent = latent.to(self.model.device)
             if model_type == self.MODEL_TYPE_LLAVA:
-                return decode_llava(self.model, latent, self.processor)
+                return decode_llava(self.model, latent, self.processor, display_token_limit=display_token_limit)
             elif model_type == self.MODEL_TYPE_QWEN_VL:
-                return decode_qwen_vl(self.model, latent, self.processor)
+                return decode_qwen_vl(self.model, latent, self.processor, display_token_limit=display_token_limit)
             elif model_type == self.MODEL_TYPE_IDEFICS:
-                return decode_idefics(self.model, latent, self.processor)
+                return decode_idefics(self.model, latent, self.processor, display_token_limit=display_token_limit)
             else:
-                return decode_generic(self.model, latent, self.processor)
+                return decode_generic(self.model, latent, self.processor, display_token_limit=display_token_limit)
 
     def get_intervention_points(self) -> List[InterventionPoint]:
         from wisent.core.primitives.model_interface.adapters.modalities.multimodal_steering import get_intervention_points_multimodal

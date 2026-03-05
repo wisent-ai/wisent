@@ -9,7 +9,7 @@ import torch
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 from wisent.core.utils.config_tools.constants import (
-    SEPARATOR_WIDTH_REPORT, ARCHITECTURE_MODULE_LIMIT, PERCENT_MULTIPLIER,
+    SEPARATOR_WIDTH_REPORT, PERCENT_MULTIPLIER,
 )
 from .strategy_diagnostics import StrategyDiagnostics, run_strategy_diagnostics
 
@@ -84,6 +84,7 @@ def run_full_diagnostics(
     low_semantic: float,
     cv_folds: int,
     diagnostic_mlp_hidden_sizes: tuple,
+    architecture_module_limit: int,
 ) -> Tuple[List[StrategyDiagnostics], str]:
     """
     Run full diagnostics across multiple strategies.
@@ -111,7 +112,7 @@ def run_full_diagnostics(
 
     if collector is None:
         store_dev = "mps" if torch.backends.mps.is_available() else "cpu"
-        collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT, store_device=store_dev)
+        collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit, store_device=store_dev)
 
     all_diagnostics = []
     for strategy in strategies:

@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 import torch
 
 from wisent.core.primitives.models.core.atoms import SteeringPlan, SteeringVector
-from wisent.core.utils.config_tools.constants import ARCHITECTURE_MODULE_LIMIT
+
 
 logger = logging.getLogger(__name__)
 
@@ -174,6 +174,8 @@ def get_optimal_steering_plan(
     train_pairs: "ContrastivePairSet",
     method: str = "*",
     aggregation: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
+    *,
+    architecture_module_limit: int,
 ) -> Optional[Tuple["SteeringPlan", Dict[str, Any]]]:
     """
     Load optimal config and create a ready-to-use steering plan.
@@ -216,7 +218,7 @@ def get_optimal_steering_plan(
     method_name = config["method"]
     
     # Collect activations for the optimal layer
-    collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
     layer_str = str(layer)
     
     pos_acts = []

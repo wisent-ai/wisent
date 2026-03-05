@@ -3,7 +3,7 @@
 import torch
 import numpy as np
 from typing import Tuple
-from wisent.core.utils.config_tools.constants import NORM_EPS, SAE_L1_COEF_DEFAULT, SAE_N_EPOCHS_DEFAULT
+from wisent.core.utils.config_tools.constants import NORM_EPS
 
 
 # =============================================================================
@@ -93,8 +93,8 @@ def train_sparse_autoencoder(
     hidden_dim: int,
     batch_size: int,
     lr: float,
-    l1_coef: float = SAE_L1_COEF_DEFAULT,
-    n_epochs: int = SAE_N_EPOCHS_DEFAULT,
+    l1_coef: float,
+    n_epochs: int,
     verbose: bool = True,
 ) -> SparseAutoencoder:
     """

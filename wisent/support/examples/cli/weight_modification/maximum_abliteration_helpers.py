@@ -4,12 +4,6 @@ import subprocess
 from dataclasses import dataclass
 
 from wisent.core.utils.config_tools.constants import (
-    ABLITERATION_NUM_PAIRS,
-    ABLITERATION_DEFAULT_POSITION,
-    ABLITERATION_DEFAULT_DISTANCE,
-    ABLITERATION_BINARY_SEARCH_LOW,
-    ABLITERATION_BINARY_SEARCH_HIGH,
-    ABLITERATION_BINARY_SEARCH_ITERS,
     DISPLAY_TRUNCATION_LARGE,
     SEPARATOR_WIDTH_REPORT,
 )
@@ -124,10 +118,12 @@ def binary_search_strength(
     model: str,
     base_dir: str,
     baseline_acc: float,
-    low: float = ABLITERATION_BINARY_SEARCH_LOW,
-    high: float = ABLITERATION_BINARY_SEARCH_HIGH,
-    iterations: int = ABLITERATION_BINARY_SEARCH_ITERS,
-    num_pairs: int = ABLITERATION_NUM_PAIRS,
+    low: float,
+    high: float,
+    iterations: int,
+    num_pairs: int,
+    max_weight_position: float,
+    min_weight_distance: float,
     *,
     limit: int,
 ) -> tuple[float, float, float]:
@@ -152,8 +148,8 @@ def binary_search_strength(
             min_weight=0.4,
             strength=mid,
             num_pairs=num_pairs,
-            max_weight_position=ABLITERATION_DEFAULT_POSITION,
-            min_weight_distance=ABLITERATION_DEFAULT_DISTANCE,
+            max_weight_position=max_weight_position,
+            min_weight_distance=min_weight_distance,
             components=["self_attn.o_proj", "mlp.down_proj"],
         )
 
@@ -181,7 +177,9 @@ def grid_search_components(
     model: str,
     base_dir: str,
     baseline_acc: float,
-    num_pairs: int = ABLITERATION_NUM_PAIRS,
+    num_pairs: int,
+    max_weight_position: float,
+    min_weight_distance: float,
     *,
     limit: int,
 ) -> tuple[list[str], float]:
@@ -213,8 +211,8 @@ def grid_search_components(
             min_weight=0.4,
             strength=1.0,
             num_pairs=num_pairs,
-            max_weight_position=ABLITERATION_DEFAULT_POSITION,
-            min_weight_distance=ABLITERATION_DEFAULT_DISTANCE,
+            max_weight_position=max_weight_position,
+            min_weight_distance=min_weight_distance,
             components=components,
         )
 
@@ -238,7 +236,9 @@ def grid_search_kernel_shape(
     model: str,
     base_dir: str,
     baseline_acc: float,
-    num_pairs: int = ABLITERATION_NUM_PAIRS,
+    num_pairs: int,
+    initial_position: float,
+    initial_distance: float,
     best_components: list[str] = None,
     *,
     limit: int,
@@ -259,8 +259,8 @@ def grid_search_kernel_shape(
     positions = [6.0, 7.0, 8.0, 9.0, 10.0]  # Middle-ish layers
     distances = [4.0, 5.0, 6.0, 7.0, 8.0]   # How wide the kernel is
 
-    best_position = ABLITERATION_DEFAULT_POSITION
-    best_distance = ABLITERATION_DEFAULT_DISTANCE
+    best_position = initial_position
+    best_distance = initial_distance
     best_acc = baseline_acc
     best_acc_norm = 0.0
 

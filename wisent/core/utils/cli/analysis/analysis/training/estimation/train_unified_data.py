@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from wisent.core import constants as _C
 
 
-def collect_pairs_and_train(args, wisent_model, layers, checkpoint_dir, benchmarks, loader):
+def collect_pairs_and_train(args, wisent_model, layers, checkpoint_dir, benchmarks, loader, *, architecture_module_limit: int):
     """Collect pairs from benchmarks, train steering vector. Returns (vectors, train, eval, benchmarks)."""
     from wisent.core.utils.cli.analysis.training.train_unified_goodness import (
         save_checkpoint, load_checkpoint,
@@ -171,7 +171,7 @@ def collect_pairs_and_train(args, wisent_model, layers, checkpoint_dir, benchmar
         negative_activations = activations_checkpoint['negative_activations']
         print(f"   ✓ Loaded activations from checkpoint ({len(positive_activations[layers[0]])} pairs)")
     else:
-        collector = ActivationCollector(model=model, architecture_module_limit=_C.ARCHITECTURE_MODULE_LIMIT)
+        collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
 
         # Collect activations for all training pairs using batched processing
         positive_activations = {layer: [] for layer in layers}

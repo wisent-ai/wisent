@@ -89,6 +89,8 @@ def check_linearity(
     pairs: List,
     model: "WisentModel",
     config: Optional[LinearityConfig] = None,
+    *,
+    architecture_module_limit: int,
 ) -> LinearityResult:
     """
     Check if a representation is linear by sweeping across collection parameters.
@@ -104,13 +106,13 @@ def check_linearity(
     from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
     from wisent.core.reading.diagnostics import detect_geometry_structure, GeometryAnalysisConfig
     from wisent.core.utils.config_tools.constants import (
-        PARSER_DEFAULT_LAYER_START, COMBO_OFFSET, ARCHITECTURE_MODULE_LIMIT,
+        PARSER_DEFAULT_LAYER_START, COMBO_OFFSET,
     )
 
     if config is None:
         raise ValueError("config (LinearityConfig) is required")
     cfg = config
-    collector = ActivationCollector(model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model, architecture_module_limit=architecture_module_limit)
 
     num_layers = model.hf_model.config.num_hidden_layers
 

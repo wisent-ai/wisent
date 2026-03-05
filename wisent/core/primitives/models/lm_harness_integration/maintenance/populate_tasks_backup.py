@@ -11,7 +11,7 @@ import os
 import sys
 import subprocess
 
-from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG, BENCH_TEST_SAMPLE_SIZE, JSON_INDENT, SEPARATOR_WIDTH_MEDIUM
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG, JSON_INDENT, SEPARATOR_WIDTH_MEDIUM
 
 # Re-export all public API from the split parts
 from wisent.core.primitives.models.lm_harness_integration._populate_backup import (
@@ -47,10 +47,10 @@ def test_prompt_benchmark_matching(test_prompt: str = "I like food"):
     return results
 
 
-def test_sample_retrieval(task_name: str, timeout: int):
+def test_sample_retrieval(task_name: str, timeout: int, num_samples: int):
     """Test function to demonstrate the get_task_samples_for_analysis function."""
     print(f"\n=== Testing Sample Retrieval for '{task_name}' ===")
-    result = get_task_samples_for_analysis(task_name, timeout=timeout, num_samples=BENCH_TEST_SAMPLE_SIZE)
+    result = get_task_samples_for_analysis(task_name, timeout=timeout, num_samples=num_samples)
     if "error" in result:
         print(f"Error: {result['error']}")
         return False
@@ -85,7 +85,7 @@ def test_sample_retrieval(task_name: str, timeout: int):
     return True
 
 
-def test_specific_task(timeout: int):
+def test_specific_task(timeout: int, num_samples: int):
     """Test the specific problematic task for error handling."""
     print("\nTesting specific problematic tasks...")
     test_tasks = [
@@ -95,7 +95,7 @@ def test_specific_task(timeout: int):
     for task_name in test_tasks:
         print(f"\nTesting task: {task_name}")
         try:
-            result = get_task_samples_for_analysis(task_name, timeout=timeout, num_samples=BENCH_TEST_SAMPLE_SIZE)
+            result = get_task_samples_for_analysis(task_name, timeout=timeout, num_samples=num_samples)
             print(f"Result keys: {list(result.keys())}")
             if 'error' in result:
                 print(f"Error: {result['error']}")
@@ -113,12 +113,12 @@ def test_specific_task(timeout: int):
             traceback.print_exc()
 
 
-def main(timeout: int):
+def main(timeout: int, num_samples: int):
     """Main function to populate tasks.json."""
     if len(sys.argv) > 1 and sys.argv[1] == "test":
         task_name = sys.argv[2] if len(sys.argv) > 2 else "truthfulqa_mc1"
         print(f"Running in TEST MODE")
-        success = test_sample_retrieval(task_name, timeout=timeout)
+        success = test_sample_retrieval(task_name, timeout=timeout, num_samples=num_samples)
         if success:
             print(f"\nTest completed successfully!")
         else:
@@ -214,9 +214,10 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--timeout", type=int, required=True, help="HTTP timeout in seconds")
+    parser.add_argument("--num-samples", type=int, required=True, help="Number of samples to retrieve per task")
     parser.add_argument("mode", nargs="?", default="run")
     args = parser.parse_args()
     if args.mode == "test":
-        test_specific_task(timeout=args.timeout)
+        test_specific_task(timeout=args.timeout, num_samples=args.num_samples)
     else:
-        main(timeout=args.timeout)
+        main(timeout=args.timeout, num_samples=args.num_samples)

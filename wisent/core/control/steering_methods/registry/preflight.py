@@ -102,11 +102,9 @@ def run_preflight_check(
     chosen_method: str,
     config: Optional[GeometryAnalysisConfig] = None,
     *,
-    thresholds: Optional[PreflightThresholds] = None,
+    thresholds: PreflightThresholds,
 ) -> PreflightCheckResult:
     """Run pre-flight check for a steering method."""
-    if thresholds is None:
-        thresholds = PreflightThresholds()
     geo_result = detect_geometry_structure(pos_activations, neg_activations, config)
     is_compatible, compat_score, warnings = check_method_compatibility(
         chosen_method, geo_result, thresholds=thresholds,
@@ -126,11 +124,9 @@ def check_method_compatibility(
     method: str,
     geo_result: GeometryAnalysisResult,
     *,
-    thresholds: Optional[PreflightThresholds] = None,
+    thresholds: PreflightThresholds,
 ) -> Tuple[bool, float, List[PreflightWarning]]:
     """Check if a steering method is compatible with detected geometry."""
-    if thresholds is None:
-        thresholds = PreflightThresholds()
     warnings: List[PreflightWarning] = []
     method_lower = method.lower()
     best_structure = geo_result.best_structure

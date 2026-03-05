@@ -10,7 +10,7 @@ from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.primitives.models.core.atoms import SteeringPlan, SteeringVector
 from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
-from wisent.core.utils.config_tools.constants import NORM_EPS, ARCHITECTURE_MODULE_LIMIT
+from wisent.core.utils.config_tools.constants import NORM_EPS
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +140,8 @@ def collect_activations_for_pair_set(
     pair_set: ContrastivePairSet,
     layers: List[str],
     aggregation: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
+    *,
+    architecture_module_limit: int,
 ) -> ContrastivePairSet:
     """
     Collect activations for all pairs in a ContrastivePairSet.
@@ -153,7 +155,7 @@ def collect_activations_for_pair_set(
     Returns:
         Updated ContrastivePairSet with activations attached
     """
-    collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
     
     updated_pairs = []
     for pair in pair_set.pairs:

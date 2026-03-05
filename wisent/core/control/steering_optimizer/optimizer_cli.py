@@ -27,7 +27,7 @@ def run_steering_optimization(
     verbose: bool = False,
     max_time_minutes: float = None,
     min_clusters: int = None,
-    tecza_params: Optional[Dict[str, Any]] = None, *, train_ratio: float,
+    tecza_params: Optional[Dict[str, Any]] = None, *, architecture_module_limit: int, progress_log_interval: int, train_ratio: float,
 ) -> Dict[str, Any]:
     """
     Run steering optimization with the specified type.
@@ -68,6 +68,7 @@ def run_steering_optimization(
             layer_range=layer_range,
             min_clusters=min_clusters,
             tecza_params=tecza_params,
+            architecture_module_limit=architecture_module_limit, progress_log_interval=progress_log_interval,
             train_ratio=train_ratio,
         )
 

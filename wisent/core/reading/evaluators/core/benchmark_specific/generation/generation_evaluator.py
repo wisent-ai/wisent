@@ -14,8 +14,6 @@ from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
 from wisent.core.utils.infra_tools.errors import NumericalExtractionError, TextExtractionError
 from wisent.core.utils.config_tools.constants import (
     COMPARE_TOL,
-    GENERATION_EMBEDDING_WEIGHT,
-    GENERATION_NLI_WEIGHT,
 )
 from wisent.core.reading.evaluators.benchmark_specific._generation_evaluator_helpers import (
     GenerationEvaluatorHelpersMixin,
@@ -66,8 +64,8 @@ class GenerationEvaluator(GenerationEvaluatorHelpersMixin, BaseEvaluator):
     def __init__(
         self,
         *,
-        generation_embedding_weight: float = GENERATION_EMBEDDING_WEIGHT,
-        generation_nli_weight: float = GENERATION_NLI_WEIGHT,
+        generation_embedding_weight: float,
+        generation_nli_weight: float,
     ):
         """Initialize with semantic matching weights.
 

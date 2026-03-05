@@ -9,14 +9,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, List
 
 from wisent.core.control.steering_methods.configs.validated_defaults import VALIDATED_EXTRACTION_STRATEGY
-from wisent.core.utils.config_tools.constants import PROGRESS_LOG_INTERVAL_10, ARCHITECTURE_MODULE_LIMIT
+from wisent.core.utils.config_tools.constants import PROGRESS_LOG_INTERVAL_10
 
 if TYPE_CHECKING:
     from wisent.core.primitives.models.wisent_model import WisentModel
     from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 
 
-def train_nurt_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
+def train_nurt_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"], *, architecture_module_limit: int):
     """Train Concept Flow on contrastive pairs and return a NurtSteeringObject."""
     from wisent.core.control.steering_methods.methods.nurt import NurtMethod
     from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
@@ -32,7 +32,7 @@ def train_nurt_for_task(args, wisent_model: "WisentModel", pairs: List["Contrast
     if args.verbose:
         print(f"  Collecting activations for Concept Flow training...")
 
-    collector = ActivationCollector(model=wisent_model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model=wisent_model, architecture_module_limit=architecture_module_limit)
     layer_acts = {l: {"positive": [], "negative": []} for l in layers}
 
     for i, pair in enumerate(pairs):
@@ -56,7 +56,7 @@ def train_nurt_for_task(args, wisent_model: "WisentModel", pairs: List["Contrast
     return _create_nurt_steering_object(meta, layer_acts, layers, args)
 
 
-def train_szlak_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
+def train_szlak_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"], *, architecture_module_limit: int):
     """Train SZLAK on contrastive pairs and return a SzlakSteeringObject."""
     from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
     from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
@@ -70,7 +70,7 @@ def train_szlak_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
     if args.verbose:
         print(f"  Collecting activations for SZLAK training...")
 
-    collector = ActivationCollector(model=wisent_model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model=wisent_model, architecture_module_limit=architecture_module_limit)
     layer_acts = {l: {"positive": [], "negative": []} for l in layers}
 
     for i, pair in enumerate(pairs):
@@ -94,7 +94,7 @@ def train_szlak_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
     return _create_szlak_steering_object(meta, layer_acts, layers, args)
 
 
-def train_wicher_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
+def train_wicher_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"], *, architecture_module_limit: int):
     """Train WICHER on contrastive pairs and return a WicherSteeringObject."""
     from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
     from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
@@ -108,7 +108,7 @@ def train_wicher_for_task(args, wisent_model: "WisentModel", pairs: List["Contra
     if args.verbose:
         print(f"  Collecting activations for WICHER training...")
 
-    collector = ActivationCollector(model=wisent_model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model=wisent_model, architecture_module_limit=architecture_module_limit)
     layer_acts = {l: {"positive": [], "negative": []} for l in layers}
 
     for i, pair in enumerate(pairs):

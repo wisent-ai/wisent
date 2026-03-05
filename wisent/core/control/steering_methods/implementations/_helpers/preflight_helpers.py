@@ -5,49 +5,38 @@ from typing import Dict, List, Tuple
 from wisent.core.reading.diagnostics.control_vectors.geometry.geometry_types import StructureType
 from wisent.core.utils.config_tools.constants import (
     SCORE_RANGE_MIN, SEPARATOR_WIDTH_STANDARD,
-    PREFLIGHT_LINEAR_EXCELLENT, PREFLIGHT_LINEAR_GOOD,
-    PREFLIGHT_CONE_GOOD, PREFLIGHT_MANIFOLD_HIGH,
-    PREFLIGHT_LINEAR_OVERKILL, PREFLIGHT_LINEAR_VERY_HIGH,
-    PREFLIGHT_GROM_DEFAULT, PREFLIGHT_GROM_MANIFOLD_EXCELLENT,
-    PREFLIGHT_BIMODAL_GOOD, PREFLIGHT_TETNO_BIMODAL,
-    PREFLIGHT_TETNO_LINEAR_OVERKILL,
-    PREFLIGHT_COMPAT_SCORE_CAA_EXCELLENT, PREFLIGHT_COMPAT_SCORE_CAA_GOOD,
-    PREFLIGHT_COMPAT_SCORE_CAA_POOR, PREFLIGHT_COMPAT_SCORE_CAA_DEFAULT,
-    PREFLIGHT_COMPAT_SCORE_TECZA_EXCELLENT,
-    PREFLIGHT_COMPAT_SCORE_TECZA_OVERKILL,
-    PREFLIGHT_COMPAT_SCORE_TECZA_DEFAULT,
-    PREFLIGHT_COMPAT_SCORE_TETNO_DEFAULT,
-    PREFLIGHT_COMPAT_MIN_COMPATIBLE, PREFLIGHT_COMPAT_UNKNOWN_DEFAULT,
-    PREFLIGHT_SPARSE_HIGH,
 )
 
 
 @dataclass(frozen=True)
 class PreflightThresholds:
-    """All preflight compatibility threshold values."""
+    """All preflight compatibility threshold values.
 
-    linear_excellent: float = PREFLIGHT_LINEAR_EXCELLENT
-    linear_good: float = PREFLIGHT_LINEAR_GOOD
-    cone_good: float = PREFLIGHT_CONE_GOOD
-    manifold_high: float = PREFLIGHT_MANIFOLD_HIGH
-    linear_overkill: float = PREFLIGHT_LINEAR_OVERKILL
-    linear_very_high: float = PREFLIGHT_LINEAR_VERY_HIGH
-    grom_default: float = PREFLIGHT_GROM_DEFAULT
-    grom_manifold_excellent: float = PREFLIGHT_GROM_MANIFOLD_EXCELLENT
-    bimodal_good: float = PREFLIGHT_BIMODAL_GOOD
-    tetno_bimodal: float = PREFLIGHT_TETNO_BIMODAL
-    tetno_linear_overkill: float = PREFLIGHT_TETNO_LINEAR_OVERKILL
-    compat_score_caa_excellent: float = PREFLIGHT_COMPAT_SCORE_CAA_EXCELLENT
-    compat_score_caa_good: float = PREFLIGHT_COMPAT_SCORE_CAA_GOOD
-    compat_score_caa_poor: float = PREFLIGHT_COMPAT_SCORE_CAA_POOR
-    compat_score_caa_default: float = PREFLIGHT_COMPAT_SCORE_CAA_DEFAULT
-    compat_score_tecza_excellent: float = PREFLIGHT_COMPAT_SCORE_TECZA_EXCELLENT
-    compat_score_tecza_overkill: float = PREFLIGHT_COMPAT_SCORE_TECZA_OVERKILL
-    compat_score_tecza_default: float = PREFLIGHT_COMPAT_SCORE_TECZA_DEFAULT
-    compat_score_tetno_default: float = PREFLIGHT_COMPAT_SCORE_TETNO_DEFAULT
-    compat_min_compatible: float = PREFLIGHT_COMPAT_MIN_COMPATIBLE
-    compat_unknown_default: float = PREFLIGHT_COMPAT_UNKNOWN_DEFAULT
-    sparse_high: float = PREFLIGHT_SPARSE_HIGH
+    All fields are required - callers must provide explicit values.
+    """
+
+    linear_excellent: float
+    linear_good: float
+    cone_good: float
+    manifold_high: float
+    linear_overkill: float
+    linear_very_high: float
+    grom_default: float
+    grom_manifold_excellent: float
+    bimodal_good: float
+    tetno_bimodal: float
+    tetno_linear_overkill: float
+    compat_score_caa_excellent: float
+    compat_score_caa_good: float
+    compat_score_caa_poor: float
+    compat_score_caa_default: float
+    compat_score_tecza_excellent: float
+    compat_score_tecza_overkill: float
+    compat_score_tecza_default: float
+    compat_score_tetno_default: float
+    compat_min_compatible: float
+    compat_unknown_default: float
+    sparse_high: float
 
 
 def complete_method_compatibility_check(

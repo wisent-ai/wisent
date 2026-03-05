@@ -18,7 +18,7 @@ from wisent.core.primitives.models.modalities import VideoContent
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
 from wisent.core.primitives.model_interface.adapters.modalities._video_helpers.video_core import VideoSteeringConfig
-from wisent.core.utils.config_tools.constants import NORM_EPS, TEMPORAL_RAMP_MIN, TEMPORAL_RAMP_MAX
+from wisent.core.utils.config_tools.constants import NORM_EPS, TEMPORAL_RAMP_MAX
 
 
 class VideoOpsMixin:
@@ -78,6 +78,8 @@ class VideoOpsMixin:
         vector: torch.Tensor,
         config: VideoSteeringConfig,
         num_frames: int,
+        *,
+        temporal_ramp_min: float,
     ):
         """Create a hook with temporal-aware steering."""
         def hook(module: nn.Module, input: tuple, output: torch.Tensor) -> torch.Tensor:
@@ -95,7 +97,7 @@ class VideoOpsMixin:
                 )
                 v = v * decay.view(-1, 1, 1) if v.dim() >= 3 else v * decay.mean()
             elif config.frame_mode == "temporal_ramp":
-                ramp = torch.linspace(TEMPORAL_RAMP_MIN, TEMPORAL_RAMP_MAX, num_frames, device=output.device)
+                ramp = torch.linspace(temporal_ramp_min, TEMPORAL_RAMP_MAX, num_frames, device=output.device)
                 v = v * ramp.view(-1, 1, 1) if v.dim() >= 3 else v * ramp.mean()
             v = v * config.scale
             while v.dim() < output.dim():

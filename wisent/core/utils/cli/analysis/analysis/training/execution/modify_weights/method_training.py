@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, List, Dict, Any, Tuple
 
 import torch
-from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_STANDARD, PROGRESS_LOG_INTERVAL_10, ARCHITECTURE_MODULE_LIMIT, COMBO_OFFSET, RECURSION_INITIAL_DEPTH
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_STANDARD, PROGRESS_LOG_INTERVAL_10, COMBO_OFFSET, RECURSION_INITIAL_DEPTH
 from wisent.core.utils.infra_tools.errors import MissingParameterError
 
 if TYPE_CHECKING:
@@ -29,122 +29,7 @@ def get_all_layers(model) -> List[str]:
 
     return [str(i) for i in range(COMBO_OFFSET, num_layers + COMBO_OFFSET)]
 
-def auto_select_steering_method(
-    pairs: List["ContrastivePair"],
-    model: "WisentModel",
-    min_clusters: int,
-    verbose: bool = False,
-    *,
-    spectral_n_neighbors: int,
-    geometry_cv_folds: int,
-    min_layer_activations_for_geometry: int,
-    method_selection_sample_size: int,
-    layer_sampling_divisor: int,
-    subsample_threshold: int,
-    pca_dims_limit: int,
-) -> Tuple[str, str, Optional[Dict[str, Any]]]:
-    """
-    Automatically select the best steering method based on zwiad geometry analysis.
-
-    Returns:
-        tuple: (steering_method, modification_method, metrics)
-    """
-    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
-    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
-    from wisent.core.reading.modules import (
-        compute_geometry_metrics,
-        compute_recommendation,
-        compute_concept_coherence,
-    )
-
-    if verbose:
-        print("\n" + "=" * SEPARATOR_WIDTH_STANDARD)
-        print("AUTO-SELECTING STEERING METHOD (zwiad)")
-        print("=" * SEPARATOR_WIDTH_STANDARD)
-        print("   Analyzing activation geometry...")
-
-    collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
-    sample_pairs = pairs[:min(method_selection_sample_size, len(pairs))]
-
-    if not hasattr(model, 'num_layers'):
-        raise ValueError("Cannot determine num_layers from model")
-    num_layers = model.num_layers
-    layer_step = max(COMBO_OFFSET, num_layers // layer_sampling_divisor)
-    candidate_layers = list(range(RECURSION_INITIAL_DEPTH, num_layers, layer_step))
-    if (num_layers - 1) not in candidate_layers:
-        candidate_layers.append(num_layers - 1)
-    candidate_layer_strs = [str(l) for l in candidate_layers]
-
-    # Collect activations from all candidate layers
-    layer_pos = {l: [] for l in candidate_layer_strs}
-    layer_neg = {l: [] for l in candidate_layer_strs}
-
-    for pair in sample_pairs:
-        enriched = collector.collect(
-            pair,
-            strategy=ExtractionStrategy.default(),
-            layers=candidate_layer_strs,
-        )
-        for l in candidate_layer_strs:
-            if enriched.positive_response.layers_activations.get(l) is not None:
-                layer_pos[l].append(enriched.positive_response.layers_activations[l])
-            if enriched.negative_response.layers_activations.get(l) is not None:
-                layer_neg[l].append(enriched.negative_response.layers_activations[l])
-
-    # Pick the layer with the strongest signal
-    best_lpa, best_metrics, best_layer = -1.0, None, candidate_layer_strs[0]
-    for l in candidate_layer_strs:
-        if len(layer_pos[l]) < min_layer_activations_for_geometry or len(layer_neg[l]) < min_layer_activations_for_geometry:
-            continue
-        pt = torch.stack(layer_pos[l])
-        nt = torch.stack(layer_neg[l])
-        m = compute_geometry_metrics(pt, nt, min_clusters=min_clusters, n_folds=geometry_cv_folds, spectral_n_neighbors=spectral_n_neighbors, subsample_threshold=subsample_threshold, pca_dims_limit=pca_dims_limit)
-        lpa = m.get('linear_probe_accuracy', 0.0)
-        if lpa > best_lpa:
-            best_lpa, best_metrics, best_layer = lpa, m, l
-
-    if best_metrics is None:
-        if verbose:
-            print("   Warning: Insufficient activations for analysis, defaulting to GROM")
-        return "grom", "grom", None
-
-    pos_tensor = torch.stack(layer_pos[best_layer])
-    neg_tensor = torch.stack(layer_neg[best_layer])
-    metrics = best_metrics
-    recommendation = compute_recommendation(metrics)
-    recommended_method = recommendation.get("recommended_method", "GROM").upper()
-    confidence = recommendation["confidence"]
-    reasoning = recommendation.get("reasoning", "")
-
-    coherence = compute_concept_coherence(pos_tensor, neg_tensor)
-
-    if verbose:
-        print(f"\n   Repscan Analysis Results:")
-        print(f"   - Linear probe accuracy: {metrics['linear_probe_accuracy']:.3f}")
-        print(f"   - Signal strength:       {metrics['signal_strength']:.3f}")
-        print(f"   - Concept coherence:     {coherence:.3f}")
-        print(f"   - Steerability score:    {metrics['steer_steerability_score']:.3f}")
-        print(f"   - ICD:                   {metrics['icd_icd']:.1f}")
-        print(f"   - Recommendation:        {recommended_method} (confidence={confidence:.2f})")
-        print(f"       Reasoning: {reasoning}")
-
-    if recommended_method == "CAA":
-        steering_method = "caa"
-        modification_method = "directional"
-    elif recommended_method == "TECZA":
-        steering_method = "tecza"
-        modification_method = "tecza"
-    else:
-        steering_method = "grom"
-        modification_method = "grom"
-
-    if verbose:
-        print(f"\n   Selected: {steering_method.upper()} / {modification_method}")
-        print("=" * SEPARATOR_WIDTH_STANDARD + "\n")
-
-    return steering_method, modification_method, metrics
-
-def train_grom_for_task(args, model: "WisentModel", pairs: List["ContrastivePair"]):
+def train_grom_for_task(args, model: "WisentModel", pairs: List["ContrastivePair"], *, architecture_module_limit: int):
     """Train GROM on contrastive pairs and return the GROMResult."""
     from wisent.core.control.steering_methods.methods.grom import GROMMethod
     from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
@@ -169,7 +54,7 @@ def train_grom_for_task(args, model: "WisentModel", pairs: List["ContrastivePair
         layers = [str(l) for l in str(args.layers).split(',')]
     strategy = ExtractionStrategy.CHAT_LAST
 
-    collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
     enriched_pairs = []
     for i, pair in enumerate(pair_set.pairs):
         enriched_pair = collector.collect(pair, strategy=strategy, layers=layers)
@@ -199,7 +84,7 @@ def train_grom_for_task(args, model: "WisentModel", pairs: List["ContrastivePair
 
     return grom_result
 
-def train_tetno_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
+def train_tetno_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"], *, architecture_module_limit: int):
     """Train TETNO steering for a task."""
     from wisent.core.control.steering_methods.methods.advanced import TETNOMethod
     from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
@@ -215,7 +100,7 @@ def train_tetno_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
     if args.verbose:
         print(f"  Collecting activations for TETNO training...")
 
-    collector = ActivationCollector(model=wisent_model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model=wisent_model, architecture_module_limit=architecture_module_limit)
     enriched_pairs = []
 
     for i, pair in enumerate(pairs):
@@ -245,7 +130,7 @@ def train_tetno_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
 
     return tetno_result
 
-def train_tecza_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
+def train_tecza_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"], *, architecture_module_limit: int):
     """Train TECZA steering for a task."""
     from wisent.core.control.steering_methods.methods.advanced import TECZAMethod
     from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
@@ -255,7 +140,7 @@ def train_tecza_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
     layers = args.layers.split(',') if args.layers else get_all_layers(wisent_model)
     if args.verbose:
         print(f"  Collecting activations for TECZA training...")
-    collector = ActivationCollector(model=wisent_model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model=wisent_model, architecture_module_limit=architecture_module_limit)
     enriched_pairs = []
     for i, pair in enumerate(pairs):
         enriched = collector.collect(pair, strategy=ExtractionStrategy.default(), layers=layers)

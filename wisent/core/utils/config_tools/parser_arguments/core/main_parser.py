@@ -46,7 +46,6 @@ from wisent.core.utils.config_tools.parser_arguments.optimization.steering impor
     setup_classification_optimizer_parser,
     setup_steering_optimizer_parser,
     setup_sample_size_optimizer_parser,
-    setup_tune_recommendation_parser,
 )
 from wisent.core.utils.config_tools.parser_arguments.optimization import (
     setup_optimize_all_parser,
@@ -284,9 +283,6 @@ def setup_parser() -> argparse.ArgumentParser:
     setup_discover_steering_parser(discover_steering_parser)
     migrate_activations_parser = subparsers.add_parser("migrate-activations", help="Migrate activation data to HuggingFace Hub")
     setup_migrate_activations_parser(migrate_activations_parser)
-    tune_rec_parser = subparsers.add_parser("tune-recommendation", help="Tune steering recommendation weights")
-    setup_tune_recommendation_parser(tune_rec_parser)
-
     compare_steering_parser = subparsers.add_parser("compare-steering", help="Compare steering objects across traits")
     setup_compare_steering_parser(compare_steering_parser)
     return parser

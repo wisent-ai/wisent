@@ -7,7 +7,7 @@ import torch
 
 from wisent.core.primitives.models.core.atoms import SteeringPlan, GenerationStats, TopLogits
 from wisent.core.control.generation.prompts.core.atom import ChatMessage
-from wisent.core.utils.config_tools.constants import MODEL_COLLECT_TOPK
+
 from wisent.core.primitives.models.config import get_generate_kwargs
 
 
@@ -17,7 +17,8 @@ def _generate_with_stats(
     inputs: list[list[ChatMessage]],
     steering_strength: float,
     num_return_sequences: int = 1,
-    collect_topk: int = MODEL_COLLECT_TOPK,
+    *,
+    collect_topk: int,
     use_steering: bool = False,
     steering_plan: SteeringPlan | None = None,
     steering_object: "BaseSteeringObject | None" = None,

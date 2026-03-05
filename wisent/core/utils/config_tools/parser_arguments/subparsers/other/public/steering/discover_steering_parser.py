@@ -1,8 +1,5 @@
 """Parser for the 'discover-steering' command - find optimal steering directions."""
 
-from wisent.core.utils.config_tools.constants import COMPARISON_STEERING_LAYER
-
-
 def setup_discover_steering_parser(parser):
     """Set up the discover-steering command parser."""
     parser.add_argument(
@@ -14,8 +11,8 @@ def setup_discover_steering_parser(parser):
         help="Task/benchmark name in database (e.g., truthfulqa_custom)"
     )
     parser.add_argument(
-        "--layer", type=int, default=COMPARISON_STEERING_LAYER,
-        help="Primary layer to test (default: 12)"
+        "--layer", type=int, required=True,
+        help="Primary layer to test"
     )
     parser.add_argument(
         "--layer-range", type=str, default=None,

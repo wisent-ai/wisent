@@ -20,7 +20,7 @@ from wisent.core.primitives.model_interface.core.activations import ExtractionSt
 from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
-from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD, ARCHITECTURE_MODULE_LIMIT
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD
 
 
 WORD_LIST = [
@@ -123,9 +123,11 @@ def collect_activations(
     pairs: List[ContrastivePair],
     strategy: ExtractionStrategy,
     layer: int,
+    *,
+    architecture_module_limit: int,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Collect activations for positive and negative responses."""
-    collector = ActivationCollector(model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model, architecture_module_limit=architecture_module_limit)
     
     pos_acts = []
     neg_acts = []

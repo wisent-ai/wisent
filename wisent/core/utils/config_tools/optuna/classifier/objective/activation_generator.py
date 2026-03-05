@@ -12,7 +12,7 @@ from typing import Any, Optional
 import numpy as np
 import torch
 
-from wisent.core.utils.config_tools.constants import ARCHITECTURE_MODULE_LIMIT
+
 from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 from wisent.core.primitives.model_interface.core.activations.activations import Activations
@@ -134,7 +134,7 @@ class ActivationGenerator:
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
     def generate_from_contrastive_pairs(
-        self, model, contrastive_pairs: list, task_name: str, model_name: str, limit: int
+        self, model, contrastive_pairs: list, task_name: str, model_name: str, limit: int, *, architecture_module_limit: int,
     ) -> dict[str, ActivationData]:
         """
         Generate activations from contrastive pairs.
@@ -161,7 +161,7 @@ class ActivationGenerator:
         self.logger.info(f"Generating activations for {len(contrastive_pairs)} contrastive pairs")
 
         # Initialize activation collector
-        collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+        collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
         activation_data = {}
 
         for layer in range(self.config.layer_search_range[0], self.config.layer_search_range[1] + 1):

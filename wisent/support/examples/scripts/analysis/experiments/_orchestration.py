@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
-from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, N_BOOTSTRAP_DEFAULT, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM
 from wisent.core.primitives.models.wisent_model import WisentModel
 
 from ._data_loading import extract_difference_vectors
@@ -161,7 +161,7 @@ def run_single_sample_detection(
     model_name: str,
     pairs: List[Dict],
     layer: int = None,
-    n_bootstrap: int = N_BOOTSTRAP_DEFAULT,
+    n_bootstrap: int,
     seed: int = DEFAULT_RANDOM_SEED,
     *,
     kmeans_n_init_small: int,

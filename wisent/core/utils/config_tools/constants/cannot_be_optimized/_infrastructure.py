@@ -18,6 +18,8 @@ DOCKER_CPU_QUOTA_50PCT_US = 50000
 # --- Combinatorics ---
 COMBO_BASE = 2
 COMBO_OFFSET = 1
+# --- Exit codes ---
+EXIT_CODE_ERROR = 1
 # --- Data loading ---
 QA_PARSER_LOOKAHEAD_LINES = 10
 # --- Timing ---
@@ -37,12 +39,27 @@ JAVA_INDENT_SPACES = 4
 GRADIENT_ACCUMULATION_STEPS_DEFAULT = 1
 # --- Limits ---
 MAX_BENCHMARKS_SINGLE = 1
-ARCHITECTURE_MODULE_LIMIT = 50
 MIN_CHOICES_VALIDATION = 2
 DIAGNOSTICS_TOTAL_CHECKS = 4
 # --- Token limits ---
 MAX_NEW_TOKENS_VERIFY_SINGLE = 1
 AUDIO_WHISPER_MAX_TOKENS = 448
+# --- Numpy axis and index constants ---
+SEARCH_INIT_NEGATIVE = -1.0
+AXIS_ROWS = 0
+AXIS_COLS = 1
+INDEX_FIRST = 0
+INDEX_SECOND = 1
+# --- Split ratios ---
+SPLIT_RATIO_HALF = 0.5
+# --- Sensor layer computation ---
+SENSOR_STRIDE_MIN = 1
+SENSOR_RANGE_START = 0
+SENSOR_LAST_OFFSET = 1
+# --- Split ratios ---
+SPLIT_RATIO_70 = 0.7
+# --- Temporal ramp ---
+TEMPORAL_RAMP_MAX = 1.0
 # --- Thresholds ---
 SCORE_MIDPOINT_PCT = 50
 # --- String identity constants ---

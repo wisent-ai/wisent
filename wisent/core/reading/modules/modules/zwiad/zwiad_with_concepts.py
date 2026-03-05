@@ -111,8 +111,7 @@ def run_zwiad_with_concept_naming(
     results = {
         "n_pairs": n_pairs, "n_layers": n_layers, "layers_used": sorted_layers,
         "total_dims": pos_concat.shape[1], "steps_run": list(steps_to_run),
-        "metrics": metrics, "recommended_method": metrics.get("recommended_method"),
-        "recommendation_confidence": metrics.get("recommendation_confidence"),
+        "metrics": metrics,
     }
     _save_checkpoint(results, output_path)
     signal_result, geometry_result, decomposition_result, editability_result = None, None, None, None
@@ -217,7 +216,7 @@ def run_zwiad_with_concept_naming(
         _save_checkpoint(results, output_path)
     # Step 4: Intervention Selection
     if "intervention" in steps_to_run and signal_result and geometry_result and decomposition_result:
-        intervention = select_intervention(signal_result, geometry_result, decomposition_result, metrics=metrics, editability=editability_result,
+        intervention = select_intervention(signal_result, geometry_result, decomposition_result, editability=editability_result,
             zwiad_score_primary=zwiad_score_primary, zwiad_score_secondary=zwiad_score_secondary,
             zwiad_score_tertiary=zwiad_score_tertiary, zwiad_editability_threshold=zwiad_editability_threshold,
             zwiad_przelom_bonus_max=zwiad_przelom_bonus_max)

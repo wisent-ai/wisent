@@ -5,7 +5,7 @@ import torch
 from pathlib import Path
 from typing import Dict, Tuple
 
-from wisent.core.utils.config_tools.constants import VIZ_DPI, VIZ_HISTOGRAM_BINS, SAE_TOP_K_ANALYSIS, SAE_TOP_FEATURES_DISPLAY, SAE_TOP_FEATURES_MAX, VIZ_FONTSIZE_ANNOTATION, VIZ_FONTSIZE_BODY, VIZ_FONTSIZE_SUPTITLE, VIZ_ALPHA_LIGHT, VIZ_ALPHA_HALF, VIZ_ALPHA_HIGH, VIZ_HEATMAP_VMIN_ZERO, VIZ_HEATMAP_VMAX_ONE
+from wisent.core.utils.config_tools.constants import VIZ_DPI, VIZ_HISTOGRAM_BINS, SAE_TOP_FEATURES_DISPLAY, SAE_TOP_FEATURES_MAX, VIZ_FONTSIZE_ANNOTATION, VIZ_FONTSIZE_BODY, VIZ_FONTSIZE_SUPTITLE, VIZ_ALPHA_LIGHT, VIZ_ALPHA_HALF, VIZ_ALPHA_HIGH, VIZ_HEATMAP_VMIN_ZERO, VIZ_HEATMAP_VMAX_ONE
 from wisent.examples.scripts._sae import SparseAutoencoder
 
 
@@ -13,7 +13,7 @@ def analyze_sae_features(
     sae: SparseAutoencoder,
     activations_by_concept: Dict[str, torch.Tensor],
     device: str,
-    top_k: int = SAE_TOP_K_ANALYSIS,
+    top_k: int,
 ) -> Dict:
     """
     Analyze which SAE features activate for each concept.

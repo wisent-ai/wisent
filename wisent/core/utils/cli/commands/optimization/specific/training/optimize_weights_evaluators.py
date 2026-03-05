@@ -6,11 +6,6 @@ from wisent.core.reading.evaluators.steering_evaluators import (
     SteeringEvaluatorFactory,
     EvaluatorConfig,
 )
-from wisent.core.utils.config_tools.constants import (
-    PERSONALIZATION_DIFFERENCE_WEIGHT,
-    PERSONALIZATION_QUALITY_WEIGHT,
-    PERSONALIZATION_ALIGNMENT_WEIGHT,
-)
 from wisent.core.utils.cli.optimization.specific.optimize_weights_pooled import _create_pooled_evaluator
 
 
@@ -94,9 +89,9 @@ def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None,
         quality_special_char_penalty=args.quality_special_char_penalty,
         quality_char_repeat_count=args.quality_char_repeat_count,
         quality_char_repeat_penalty=args.quality_char_repeat_penalty,
-        difference_weight=PERSONALIZATION_DIFFERENCE_WEIGHT,
-        quality_weight=PERSONALIZATION_QUALITY_WEIGHT,
-        alignment_weight=PERSONALIZATION_ALIGNMENT_WEIGHT,
+        difference_weight=args.personalization_difference_weight,
+        quality_weight=args.personalization_quality_weight,
+        alignment_weight=args.personalization_alignment_weight,
     )
     
     # Pre-generate baseline responses BEFORE optimization modifies the model weights

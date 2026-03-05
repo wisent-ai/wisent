@@ -1,16 +1,22 @@
 """Test GenerationEvaluator answer extraction on AIME 2024 dataset."""
 
+import argparse
 from datasets import load_dataset
 from wisent.core.reading.evaluators.benchmark_specific.generation_evaluator import GenerationEvaluator
-from wisent.core.utils.config_tools.constants import COMPARE_TOL, DISPLAY_TRUNCATION_COMPACT, SEPARATOR_WIDTH_REPORT, GENERATION_EMBEDDING_WEIGHT, GENERATION_NLI_WEIGHT
+from wisent.core.utils.config_tools.constants import COMPARE_TOL, DISPLAY_TRUNCATION_COMPACT, SEPARATOR_WIDTH_REPORT
+
+_parser = argparse.ArgumentParser()
+_parser.add_argument("--generation-embedding-weight", type=float, required=True)
+_parser.add_argument("--generation-nli-weight", type=float, required=True)
+_args = _parser.parse_args()
 
 # Load dataset
 ds = load_dataset("HuggingFaceH4/aime_2024", split="train")
 
 # Initialize evaluator
 evaluator = GenerationEvaluator(
-    generation_embedding_weight=GENERATION_EMBEDDING_WEIGHT,
-    generation_nli_weight=GENERATION_NLI_WEIGHT,
+    generation_embedding_weight=_args.generation_embedding_weight,
+    generation_nli_weight=_args.generation_nli_weight,
 )
 
 # Test on a few examples

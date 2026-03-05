@@ -21,7 +21,7 @@ from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import
     detect_geometry_structure,
     GeometryAnalysisConfig,
 )
-from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_RANDOM_SEED, DISPLAY_TOP_N_SMALL, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_STANDARD, VIZ_ALPHA_MEDIUM, VIZ_ALPHA_LIGHT, VIZ_FONTSIZE_SUPTITLE, ARCHITECTURE_MODULE_LIMIT
+from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_RANDOM_SEED, DISPLAY_TOP_N_SMALL, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_STANDARD, VIZ_ALPHA_MEDIUM, VIZ_ALPHA_LIGHT, VIZ_FONTSIZE_SUPTITLE
 
 BEST_CONFIGS = None
 
@@ -109,6 +109,7 @@ def main():
     parser.add_argument("--configs-json", default=None, help="JSON string with best_by_geometry configs")
     parser.add_argument("--geometry-num-components", type=int, required=True)
     parser.add_argument("--geometry-optimization-steps", type=int, required=True)
+    parser.add_argument("--architecture-module-limit", type=int, required=True)
     args = parser.parse_args()
 
     print(f"Loading model {args.model}...")
@@ -118,7 +119,7 @@ def main():
     extractor = get_extractor(args.task)
     pairs = extractor.extract_contrastive_pairs(limit=args.num_pairs)
 
-    collector = ActivationCollector(model=wisent_model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model=wisent_model, architecture_module_limit=args.architecture_module_limit)
 
     if args.multi_config:
         # Run for each structure's best config

@@ -82,7 +82,6 @@ def main():
         'zwiad': 'execute_zwiad',
         'discover-steering': 'execute_discover_steering',
         'migrate-activations': 'execute_migrate_activations',
-        'tune-recommendation': 'execute_tune_recommendation',
         'compare-steering': 'execute_compare_steering',
     }
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import List, Optional, TYPE_CHECKING
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
-from wisent.core.utils.config_tools.constants import RECURSION_INITIAL_DEPTH, COMBO_OFFSET, ARCHITECTURE_MODULE_LIMIT
+from wisent.core.utils.config_tools.constants import RECURSION_INITIAL_DEPTH, COMBO_OFFSET
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from .cached_activations import CachedActivations, get_strategy_text_family
 from .raw_cached_activations import RawCachedActivations
@@ -28,6 +28,8 @@ def collect_and_cache_activations(
     cache: Optional[ActivationCache] = None,
     cache_dir: Optional[str] = None,
     show_progress: bool = True,
+    *,
+    architecture_module_limit: int,
 ) -> CachedActivations:
     """
     Collect activations for all pairs and all layers, then cache.
@@ -54,7 +56,7 @@ def collect_and_cache_activations(
             print(f"Loading cached activations for {benchmark}/{strategy.value}")
         return cache.get(model.model_name, benchmark, strategy)
 
-    collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
 
     cached = CachedActivations(
         benchmark=benchmark,
@@ -93,6 +95,8 @@ def collect_and_cache_raw_activations(
     cache: Optional[RawActivationCache] = None,
     cache_dir: Optional[str] = None,
     show_progress: bool = True,
+    *,
+    architecture_module_limit: int,
 ) -> RawCachedActivations:
     """
     Collect RAW hidden states for all pairs and all layers, then cache.
@@ -112,7 +116,7 @@ def collect_and_cache_raw_activations(
             print(f"Loading cached raw activations for {benchmark}/{text_family}")
         return cache.get(model.model_name, benchmark, text_family)
 
-    collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
 
     cached = RawCachedActivations(
         benchmark=benchmark,

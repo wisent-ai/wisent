@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Tuple
 
 import torch
 
-from wisent.core.utils.config_tools.constants import JSON_INDENT, ARCHITECTURE_MODULE_LIMIT
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
@@ -76,6 +76,7 @@ def run_analysis(
     signal_linear_gap: float,
     min_cloud_points: int,
     geometry_optimization_steps: int,
+    architecture_module_limit: int,
     layers_to_analyze: Optional[List[int]] = None,
 ):
     """Run the full concept evolution analysis."""
@@ -107,7 +108,7 @@ def run_analysis(
     
     print(f"  Analyzing layers: {layers_to_analyze}")
     
-    collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT, store_device="cpu")
+    collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit, store_device="cpu")
     
     concept_metrics = {}
     activations_by_concept = {}

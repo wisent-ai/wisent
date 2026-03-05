@@ -159,7 +159,14 @@ def execute_evaluate_responses(args):
         try:
             EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.oracles")
             EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.benchmark_specific")
-            evaluator_rotator = EvaluatorRotator(evaluator=None, task_name=task_name)
+            evaluator_rotator = EvaluatorRotator(
+                evaluator=None, task_name=task_name,
+                evaluator_kwargs={
+                    "f1_threshold": args.f1_threshold,
+                    "generation_embedding_weight": args.generation_embedding_weight,
+                    "generation_nli_weight": args.generation_nli_weight,
+                },
+            )
             evaluator = evaluator_rotator.current
             print(f"   Using: {evaluator.name} (auto-selected via EvaluatorRotator)\n")
         except Exception as e:
@@ -167,24 +174,27 @@ def execute_evaluate_responses(args):
             print(f"   ⚠️  EvaluatorRotator failed: {e}")
             print(f"   Falling back to manual selection based on evaluation_type...")
             if evaluation_type == "multiple_choice":
-                evaluator = F1Evaluator()
+                evaluator = F1Evaluator(f1_threshold=args.f1_threshold)
                 print(f"   Using: F1Evaluator (compares response to choice texts)\n")
             elif evaluation_type == "generate_until":
                 if primary_metric == "exact_match":
                     evaluator = ExactMatchEvaluator()
                     print(f"   Using: ExactMatchEvaluator (extracts and compares answers)\n")
                 elif primary_metric in ["em", "f1"]:
-                    evaluator = F1Evaluator()
+                    evaluator = F1Evaluator(f1_threshold=args.f1_threshold)
                     print(f"   Using: F1Evaluator (token-level comparison)\n")
                 else:
-                    evaluator = GenerationEvaluator()
+                    evaluator = GenerationEvaluator(
+                        generation_embedding_weight=args.generation_embedding_weight,
+                        generation_nli_weight=args.generation_nli_weight,
+                    )
                     print(f"   Using: GenerationEvaluator (extracts and compares answers)\n")
             elif evaluation_type == "loglikelihood_rolling":
                 evaluator = PerplexityEvaluator()
                 print(f"   Using: PerplexityEvaluator (perplexity computation)\n")
             else:
-                evaluator = F1Evaluator()
-                print(f"   Using: F1Evaluator (default fallback)\n")
+                evaluator = F1Evaluator(f1_threshold=args.f1_threshold)
+                print(f"   Using: F1Evaluator (default selection)\n")
 
     # Evaluate responses
     print(f"🎯 Evaluating responses...\n")

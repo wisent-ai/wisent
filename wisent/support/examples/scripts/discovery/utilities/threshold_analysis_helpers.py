@@ -10,9 +10,6 @@ import torch
 import numpy as np
 from sklearn.metrics import roc_curve, auc, precision_recall_curve
 from wisent.core.utils.config_tools.constants import (
-    N_BOOTSTRAP_DEFAULT,
-    THRESHOLD_HIDDEN_DIM_LARGE,
-    THRESHOLD_HIDDEN_DIM_DEFAULT,
     ZERO_THRESHOLD,
 )
 
@@ -64,9 +61,9 @@ class ThresholdAnalysisResult:
 
 def generate_null_distribution(
     model: "WisentModel",
-    n_samples: int = N_BOOTSTRAP_DEFAULT,
-    hidden_dim: int = THRESHOLD_HIDDEN_DIM_LARGE,
+    n_samples: int,
     *,
+    hidden_dim: int,
     probe_knn_k: int,
     cv_folds: int,
     null_sample_size: int,
@@ -106,7 +103,8 @@ def generate_null_distribution(
 def generate_synthetic_data(
     structure: str,
     n_samples: int,
-    hidden_dim: int = THRESHOLD_HIDDEN_DIM_DEFAULT,
+    *,
+    hidden_dim: int,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Generate synthetic data with known structure for validation.

@@ -14,9 +14,6 @@ from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.core.primitives.models import get_generate_kwargs
 from wisent.core.utils.config_tools.constants import (
     DEFAULT_RANDOM_SEED,
-    PERSONALIZATION_DIFFERENCE_WEIGHT,
-    PERSONALIZATION_QUALITY_WEIGHT,
-    PERSONALIZATION_ALIGNMENT_WEIGHT,
 )
 
 # Re-export from helpers
@@ -58,9 +55,9 @@ class SteeringEvaluatorFactory:
         quality_special_char_penalty: float,
         quality_char_repeat_count: int,
         quality_char_repeat_penalty: float,
-        difference_weight: float = PERSONALIZATION_DIFFERENCE_WEIGHT,
-        quality_weight: float = PERSONALIZATION_QUALITY_WEIGHT,
-        alignment_weight: float = PERSONALIZATION_ALIGNMENT_WEIGHT,
+        difference_weight: float,
+        quality_weight: float,
+        alignment_weight: float,
     ) -> "BaseSteeringEvaluator":
         """Create the appropriate evaluator based on config."""
         evaluator_type = config.evaluator_type

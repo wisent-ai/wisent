@@ -64,7 +64,12 @@ def _load_steering_vector(args, layer, layer_str):
 
 def _compute_steering_vector(args, model, train_pair_set, collector, extraction_strategy, layer, layer_str, min_clusters: int = None, *, spectral_n_neighbors: int, geometry_cv_folds: int, subsample_threshold: int, pca_dims_limit: int):
     """Compute steering vector from training data using zwiad."""
-    from wisent.core.reading.modules import compute_geometry_metrics, compute_recommendation, compute_concept_coherence
+    from wisent.core.reading.modules import compute_geometry_metrics, compute_concept_coherence
+
+    user_method = getattr(args, 'steering_method', None)
+    if not user_method:
+        raise MissingParameterError(params=["steering_method"], context="--steering-method is required (no auto-selection)")
+    recommended_method = user_method.upper()
 
     print(f"\n🧠 Collecting activations from layer {layer}...")
     positive_activations, negative_activations = [], []
@@ -92,19 +97,11 @@ def _compute_steering_vector(args, model, train_pair_set, collector, extraction_
 
     print(f"\n🔍 Running zwiad geometry analysis...")
     metrics = compute_geometry_metrics(pos_tensor, neg_tensor, min_clusters=min_clusters, n_folds=geometry_cv_folds, spectral_n_neighbors=spectral_n_neighbors, subsample_threshold=subsample_threshold, pca_dims_limit=pca_dims_limit)
-    recommendation = compute_recommendation(metrics)
-    recommended_method = recommendation.get("recommended_method", "CAA").upper()
-    confidence = recommendation["confidence"]
     coherence = compute_concept_coherence(pos_tensor, neg_tensor)
 
     print(f"   ├─ Linear probe accuracy: {metrics['linear_probe_accuracy']:.3f}")
     print(f"   ├─ Concept coherence:     {coherence:.3f}")
-    print(f"   └─ Recommendation:        {recommended_method} (confidence={confidence:.2f})")
-
-    user_method = getattr(args, 'steering_method', 'auto')
-    if user_method and user_method.lower() != 'auto':
-        recommended_method = user_method.upper()
-        print(f"   → User override: using {recommended_method}")
+    print(f"   └─ Method:                {recommended_method}")
 
     return _train_steering_method(args, model, recommended_method, pos_tensor, neg_tensor, layer, collector, extraction_strategy, train_pair_set)
 

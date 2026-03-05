@@ -169,14 +169,6 @@ from .modules.geo_utils.config.pacmap_alt import (
     pacmap_embedding,
 )
 
-from .modules.steering.analysis.steering_recommendation import (
-    SteeringThresholds,
-    compute_steering_recommendation,
-    compute_per_layer_recommendation,
-    get_method_description,
-    get_method_requirements,
-)
-
 from .utilities.concepts import (
     decompose_and_name_concepts,
     name_concepts,

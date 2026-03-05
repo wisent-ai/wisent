@@ -14,7 +14,6 @@ from wisent.core.utils.config_tools.constants import (
     ZERO_THRESHOLD,
     DEFAULT_RANDOM_SEED,
     STAT_ALPHA,
-    N_BOOTSTRAP_DEFAULT,
     DISPLAY_TOP_N_SMALL,
     COMBO_OFFSET,
     PARSER_DEFAULT_LAYER_START,
@@ -214,7 +213,7 @@ def compute_bimodality_analysis(diff_vectors: np.ndarray, *, dip_test_simulation
 
 def compute_null_distribution(
     diff_vectors: np.ndarray,
-    n_bootstrap: int = N_BOOTSTRAP_DEFAULT,
+    n_bootstrap: int,
     seed: int = DEFAULT_RANDOM_SEED,
     *,
     kmeans_n_init: int = None,

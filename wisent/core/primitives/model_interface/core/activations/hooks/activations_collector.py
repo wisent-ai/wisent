@@ -12,7 +12,7 @@ from wisent.core.primitives.model_interface.core.activations import (
     extract_activation,
 )
 from wisent.core.utils.infra_tools.errors import NoHiddenStatesError
-from wisent.core.utils.config_tools.constants import LOG_EPS, RECURSION_INITIAL_DEPTH, ARCHITECTURE_MODULE_LIMIT
+from wisent.core.utils.config_tools.constants import LOG_EPS, RECURSION_INITIAL_DEPTH
 
 if TYPE_CHECKING:
     from wisent.core.primitives.models.wisent_model import WisentModel

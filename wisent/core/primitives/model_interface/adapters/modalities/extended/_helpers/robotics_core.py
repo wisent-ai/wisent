@@ -25,7 +25,6 @@ from wisent.core.primitives.models.modalities import (
     RobotAction,
     RobotTrajectory,
 )
-from wisent.core.utils.config_tools.constants import POLICY_LAYER_COUNT
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
 
@@ -84,6 +83,8 @@ class RoboticsAdapterCore(BaseAdapter[InputType, RobotAction]):
         action_dim: int | None = None,
         observation_encoder: nn.Module | None = None,
         action_decoder: nn.Module | None = None,
+        *,
+        policy_layer_count: int,
         **kwargs: Any,
     ):
         super().__init__(model=model, model_name=model_name, device=device, **kwargs)
@@ -94,6 +95,7 @@ class RoboticsAdapterCore(BaseAdapter[InputType, RobotAction]):
         self._action_decoder = action_decoder
         self._policy_layers: List[nn.Module] | None = None
         self._hidden_size: int | None = None
+        self._policy_layer_count = policy_layer_count
 
     def _detect_policy_type(self) -> str:
         """Detect the type of policy network."""
@@ -180,8 +182,8 @@ class RoboticsAdapterCore(BaseAdapter[InputType, RobotAction]):
         for name, module in m.named_modules():
             if list(module.parameters(recurse=False)):
                 layers.append((name, module))
-        self._policy_layers = [l[1] for l in layers[-POLICY_LAYER_COUNT:]]
-        self._layer_names = [l[0] for l in layers[-POLICY_LAYER_COUNT:]]
+        self._policy_layers = [l[1] for l in layers[-self._policy_layer_count:]]
+        self._layer_names = [l[0] for l in layers[-self._policy_layer_count:]]
         return self._policy_layers
 
     @property

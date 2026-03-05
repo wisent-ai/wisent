@@ -25,7 +25,7 @@ from wisent.core.primitives.model_interface.core.activations.activations_collect
 from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.primitives.contrastive_pairs.diagnostics import run_control_vector_diagnostics, run_vector_quality_diagnostics, VectorQualityConfig
 from wisent.core.utils.infra_tools.errors import ControlVectorDiagnosticsError, NoTrainingResultError, VectorQualityTooLowError
-from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_TINY, ARCHITECTURE_MODULE_LIMIT
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_TINY
 
 __all__ = [
     "WisentSteeringTrainer",
@@ -56,11 +56,14 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
     model: WisentModel
     pair_set: ContrastivePairSet
     steering_method: BaseSteeringMethod
+    architecture_module_limit: int = None
     store_device: str | torch.device = "cpu"
     dtype: torch.dtype | None = None
 
     def __post_init__(self) -> None:
-        self.collector = ActivationCollector(model=self.model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT, store_device=self.store_device, dtype=self.dtype)
+        if self.architecture_module_limit is None:
+            raise ValueError("architecture_module_limit is required")
+        self.collector = ActivationCollector(model=self.model, architecture_module_limit=self.architecture_module_limit, store_device=self.store_device, dtype=self.dtype)
         self._last_result: TrainingResult | None = None
 
     def run(

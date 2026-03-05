@@ -4,9 +4,6 @@ import os
 from wisent.core.utils.config_tools.constants import (
     JSON_INDENT,
     SCORE_MIDPOINT_PCT,
-    PERSONALIZATION_DIFFERENCE_WEIGHT,
-    PERSONALIZATION_QUALITY_WEIGHT,
-    PERSONALIZATION_ALIGNMENT_WEIGHT,
 )
 
 from wisent.core.reading.evaluators.steering_evaluators import (
@@ -92,9 +89,9 @@ def evaluate_personalization(args, input_data, responses, task_name, evaluation_
         quality_special_char_penalty=args.quality_special_char_penalty,
         quality_char_repeat_count=args.quality_char_repeat_count,
         quality_char_repeat_penalty=args.quality_char_repeat_penalty,
-        difference_weight=PERSONALIZATION_DIFFERENCE_WEIGHT,
-        quality_weight=PERSONALIZATION_QUALITY_WEIGHT,
-        alignment_weight=PERSONALIZATION_ALIGNMENT_WEIGHT,
+        difference_weight=args.personalization_difference_weight,
+        quality_weight=args.personalization_quality_weight,
+        alignment_weight=args.personalization_alignment_weight,
     )
     # Set baseline responses for comparison
     baseline_texts = [b.get('generated_response', '') for b in baseline_responses]

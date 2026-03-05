@@ -7,7 +7,7 @@ from wisent.core.utils.infra_tools.data.core.atoms import BaseDataLoader, DataLo
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.utils.config_tools.constants import PERTURB_UP_MIN, PERTURB_UP_MAX, PERTURB_DOWN_MIN, PERTURB_DOWN_MAX, RANDOM_MATH_ANSWER_MAX, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_MEDIUM, DISPLAY_DECIMAL_PRECISION
+from wisent.core.utils.config_tools.constants import PERTURB_UP_MIN, PERTURB_UP_MAX, PERTURB_DOWN_MIN, PERTURB_DOWN_MAX, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_MEDIUM, DISPLAY_DECIMAL_PRECISION
 from wisent.core.control.tasks.base.task_interface import get_task, list_tasks, TaskInterface
 
 __all__ = [
@@ -42,7 +42,7 @@ class TaskInterfaceDataLoader(BaseDataLoader):
         seed: Optional[int] = None,
         limit: Optional[int] = None,
         training_limit: Optional[int] = None,
-        testing_limit: Optional[int] = None, *, train_ratio: float,
+        testing_limit: Optional[int] = None, *, train_ratio: float, random_math_answer_max: int,
         **kwargs: Any,
     ) -> LoadDataResult:
         """
@@ -92,7 +92,7 @@ class TaskInterfaceDataLoader(BaseDataLoader):
         log.info(f"Loaded {len(problems)} problems from {task}")
 
         # Convert problems to contrastive pairs
-        pairs = self._convert_to_contrastive_pairs(task_obj, problems)
+        pairs = self._convert_to_contrastive_pairs(task_obj, problems, random_math_answer_max=random_math_answer_max)
 
         if not pairs:
             raise DataLoaderError(
@@ -132,7 +132,7 @@ class TaskInterfaceDataLoader(BaseDataLoader):
     def _convert_to_contrastive_pairs(
         self,
         task_obj: TaskInterface,
-        problems: list[dict[str, Any]],
+        problems: list[dict[str, Any]], *, random_math_answer_max: int,
     ) -> list[ContrastivePair]:
         """
         Convert task problems into contrastive pairs.
@@ -173,7 +173,7 @@ class TaskInterfaceDataLoader(BaseDataLoader):
 
                 # Generate incorrect answer
                 incorrect_answer = self._generate_incorrect_answer(
-                    problem, correct_answer, task_name, extractor
+                    problem, correct_answer, task_name, extractor, random_math_answer_max=random_math_answer_max,
                 )
                 if not incorrect_answer:
                     log.warning(f"Problem {idx}: could not generate incorrect answer, skipping")
@@ -235,7 +235,7 @@ class TaskInterfaceDataLoader(BaseDataLoader):
         problem: dict[str, Any],
         correct_answer: str,
         task_name: str,
-        extractor: Any,
+        extractor: Any, *, random_math_answer_max: int,
     ) -> Optional[str]:
         """
         Generate an incorrect answer for a problem.
@@ -285,7 +285,7 @@ class TaskInterfaceDataLoader(BaseDataLoader):
         # Strategy 3: Generic incorrect responses by task type
         if task_name in ["gsm8k", "math500", "aime", "hmmt", "polymath", "livemathbench"]:
             # Math tasks: slightly wrong number
-            return str(random.randint(0, RANDOM_MATH_ANSWER_MAX))
+            return str(random.randint(0, random_math_answer_max))
         elif task_name in ["livecodebench", "humaneval", "mbpp"]:
             # Coding tasks: empty or syntax error
             return "# Incomplete solution\npass"

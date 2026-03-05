@@ -178,7 +178,7 @@ def run_rl_iteration(
 def select_method_for_task(
     task: str, model: str, min_norm_threshold: float,
     tecza_params: dict, min_clusters: int = None,
-    query_limit: int = None, *, train_ratio: float,
+    query_limit: int = None, *, architecture_module_limit: int, progress_log_interval: int, train_ratio: float,
 ) -> str:
     """Select steering method for a task using zwiad recommendation."""
     if query_limit is None:
@@ -189,7 +189,7 @@ def select_method_for_task(
             model_name=model, task_name=task, limit=query_limit,
             min_norm_threshold=min_norm_threshold,
             device=None, verbose=False, min_clusters=min_clusters,
-            tecza_params=tecza_params, train_ratio=train_ratio,
+            tecza_params=tecza_params, architecture_module_limit=architecture_module_limit, progress_log_interval=progress_log_interval, train_ratio=train_ratio,
         )
         if "error" not in result:
             return result.get("best_method", "CAA")

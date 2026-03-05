@@ -15,12 +15,6 @@ from pathlib import Path
 from dataclasses import dataclass
 import sys
 
-from wisent.core.utils.config_tools.constants import (
-    ABLITERATION_DEFAULT_POSITION,
-    ABLITERATION_DEFAULT_DISTANCE,
-)
-
-
 @dataclass
 class AbliterationConfig:
     """Configuration for abliteration parameters."""
@@ -28,8 +22,8 @@ class AbliterationConfig:
     min_weight: float
     strength: float
     num_pairs: int
-    max_weight_position: float = ABLITERATION_DEFAULT_POSITION
-    min_weight_distance: float = ABLITERATION_DEFAULT_DISTANCE
+    max_weight_position: float
+    min_weight_distance: float
 
     def __str__(self):
         return f"max_weight={self.max_weight}_min_weight={self.min_weight}_strength={self.strength}_pairs={self.num_pairs}"

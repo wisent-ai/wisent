@@ -8,13 +8,12 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
 from wisent.core.utils.config_tools.constants import (
     ZERO_THRESHOLD, DEFAULT_RANDOM_SEED,
-    N_BOOTSTRAP_DEFAULT,
 )
 
 
 def detect_multiple_concepts_single_sample(
     diff_vectors: np.ndarray,
-    n_bootstrap: int = N_BOOTSTRAP_DEFAULT,
+    n_bootstrap: int,
     seed: int = DEFAULT_RANDOM_SEED,
     *,
     kmeans_n_init_small: int,

@@ -7,13 +7,6 @@ from .steerability import (
     compute_robust_recommendation,
     compute_final_steering_prescription,
 )
-from .steering_recommendation import (
-    SteeringThresholds,
-    compute_steering_recommendation,
-    compute_per_layer_recommendation,
-    get_method_description,
-    get_method_requirements,
-)
 from .steering_validation import (
     compute_steering_effect_size,
     validate_steering_effectiveness,
@@ -37,11 +30,6 @@ __all__ = [
     "compute_adaptive_recommendation",
     "compute_robust_recommendation",
     "compute_final_steering_prescription",
-    "SteeringThresholds",
-    "compute_steering_recommendation",
-    "compute_per_layer_recommendation",
-    "get_method_description",
-    "get_method_requirements",
     "compute_steering_effect_size",
     "validate_steering_effectiveness",
     "run_full_validation",
