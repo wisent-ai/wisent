@@ -4,9 +4,11 @@
     "total_parameters": 103,
     "status": "unvalidated",
     "validated_so_far": {
-      "extraction_strategy": "chat_last",
-      "classifier_inference_strategy": "unvalidated (last_token assumed)"
-    }
+      "extraction_strategy": "chat_last"
+    },
+    "global_unvalidated": [
+      "classifier_inference_strategy"
+    ]
   },
   "ostrze": {
     "C": {"type": "float", "description": "Regularization strength (inverse). Smaller = stronger regularization"}

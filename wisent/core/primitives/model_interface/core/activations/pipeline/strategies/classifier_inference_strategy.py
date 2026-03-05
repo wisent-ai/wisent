@@ -4,18 +4,10 @@ Classifier inference strategies for runtime classification.
 These strategies determine how to extract activations from generated text
 at inference time when classifying responses.
 
-Based on empirical testing across 3 models (Llama-3.2-1B, Llama-2-7b, Qwen3-8B)
-and 4 tasks (truthfulqa, happy, left_wing, livecodebench):
+NOT VALIDATED. No empirical study has proven which strategy is best.
+All strategies must be explicitly specified until validation is complete.
 
-Results:
-- last_token: Best performer (77% with chat_last training on truthfulqa)
-- all_mean: Poor (~50%) - dominated by shared prompt tokens
-- all_max/all_min: Poor (~50%)
-- first_token: BROKEN (50%) - BOS token is identical for all inputs
-
-Recommendation: Use LAST_TOKEN (default) - it works best with chat_last training strategy.
-
-IMPORTANT: These strategies operate on the FULL sequence (prompt + response).
+These strategies operate on the FULL sequence (prompt + response).
 At inference time, we typically don't know where the answer starts, so we
 can only use strategies that work on the whole sequence.
 """
@@ -33,10 +25,10 @@ class ClassifierInferenceStrategy(str, Enum):
     """
     
     LAST_TOKEN = "last_token"
-    """Extract activation from the last token only. Best overall performance."""
-    
+    """Extract activation from the last token only."""
+
     FIRST_TOKEN = "first_token"
-    """Extract activation from the first token only. NOT RECOMMENDED - BOS token has no variance."""
+    """Extract activation from the first token only."""
     
     ALL_MEAN = "all_mean"
     """Classify each token, return mean of all scores."""
@@ -50,8 +42,8 @@ class ClassifierInferenceStrategy(str, Enum):
     @property
     def description(self) -> str:
         descriptions = {
-            ClassifierInferenceStrategy.LAST_TOKEN: "Last token activation (recommended)",
-            ClassifierInferenceStrategy.FIRST_TOKEN: "First token activation (not recommended)",
+            ClassifierInferenceStrategy.LAST_TOKEN: "Last token activation (unvalidated)",
+            ClassifierInferenceStrategy.FIRST_TOKEN: "First token activation (unvalidated)",
             ClassifierInferenceStrategy.ALL_MEAN: "Mean of all token scores",
             ClassifierInferenceStrategy.ALL_MAX: "Max of all token scores",
             ClassifierInferenceStrategy.ALL_MIN: "Min of all token scores",
@@ -60,8 +52,11 @@ class ClassifierInferenceStrategy(str, Enum):
     
     @classmethod
     def default(cls) -> "ClassifierInferenceStrategy":
-        """Return the default strategy (last_token performs best, unvalidated)."""
-        return cls.LAST_TOKEN
+        """No validated default exists. Must be explicitly specified."""
+        raise ValueError(
+            "No validated classifier inference strategy exists. "
+            "Specify --classifier-inference-strategy explicitly."
+        )
     
     @classmethod
     def list_all(cls) -> list[str]:
@@ -159,27 +154,22 @@ def get_inference_score(
 
 def get_recommended_inference_strategy(train_strategy) -> ClassifierInferenceStrategy:
     """
-    Get the recommended inference strategy for a given training strategy.
-    
-    Based on empirical testing:
-    - chat_last, role_play, mc_balanced -> last_token
-    - chat_mean, chat_weighted, chat_max_norm, chat_first -> all_mean
-    
+    Get inference strategy for a given training strategy.
+
+    NOT VALIDATED. No empirical study backs these mappings.
+    Callers must treat this as a hypothesis, not a proven default.
+
     Args:
         train_strategy: ExtractionStrategy used for training
-    
+
     Returns:
-        Recommended ClassifierInferenceStrategy
+        ClassifierInferenceStrategy (unvalidated suggestion)
     """
-    # Import here to avoid circular dependency
-    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
-    
-    if train_strategy in (ExtractionStrategy.CHAT_LAST, 
-                          ExtractionStrategy.ROLE_PLAY, 
-                          ExtractionStrategy.MC_BALANCED):
-        return ClassifierInferenceStrategy.LAST_TOKEN
-    else:
-        return ClassifierInferenceStrategy.ALL_MEAN
+    raise ValueError(
+        "No validated mapping from training strategy to inference "
+        "strategy exists. Specify --classifier-inference-strategy "
+        "explicitly until empirical validation is complete."
+    )
 
 
 def add_classifier_inference_strategy_args(parser: argparse.ArgumentParser) -> None:
@@ -189,7 +179,7 @@ def add_classifier_inference_strategy_args(parser: argparse.ArgumentParser) -> N
     parser.add_argument(
         "--classifier-inference-strategy",
         type=str,
-        default=ClassifierInferenceStrategy.default().value,
+        required=True,
         choices=ClassifierInferenceStrategy.list_all(),
-        help=f"Inference strategy for classifier. Options: {', '.join(ClassifierInferenceStrategy.list_all())}. Default: {ClassifierInferenceStrategy.default().value}",
+        help=f"Inference strategy for classifier (no validated default). Options: {', '.join(ClassifierInferenceStrategy.list_all())}",
     )
