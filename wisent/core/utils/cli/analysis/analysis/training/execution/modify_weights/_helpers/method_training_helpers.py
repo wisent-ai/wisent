@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List
 
+from wisent.core.control.steering_methods.configs.validated_defaults import VALIDATED_EXTRACTION_STRATEGY
 from wisent.core.utils.config_tools.constants import PROGRESS_LOG_INTERVAL_10, ARCHITECTURE_MODULE_LIMIT
 
 if TYPE_CHECKING:
@@ -49,7 +50,7 @@ def train_nurt_for_task(args, wisent_model: "WisentModel", pairs: List["Contrast
     meta = SteeringObjectMetadata(
         method="nurt", model_name=args.model,
         benchmark=getattr(args, 'task', 'unknown'), category="steering",
-        extraction_strategy="chat_last", num_pairs=len(pairs),
+        extraction_strategy=VALIDATED_EXTRACTION_STRATEGY, num_pairs=len(pairs),
         layers=[int(l) for l in layers], hidden_dim=0,
     )
     return _create_nurt_steering_object(meta, layer_acts, layers, args)
@@ -87,7 +88,7 @@ def train_szlak_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
     meta = SteeringObjectMetadata(
         method="szlak", model_name=args.model,
         benchmark=getattr(args, 'task', 'unknown'), category="steering",
-        extraction_strategy="chat_last", num_pairs=len(pairs),
+        extraction_strategy=VALIDATED_EXTRACTION_STRATEGY, num_pairs=len(pairs),
         layers=[int(l) for l in layers], hidden_dim=0,
     )
     return _create_szlak_steering_object(meta, layer_acts, layers, args)
@@ -125,7 +126,7 @@ def train_wicher_for_task(args, wisent_model: "WisentModel", pairs: List["Contra
     meta = SteeringObjectMetadata(
         method="wicher", model_name=args.model,
         benchmark=getattr(args, 'task', 'unknown'), category="steering",
-        extraction_strategy="chat_last", num_pairs=len(pairs),
+        extraction_strategy=VALIDATED_EXTRACTION_STRATEGY, num_pairs=len(pairs),
         layers=[int(l) for l in layers], hidden_dim=0,
     )
     return _create_wicher_steering_object(meta, layer_acts, layers, args)

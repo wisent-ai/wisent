@@ -9,6 +9,7 @@ from typing import Dict, Optional
 
 import torch
 
+from wisent.core.control.steering_methods.configs.validated_defaults import VALIDATED_EXTRACTION_STRATEGY
 from wisent.core.utils.cli.optimize_steering.pipeline import _make_args
 from wisent.core.utils.cli.optimize_steering.data.contrastive_pairs_data import (
     execute_generate_pairs_from_task,
@@ -50,7 +51,7 @@ def ensure_enriched_pairs(
     print(f"   Collecting activations for {task}...")
     execute_get_activations(_make_args(
         pairs_file=pairs_file, model=model, output=enriched_path,
-        layers="all", extraction_strategy="chat_last",
+        layers="all", extraction_strategy=VALIDATED_EXTRACTION_STRATEGY,
         device=device, verbose=False, timing=False, raw=False,
         cached_model=None, capture_qk=True,
     ))

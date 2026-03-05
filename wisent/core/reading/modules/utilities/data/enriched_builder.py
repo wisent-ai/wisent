@@ -7,6 +7,7 @@ from collections import defaultdict
 from typing import Optional
 
 from wisent.core.utils.config_tools.constants import BYTES_PER_MB
+from wisent.core.control.steering_methods.configs.validated_defaults import VALIDATED_EXTRACTION_STRATEGY
 
 
 def build_enriched_from_db(
@@ -222,7 +223,7 @@ def generate_and_collect_enriched(
     execute_get_activations(argparse.Namespace(
         pairs_file=pairs_file, model=model_name,
         output=enriched_file, layers=None,
-        extraction_strategy="chat_last", device=device,
+        extraction_strategy=VALIDATED_EXTRACTION_STRATEGY, device=device,
         verbose=False, timing=False, raw=False,
         cached_model=cached_model))
     return enriched_file

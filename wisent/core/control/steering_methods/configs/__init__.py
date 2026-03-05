@@ -10,7 +10,11 @@ kwargs take priority over these validated defaults.
 
 from typing import Any, Dict, Optional
 
-from .validated_defaults import VALIDATED_METHOD_DEFAULTS
+from .validated_defaults import (
+    VALIDATED_EXTRACTION_STRATEGY,
+    VALIDATED_INFERENCE_STRATEGY,
+    VALIDATED_METHOD_DEFAULTS,
+)
 
 
 def load_validated_method_defaults(method_name: str) -> Dict[str, Any]:
@@ -68,5 +72,7 @@ def load_model_task_config(
 __all__ = [
     "load_validated_method_defaults",
     "load_model_task_config",
+    "VALIDATED_EXTRACTION_STRATEGY",
+    "VALIDATED_INFERENCE_STRATEGY",
     "VALIDATED_METHOD_DEFAULTS",
 ]
