@@ -56,8 +56,6 @@ SPLIT_RATIO_HALF = 0.5
 SENSOR_STRIDE_MIN = 1
 SENSOR_RANGE_START = 0
 SENSOR_LAST_OFFSET = 1
-# --- Split ratios ---
-SPLIT_RATIO_70 = 0.7
 # --- Temporal ramp ---
 TEMPORAL_RAMP_MAX = 1.0
 # --- Thresholds ---

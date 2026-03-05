@@ -19,7 +19,6 @@ from wisent.cli_utils.cli_prepare_dataset import (
     PrepState,
     Caps
 )
-from wisent.core.utils.config_tools.constants import SPLIT_RATIO_70
 from wisent.core.primitives.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
 
 # Import helpers and additional tests from extracted module
@@ -105,7 +104,7 @@ def test_csv_loading_basic():
             f"group_qa_format should be True, got {result.group_qa_format}"
 
 
-def test_json_loading_basic():
+def test_json_loading_basic(split_ratio: float):
     """Test 3: Basic JSON loading with valid data"""
     with tempfile.TemporaryDirectory() as tmpdir:
         json_path = Path(tmpdir) / "test.json"
@@ -128,7 +127,7 @@ def test_json_loading_basic():
             incorrect_col="incorrect_answer",
             limit=None,
             caps=Caps(train=100, test=50),
-            split_ratio=SPLIT_RATIO_70,  # 70/30 split
+            split_ratio=split_ratio,
             seed=42,
             verbose=False
         )
@@ -141,9 +140,9 @@ def test_json_loading_basic():
         total_items = len(result.qa_pairs) + len(result.test_source)
         assert total_items == 10, f"Expected 10 items, got {total_items}"
 
-        # Check 70/30 split
-        expected_train = 7  # 70% of 10
-        expected_test = 3   # 30% of 10
+        # Check split
+        expected_train = int(total_items * split_ratio)
+        expected_test = total_items - expected_train
         assert len(result.qa_pairs) == expected_train, \
             f"Expected {expected_train} train, got {len(result.qa_pairs)}"
         assert len(result.test_source) == expected_test, \
@@ -260,10 +259,15 @@ def test_empty_file():
 
 
 if __name__ == "__main__":
+    import argparse
+    import functools
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--split-ratio", type=float, required=True, help="Train/test split ratio")
+    cli_args = parser.parse_args()
     exit(run_all_tests([
         test_csv_loading_disabled,
         test_csv_loading_basic,
-        test_json_loading_basic,
+        functools.partial(test_json_loading_basic, split_ratio=cli_args.split_ratio),
         test_with_limits,
         test_with_caps,
         test_empty_file,
