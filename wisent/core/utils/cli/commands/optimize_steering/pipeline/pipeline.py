@@ -114,17 +114,6 @@ def run_pipeline(
         verbose=False, timing=False, **method_args,
     ))
 
-    max_new_tokens = GENERATION_DEFAULT_MAX_NEW_TOKENS
-    try:
-        import wisent as _pkg
-        _te = os.path.join(os.path.dirname(_pkg.__file__), "task-evaluator.json")
-        if os.path.exists(_te):
-            with open(_te) as f:
-                _tgt = json.load(f).get("tasks", {}).get(task, {}).get("max_gen_toks")
-            if _tgt is not None:
-                max_new_tokens = _tgt
-    except Exception:
-        pass
     steering_strategy = getattr(config, 'steering_strategy', 'constant')
     execute_generate_responses(_make_args(
         task=task, input_file=eval_pairs_file, model=model, output=responses_file,
@@ -132,7 +121,7 @@ def run_pipeline(
         steering_object=steering_file, steering_strength=strength,
         steering_strategy=steering_strategy, use_steering=True,
         device=device, verbose=False, cached_model=cached_model,
-        max_new_tokens=max_new_tokens,
+        max_new_tokens=GENERATION_DEFAULT_MAX_NEW_TOKENS,
         temperature=GENERATION_DEFAULT_TEMPERATURE, top_p=GENERATION_DEFAULT_TOP_P,
     ))
 
