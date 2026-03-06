@@ -1,7 +1,7 @@
-"""PolyMath language-specific subclasses (Part 1: AR-JA)."""
+"""PolyMath language-specific subclasses: Arabic through Japanese."""
 from __future__ import annotations
 
-from wisent.extractors.hf.hf_task_extractors.polymath import PolyMathExtractor
+from .polymath import PolyMathExtractor
 
 class PolyMathARTopExtractor(PolyMathExtractor):
     language = "ar"

@@ -195,6 +195,6 @@ class PolyMathExtractor(HuggingFaceBenchmarkExtractor):
 
 
 
-# Re-exports from split subclass modules
-from wisent.extractors.hf.hf_task_extractors.polymath_subclasses_part1 import *  # noqa: F401,F403
-from wisent.extractors.hf.hf_task_extractors.polymath_subclasses_part2 import *  # noqa: F401,F403
+# Re-exports from language-specific subclass modules
+from .polymath_langs_ar_to_ja import *  # noqa: F401,F403
+from .polymath_langs_ko_to_zh import *  # noqa: F401,F403

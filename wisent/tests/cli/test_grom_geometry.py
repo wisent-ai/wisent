@@ -228,11 +228,13 @@ def test_grom_adaptation_linear(*, hidden_dim: int, n_samples: int):
 
 
 def _build_preflight_thresholds_from_file(path: str):
-    """Load PreflightThresholds from a JSON file with all required fields."""
+    """Load PreflightThresholds from a JSON file, filtering to known fields."""
+    from dataclasses import fields as dc_fields
     from wisent.core.control.steering_methods._helpers.preflight_helpers import PreflightThresholds
     with open(path, "r") as fh:
         data = json.load(fh)
-    return PreflightThresholds(**data)
+    known = {f.name for f in dc_fields(PreflightThresholds)}
+    return PreflightThresholds(**{k: v for k, v in data.items() if k in known})
 
 
 if __name__ == "__main__":

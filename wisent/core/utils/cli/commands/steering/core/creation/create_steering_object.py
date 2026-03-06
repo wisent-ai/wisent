@@ -18,7 +18,7 @@ from wisent.core.control.steering_methods._steering_object_base import (
     BaseSteeringObject,
 )
 from wisent.core.utils import preferred_dtype
-
+from wisent.core.utils.config_tools.constants import STEERING_DEFAULT_INTENSITY
 
 def _require_arg(args, attr_name):
     val = getattr(args, attr_name, None)
@@ -282,19 +282,16 @@ def _create_simple_steering_object(
     else:
         raise ValueError(f"Unknown simple method: {method_name}")
     
-    # Train vectors for each layer
     vectors = {}
     for layer_str in available_layers:
         pos_list = layer_activations[layer_str]["positive"]
         neg_list = layer_activations[layer_str]["negative"]
-        
         if not pos_list or not neg_list:
             continue
-        
         vector = method.train_for_layer(pos_list, neg_list)
         vectors[int(layer_str)] = vector
         print(f"   Layer {layer_str}: norm={vector.norm().item():.4f}")
-    
-    return obj_class(metadata=metadata, vectors=vectors)
+    intensity = getattr(args, 'default_intensity', STEERING_DEFAULT_INTENSITY)
+    return obj_class(metadata=metadata, vectors=vectors, default_intensity=intensity)
 
 

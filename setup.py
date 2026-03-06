@@ -46,7 +46,7 @@ setup(
     install_requires=[
         "torch>=1.9.0",
         "transformers>=4.46.0",
-        "tqdm>=4.50.0",
+        "jinja2>=3.1.0",        "tqdm>=4.50.0",
         "scikit-learn>=0.24.0",
         "pandas>=1.2.0",
         "numpy>=1.21.0",
@@ -68,6 +68,7 @@ setup(
         "umap-learn>=0.5.0",
         "pacmap>=0.7.0",
         "optuna>=3.0.0",
+        "hyperopt",
     ],
     extras_require={
         "harness": [

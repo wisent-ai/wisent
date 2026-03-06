@@ -78,39 +78,11 @@ def detect_geometry_structure(
 
 
 def _find_most_specific_structure(scores: Dict[str, StructureScore], geometry_threshold_default: float = None, geometry_threshold_cluster: float = None, geometry_threshold_sparse: float = None, geometry_threshold_manifold: float = None) -> Tuple[StructureType, float]:
-    """Find the most specific structure that fits the data well."""
-    for _n, _v in [("geometry_threshold_default", geometry_threshold_default), ("geometry_threshold_cluster", geometry_threshold_cluster), ("geometry_threshold_sparse", geometry_threshold_sparse), ("geometry_threshold_manifold", geometry_threshold_manifold)]:
-        if _v is None: raise ValueError(f"{_n} is required")
-    thresholds = {
-        "linear": geometry_threshold_default,
-        "cone": geometry_threshold_default,
-        "orthogonal": geometry_threshold_default,
-        "cluster": geometry_threshold_cluster,
-        "sparse": geometry_threshold_sparse,
-        "bimodal": geometry_threshold_default,
-        "manifold": geometry_threshold_manifold,
-    }
-    specificity_order = ["linear", "cone", "orthogonal", "cluster", "sparse", "bimodal", "manifold"]
-
-    for struct_name in specificity_order:
-        if struct_name in scores:
-            if scores[struct_name].score >= thresholds.get(struct_name, geometry_threshold_default):
-                return scores[struct_name].structure_type, scores[struct_name].score
-
+    """Return the structure with the highest score. No priority ordering."""
     best_key = max(scores.keys(), key=lambda k: scores[k].score)
     return scores[best_key].structure_type, scores[best_key].score
 
 
 def _generate_recommendation(best_structure: StructureType, all_scores: Dict[str, StructureScore]) -> str:
-    """Generate steering method recommendation based on detected geometry."""
-    recommendations = {
-        StructureType.LINEAR: "Use CAA - single direction steering.",
-        StructureType.CONE: "Use TECZA - multi-directional steering.",
-        StructureType.CLUSTER: "Use cluster-based steering.",
-        StructureType.MANIFOLD: "Use GROM with learned gating.",
-        StructureType.SPARSE: "Use SAE-based steering.",
-        StructureType.BIMODAL: "Use TETNO with conditional gating.",
-        StructureType.ORTHOGONAL: "Use multiple independent CAA vectors.",
-        StructureType.UNKNOWN: "Start with CAA and evaluate.",
-    }
-    return recommendations.get(best_structure, recommendations[StructureType.UNKNOWN])
+    """No unvalidated recommendations. Callers should use raw scores in all_scores."""
+    return ""

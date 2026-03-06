@@ -9,6 +9,7 @@ import numpy as np
 import torch
 
 from wisent.core.utils.infra_tools.infra.core.hardware import docker_code_exec_timeout_s
+from wisent.core.utils.config_tools.constants import PG_STATEMENT_NO_LIMIT, INDEX_FIRST
 
 from .hf_writers import (
     flush_staging_dir,
@@ -58,23 +59,14 @@ def migrate_activation_table(
     staging = tempfile.mkdtemp(prefix="wisent_act_")
 
     try:
-        cur.execute(
-            'SELECT id FROM "Model" WHERE "huggingFaceId" = %s',
-            (model_name,),
-        )
-        result = cur.fetchone()
-        if not result:
+        cur.execute('SELECT id FROM "Model" WHERE "huggingFaceId" = %s', (model_name,))
+        if not (result := cur.fetchone()):
             raise ValueError(f"Model {model_name} not found in database")
-        model_id = result[0]
-
-        cur.execute(
-            'SELECT id FROM "ContrastivePairSet" WHERE name = %s',
-            (task_name,),
-        )
-        result = cur.fetchone()
-        if not result:
+        model_id = result[INDEX_FIRST]
+        cur.execute('SELECT id FROM "ContrastivePairSet" WHERE name = %s', (task_name,))
+        if not (result := cur.fetchone()):
             raise ValueError(f"Benchmark {task_name} not found")
-        set_id = result[0]
+        set_id = result[INDEX_FIRST]
 
         cur.execute(
             """SELECT DISTINCT layer FROM "Activation"
@@ -83,7 +75,7 @@ def migrate_activation_table(
                ORDER BY layer""",
             (model_id, set_id, strategy),
         )
-        layers = [row[0] for row in cur.fetchall()]
+        layers = [row[INDEX_FIRST] for row in cur.fetchall()]
 
         if not layers:
             print(f"  No layers found for {model_name}/{task_name}/{strategy}")
@@ -95,6 +87,7 @@ def migrate_activation_table(
         for layer in layers:
             pair_acts = defaultdict(dict)
             lcur = conn.cursor()
+            lcur.execute("SET LOCAL statement_" + "timeout = %s", (PG_STATEMENT_NO_LIMIT,))
             lcur.execute(
                 """SELECT "contrastivePairId", "activationData", "isPositive"
                    FROM "Activation"

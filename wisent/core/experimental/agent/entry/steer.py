@@ -47,26 +47,20 @@ class ResponseSteering:
         self._improvement_threshold = improvement_threshold
         self._synth_pairs_per_issue = synth_pairs_per_issue
     
-    async def improve_response(self, prompt: str, response: str, analysis: AnalysisResult) -> ImprovementResult:
-        """Attempt to improve the response."""
-        # Decide improvement method based on issues
-        method = self.choose_improvement_method(analysis.issues_found)
-        
+    async def improve_response(
+        self, prompt: str, response: str, analysis: AnalysisResult, *, method: str,
+    ) -> ImprovementResult:
+        """Attempt to improve the response using the specified method.
+
+        Args:
+            method: Must be "regenerate" or "steering". Caller must choose explicitly.
+        """
         if method == "regenerate":
             return await self.improve_by_regeneration(prompt, response, analysis)
         elif method == "steering":
             return await self.improve_by_steering(prompt, response, analysis)
         else:
             raise ImprovementMethodUnknownError(method=method)
-    
-    def choose_improvement_method(self, issues: List[str]) -> str:
-        """Choose the best improvement method for the issues."""
-        if any(issue in ["scientific_myth", "factual_error_population"] for issue in issues):
-            return "steering"  # Use steering for factual issues
-        elif "excessive_repetition" in issues:
-            return "regenerate"  # Regenerate for repetition
-        else:
-            raise ImprovementMethodUnknownError(method=str(issues), available_methods=["steering", "regenerate"])
     
     async def improve_by_regeneration(self, prompt: str, response: str, analysis: AnalysisResult) -> ImprovementResult:
         """Improve by regenerating with modified prompt."""

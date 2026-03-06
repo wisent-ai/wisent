@@ -12,31 +12,13 @@ from wisent.core.utils.config_tools.constants import (
 class PreflightThresholds:
     """All preflight compatibility threshold values.
 
-    All fields are required - callers must provide explicit values.
+    Only keeps the one threshold that gates a real decision: is_compatible.
+    All method-specific scoring thresholds have been removed — raw geometry
+    scores are returned directly instead of being transformed through
+    unvalidated heuristic decision trees.
     """
 
-    linear_excellent: float
-    linear_good: float
-    cone_good: float
-    manifold_high: float
-    linear_overkill: float
-    linear_very_high: float
-    grom_default: float
-    grom_manifold_excellent: float
-    bimodal_good: float
-    tetno_bimodal: float
-    tetno_linear_overkill: float
-    compat_score_caa_excellent: float
-    compat_score_caa_good: float
-    compat_score_caa_poor: float
-    compat_score_caa_default: float
-    compat_score_tecza_excellent: float
-    compat_score_tecza_overkill: float
-    compat_score_tecza_default: float
-    compat_score_tetno_default: float
     compat_min_compatible: float
-    compat_unknown_default: float
-    sparse_high: float
 
 
 def complete_method_compatibility_check(
@@ -44,64 +26,37 @@ def complete_method_compatibility_check(
     best_structure: StructureType,
     structure_scores: Dict[str, float],
     warnings: list,
-    STRUCTURE_TO_METHODS: Dict,
     *,
-    preflight_compat_unknown_default: float,
     preflight_compat_min_compatible: float,
-    preflight_sparse_high: float,
 ) -> Tuple[bool, float, list]:
     """Complete the method compatibility check for unknown methods.
 
-    Handles the final branch of check_method_compatibility for methods
-    that are not explicitly handled (unknown methods), and adds
-    structure-specific warnings for manifold and sparse data.
+    Reports raw geometry scores with an info warning. No structure-specific
+    recommendations or method suggestions.
 
     Args:
         method: Steering method name
         best_structure: Best detected structure type
         structure_scores: Dict of structure type scores
         warnings: List of PreflightWarning objects accumulated so far
-        STRUCTURE_TO_METHODS: Mapping of structure types to recommended methods
-        preflight_compat_unknown_default: Default compat score for unknown methods
         preflight_compat_min_compatible: Minimum compat score threshold
-        preflight_sparse_high: Threshold for sparse structure warnings
 
     Returns:
         Tuple of (is_compatible, compat_score, warnings)
     """
     from wisent.core.control.steering_methods.preflight import PreflightWarning
 
-    method_lower = method.lower()
+    # Use best structure score as compatibility score
+    best_score = max(structure_scores.values()) if structure_scores else SCORE_RANGE_MIN
+    compat_score = best_score
 
-    # Unknown method - give generic advice
-    compat_score = preflight_compat_unknown_default
     warnings.append(PreflightWarning(
         severity="info",
         message=f"Unknown method '{method}' - cannot provide specific "
                 f"compatibility check",
-        suggestion=f"Recommended methods for {best_structure.value}: "
-                   f"{', '.join(STRUCTURE_TO_METHODS.get(best_structure, ['caa']))}",
+        details=f"Best structure: {best_structure.value}, scores: "
+                f"{', '.join(f'{k}={v:.2f}' for k, v in structure_scores.items())}",
     ))
-
-    # Add structure-specific warnings
-    if best_structure == StructureType.MANIFOLD and method_lower not in ["grom"]:
-        warnings.append(PreflightWarning(
-            severity="warning",
-            message="Data has non-linear manifold structure",
-            details="Intrinsic dimensionality much lower than ambient dimension",
-            suggestion="GROM with learned gating may capture this structure "
-                       "better",
-        ))
-
-    if (structure_scores.get("sparse", SCORE_RANGE_MIN) > preflight_sparse_high
-            and method_lower not in ["sae", "sparse_steering"]):
-        warnings.append(PreflightWarning(
-            severity="info",
-            message="Data shows sparse structure - few neurons are active",
-            details=f"Sparse score: {structure_scores.get('sparse', SCORE_RANGE_MIN):.2f}",
-            suggestion="Consider SAE-based steering for more targeted "
-                       "intervention",
-        ))
 
     is_compatible = compat_score >= preflight_compat_min_compatible
     return is_compatible, compat_score, warnings

@@ -1,2 +1,24 @@
-"""NURT (Current) steering method constants."""
+"""NURT (Current) steering method constants and search priors."""
 from wisent.core.utils.config_tools.constants.for_experiments.by_method.transport._szlak import *  # noqa: F401,F403
+
+# --- NURT search priors ---
+SP_NURT_CONCEPT_DIM_MIN = 0
+SP_NURT_CONCEPT_DIM_MAX = 64
+SP_NURT_MAX_CONCEPT_DIM_MIN = 16
+SP_NURT_MAX_CONCEPT_DIM_MAX = 256
+SP_NURT_VAR_THRESH_LOW = 0.8
+SP_NURT_VAR_THRESH_HIGH = 0.99
+SP_NURT_EPOCHS_MU = 4.0
+SP_NURT_EPOCHS_SIGMA = 1.0
+SP_NURT_LR_MIN_MU = -10.0
+SP_NURT_LR_MIN_SIGMA = 2.0
+SP_NURT_INTEGRATION_STEPS_MIN = 5
+SP_NURT_INTEGRATION_STEPS_MAX = 50
+SP_NURT_T_MAX_MU = 0.0
+SP_NURT_T_MAX_SIGMA = 0.5
+SP_NURT_FLOW_HIDDEN_DIM_MIN = 0
+SP_NURT_FLOW_HIDDEN_DIM_MAX = 256
+SP_NURT_WEIGHT_DECAY_MU = -8.0
+SP_NURT_WEIGHT_DECAY_SIGMA = 2.0
+SP_NURT_MAX_GRAD_NORM_MU = 0.0
+SP_NURT_MAX_GRAD_NORM_SIGMA = 1.0

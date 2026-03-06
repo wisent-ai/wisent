@@ -43,17 +43,26 @@ def load_model_results(model_dir: Path) -> Dict[str, Any]:
     return results
 
 
-def compute_diagnosis(signal: float, linear: float) -> str:
-    """Compute diagnosis from signal and linear probe accuracy."""
-    if signal < 0.6:
+def compute_diagnosis(
+    signal: float, linear: float, *,
+    signal_threshold: float, linear_threshold: float, gap_threshold: float,
+) -> str:
+    """Compute diagnosis from signal and linear probe accuracy.
+
+    All thresholds are required — no hardcoded defaults.
+    """
+    if signal < signal_threshold:
         return "NO_SIGNAL"
-    elif linear > 0.6 and (signal - linear) < 0.15:
+    elif linear > linear_threshold and (signal - linear) < gap_threshold:
         return "LINEAR"
     else:
         return "NONLINEAR"
 
 
-def generate_main_results_table(all_models: Dict[str, Dict]) -> str:
+def generate_main_results_table(
+    all_models: Dict[str, Dict], *,
+    signal_threshold: float, linear_threshold: float, gap_threshold: float,
+) -> str:
     """Generate main results table in LaTeX."""
     lines = [
         r"\begin{table}[t]",
@@ -82,7 +91,12 @@ def generate_main_results_table(all_models: Dict[str, Dict]) -> str:
             avg_linear = sum(r["linear_probe_accuracy"] for r in results) / n
             avg_knn = sum(r["nonlinear_metrics"]["knn_accuracy_k10"] for r in results) / n
             gap = avg_signal - avg_linear
-            diagnosis = compute_diagnosis(avg_signal, avg_linear)
+            diagnosis = compute_diagnosis(
+                avg_signal, avg_linear,
+                signal_threshold=signal_threshold,
+                linear_threshold=linear_threshold,
+                gap_threshold=gap_threshold,
+            )
             
             # Color coding for diagnosis
             if diagnosis == "LINEAR":
@@ -108,7 +122,10 @@ def generate_main_results_table(all_models: Dict[str, Dict]) -> str:
     return "\n".join(lines)
 
 
-def generate_benchmark_table(all_models: Dict[str, Dict]) -> str:
+def generate_benchmark_table(
+    all_models: Dict[str, Dict], *,
+    signal_threshold: float, linear_threshold: float, gap_threshold: float,
+) -> str:
     """Generate benchmark list with contrastive definitions."""
     # Collect unique benchmarks
     benchmarks = defaultdict(lambda: {"categories": set(), "signal": [], "linear": [], "knn": []})
@@ -147,7 +164,12 @@ def generate_benchmark_table(all_models: Dict[str, Dict]) -> str:
         avg_signal = sum(data["signal"]) / len(data["signal"]) if data["signal"] else 0
         avg_linear = sum(data["linear"]) / len(data["linear"]) if data["linear"] else 0
         avg_knn = sum(data["knn"]) / len(data["knn"]) if data["knn"] else 0
-        diagnosis = compute_diagnosis(avg_signal, avg_linear)
+        diagnosis = compute_diagnosis(
+            avg_signal, avg_linear,
+            signal_threshold=signal_threshold,
+            linear_threshold=linear_threshold,
+            gap_threshold=gap_threshold,
+        )
         
         if diagnosis == "LINEAR":
             diag_str = r"\textcolor{green!60!black}{LINEAR}"

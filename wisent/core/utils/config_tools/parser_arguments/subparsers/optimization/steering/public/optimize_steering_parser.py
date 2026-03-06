@@ -95,58 +95,10 @@ def _setup_continual_learning_parser(steering_subparsers):
 
 def setup_steering_optimizer_parser(parser):
     """Set up the optimize-steering command parser."""
-    # Parent-level arguments for the default Optuna path
-    parser.add_argument("--lr-lower-bound", type=float, default=None,
-                        dest="lr_lower_bound",
-                        help="Lower bound for learning rate Optuna search")
-    parser.add_argument("--lr-upper-bound", type=float, default=None,
-                        dest="lr_upper_bound",
-                        help="Upper bound for learning rate Optuna search")
-    parser.add_argument("--alpha-lower-bound", type=float, default=None,
-                        dest="alpha_lower_bound",
-                        help="Lower bound for alpha Optuna search")
-    parser.add_argument("--alpha-upper-bound", type=float, default=None,
-                        dest="alpha_upper_bound",
-                        help="Upper bound for alpha Optuna search")
-    parser.add_argument("--optuna-szlak-reg-min", type=float, required=True,
-                        dest="optuna_szlak_reg_min",
-                        help="SZLAK: minimum sinkhorn regularization for Optuna search")
-    parser.add_argument("--optuna-nurt-steps-min", type=int, required=True,
-                        dest="optuna_nurt_steps_min",
-                        help="NURT: minimum integration steps for Optuna search")
-    parser.add_argument("--optuna-nurt-steps-max", type=int, required=True,
-                        dest="optuna_nurt_steps_max",
-                        help="NURT: maximum integration steps for Optuna search")
-    parser.add_argument("--optuna-wicher-concept-dims", type=int, nargs="+", required=True,
-                        dest="optuna_wicher_concept_dims",
-                        help="WICHER: concept dimension choices for Optuna search")
-    parser.add_argument("--optuna-wicher-steps-min", type=int, required=True,
-                        dest="optuna_wicher_steps_min",
-                        help="WICHER: minimum steps for Optuna search")
-    parser.add_argument("--optuna-wicher-steps-max", type=int, required=True,
-                        dest="optuna_wicher_steps_max",
-                        help="WICHER: maximum steps for Optuna search")
-    parser.add_argument("--optuna-przelom-target-modes", type=str, nargs="+", required=True,
-                        dest="optuna_przelom_target_modes",
-                        help="PRZELOM: target mode choices for Optuna search")
-    parser.add_argument("--optuna-grom-gate-dim-min", type=int, required=True,
-                        dest="optuna_grom_gate_dim_min",
-                        help="GROM: minimum gate hidden dim for Optuna search")
-    parser.add_argument("--optuna-grom-gate-dim-max", type=int, required=True,
-                        dest="optuna_grom_gate_dim_max",
-                        help="GROM: maximum gate hidden dim for Optuna search")
-    parser.add_argument("--optuna-grom-intensity-dim-min", type=int, required=True,
-                        dest="optuna_grom_intensity_dim_min",
-                        help="GROM: minimum intensity hidden dim for Optuna search")
-    parser.add_argument("--optuna-grom-intensity-dim-max", type=int, required=True,
-                        dest="optuna_grom_intensity_dim_max",
-                        help="GROM: maximum intensity hidden dim for Optuna search")
-    parser.add_argument("--optuna-grom-sparse-weight-min", type=float, required=True,
-                        dest="optuna_grom_sparse_weight_min",
-                        help="GROM: minimum sparse weight for Optuna search")
-    parser.add_argument("--optuna-grom-sparse-weight-max", type=float, required=True,
-                        dest="optuna_grom_sparse_weight_max",
-                        help="GROM: maximum sparse weight for Optuna search")
+    # Parent-level arguments for the default optimization path
+    parser.add_argument("--backend", type=str, default="hyperopt",
+                        choices=["hyperopt", "optuna"],
+                        help="Optimization backend (default: hyperopt)")
 
     steering_subparsers = parser.add_subparsers(
         dest="steering_action", help="Steering optimization actions"

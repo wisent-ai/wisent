@@ -198,6 +198,73 @@ def _assemble_pairs(complete_pids, pairs_text, act_data, layers, task_name):
     return enriched
 
 
+def build_enriched_from_hf(
+    model_name: str, task_name: str, layer: int,
+    extraction_strategy: str, work_dir: str,
+    train_pairs_file: Optional[str] = None, limit: Optional[int] = None,
+) -> Optional[str]:
+    """Build enriched pairs JSON from HuggingFace cached activations.
+    Returns path to the enriched file, or None if HF data unavailable.
+    """
+    try:
+        from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import (
+            load_activations_from_hf, load_pair_texts_from_hf,
+        )
+    except ImportError:
+        print("  HF: Required packages not available, skipping")
+        return None
+    try:
+        if train_pairs_file and os.path.exists(train_pairs_file):
+            with open(train_pairs_file) as f:
+                data = json.load(f)
+            pairs_text = {}
+            for i, p in enumerate(data.get("pairs", [])):
+                pos = p.get("positive_response", {})
+                neg = p.get("negative_response", {})
+                pairs_text[i] = {
+                    "prompt": p.get("prompt", ""),
+                    "positive": pos.get("model_response", "") if isinstance(pos, dict) else str(pos),
+                    "negative": neg.get("model_response", "") if isinstance(neg, dict) else str(neg),
+                }
+        else:
+            pairs_text = load_pair_texts_from_hf(task_name, limit)
+        if not pairs_text:
+            print(f"  HF: No pair texts for {task_name}")
+            return None
+        n_pairs = min(len(pairs_text), limit) if limit else len(pairs_text)
+        pos_act, neg_act = load_activations_from_hf(
+            model_name, task_name, layer, extraction_strategy, limit=n_pairs)
+        if not len(pos_act):
+            print(f"  HF: No activations for {model_name}/{task_name}/layer {layer}")
+            return None
+        n_usable = min(len(pairs_text), len(pos_act))
+        sorted_pids = sorted(pairs_text.keys())[:n_usable]
+        act_data = defaultdict(lambda: defaultdict(dict))
+        for i, pid in enumerate(sorted_pids):
+            act_data[pid][layer]["pos"] = pos_act[i].tolist()
+            act_data[pid][layer]["neg"] = neg_act[i].tolist()
+        cal = [math.sqrt(sum(x * x for x in act_data[p][layer][s]))
+               for p in sorted_pids for s in ("pos", "neg")]
+        calibration_norms = {str(layer): sum(cal) / len(cal)}
+        enriched_pairs = _assemble_pairs(sorted_pids, pairs_text, act_data, [layer], task_name)
+        output = {
+            "task_name": task_name, "trait_label": task_name, "model": model_name,
+            "layers": [layer], "extraction_strategy": extraction_strategy,
+            "extraction_component": "residual_stream", "raw_mode": False,
+            "num_pairs": len(enriched_pairs), "calibration_norms": calibration_norms,
+            "pairs": enriched_pairs,
+        }
+        out_path = os.path.join(work_dir, "enriched_from_hf.json")
+        with open(out_path, 'w') as f:
+            json.dump(output, f)
+        size_mb = os.path.getsize(out_path) / BYTES_PER_MB
+        print(f"  HF: Wrote enriched ({size_mb:.1f} MB, {len(enriched_pairs)} pairs, layer {layer})")
+        return out_path
+    except Exception as e:
+        print(f"  HF: Failed: {e}")
+        return None
+
+
 def generate_and_collect_enriched(
     model_name, benchmark, work_dir, limit, device, cached_model=None,
 ):

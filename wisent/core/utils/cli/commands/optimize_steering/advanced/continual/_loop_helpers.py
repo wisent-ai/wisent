@@ -215,11 +215,15 @@ def get_task_priority(
     task_priorities: Dict[str, float],
     cycle: int,
 ) -> float:
-    """Compute task priority based on staleness and performance.
+    """Compute task priority based on normalized staleness and performance.
 
-    Higher priority = longer since last optimization + lower current score.
+    Both components are on [SCORE_RANGE_MIN, SCORE_RANGE_MAX].
     """
+    from wisent.core.utils.config_tools.constants import (
+        SCORE_RANGE_MIN, SCORE_RANGE_MAX, INDEX_LAST,
+    )
     history = metrics.get(task, [])
-    last_score = history[-1] if history else 0.0
-    staleness = cycle - task_priorities.get(task, 0)
-    return staleness + (1.0 - last_score)
+    last_score = history[INDEX_LAST] if history else SCORE_RANGE_MIN
+    staleness = cycle - task_priorities.get(task, SCORE_RANGE_MIN)
+    staleness_norm = staleness / max(cycle, SCORE_RANGE_MAX)
+    return staleness_norm + (SCORE_RANGE_MAX - last_score)

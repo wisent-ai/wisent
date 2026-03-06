@@ -103,20 +103,9 @@ def run_guided_modification(
             if d.linear_score >= cfg.min_linear_score
         ]
         mode_used = AblationMode.FULL
-    else:  # ADAPTIVE
-        # Use surgical if variance is high, full if consistent
-        scores = [d.linear_score for d in diagnostics.values()]
-        variance = torch.tensor(scores).var().item()
-        
-        if variance > guided_variance_threshold:  # High variance = some layers much better
-            selected_layers = select_surgical_layers(diagnostics, cfg)
-            mode_used = AblationMode.SURGICAL
-        else:
-            selected_layers = [
-                l for l, d in diagnostics.items()
-                if d.linear_score >= cfg.min_linear_score
-            ]
-            mode_used = AblationMode.FULL
+    else:  # ADAPTIVE — conservative: always use SURGICAL
+        selected_layers = select_surgical_layers(diagnostics, cfg)
+        mode_used = AblationMode.SURGICAL
     
     if not selected_layers:
         # Fallback: use best layer
