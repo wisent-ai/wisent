@@ -6,7 +6,8 @@
     },
     "truthfulqa_custom": {
       "evaluation_type": "generate_until",
-      "primary_metric": "generation"
+      "primary_metric": "generation",
+      "max_gen_toks": 256
     },
     "truthfulqa_mc1": {
       "evaluation_type": "multiple_choice",

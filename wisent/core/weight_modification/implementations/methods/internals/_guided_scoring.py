@@ -95,40 +95,14 @@ def _compute_recommended_weight(
     cohens_d: float,
     *,
     blend_default: float,
-    guided_fisher_max_boost: float,
-    guided_fisher_boost_scale: float,
-    guided_fisher_log_divisor: float,
-    guided_effect_max_boost: float,
-    guided_effect_boost_scale: float,
-    guided_cohens_d_normalizer: float,
-    guided_nonlinear_penalty: float,
-    guided_weight_max: float,
+    **_kwargs,
 ) -> float:
-    """Compute recommended ablation weight based on diagnostics."""
-    base_weight = linear_score
-    fisher_boost = min(
-        guided_fisher_max_boost,
-        guided_fisher_boost_scale * (
-            blend_default + torch.log(
-                torch.tensor(fisher_ratio + blend_default)
-            ).item() / guided_fisher_log_divisor
-        ),
-    )
-    effect_boost = min(
-        guided_effect_max_boost,
-        guided_effect_boost_scale * min(
-            cohens_d / guided_cohens_d_normalizer, blend_default
-        ),
-    )
-    gap = knn_score - linear_score
-    nonlinear_penalty = max(
-        blend_default - blend_default, gap * guided_nonlinear_penalty,
-    )
-    weight = base_weight + fisher_boost + effect_boost - nonlinear_penalty
-    weight = max(
-        blend_default - blend_default, min(guided_weight_max, weight),
-    )
-    return weight
+    """Return linear_score directly as recommended weight.
+
+    The optimizer should find the right weight empirically, not through
+    an unvalidated formula combining Fisher/cohens_d/nonlinear adjustments.
+    """
+    return linear_score
 
 
 def compute_fisher_weights(

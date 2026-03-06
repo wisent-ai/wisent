@@ -23,6 +23,7 @@ from wisent.core.primitives.model_interface.core.activations.core.atoms import R
 
 from wisent.core.control.generation.prompts.core.atom import ChatMessage
 from wisent.core.utils import resolve_default_device, resolve_torch_device, preferred_dtype
+from wisent.core.utils.config_tools.constants import STEERING_SCALE_IDENTITY
 from wisent.core.primitives.contrastive_pairs.diagnostics import run_control_steering_diagnostics
 from wisent.core.utils.infra_tools.errors import (
     ChatTemplateNotAvailableError,
@@ -144,6 +145,7 @@ class WisentModel:
 
         self._steering_plan: SteeringPlan = SteeringPlan.from_raw(
             raw=steering_layers,
+            scale=STEERING_SCALE_IDENTITY,
             weights=steering_weights,
             layers_description=layers_description,
             )

@@ -132,7 +132,7 @@ def compute_eot_editability(
     q_neg: Optional[torch.Tensor] = None,
     k_pos: Optional[torch.Tensor] = None,
     *, temperature: float, default_score: float, default_scale: float,
-    eot_perturbation_scale: float, eot_survival_weight: float, eot_spectral_weight: float,
+    eot_perturbation_scale: float, **_kwargs,
 ) -> EOTEditabilityResult:
     """
     Compute full EOT editability metrics for a layer.
@@ -164,7 +164,6 @@ def compute_eot_editability(
     concentration, sharpness = compute_spectral_metrics(cost, default_score=default_score, default_scale=default_scale)
 
     cost_effect = jacobian * survival
-    composite = eot_survival_weight * survival + eot_spectral_weight * concentration + eot_spectral_weight * sharpness
 
     return EOTEditabilityResult(
         attention_entropy=entropy,
@@ -173,5 +172,5 @@ def compute_eot_editability(
         steering_survival=survival,
         spectral_concentration=concentration,
         spectral_sharpness=sharpness,
-        composite_editability=composite,
+        composite_editability=survival,
     )

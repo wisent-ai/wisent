@@ -5,6 +5,8 @@ import subprocess
 from pathlib import Path
 from typing import Dict, Any
 
+import argparse
+
 from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_WIDE, JSON_INDENT
 from wisent.examples.scripts.generate_paper_data_helpers import (
     GCS_BUCKET,
@@ -16,7 +18,10 @@ from wisent.examples.scripts.generate_paper_data_helpers import (
 )
 
 
-def generate_figure_data(all_models: Dict[str, Dict]) -> Dict[str, Any]:
+def generate_figure_data(
+    all_models: Dict[str, Dict], *,
+    signal_threshold: float, linear_threshold: float, gap_threshold: float,
+) -> Dict[str, Any]:
     """Generate JSON data for figures."""
     figure_data = {
         "diagnosis_distribution": {"LINEAR": 0, "NONLINEAR": 0, "NO_SIGNAL": 0},
@@ -46,7 +51,12 @@ def generate_figure_data(all_models: Dict[str, Dict]) -> Dict[str, Any]:
                 linear = r["linear_probe_accuracy"]
                 knn = r["nonlinear_metrics"]["knn_accuracy_k10"]
                 mmd = r["nonlinear_metrics"]["mmd_rbf"]
-                diagnosis = compute_diagnosis(signal, linear)
+                diagnosis = compute_diagnosis(
+                    signal, linear,
+                    signal_threshold=signal_threshold,
+                    linear_threshold=linear_threshold,
+                    gap_threshold=gap_threshold,
+                )
                 
                 figure_data["diagnosis_distribution"][diagnosis] += 1
                 figure_data["metrics_by_diagnosis"][diagnosis]["signal"].append(signal)
@@ -81,8 +91,13 @@ def generate_figure_data(all_models: Dict[str, Dict]) -> Dict[str, Any]:
         signal = r["signal_strength"]
         linear = r["linear_probe_accuracy"]
         knn = r["nonlinear_metrics"]["knn_accuracy_k10"]
-        diagnosis = compute_diagnosis(signal, linear)
-        
+        diagnosis = compute_diagnosis(
+            signal, linear,
+            signal_threshold=signal_threshold,
+            linear_threshold=linear_threshold,
+            gap_threshold=gap_threshold,
+        )
+
         benchmarks_by_diag[diagnosis].append({
             "benchmark": bench,
             "signal": signal,
@@ -103,7 +118,10 @@ def generate_figure_data(all_models: Dict[str, Dict]) -> Dict[str, Any]:
     return figure_data
 
 
-def generate_summary_statistics(all_models: Dict[str, Dict]) -> str:
+def generate_summary_statistics(
+    all_models: Dict[str, Dict], *,
+    signal_threshold: float, linear_threshold: float, gap_threshold: float,
+) -> str:
     """Generate summary statistics for paper text."""
     total_results = 0
     total_linear = 0
@@ -123,7 +141,12 @@ def generate_summary_statistics(all_models: Dict[str, Dict]) -> str:
                 benchmarks.add(r["benchmark"])
                 signal = r["signal_strength"]
                 linear = r["linear_probe_accuracy"]
-                diagnosis = compute_diagnosis(signal, linear)
+                diagnosis = compute_diagnosis(
+                    signal, linear,
+                    signal_threshold=signal_threshold,
+                    linear_threshold=linear_threshold,
+                    gap_threshold=gap_threshold,
+                )
                 
                 if diagnosis == "LINEAR":
                     total_linear += 1
@@ -155,6 +178,19 @@ def generate_summary_statistics(all_models: Dict[str, Dict]) -> str:
 
 def main():
     """Generate all paper data."""
+    parser = argparse.ArgumentParser(description="Generate Zwiad paper data")
+    parser.add_argument("--signal-threshold", type=float, required=True,
+                        help="Min signal strength for diagnosis")
+    parser.add_argument("--linear-threshold", type=float, required=True,
+                        help="Min linear probe accuracy for LINEAR diagnosis")
+    parser.add_argument("--gap-threshold", type=float, required=True,
+                        help="Max signal-linear gap for LINEAR diagnosis")
+    cli_args = parser.parse_args()
+    diag_kw = dict(
+        signal_threshold=cli_args.signal_threshold,
+        linear_threshold=cli_args.linear_threshold,
+        gap_threshold=cli_args.gap_threshold,
+    )
     print("=" * SEPARATOR_WIDTH_WIDE)
     print("GENERATING PAPER DATA")
     print("=" * SEPARATOR_WIDTH_WIDE)
@@ -177,28 +213,28 @@ def main():
     
     # Generate main table
     print("\n3. Generating main results table...")
-    main_table = generate_main_results_table(all_models)
+    main_table = generate_main_results_table(all_models, **diag_kw)
     with open(output_dir / "main_results_table.tex", "w") as f:
         f.write(main_table)
     print(f"   Saved: {output_dir / 'main_results_table.tex'}")
     
     # Generate benchmark table
     print("\n4. Generating benchmark table...")
-    bench_table = generate_benchmark_table(all_models)
+    bench_table = generate_benchmark_table(all_models, **diag_kw)
     with open(output_dir / "benchmark_table.tex", "w") as f:
         f.write(bench_table)
     print(f"   Saved: {output_dir / 'benchmark_table.tex'}")
     
     # Generate figure data
     print("\n5. Generating figure data...")
-    figure_data = generate_figure_data(all_models)
+    figure_data = generate_figure_data(all_models, **diag_kw)
     with open(output_dir / "figure_data.json", "w") as f:
         json.dump(figure_data, f, indent=JSON_INDENT)
     print(f"   Saved: {output_dir / 'figure_data.json'}")
     
     # Generate summary statistics
     print("\n6. Generating summary statistics...")
-    summary = generate_summary_statistics(all_models)
+    summary = generate_summary_statistics(all_models, **diag_kw)
     with open(output_dir / "summary_statistics.md", "w") as f:
         f.write(summary)
     print(f"   Saved: {output_dir / 'summary_statistics.md'}")

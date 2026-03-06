@@ -172,7 +172,34 @@ VIZ_PCA_COMPONENTS_2D = 2
 VIZ_FIGSIZE_CLUSTER = (16, 6)
 VIZ_FIGSIZE_CLUSTER_SINGLE = (8, 6)
 VIZ_SUBPLOT_ROWS_SINGLE = 1
+VIZ_SUBPLOT_ROWS_PAIR = 2
 VIZ_SUBPLOT_COLS_PAIR = 2
+VIZ_SUBPLOT_COLS_QUAD = 4
 VIZ_SUBPLOT_POS_LEFT = 1
 VIZ_SUBPLOT_POS_RIGHT = 2
+VIZ_FIGSIZE_CLUSTER_GRID = (28, 14)
 VIZ_ELBOW_MARKER_SIZE = 8
+VIZ_PCA_COMPONENTS_3D = 3
+VIZ_FIGSIZE_CLUSTER_WIDE = (22, 10)
+VIZ_ANNOTATION_OFFSET = 8
+VIZ_BBOX_ALPHA_HIGH = 0.9
+KMEANS_N_INIT = 10
+VIZ_BBOX_PAD = 0.3
+VIZ_BBOX_BOXSTYLE = "round,pad=0.3"
+# --- Cluster color palette (8 distinct colors) ---
+VIZ_CLUSTER_COLORS = [
+    "#e6194b", "#4363d8", "#3cb44b", "#911eb4",
+    "#f58231", "#9A6324", "#f032e6", "#a9a9a9",
+]
+VIZ_COLOR_POSITIVE = "#2196F3"
+VIZ_COLOR_NEGATIVE = "#F44336"
+VIZ_CLUSTER_NAMES_GEOMETRY = [
+    "Linear stable",
+    "Diffuse curved",
+    "Concentrated few-concept",
+    "Linear conc. low-dim",
+    "Mid-range multi-concept",
+    "Linear high multi-dir",
+    "Low-linear unstable",
+    "Many-concept curved",
+]

@@ -279,7 +279,6 @@ def setup_basic_task_args(parser):
         help="Threshold for classification (higher = more strict detection)",
     )
     parser.add_argument("--log-detections", action="store_true", help="Enable logging of detection events")
-    parser.add_argument("--max-regeneration-attempts", type=int, required=True, help="Maximum number of regeneration attempts for detection handler")
 
     # Code execution security arguments
     parser.add_argument(

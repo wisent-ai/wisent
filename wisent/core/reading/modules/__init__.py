@@ -185,11 +185,6 @@ from .modules.zwiad.zwiad_with_concepts import (
 from .modules.zwiad.zwiad_config import ZwiadProtocolConfig
 from .modules.zwiad.zwiad_protocol import run_zwiad_protocol
 
-from .intervention_selection import (
-    RigorousInterventionResult,
-    rigorous_select_intervention,
-)
-
 from .modules.steering.analysis.steering_validation import (
     compute_steering_effect_size,
     validate_steering_effectiveness,

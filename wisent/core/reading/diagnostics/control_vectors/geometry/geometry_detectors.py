@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Dict
 import torch
 from .geometry_types import StructureType, StructureScore, GeometryAnalysisConfig
-from wisent.core.utils.config_tools.constants import NORM_EPS, COMPARE_TOL, SCORE_RANGE_MIN, SCORE_RANGE_MAX
+from wisent.core.utils.config_tools.constants import NORM_EPS, COMPARE_TOL, SCORE_RANGE_MIN, SCORE_RANGE_MAX, INDEX_FIRST
 
 
 def detect_linear_structure(
@@ -45,18 +45,14 @@ def detect_linear_structure(
         spread_ratio = within_class_spread / (between_class_dist + NORM_EPS)
         consistency = max(0, 1 - spread_ratio)
 
-        linear_score = (
-            0.35 * min(float(cohens_d) / detector_cohens_d_divisor, 1.0) +
-            0.35 * variance_explained +
-            0.30 * consistency
-        )
-
-        confidence = min(1.0, (pos_tensor.shape[0] + neg_tensor.shape[0]) / detector_large_sample_n)
-
+        cohens_d_norm = min(float(cohens_d) / detector_cohens_d_divisor, SCORE_RANGE_MAX)
+        n_total = pos_tensor.shape[INDEX_FIRST] + neg_tensor.shape[INDEX_FIRST]
+        confidence = min(SCORE_RANGE_MAX, n_total / detector_large_sample_n)
         return StructureScore(
-            StructureType.LINEAR, score=float(linear_score),
-            confidence=float(confidence),
-            details={"cohens_d": float(cohens_d), "variance_explained": variance_explained}
+            StructureType.LINEAR, score=float(variance_explained),
+            confidence=float(confidence), details={
+                "cohens_d": float(cohens_d), "cohens_d_normalized": cohens_d_norm,
+                "variance_explained": variance_explained, "consistency": float(consistency)}
         )
     except Exception as e:
         return StructureScore(StructureType.LINEAR, 0.0, 0.0, {"error": str(e)})
@@ -64,12 +60,10 @@ def detect_linear_structure(
 
 def detect_cone_structure_score(
     pos_tensor: torch.Tensor, neg_tensor: torch.Tensor, cfg: GeometryAnalysisConfig,
-    detector_cone_threshold_low: float = None, detector_cone_range_mid: float = None, detector_cone_scale_mid: float = None,
-    detector_cone_range_high: float = None, detector_cone_scale_high: float = None, detector_cone_offset_top: float = None,
-    detector_cone_range_top: float = None, detector_cone_scale_top: float = None, detector_small_sample_n: int = None,
+    detector_small_sample_n: int = None, **_kwargs,
 ) -> StructureScore:
     """Detect cone structure using raw cosine similarity of difference vectors."""
-    for _n, _v in [("detector_cone_threshold_low", detector_cone_threshold_low), ("detector_cone_range_mid", detector_cone_range_mid), ("detector_cone_scale_mid", detector_cone_scale_mid), ("detector_cone_range_high", detector_cone_range_high), ("detector_cone_scale_high", detector_cone_scale_high), ("detector_cone_offset_top", detector_cone_offset_top), ("detector_cone_range_top", detector_cone_range_top), ("detector_cone_scale_top", detector_cone_scale_top), ("detector_small_sample_n", detector_small_sample_n)]:
+    for _n, _v in [("detector_small_sample_n", detector_small_sample_n)]:
         if _v is None: raise ValueError(f"{_n} is required")
     try:
         n_pairs = min(pos_tensor.shape[0], neg_tensor.shape[0])
@@ -92,33 +86,14 @@ def detect_cone_structure_score(
         mean_cos_sim = float(off_diagonal.mean())
         std_cos_sim = float(off_diagonal.std())
 
-        if mean_cos_sim < 0:
-            cone_score = 0.0
-        elif mean_cos_sim < detector_cone_threshold_low:
-            cone_score = mean_cos_sim
-        elif mean_cos_sim < detector_cone_range_mid:
-            cone_score = (detector_cone_threshold_low
-                          + detector_cone_scale_mid
-                          * ((mean_cos_sim - detector_cone_threshold_low)
-                             / detector_cone_scale_mid))
-        elif mean_cos_sim < detector_cone_range_high:
-            cone_score = (detector_cone_range_mid
-                          + (detector_cone_offset_top
-                             - detector_cone_range_mid)
-                          * ((mean_cos_sim - detector_cone_range_mid)
-                             / detector_cone_scale_high))
-        else:
-            _top_span = 1.0 - detector_cone_offset_top
-            _top_frac = (mean_cos_sim - detector_cone_range_top) / detector_cone_scale_top
-            cone_score = detector_cone_offset_top + _top_span * _top_frac
-
-        consistency = max(0, 1 - std_cos_sim)
-        confidence = consistency * min(1.0, n_pairs / detector_small_sample_n)
+        cone_score = max(SCORE_RANGE_MIN, float(mean_cos_sim))
+        consistency = max(SCORE_RANGE_MIN, SCORE_RANGE_MAX - std_cos_sim)
+        confidence = consistency * min(SCORE_RANGE_MAX, n_pairs / detector_small_sample_n)
 
         return StructureScore(
-            StructureType.CONE, score=float(cone_score),
+            StructureType.CONE, score=cone_score,
             confidence=float(confidence),
-            details={"raw_mean_cosine_similarity": mean_cos_sim}
+            details={"mean_cos_sim": mean_cos_sim, "std_cos_sim": std_cos_sim}
         )
     except Exception as e:
         return StructureScore(StructureType.CONE, 0.0, 0.0, {"error": str(e)})
@@ -214,7 +189,7 @@ def detect_bimodal_structure(
         neg_proj = neg_tensor @ mean_diff
         gap = abs(pos_proj.mean() - neg_proj.mean())
         std = projections.std()
-        bimodal_score = min(1.0, gap / (2 * std + NORM_EPS))
+        bimodal_score = min(SCORE_RANGE_MAX, gap / (std + NORM_EPS))
         return StructureScore(
             StructureType.BIMODAL, score=float(bimodal_score),
             confidence=bimodal_detection_confidence, details={"gap_over_std": float(gap / (std + NORM_EPS))}
@@ -244,7 +219,7 @@ def detect_orthogonal_structure(
         n = cos_sim.shape[0]
         mask = ~torch.eye(n, dtype=torch.bool)
         mean_abs_cos = cos_sim[mask].abs().mean().item()
-        orthogonal_score = max(SCORE_RANGE_MIN, SCORE_RANGE_MAX - mean_abs_cos / geo_diag_orthogonal_threshold)
+        orthogonal_score = max(SCORE_RANGE_MIN, SCORE_RANGE_MAX - mean_abs_cos)
         return StructureScore(
             StructureType.ORTHOGONAL, score=float(orthogonal_score),
             confidence=geo_orthogonal_confidence, details={"mean_abs_cosine": mean_abs_cos}

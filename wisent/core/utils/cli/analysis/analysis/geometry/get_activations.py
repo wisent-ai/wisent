@@ -5,10 +5,12 @@ import json
 import os
 import time
 
-from wisent.core.utils.config_tools.constants import JSON_INDENT, PROGRESS_LOG_INTERVAL_10
+from wisent.core.utils.config_tools.constants import (
+    JSON_INDENT, PROGRESS_LOG_INTERVAL_10, ARCHITECTURE_MODULE_LIMIT_DEFAULT,
+)
 
 
-def execute_get_activations(args, *, architecture_module_limit: int):
+def execute_get_activations(args, *, architecture_module_limit: int = ARCHITECTURE_MODULE_LIMIT_DEFAULT):
     """Execute the get-activations command - load pairs and collect activations."""
     from wisent.core.primitives.models.wisent_model import WisentModel
     from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector

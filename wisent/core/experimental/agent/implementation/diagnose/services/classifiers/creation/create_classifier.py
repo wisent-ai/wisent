@@ -21,8 +21,7 @@ from ...layer import Layer
 from ...model import Model
 from ...model_persistence import ModelPersistence, create_classifier_metadata
 
-from ._create_helpers import BenchmarkMixin, DataGenerationMixin, ScoringMixin, TrainingMixin
-from ._create_helpers.create_classifier_scoring import ScoringConfig
+from ._create_helpers import BenchmarkMixin, DataGenerationMixin, TrainingMixin
 
 
 @dataclass
@@ -51,14 +50,13 @@ class TrainingResult:
     save_path: Optional[str] = None
 
 
-class ClassifierCreator(BenchmarkMixin, DataGenerationMixin, ScoringMixin, TrainingMixin):
+class ClassifierCreator(BenchmarkMixin, DataGenerationMixin, TrainingMixin):
     """Creates new classifiers on demand for the autonomous agent."""
 
-    def __init__(self, model: Model, max_tasks_to_process: int, scoring_config: ScoringConfig):
+    def __init__(self, model: Model, max_tasks_to_process: int):
         """Initialize the classifier creator."""
         self.model = model
         self.max_tasks_to_process = max_tasks_to_process
-        self.scoring_config = scoring_config
 
     def create_classifier_for_issue_type(
         self, issue_type: str, layer: int, time_budget_minutes: float,
@@ -249,12 +247,12 @@ class ClassifierCreator(BenchmarkMixin, DataGenerationMixin, ScoringMixin, Train
 
 def create_classifier_on_demand(
     model: Model, issue_type: str, time_budget_minutes: float,
-    max_tasks_to_process: int, task_search_limit: int, scoring_config: ScoringConfig,
+    max_tasks_to_process: int, task_search_limit: int,
     *, data_oversample_multiplier: int,
     layer: int = None, save_path: str = None, optimize: bool = False,
 ) -> TrainingResult:
     """Convenience function to create a classifier on demand."""
-    creator = ClassifierCreator(model, max_tasks_to_process=max_tasks_to_process, scoring_config=scoring_config)
+    creator = ClassifierCreator(model, max_tasks_to_process=max_tasks_to_process)
 
     if optimize or layer is None:
         # Optimize to find best configuration

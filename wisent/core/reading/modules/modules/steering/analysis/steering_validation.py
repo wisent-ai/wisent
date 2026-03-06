@@ -157,36 +157,23 @@ def run_full_validation(
     from .geometry_null import compute_geometry_vs_null
     from .is_linear import test_linearity
     from .decomposition_metrics import find_optimal_clustering
-    from .intervention_selection import rigorous_select_intervention
-
-    # Step 1: Signal test
+    # Signal test
     signal_metrics = compute_signal_vs_null(
         pos, neg, ["knn_accuracy", "mlp_probe_accuracy"],
         mlp_early_stopping_min_samples=mlp_early_stopping_min_samples,
         mlp_probe_max_iter=mlp_probe_max_iter)
     signal_z, signal_p, _ = compute_aggregate_signal(signal_metrics, correction="bonferroni")
 
-    # Step 2: Geometry test
     linearity = test_linearity(pos, neg, diagnostics_total_checks=DIAGNOSTICS_TOTAL_CHECKS)
     geometry_diagnosis = linearity.diagnosis
 
-    # Step 3: Effective dimension
     eff_dim = compute_effective_dimensions_vs_null(pos, neg, n_bootstrap=n_bootstrap)
-    eff_dim_z = eff_dim["z_scores"].get("effective_rank_z", 0)
 
-    # Step 4: Geometry type
     geo_type = compute_geometry_vs_null(pos, neg, n_bootstrap=n_bootstrap)
-    geo_type_z = geo_type.get("z_scores", {})
 
     diff = pos - neg
     _dk = {k: v for k, v in locals().items() if k.startswith("decomp_")}
     n_concepts, labels, sil = find_optimal_clustering(diff, **_dk)
-
-    # Make recommendation
-    intervention = rigorous_select_intervention(
-        signal_z, signal_p, geometry_diagnosis, linearity.confidence,
-        eff_dim_z, n_concepts, sil, geo_type_z
-    )
 
     result = {
         "signal": {"z_score": signal_z, "p_value": signal_p},
@@ -194,13 +181,6 @@ def run_full_validation(
         "effective_dimension": eff_dim,
         "geometry_type": geo_type,
         "decomposition": {"n_concepts": n_concepts, "silhouette": sil},
-        "intervention": {
-            "method": intervention.recommended_method,
-            "confidence": intervention.confidence,
-            "confidence_bounds": [intervention.confidence_lower, intervention.confidence_upper],
-            "reasoning": intervention.reasoning,
-            "warnings": intervention.warnings,
-        },
     }
 
     # Validate if model provided

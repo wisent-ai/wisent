@@ -1,7 +1,7 @@
-"""PolyMath language-specific subclasses (Part 2: KO-ZH)."""
+"""PolyMath language-specific subclasses: Korean through Chinese."""
 from __future__ import annotations
 
-from wisent.extractors.hf.hf_task_extractors.polymath import PolyMathExtractor
+from .polymath import PolyMathExtractor
 
 class PolyMathKOTopExtractor(PolyMathExtractor):
     language = "ko"

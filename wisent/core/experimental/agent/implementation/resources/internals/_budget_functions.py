@@ -133,22 +133,18 @@ def optimize_benchmarks_for_budget(task_candidates: List[str],
                 elif priority == 'low':
                     priority_score = PRIORITY_LOW
                 
-                # Calculate efficiency score (priority per second)
-                efficiency_score = priority_score / max(loading_time, 1.0)
-                
                 benchmark_info.append({
                     'task': task,
                     'loading_time': loading_time,
                     'priority': priority,
                     'priority_score': priority_score,
-                    'efficiency_score': efficiency_score
                 })
             else:
                 raise NoBenchmarkDataError()
         
-        # Sort by efficiency (prefer fast) or priority (prefer high priority)
+        # Sort by fastest-first (prefer fast) or priority-first (default)
         if prefer_fast:
-            benchmark_info.sort(key=lambda x: x['efficiency_score'], reverse=True)
+            benchmark_info.sort(key=lambda x: (-x['loading_time'], x['priority_score']))
         else:
             benchmark_info.sort(key=lambda x: (x['priority_score'], -x['loading_time']), reverse=True)
         

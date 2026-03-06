@@ -199,6 +199,7 @@ class EvaluatorBase:
 
 
 DEF_N_PROC: int = os.cpu_count() // 2
+DEF_MAX_TASKS_PER_PROC: int = 0
 
 
 def batch_exec(
@@ -208,7 +209,7 @@ def batch_exec(
     timeout: int,
     n_procs: int = DEF_N_PROC,
     use_tqdm: bool = True,
-    max_tasks_per_proc: int,
+    max_tasks_per_proc: int = DEF_MAX_TASKS_PER_PROC,
     def_val: Any = None,
 ) -> List[Any]:
     """Execute a function in batch using ProcessPool."""
