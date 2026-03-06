@@ -2,12 +2,10 @@
 
 import json
 import os
-import sys
-import torch
 
 from wisent.core.primitives.models import get_generate_kwargs
-from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, extract_activation
 from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, JSON_INDENT, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.utils.cli.commands.generation.vectors.generation_helpers import generate_batched, generate_sequential
 
 
 def execute_generate_responses(args):
@@ -139,109 +137,25 @@ def execute_generate_responses(args):
     print(f"🤖 Generating responses...\n")
     results = []
 
-    for idx, pair in enumerate(pairs, 1):
-        if args.verbose:
-            print(f"Question {idx}/{len(pairs)}:")
-            print(f"   Prompt: {pair.prompt[:DISPLAY_TRUNCATION_COMPACT]}...")
+    extract_activations = getattr(args, 'extract_activations', False)
 
-        try:
-            # Convert prompt to chat format
-            messages = [
-                {"role": "user", "content": pair.prompt}
-            ]
+    # Shared generation kwargs
+    gen_kwargs = get_generate_kwargs(max_new_tokens=args.max_new_tokens)
+    if args.temperature is not None:
+        gen_kwargs["temperature"] = args.temperature
+    if args.top_p is not None:
+        gen_kwargs["top_p"] = args.top_p
+    steering_strategy = getattr(args, 'steering_strategy', 'constant')
 
-            # Get inference config settings with CLI overrides
-            gen_kwargs = get_generate_kwargs(max_new_tokens=args.max_new_tokens)
-            if args.temperature is not None:
-                gen_kwargs["temperature"] = args.temperature
-            if args.top_p is not None:
-                gen_kwargs["top_p"] = args.top_p
-
-            # Get steering strategy
-            steering_strategy = getattr(args, 'steering_strategy', 'constant')
-            
-            # Generate response with per-token steering strategy
-            responses = model.generate(
-                inputs=[messages],
-                **gen_kwargs,
-                use_steering=args.use_steering,
-                steering_object=steering_object,
-                steering_strength=args.steering_strength,
-                steering_strategy=steering_strategy,
-            )
-
-            generated_text = responses[0] if responses else ""
-
-            if args.verbose:
-                print(f"   Generated: {generated_text[:DISPLAY_TRUNCATION_COMPACT]}...")
-                print()
-
-            result_entry = {
-                "question_id": idx,
-                "prompt": pair.prompt,
-                "generated_response": generated_text,
-                "positive_reference": pair.positive_response.model_response,
-                "negative_reference": pair.negative_response.model_response
-            }
-
-            # Extract activations if requested
-            if getattr(args, 'extract_activations', False) and generated_text:
-                extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
-                layers = getattr(args, 'layers', None)
-                if layers:
-                    layer_list = [f"layer.{l.strip()}" for l in layers.split(',')]
-                else:
-                    layer_list = [f"layer.{model.num_layers // 2}"]
-
-                # Get full response with prompt for activation extraction
-                formatted_prompt = model.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-                full_response = formatted_prompt + generated_text
-
-                # Extract activations
-                layer_acts = model.adapter.extract_activations(full_response, layers=layer_list)
-                prompt_len = len(model.tokenizer(formatted_prompt, add_special_tokens=False)["input_ids"])
-
-                activations_dict = {}
-                for layer_name, act in layer_acts.items():
-                    if act is not None:
-                        extracted = extract_activation(extraction_strategy, act[0], generated_text, model.tokenizer, prompt_len)
-                        activations_dict[layer_name] = extracted.cpu().tolist()
-
-                result_entry["activations"] = activations_dict
-                result_entry["extraction_strategy"] = extraction_strategy.value
-            # Add correct_answers and incorrect_answers for evaluation
-            if pair.metadata and pair.metadata.get('correct_answers'):
-                result_entry['correct_answers'] = pair.metadata['correct_answers']
-            else:
-                # Use positive_reference as the only correct answer
-                result_entry['correct_answers'] = [pair.positive_response.model_response]
-
-            if pair.metadata and pair.metadata.get('incorrect_answers'):
-                result_entry['incorrect_answers'] = pair.metadata['incorrect_answers']
-            else:
-                # Use negative_reference as the only incorrect answer
-                result_entry['incorrect_answers'] = [pair.negative_response.model_response]
-            results.append(result_entry)
-
-        except Exception as e:
-            print(f"   ❌ Error generating response for question {idx}: {e}")
-            error_entry = {
-                "question_id": idx,
-                "prompt": pair.prompt,
-                "generated_response": None,
-                "positive_reference": pair.positive_response.model_response,
-                "negative_reference": pair.negative_response.model_response,
-                "error": str(e),
-            }
-            if pair.metadata and pair.metadata.get('correct_answers'):
-                error_entry['correct_answers'] = pair.metadata['correct_answers']
-            else:
-                error_entry['correct_answers'] = [pair.positive_response.model_response]
-            if pair.metadata and pair.metadata.get('incorrect_answers'):
-                error_entry['incorrect_answers'] = pair.metadata['incorrect_answers']
-            else:
-                error_entry['incorrect_answers'] = [pair.negative_response.model_response]
-            results.append(error_entry)
+    # Fall back to sequential if activation extraction is needed (requires per-prompt handling)
+    if extract_activations:
+        results = generate_sequential(
+            pairs, model, gen_kwargs, args, steering_object, steering_strategy, extract_activations,
+        )
+    else:
+        results = generate_batched(
+            pairs, model, gen_kwargs, args, steering_object, steering_strategy,
+        )
 
     # Save results
     print(f"\n💾 Saving results...")
