@@ -4,7 +4,7 @@ import json
 import os
 
 from wisent.core.primitives.models import get_generate_kwargs
-from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, JSON_INDENT, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.utils.config_tools.constants import JSON_INDENT, SPLIT_RATIO_TRAIN_DEFAULT
 from wisent.core.utils.cli.commands.generation.vectors.generation_helpers import generate_batched, generate_sequential
 
 
@@ -15,9 +15,8 @@ def execute_generate_responses(args):
     Generates model responses to questions from a task and saves them to a file.
     """
     from wisent.core.primitives.models.wisent_model import WisentModel
-    from wisent.core.utils.infra_tools.data.loaders.task_interface_loader import TaskInterfaceDataLoader
-    from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
     from wisent.core.control.steering_methods.steering_object import load_steering_object
+    from wisent.extractors.lm_eval.registry.lm_task_pairs_generation import build_contrastive_pairs
 
     # Validate arguments - need either task or input_file
     input_file = getattr(args, 'input_file', None)
@@ -87,51 +86,14 @@ def execute_generate_responses(args):
             pairs.append(pair)
         print(f"   ✓ Loaded {len(pairs)} question pairs from file\n")
     else:
-        from wisent.core.utils.infra_tools.data.loaders.huggingface_loader import HuggingFaceDataLoader
-        
         load_limit = max(args.num_questions * args.max_incorrect_per_correct, args.min_load_limit_questions)
-        load_kwargs = dict(
-            split_ratio=0.8,
-            seed=DEFAULT_RANDOM_SEED,
+        all_pairs = build_contrastive_pairs(
+            task_name=args.task,
             limit=load_limit,
-            training_limit=None,
-            testing_limit=None
+            train_ratio=SPLIT_RATIO_TRAIN_DEFAULT,
         )
-        
-        # Try loaders in order: HuggingFace (for custom extractors) -> TaskInterface -> LMEval
-        errors = {}
-        
-        # 1. Try HuggingFaceDataLoader (for truthfulqa_custom, etc.)
-        try:
-            hf_loader = HuggingFaceDataLoader()
-            result = hf_loader.load(task_name=args.task, **load_kwargs)
-            # Result is a TypedDict, access via key
-            pairs = result['train_qa_pairs'].pairs[:args.num_questions]
-            print(f"   ✓ Loaded {len(pairs)} question pairs via HuggingFace extractor\n")
-        except Exception as hf_err:
-            errors['HuggingFace'] = hf_err
-            
-            # 2. Try TaskInterfaceDataLoader (for livecodebench, gsm8k, etc.)
-            try:
-                task_loader = TaskInterfaceDataLoader()
-                result = task_loader.load(task=args.task, **load_kwargs)
-                pairs = result.train_qa_pairs.pairs[:args.num_questions]
-                print(f"   ✓ Loaded {len(pairs)} question pairs via TaskInterface\n")
-            except Exception as task_err:
-                errors['TaskInterface'] = task_err
-                
-                # 3. Try LMEvalDataLoader
-                try:
-                    loader = LMEvalDataLoader()
-                    result = loader._load_one_task(task_name=args.task, **load_kwargs)
-                    pairs = result['train_qa_pairs'].pairs[:args.num_questions]
-                    print(f"   ✓ Loaded {len(pairs)} question pairs via LMEval\n")
-                except Exception as lm_err:
-                    errors['LMEval'] = lm_err
-                    print(f"   ❌ Failed to load task '{args.task}'")
-                    for loader_name, err in errors.items():
-                        print(f"      {loader_name} error: {err}")
-                    raise ValueError(f"Failed to load task '{args.task}': {errors}")
+        pairs = all_pairs[:args.num_questions]
+        print(f"   ✓ Loaded {len(pairs)} question pairs\n")
 
     # Generate responses
     print(f"🤖 Generating responses...\n")

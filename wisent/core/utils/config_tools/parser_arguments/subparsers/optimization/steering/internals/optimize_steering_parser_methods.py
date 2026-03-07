@@ -176,13 +176,13 @@ def setup_method_parsers(steering_subparsers):
     )
     SteeringMethodRegistry.add_all_cli_arguments(auto_parser)
     auto_parser.add_argument("--limit", type=int, required=True, help="Maximum samples for testing")
-    auto_parser.add_argument("--max-time", type=float, default=None, help="Maximum time in minutes")
+    auto_parser.add_argument("--max-time", type=float, required=True, help="Maximum optimization time in minutes")
     auto_parser.add_argument(
         "--strength-range",
         type=float,
         nargs="+",
-        default=None,
-        help="Steering strengths to test (default: 0.5 1.0 1.5 2.0)",
+        required=True,
+        help="Steering strengths to test",
     )
     auto_parser.add_argument(
         "--layer-range",
@@ -208,4 +208,53 @@ def setup_method_parsers(steering_subparsers):
         required=True,
         help="Fraction of docs to use for training vs evaluation",
     )
+    auto_parser.add_argument(
+        "--min-norm-threshold",
+        type=float,
+        required=True,
+        help="Minimum norm threshold for control vector health validation",
+    )
+    auto_parser.add_argument(
+        "--architecture-module-limit",
+        type=int,
+        required=True,
+        help="Maximum number of architecture modules for activation collection",
+    )
+    auto_parser.add_argument(
+        "--progress-log-interval",
+        type=int,
+        required=True,
+        help="Interval (pair count) for logging progress during activation collection",
+    )
+    auto_parser.add_argument(
+        "--auto-min-pairs",
+        type=int,
+        required=True,
+        help="Minimum number of contrastive pairs required for optimization",
+    )
+    auto_parser.add_argument(
+        "--auto-sample-size",
+        type=int,
+        required=True,
+        help="Number of pairs to sample for zwiad geometry analysis",
+    )
+    auto_parser.add_argument(
+        "--auto-n-folds",
+        type=int,
+        required=True,
+        help="Number of cross-validation folds for zwiad analysis",
+    )
+    auto_parser.add_argument(
+        "--auto-min-pairs-split",
+        type=int,
+        required=True,
+        help="Minimum pairs threshold for train/eval split",
+    )
+    auto_parser.add_argument(
+        "--auto-layer-divisor",
+        type=int,
+        required=True,
+        help="Divisor for candidate layer spacing in geometry analysis",
+    )
+    # Geometry args removed: compute_geometry_metrics now derives params from data
 

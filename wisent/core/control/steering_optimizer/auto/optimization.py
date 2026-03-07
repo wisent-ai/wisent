@@ -38,15 +38,14 @@ def run_auto_steering_optimization(
     auto_sample_size: int = None,
     auto_n_folds: int = None,
     auto_min_pairs_split: int = None,
-    auto_layer_divisor: int = None, spectral_n_neighbors: int = None,
-    subsample_threshold: int = None, pca_dims_limit: int = None, *, architecture_module_limit: int, progress_log_interval: int, train_ratio: float,
+    auto_layer_divisor: int = None,
+    *, architecture_module_limit: int, progress_log_interval: int, train_ratio: float,
 ) -> Dict[str, Any]:
     """Automatically optimize steering using zwiad geometry analysis."""
-    _required = {"max_time_minutes": max_time_minutes, "strength_range": strength_range,
+    _required = {"strength_range": strength_range,
         "auto_min_pairs": auto_min_pairs, "auto_sample_size": auto_sample_size,
         "auto_n_folds": auto_n_folds, "auto_min_pairs_split": auto_min_pairs_split,
-        "auto_layer_divisor": auto_layer_divisor, "spectral_n_neighbors": spectral_n_neighbors,
-        "subsample_threshold": subsample_threshold, "pca_dims_limit": pca_dims_limit, "train_ratio": train_ratio}
+        "auto_layer_divisor": auto_layer_divisor, "train_ratio": train_ratio}
     for _name, _val in _required.items():
         if _val is None:
             raise ValueError(f"{_name} is required")
@@ -68,7 +67,7 @@ def run_auto_steering_optimization(
         print(f"Generated {len(pairs)} contrastive pairs\n")
     metrics, coherence, best_lpa = _run_zwiad_analysis(
         wisent_model, pairs, num_layers, min_clusters=min_clusters, verbose=verbose,
-        architecture_module_limit=architecture_module_limit, spectral_n_neighbors=spectral_n_neighbors, subsample_threshold=subsample_threshold, pca_dims_limit=pca_dims_limit,
+        architecture_module_limit=architecture_module_limit,
         layer_divisor=auto_layer_divisor, sample_size=auto_sample_size, min_pairs=auto_min_pairs, n_folds=auto_n_folds,
     )
 
@@ -144,7 +143,7 @@ def _generate_pairs(task_name: str, limit: int, *, train_ratio: float) -> List:
         return []
 
 
-def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, min_clusters: int, verbose: bool, *, architecture_module_limit: int, spectral_n_neighbors: int, subsample_threshold: int, pca_dims_limit: int, layer_divisor: int, sample_size: int, min_pairs: int, n_folds: int) -> tuple:
+def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, min_clusters: int, verbose: bool, *, architecture_module_limit: int, layer_divisor: int, sample_size: int, min_pairs: int, n_folds: int) -> tuple:
     """Run zwiad geometry analysis on collected activations."""
     from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
     from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
@@ -153,7 +152,7 @@ def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, min_clu
     if verbose:
         print("Collecting activations for geometry analysis...", flush=True)
 
-    candidate_layers = list(range(AXIS_ROWS, num_layers, max(COMBO_OFFSET, num_layers // layer_divisor)))
+    candidate_layers = list(range(COMBO_OFFSET, num_layers, max(COMBO_OFFSET, num_layers // layer_divisor)))
     if (num_layers - COMBO_OFFSET) not in candidate_layers:
         candidate_layers.append(num_layers - COMBO_OFFSET)
     candidate_layer_strs = [str(l) for l in candidate_layers]
@@ -178,9 +177,9 @@ def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, min_clu
     for l in candidate_layer_strs:
         if len(layer_pos[l]) < min_pairs or len(layer_neg[l]) < min_pairs:
             continue
-        pt = torch.stack(layer_pos[l])
-        nt = torch.stack(layer_neg[l])
-        m = compute_geometry_metrics(pt, nt, min_clusters=min_clusters, n_folds=n_folds, spectral_n_neighbors=spectral_n_neighbors, subsample_threshold=subsample_threshold, pca_dims_limit=pca_dims_limit)
+        pt = torch.stack(layer_pos[l]).float()
+        nt = torch.stack(layer_neg[l]).float()
+        m = compute_geometry_metrics(pt, nt, min_clusters=min_clusters, n_folds=n_folds)
         lpa = m.get('linear_probe_accuracy', SCORE_RANGE_MIN)
         if lpa > best_lpa:
             best_lpa, best_metrics, best_layer = lpa, m, l
@@ -191,8 +190,8 @@ def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, min_clu
     if verbose:
         print(f"Analyzed {len(candidate_layers)} layers, best: layer {best_layer} (lpa={best_lpa:.3f})\n")
 
-    pos_tensor = torch.stack(layer_pos[best_layer])
-    neg_tensor = torch.stack(layer_neg[best_layer])
+    pos_tensor = torch.stack(layer_pos[best_layer]).float()
+    neg_tensor = torch.stack(layer_neg[best_layer]).float()
     metrics = best_metrics
     coherence = compute_concept_coherence(pos_tensor, neg_tensor)
 

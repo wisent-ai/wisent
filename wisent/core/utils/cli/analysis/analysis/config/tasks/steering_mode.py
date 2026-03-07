@@ -8,7 +8,7 @@ from wisent.core.utils.config_tools.constants import JSON_INDENT, NORM_EPS, DISP
 from wisent.core.utils.infra_tools.errors import MissingParameterError
 
 
-def execute_steering_mode(args, model, train_pair_set, test_pair_set, collector, extraction_strategy, min_norm_threshold: float, min_clusters: int = None, *, geometry_cv_folds: int, subsample_threshold: int, pca_dims_limit: int):
+def execute_steering_mode(args, model, train_pair_set, test_pair_set, collector, extraction_strategy, min_norm_threshold: float, min_clusters: int = None, *, geometry_cv_folds: int):
     """Execute steering mode - train and evaluate steering vectors."""
     from wisent.core.reading.evaluators.rotator import EvaluatorRotator
 
@@ -28,9 +28,8 @@ def execute_steering_mode(args, model, train_pair_set, test_pair_set, collector,
     if steering_vector is None:
         steering_vector = _compute_steering_vector(
             args, model, train_pair_set, collector, extraction_strategy, layer, layer_str,
-            min_clusters=min_clusters, spectral_n_neighbors=args.spectral_n_neighbors,
-            geometry_cv_folds=args.geometry_cv_folds, subsample_threshold=args.subsample_threshold,
-            pca_dims_limit=args.pca_dims_limit,
+            min_clusters=min_clusters,
+            geometry_cv_folds=args.geometry_cv_folds,
         )
 
     print(f"\n🔧 Initializing evaluator for task '{task_name}'...")
@@ -62,7 +61,7 @@ def _load_steering_vector(args, layer, layer_str):
         return steering_vector
 
 
-def _compute_steering_vector(args, model, train_pair_set, collector, extraction_strategy, layer, layer_str, min_clusters: int = None, *, spectral_n_neighbors: int, geometry_cv_folds: int, subsample_threshold: int, pca_dims_limit: int):
+def _compute_steering_vector(args, model, train_pair_set, collector, extraction_strategy, layer, layer_str, min_clusters: int = None, *, geometry_cv_folds: int):
     """Compute steering vector from training data using zwiad."""
     from wisent.core.reading.modules import compute_geometry_metrics, compute_concept_coherence
 
@@ -96,7 +95,7 @@ def _compute_steering_vector(args, model, train_pair_set, collector, extraction_
     neg_tensor = torch.stack(negative_activations)
 
     print(f"\n🔍 Running zwiad geometry analysis...")
-    metrics = compute_geometry_metrics(pos_tensor, neg_tensor, min_clusters=min_clusters, n_folds=geometry_cv_folds, spectral_n_neighbors=spectral_n_neighbors, subsample_threshold=subsample_threshold, pca_dims_limit=pca_dims_limit)
+    metrics = compute_geometry_metrics(pos_tensor, neg_tensor, min_clusters=min_clusters, n_folds=geometry_cv_folds)
     coherence = compute_concept_coherence(pos_tensor, neg_tensor)
 
     print(f"   ├─ Linear probe accuracy: {metrics['linear_probe_accuracy']:.3f}")

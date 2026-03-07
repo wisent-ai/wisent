@@ -60,13 +60,11 @@ def run_zwiad_with_concept_naming(
     generate_visualizations: bool = True,
     steps: Optional[str] = None, output_path: Optional[str] = None,
     linearity_max_pairs: int = None, min_concept_dim: int = None,
-    spectral_n_neighbors: int = None,
     *,
     cv_folds: int,
     min_concept_pairs: int,
     zwiad_score_primary: float, zwiad_score_secondary: float, zwiad_score_tertiary: float,
     zwiad_editability_threshold: float, zwiad_przelom_bonus_max: float,
-    subsample_threshold: int, pca_dims_limit: int,
 ) -> Dict[str, Any]:
     """Run Zwiad with geometry metrics, multi-step protocol, and concept naming."""
     if linearity_max_pairs is None:
@@ -107,7 +105,7 @@ def run_zwiad_with_concept_naming(
     if "metrics" in existing and existing["metrics"]:
         metrics = existing["metrics"]
     else:
-        metrics = compute_geometry_metrics(pos_concat, neg_concat, min_clusters=min_clusters, n_folds=cv_folds, generate_visualizations=generate_visualizations, spectral_n_neighbors=spectral_n_neighbors, subsample_threshold=subsample_threshold, pca_dims_limit=pca_dims_limit)
+        metrics = compute_geometry_metrics(pos_concat, neg_concat, min_clusters=min_clusters, n_folds=cv_folds, generate_visualizations=generate_visualizations)
     results = {
         "n_pairs": n_pairs, "n_layers": n_layers, "layers_used": sorted_layers,
         "total_dims": pos_concat.shape[1], "steps_run": list(steps_to_run),

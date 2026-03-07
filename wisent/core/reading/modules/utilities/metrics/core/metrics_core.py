@@ -49,42 +49,47 @@ def compute_geometry_metrics(
     pos_activations_by_component: Optional[Dict[str, torch.Tensor]] = None,
     neg_activations_by_component: Optional[Dict[str, torch.Tensor]] = None,
     generate_visualizations: bool = True,
-    *,
-    spectral_n_neighbors: int,
-    probe_min_per_class: int,
-    probe_small_hidden: int,
-    probe_mlp_hidden: int,
-    probe_mlp_alpha: float,
-    probe_validation_fraction: float,
-    probe_knn_k: int,
-    knn_min_class_offset: int,
-    feature_dim_index: int,
-    cv_folds: int,
-    direction_n_bootstrap: int,
-    direction_subset_fraction: float,
-    direction_std_penalty: float,
-    consistency_w_cosine: float,
-    consistency_w_positive: float,
-    consistency_w_high_sim: float,
-    sparsity_threshold_fraction: float,
-    pca_max_components_null: int,
-    min_cloud_points: int,
-    variance_explained_90pct: float,
-    blend_default: float,
-    default_score: float,
-    detection_threshold: float,
-    subsample_threshold: int,
-    pca_dims_limit: int,
 ) -> Dict[str, Any]:
     """Compute comprehensive geometry metrics for activations."""
     import numpy as np
     from sklearn.decomposition import PCA
     import logging
+    from .metrics_params import derive_geometry_params
     logger = logging.getLogger(__name__)
 
     metrics = {}
     n_samples = len(pos_activations)
-    n_features = pos_activations.shape[1]
+    n_features = pos_activations.shape[COMBO_OFFSET]
+
+    # Derive all geometry parameters from data shape
+    _p = derive_geometry_params(n_samples, n_features)
+    spectral_n_neighbors = _p["spectral_n_neighbors"]
+    probe_min_per_class = _p["probe_min_per_class"]
+    probe_small_hidden = _p["probe_small_hidden"]
+    probe_mlp_hidden = _p["probe_mlp_hidden"]
+    probe_mlp_alpha = _p["probe_mlp_alpha"]
+    probe_validation_fraction = _p["probe_validation_fraction"]
+    probe_knn_k = _p["probe_knn_k"]
+    knn_min_class_offset = _p["knn_min_class_offset"]
+    feature_dim_index = _p["feature_dim_index"]
+    cv_folds = _p["cv_folds"]
+    direction_n_bootstrap = _p["direction_n_bootstrap"]
+    direction_subset_fraction = _p["direction_subset_fraction"]
+    direction_std_penalty = _p["direction_std_penalty"]
+    consistency_w_cosine = _p["consistency_w_cosine"]
+    consistency_w_positive = _p["consistency_w_positive"]
+    consistency_w_high_sim = _p["consistency_w_high_sim"]
+    sparsity_threshold_fraction = _p["sparsity_threshold_fraction"]
+    pca_max_components_null = _p["pca_max_components_null"]
+    min_cloud_points = _p["min_cloud_points"]
+    variance_explained_90pct = _p["variance_explained_90pct"]
+    blend_default = _p["blend_default"]
+    default_score = _p["default_score"]
+    detection_threshold = _p["detection_threshold"]
+    subsample_threshold = _p["subsample_threshold"]
+    pca_dims_limit = _p["pca_dims_limit"]
+    direction_moderate_similarity = _p["direction_moderate_similarity"]
+
     metrics["original_dims"] = n_features
     metrics["original_n_pairs"] = n_samples
 
@@ -140,6 +145,7 @@ def compute_geometry_metrics(
         pos_reduced, neg_reduced,
         consistency_w_cosine=consistency_w_cosine, consistency_w_positive=consistency_w_positive,
         consistency_w_high_sim=consistency_w_high_sim,
+        direction_moderate_similarity=direction_moderate_similarity,
     )
     metrics.update({f"consistency_{k}": v for k, v in consistency.items()})
 
