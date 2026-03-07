@@ -8,14 +8,12 @@ trains steering on train set, evaluates on held-out test set.
 
 Trials per method = dimensions * TRIALS_MULTIPLIER.
 
-Environment variables (all required unless noted):
+Environment variables (all required):
     MODEL_NAME: HuggingFace model ID
     BENCHMARK: Benchmark task name
     OUTPUT_DIR: Directory for results
-
-Optional:
-    TRIALS_MULTIPLIER: Trials per dimension (default: TRIALS_PER_DIMENSION_MULTIPLIER)
-    BACKEND: Optimizer backend ('hyperopt' or 'optuna', default: hyperopt)
+    TRIALS_MULTIPLIER: Trials per dimension
+    BACKEND: Optimizer backend ('hyperopt' or 'optuna')
 """
 import json
 import math
@@ -30,11 +28,9 @@ from wisent.core.utils.config_tools.constants import (
     COMBO_OFFSET,
     EXIT_CODE_ERROR,
     JSON_INDENT,
-    SCORE_RANGE_MIN,
     SEPARATOR_WIDTH_REPORT,
     SEPARATOR_WIDTH_WIDE,
     SPLIT_RATIO_TRAIN_DEFAULT,
-    TRIALS_PER_DIMENSION_MULTIPLIER,
 )
 from wisent.core.control.steering_methods.registry import (
     SteeringMethodRegistry,
@@ -62,10 +58,8 @@ def main():
     model_name = _require_env("MODEL_NAME")
     benchmark = _require_env("BENCHMARK")
     output_dir = _require_env("OUTPUT_DIR")
-    trials_mult = int(os.environ.get(
-        "TRIALS_MULTIPLIER", str(TRIALS_PER_DIMENSION_MULTIPLIER),
-    ))
-    backend = os.environ.get("BACKEND", "hyperopt")
+    trials_mult = int(_require_env("TRIALS_MULTIPLIER"))
+    backend = _require_env("BACKEND")
 
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
@@ -108,7 +102,7 @@ def main():
             method_idx + COMBO_OFFSET, len(all_methods),
             method_name, model_name, benchmark, num_layers,
             trials_mult, backend, method_results, output_dir,
-            train_file, test_file,
+            train_file, test_file, n_train,
         )
 
     _save_final_report(
@@ -154,7 +148,7 @@ def _generate_and_split_pairs(benchmark, output_dir):
 def _run_method(
     method_idx, total, method_name, model_name, benchmark,
     num_layers, trials_mult, backend, method_results, output_dir,
-    train_pairs_file, test_pairs_file,
+    train_pairs_file, test_pairs_file, n_train,
 ):
     """Run optimization for a single method."""
     method_upper = method_name.upper()
@@ -171,7 +165,7 @@ def _run_method(
     with tempfile.TemporaryDirectory() as work_dir:
         objective = create_objective(
             method=method_upper, model=model_name, task=benchmark,
-            num_layers=num_layers, limit=SCORE_RANGE_MIN, device=None,
+            num_layers=num_layers, limit=n_train, device=None,
             work_dir=work_dir,
             train_pairs_file=train_pairs_file,
             test_pairs_file=test_pairs_file,
@@ -215,11 +209,11 @@ def _save_final_report(
         if "best_score" in r
     }
 
-    if scored:
-        winner = max(scored, key=scored.get)
-        winner_score = scored[winner]
-    else:
-        winner, winner_score = None, SCORE_RANGE_MIN
+    if not scored:
+        print("ERROR: No method produced a score")
+        sys.exit(EXIT_CODE_ERROR)
+    winner = max(scored, key=scored.get)
+    winner_score = scored[winner]
 
     final_results = {
         "model": model_name,
@@ -231,7 +225,7 @@ def _save_final_report(
         "method_results": method_results,
         "ranking": sorted(
             [
-                {"method": n, "score": r.get("best_score", SCORE_RANGE_MIN)}
+                {"method": n, "score": r["best_score"]}
                 for n, r in method_results.items()
             ],
             key=lambda x: x["score"],
