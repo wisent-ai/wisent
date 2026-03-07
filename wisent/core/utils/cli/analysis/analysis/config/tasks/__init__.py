@@ -89,7 +89,7 @@ def execute_tasks(args, *, architecture_module_limit: int):
     if steering_mode:
         collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
         extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
-        return execute_steering_mode(args, model, train_pair_set, test_pair_set, collector, extraction_strategy, min_norm_threshold=args.min_norm_threshold, min_clusters=getattr(args, 'min_clusters', None), geometry_cv_folds=args.geometry_cv_folds, subsample_threshold=args.subsample_threshold, pca_dims_limit=args.pca_dims_limit)
+        return execute_steering_mode(args, model, train_pair_set, test_pair_set, collector, extraction_strategy, min_norm_threshold=args.min_norm_threshold, min_clusters=getattr(args, 'min_clusters', None), geometry_cv_folds=args.geometry_cv_folds)
 
     # Collect activations
     activations = collect_activations(args, model, train_pair_set, ActivationCollector, ExtractionStrategy)
