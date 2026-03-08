@@ -3,6 +3,7 @@
 import sys
 import time
 
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core.utils.infra_tools.errors import UnknownTypeError, MissingParameterError
 
 
@@ -90,7 +91,7 @@ def execute_synthetic_pairs_classifier_steering_strategy(args):
         classifier_epochs=args.classifier_epochs,
         classifier_lr=args.classifier_lr,
         token_aggregation=getattr(args, 'token_aggregation', 'average'),
-        prompt_strategy=getattr(args, 'prompt_strategy', 'chat_template'),
+        prompt_strategy=getattr(args, 'prompt_strategy', get_optimal("prompt_strategy")),
         normalize_layers=getattr(args, 'normalize_layers', False),
         return_full_sequence=getattr(args, 'return_full_sequence', False),
         classifier_type=args.classifier_type,
@@ -107,7 +108,7 @@ def execute_synthetic_pairs_classifier_steering_strategy(args):
         layer_key=layer_key,
         quality_threshold=args.quality_threshold,
         token_aggregation=getattr(args, 'token_aggregation', 'average'),
-        prompt_strategy=getattr(args, 'prompt_strategy', 'chat_template'),
+        prompt_strategy=getattr(args, 'prompt_strategy', get_optimal("prompt_strategy")),
         normalize_layers=getattr(args, 'normalize_layers', False),
         return_full_sequence=getattr(args, 'return_full_sequence', False)
     )
@@ -134,7 +135,7 @@ def execute_synthetic_pairs_classifier_steering_strategy(args):
         steering_normalize=getattr(args, 'normalize_mode', True),
         verbose=args.verbose,
         token_aggregation=getattr(args, 'token_aggregation', 'average'),
-        prompt_strategy=getattr(args, 'prompt_strategy', 'chat_template'),
+        prompt_strategy=getattr(args, 'prompt_strategy', get_optimal("prompt_strategy")),
         normalize_layers=getattr(args, 'normalize_layers', False),
         return_full_sequence=getattr(args, 'return_full_sequence', False)
     )

@@ -32,12 +32,32 @@ def run_full_zwiad(
     output_dir: Optional[str] = None,
     *,
     cv_folds: int,
+    probe_small_hidden: int,
+    probe_mlp_hidden: int,
+    probe_mlp_alpha: float,
+    spectral_n_neighbors: int,
+    direction_n_bootstrap: int,
+    direction_subset_fraction: float,
+    direction_std_penalty: float,
+    consistency_w_cosine: float,
+    consistency_w_positive: float,
+    consistency_w_high_sim: float,
+    sparsity_threshold_fraction: float,
+    detection_threshold: float,
+    direction_moderate_similarity: float,
 ) -> Dict[str, Any]:
     """Run full representation scan for a single layer."""
     start_time = time.time()
 
     metrics = compute_geometry_metrics(
         pos_activations, neg_activations, min_clusters=min_clusters, n_folds=cv_folds,
+        probe_small_hidden=probe_small_hidden, probe_mlp_hidden=probe_mlp_hidden,
+        probe_mlp_alpha=probe_mlp_alpha, spectral_n_neighbors=spectral_n_neighbors,
+        direction_n_bootstrap=direction_n_bootstrap, direction_subset_fraction=direction_subset_fraction,
+        direction_std_penalty=direction_std_penalty, consistency_w_cosine=consistency_w_cosine,
+        consistency_w_positive=consistency_w_positive, consistency_w_high_sim=consistency_w_high_sim,
+        sparsity_threshold_fraction=sparsity_threshold_fraction, detection_threshold=detection_threshold,
+        direction_moderate_similarity=direction_moderate_similarity,
     )
 
     result = {
@@ -102,11 +122,31 @@ def run_full_zwiad_with_steering_eval(
     min_clusters: int,
     *,
     cv_folds: int,
+    probe_small_hidden: int,
+    probe_mlp_hidden: int,
+    probe_mlp_alpha: float,
+    spectral_n_neighbors: int,
+    direction_n_bootstrap: int,
+    direction_subset_fraction: float,
+    direction_std_penalty: float,
+    consistency_w_cosine: float,
+    consistency_w_positive: float,
+    consistency_w_high_sim: float,
+    sparsity_threshold_fraction: float,
+    detection_threshold: float,
+    direction_moderate_similarity: float,
 ) -> Dict[str, Any]:
     """Run zwiad and evaluate actual steering effectiveness."""
     metrics = compute_geometry_metrics(
         pos_activations, neg_activations, min_clusters=min_clusters,
         n_folds=cv_folds,
+        probe_small_hidden=probe_small_hidden, probe_mlp_hidden=probe_mlp_hidden,
+        probe_mlp_alpha=probe_mlp_alpha, spectral_n_neighbors=spectral_n_neighbors,
+        direction_n_bootstrap=direction_n_bootstrap, direction_subset_fraction=direction_subset_fraction,
+        direction_std_penalty=direction_std_penalty, consistency_w_cosine=consistency_w_cosine,
+        consistency_w_positive=consistency_w_positive, consistency_w_high_sim=consistency_w_high_sim,
+        sparsity_threshold_fraction=sparsity_threshold_fraction, detection_threshold=detection_threshold,
+        direction_moderate_similarity=direction_moderate_similarity,
     )
 
     # Compute steering direction
@@ -133,11 +173,31 @@ def evaluate_steering_effectiveness(
     test_pairs: List[Tuple[str, str]] = None,
     *,
     cv_folds: int,
+    probe_small_hidden: int,
+    probe_mlp_hidden: int,
+    probe_mlp_alpha: float,
+    spectral_n_neighbors: int,
+    direction_n_bootstrap: int,
+    direction_subset_fraction: float,
+    direction_std_penalty: float,
+    consistency_w_cosine: float,
+    consistency_w_positive: float,
+    consistency_w_high_sim: float,
+    sparsity_threshold_fraction: float,
+    detection_threshold: float,
+    direction_moderate_similarity: float,
 ) -> Dict[str, Any]:
     """Return raw metrics relevant to steering effectiveness."""
     metrics = compute_geometry_metrics(
         pos_activations, neg_activations, min_clusters=min_clusters,
         n_folds=cv_folds,
+        probe_small_hidden=probe_small_hidden, probe_mlp_hidden=probe_mlp_hidden,
+        probe_mlp_alpha=probe_mlp_alpha, spectral_n_neighbors=spectral_n_neighbors,
+        direction_n_bootstrap=direction_n_bootstrap, direction_subset_fraction=direction_subset_fraction,
+        direction_std_penalty=direction_std_penalty, consistency_w_cosine=consistency_w_cosine,
+        consistency_w_positive=consistency_w_positive, consistency_w_high_sim=consistency_w_high_sim,
+        sparsity_threshold_fraction=sparsity_threshold_fraction, detection_threshold=detection_threshold,
+        direction_moderate_similarity=direction_moderate_similarity,
     )
 
     return {

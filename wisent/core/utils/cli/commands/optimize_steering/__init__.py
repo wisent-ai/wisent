@@ -131,6 +131,19 @@ def execute_optimize_steering(args):
             architecture_module_limit=args.architecture_module_limit,
             progress_log_interval=args.progress_log_interval,
             train_ratio=args.train_ratio,
+            probe_small_hidden=args.probe_small_hidden,
+            probe_mlp_hidden=args.probe_mlp_hidden,
+            probe_mlp_alpha=args.probe_mlp_alpha,
+            spectral_n_neighbors=args.spectral_n_neighbors,
+            direction_n_bootstrap=args.direction_n_bootstrap,
+            direction_subset_fraction=args.direction_subset_fraction,
+            direction_std_penalty=args.direction_std_penalty,
+            consistency_w_cosine=args.consistency_w_cosine,
+            consistency_w_positive=args.consistency_w_positive,
+            consistency_w_high_sim=args.consistency_w_high_sim,
+            sparsity_threshold_fraction=args.sparsity_threshold_fraction,
+            detection_threshold=args.detection_threshold,
+            direction_moderate_similarity=args.direction_moderate_similarity,
         )
 
         if 'error' in result:

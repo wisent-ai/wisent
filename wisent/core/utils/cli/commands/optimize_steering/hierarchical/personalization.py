@@ -3,7 +3,7 @@ import json
 import os
 import tempfile
 
-from wisent.core.control.steering_methods.configs.validated_defaults import VALIDATED_EXTRACTION_STRATEGY
+from wisent.core.control.steering_methods.configs.optimal import get_optimal, get_optimal_extraction_strategy
 from wisent.core.utils.cli.optimize_steering.method_configs import CAAConfig
 from wisent.core.utils.cli.optimize_steering.pipeline import run_pipeline
 from wisent.core.utils.config_tools.constants import (JSON_INDENT,
@@ -118,8 +118,8 @@ def _execute_personalization_optimization(args):
             config = CAAConfig(
                 method="CAA",
                 layer=layer,
-                extraction_strategy=VALIDATED_EXTRACTION_STRATEGY,
-                steering_strategy="constant",
+                extraction_strategy=get_optimal_extraction_strategy(),
+                steering_strategy=get_optimal("steering_strategy"),
             )
 
             try:

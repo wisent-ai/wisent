@@ -22,6 +22,7 @@ from wisent.core.utils.config_tools.constants import (
     NESTED_CONFIG_NAME_FIELD,
     TASK_CONFIG_NAME_FIELD, TRAIT_CONFIG_NAME_FIELD,
 )
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 
 
 # Default config location
@@ -87,8 +88,8 @@ class SteeringConfig(SerializableConfig):
     retain_weight: Optional[float] = None
     independence_weight: Optional[float] = None
     tecza_optimization_steps: Optional[int] = None
-    use_caa_init: bool = True
-    cone_constraint: bool = True
+    use_caa_init: bool = field(default_factory=lambda: get_optimal("use_caa_init"))
+    cone_constraint: bool = field(default_factory=lambda: get_optimal("cone_constraint"))
     min_cosine_similarity: Optional[float] = None
     max_cosine_similarity: Optional[float] = None
     # TETNO parameters
@@ -96,10 +97,10 @@ class SteeringConfig(SerializableConfig):
     steering_layers: Optional[str] = None
     condition_threshold: Optional[float] = None
     gate_temperature: Optional[float] = None
-    per_layer_scaling: bool = True
-    use_entropy_scaling: bool = False
+    per_layer_scaling: bool = field(default_factory=lambda: get_optimal("per_layer_scaling"))
+    use_entropy_scaling: bool = field(default_factory=lambda: get_optimal("use_entropy_scaling"))
     max_alpha: Optional[float] = None
-    learn_threshold: bool = True
+    learn_threshold: bool = field(default_factory=lambda: get_optimal("learn_threshold"))
     tetno_optimization_steps: Optional[int] = None
     # GROM parameters
     gate_hidden_dim: Optional[int] = None

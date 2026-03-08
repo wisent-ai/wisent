@@ -49,7 +49,7 @@ def main():
     
     for i, pair in enumerate(pairs):
         updated_pair = collector.collect(
-            pair, strategy=ExtractionStrategy.CHAT_LAST,
+            pair, strategy=ExtractionStrategy.default(),
         )
         
         pos_vec = updated_pair.positive_response.layers_activations[layer_str].float()

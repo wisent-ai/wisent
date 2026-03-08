@@ -49,6 +49,20 @@ def compute_geometry_metrics(
     pos_activations_by_component: Optional[Dict[str, torch.Tensor]] = None,
     neg_activations_by_component: Optional[Dict[str, torch.Tensor]] = None,
     generate_visualizations: bool = True,
+    *,
+    probe_small_hidden: int,
+    probe_mlp_hidden: int,
+    probe_mlp_alpha: float,
+    spectral_n_neighbors: int,
+    direction_n_bootstrap: int,
+    direction_subset_fraction: float,
+    direction_std_penalty: float,
+    consistency_w_cosine: float,
+    consistency_w_positive: float,
+    consistency_w_high_sim: float,
+    sparsity_threshold_fraction: float,
+    detection_threshold: float,
+    direction_moderate_similarity: float,
 ) -> Dict[str, Any]:
     """Compute comprehensive geometry metrics for activations."""
     import numpy as np
@@ -61,34 +75,21 @@ def compute_geometry_metrics(
     n_samples = len(pos_activations)
     n_features = pos_activations.shape[COMBO_OFFSET]
 
-    # Derive all geometry parameters from data shape
+    # Derive data-shape-dependent parameters
     _p = derive_geometry_params(n_samples, n_features)
-    spectral_n_neighbors = _p["spectral_n_neighbors"]
     probe_min_per_class = _p["probe_min_per_class"]
-    probe_small_hidden = _p["probe_small_hidden"]
-    probe_mlp_hidden = _p["probe_mlp_hidden"]
-    probe_mlp_alpha = _p["probe_mlp_alpha"]
     probe_validation_fraction = _p["probe_validation_fraction"]
     probe_knn_k = _p["probe_knn_k"]
     knn_min_class_offset = _p["knn_min_class_offset"]
     feature_dim_index = _p["feature_dim_index"]
     cv_folds = _p["cv_folds"]
-    direction_n_bootstrap = _p["direction_n_bootstrap"]
-    direction_subset_fraction = _p["direction_subset_fraction"]
-    direction_std_penalty = _p["direction_std_penalty"]
-    consistency_w_cosine = _p["consistency_w_cosine"]
-    consistency_w_positive = _p["consistency_w_positive"]
-    consistency_w_high_sim = _p["consistency_w_high_sim"]
-    sparsity_threshold_fraction = _p["sparsity_threshold_fraction"]
     pca_max_components_null = _p["pca_max_components_null"]
     min_cloud_points = _p["min_cloud_points"]
     variance_explained_90pct = _p["variance_explained_90pct"]
     blend_default = _p["blend_default"]
     default_score = _p["default_score"]
-    detection_threshold = _p["detection_threshold"]
     subsample_threshold = _p["subsample_threshold"]
     pca_dims_limit = _p["pca_dims_limit"]
-    direction_moderate_similarity = _p["direction_moderate_similarity"]
 
     metrics["original_dims"] = n_features
     metrics["original_n_pairs"] = n_samples

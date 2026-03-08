@@ -6,7 +6,9 @@ import numpy as np
 import torch
 
 from wisent.core.primitives.models import get_generate_kwargs
+from wisent.core.control.steering_methods.configs.optimal import get_optimal_extraction_strategy
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core.utils.config_tools.constants import JSON_INDENT, PROGRESS_LOG_INTERVAL_10
 
 
@@ -17,7 +19,7 @@ def collect_activations(args, model, pair_set, ActivationCollector, ExtractionSt
 
     print(f"\n🧠 Extracting activations from layer {layer}...")
     collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
-    extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
+    extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', get_optimal_extraction_strategy()))
     print(f"   Extraction strategy: {extraction_strategy.value}")
 
     positive_activations, negative_activations = [], []
@@ -59,7 +61,7 @@ def train_steering_vector(args, activations):
     pos_tensors = [torch.from_numpy(act).float() for act in activations['positive']]
     neg_tensors = [torch.from_numpy(act).float() for act in activations['negative']]
 
-    steering_method = CAAMethod(normalize=True)
+    steering_method = CAAMethod(normalize=get_optimal("normalize"))
     steering_vector = steering_method.train_for_layer(pos_tensors, neg_tensors)
 
     print(f"\n💾 Saving steering vector to '{args.save_steering_vector}'...")

@@ -21,6 +21,7 @@ SteeringMethodParameter, not here.
 # signal breadth) across all model x benchmark combinations.
 VALIDATED_EXTRACTION_STRATEGY = "chat_last"
 
+
 # ------------------------------------------------------------------ #
 # Steering method defaults (empty until proven)                        #
 # ------------------------------------------------------------------ #

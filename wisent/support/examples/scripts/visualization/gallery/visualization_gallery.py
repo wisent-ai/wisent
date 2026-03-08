@@ -66,7 +66,7 @@ def create_tsne_gallery(
     cache_dir = f"/tmp/wisent_viz_cache_{model_name.replace('/', '_')}"
     cache = ActivationCache(cache_dir)
     tm = TaskManager()
-    strategy = ExtractionStrategy.CHAT_LAST
+    strategy = ExtractionStrategy.default()
     
     row = 0
     for diagnosis in ["LINEAR", "NONLINEAR", "NO_SIGNAL"]:

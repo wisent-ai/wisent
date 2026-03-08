@@ -5,6 +5,7 @@ import json
 import os
 import time
 
+from wisent.core.control.steering_methods.configs.optimal import get_optimal, get_optimal_extraction_strategy
 from wisent.core.utils.config_tools.constants import (
     JSON_INDENT, PROGRESS_LOG_INTERVAL_10, ARCHITECTURE_MODULE_LIMIT_DEFAULT,
 )
@@ -84,8 +85,8 @@ def execute_get_activations(args, *, architecture_module_limit: int = ARCHITECTU
         print(f"\n🎯 Collecting activations from {len(layers)} layer(s): {layers}")
 
         # 4. Get extraction strategy from args
-        extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
-        extraction_component = ExtractionComponent(getattr(args, 'extraction_component', 'residual_stream'))
+        extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', get_optimal_extraction_strategy()))
+        extraction_component = ExtractionComponent(getattr(args, 'extraction_component', get_optimal("extraction_component")))
         print(f"   Extraction strategy: {extraction_strategy.value}")
         print(f"   Extraction component: {extraction_component.value}")
 

@@ -5,6 +5,7 @@ import os
 import time
 import tempfile
 from argparse import Namespace
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, SEPARATOR_WIDTH_STANDARD
 
 from ..pairs.generate_pairs_from_task import execute_generate_pairs_from_task
@@ -170,7 +171,7 @@ def execute_generate_vector_from_task(args):
             device=args.device,
             layers=args.layers,
             extraction_strategy=args.extraction_strategy,
-            extraction_component=getattr(args, 'extraction_component', 'residual_stream'),
+            extraction_component=getattr(args, 'extraction_component', get_optimal("extraction_component")),
             verbose=args.verbose,
             timing=args.timing,
         )
@@ -192,8 +193,8 @@ def execute_generate_vector_from_task(args):
             timing=args.timing,
             accept_low_quality_vector=getattr(args, 'accept_low_quality_vector', False),
             # Universal Subspace options for TECZA/GROM
-            auto_num_directions=getattr(args, 'auto_num_directions', False),
-            use_universal_basis_init=getattr(args, 'use_universal_basis_init', False),
+            auto_num_directions=getattr(args, 'auto_num_directions', get_optimal("auto_num_directions")),
+            use_universal_basis_init=getattr(args, 'use_universal_basis_init', get_optimal("use_universal_basis_init")),
             num_directions=getattr(args, 'num_directions', None),
         )
         

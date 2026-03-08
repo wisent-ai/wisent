@@ -4,6 +4,7 @@ from typing import List
 import torch
 
 from wisent.core.control.steering_methods.core.atoms import PerLayerBaseSteeringMethod
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
 from wisent.core.utils.config_tools.constants import LOG_EPS
 
@@ -36,7 +37,7 @@ class CAAMethod(PerLayerBaseSteeringMethod):
         pos = torch.stack([t.detach().to("cpu").float().reshape(-1) for t in pos_list], dim=0)  # [N_pos, H]
         neg = torch.stack([t.detach().to("cpu").float().reshape(-1) for t in neg_list], dim=0)  # [N_neg, H]
         v = pos.mean(dim=0) - neg.mean(dim=0)
-        if bool(self.kwargs.get("normalize", True)):
+        if bool(self.kwargs.get("normalize", get_optimal("normalize"))):
             v = self._safe_l2_normalize(v)
         return v
 

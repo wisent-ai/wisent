@@ -29,6 +29,7 @@ from wisent.core.primitives.model_interface.core.activations.core.atoms import L
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 
 __all__ = [
     "TETNOMethod",
@@ -82,18 +83,18 @@ class TETNOMethod(TETNOTrainingMixin, TETNOScalingMixin, BaseSteeringMethod):
             sensor_layer=kwargs.get("sensor_layer", None),  # Auto-resolve from num_layers
             steering_layers=kwargs.get("steering_layers", None),  # Auto-resolve from num_layers
             num_layers=kwargs.get("num_layers", None),
-            per_layer_scaling=kwargs.get("per_layer_scaling", True),
+            per_layer_scaling=kwargs.get("per_layer_scaling", get_optimal("per_layer_scaling")),
             condition_threshold=_require("condition_threshold", kwargs),
             gate_temperature=_require("gate_temperature", kwargs),
-            learn_threshold=kwargs.get("learn_threshold", True),
-            use_entropy_scaling=kwargs.get("use_entropy_scaling", True),
+            learn_threshold=kwargs.get("learn_threshold", get_optimal("learn_threshold")),
+            use_entropy_scaling=kwargs.get("use_entropy_scaling", get_optimal("use_entropy_scaling")),
             entropy_floor=_require("entropy_floor", kwargs),
             entropy_ceiling=_require("entropy_ceiling", kwargs),
             max_alpha=_require("max_alpha", kwargs),
             optimization_steps=_require("optimization_steps", kwargs),
             learning_rate=_require("learning_rate", kwargs),
-            use_caa_init=kwargs.get("use_caa_init", True),
-            normalize=kwargs.get("normalize", True),
+            use_caa_init=kwargs.get("use_caa_init", get_optimal("use_caa_init")),
+            normalize=kwargs.get("normalize", get_optimal("normalize")),
             threshold_search_steps=_require("threshold_search_steps", kwargs),
             condition_margin=_require("condition_margin", kwargs),
             min_layer_scale=_require("min_layer_scale", kwargs),

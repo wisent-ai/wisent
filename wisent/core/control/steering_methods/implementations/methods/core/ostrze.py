@@ -5,6 +5,7 @@ import torch
 import numpy as np
 
 from wisent.core.control.steering_methods.core.atoms import PerLayerBaseSteeringMethod
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
 from wisent.core.utils import preferred_dtype
 from wisent.core.utils.config_tools.constants import LOG_EPS
@@ -74,7 +75,7 @@ class OstrzeMethod(PerLayerBaseSteeringMethod):
         # Use classifier weights as steering vector
         v = torch.tensor(clf.coef_[0], dtype=preferred_dtype())
         
-        if bool(self.kwargs.get("normalize", True)):
+        if bool(self.kwargs.get("normalize", get_optimal("normalize"))):
             v = self._safe_l2_normalize(v)
         
         return v

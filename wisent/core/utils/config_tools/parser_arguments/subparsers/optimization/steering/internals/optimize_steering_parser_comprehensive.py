@@ -1,6 +1,7 @@
 """Comprehensive subparser for optimize-steering."""
 from wisent.core.control.steering_methods.registry import SteeringMethodRegistry
 from wisent.core.control.steering_methods.definitions._definitions_tetno_grom import TETNO_STEERING_LAYER_CONFIGS
+from wisent.core.utils.cli.commands.steering.core.configuration.settings.steering_search_space_classes import DirectionWeighting
 AVAILABLE_METHODS = [m.upper() for m in SteeringMethodRegistry.list_methods()]
 
 def setup_comprehensive_parser(steering_subparsers):
@@ -213,7 +214,7 @@ def setup_comprehensive_parser(steering_subparsers):
         type=str,
         nargs="+",
         default=None,
-        choices=["primary_only", "equal", "learned", "decay"],
+        choices=[d.value for d in DirectionWeighting],
         help="[TECZA] Direction weighting strategies to search"
     )
     comprehensive_parser.add_argument(

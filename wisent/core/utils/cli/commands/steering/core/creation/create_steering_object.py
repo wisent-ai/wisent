@@ -18,6 +18,7 @@ from wisent.core.control.steering_methods._steering_object_base import (
     BaseSteeringObject,
 )
 from wisent.core.utils import preferred_dtype
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core.utils.config_tools.constants import STEERING_DEFAULT_INTENSITY
 
 def _require_arg(args, attr_name):
@@ -85,7 +86,8 @@ def execute_create_steering_object(args):
         model = data.get('model', 'unknown')
         layers = data.get('layers', [])
         token_aggregation = data.get('token_aggregation', 'unknown')
-        extraction_component = data.get('extraction_component', 'residual_stream')
+        from wisent.core.control.steering_methods.configs.optimal import get_optimal
+    extraction_component = data.get('extraction_component', get_optimal("extraction_component"))
         pairs_list = data.get('pairs', [])
         
         print(f"   ✓ Loaded {len(pairs_list)} pairs")
@@ -253,13 +255,13 @@ def _create_simple_steering_object(
     if method_name == 'caa':
         from wisent.core.control.steering_methods.methods.caa import CAAMethod
         from wisent.core.control.steering_methods._steering_object_simple import CAASteeringObject
-        method = CAAMethod(normalize=getattr(args, 'normalize', True))
+        method = CAAMethod(normalize=getattr(args, 'normalize', get_optimal("normalize")))
         obj_class = CAASteeringObject
     elif method_name == 'ostrze':
         from wisent.core.control.steering_methods.methods.ostrze import OstrzeMethod
         from wisent.core.control.steering_methods._steering_object_simple import OstrzeSteeringObject
         method = OstrzeMethod(
-            normalize=getattr(args, 'normalize', True),
+            normalize=getattr(args, 'normalize', get_optimal("normalize")),
             C=_require_arg(args, 'ostrze_C'),
         )
         obj_class = OstrzeSteeringObject
@@ -267,7 +269,7 @@ def _create_simple_steering_object(
         from wisent.core.control.steering_methods.methods.mlp import MLPMethod
         from wisent.core.control.steering_methods._steering_object_simple import MLPSteeringObject
         method = MLPMethod(
-            normalize=getattr(args, 'normalize', True),
+            normalize=getattr(args, 'normalize', get_optimal("normalize")),
             hidden_dim=_require_arg(args, 'mlp_hidden_dim'),
             num_layers=_require_arg(args, 'mlp_num_layers'),
             dropout=_require_arg(args, 'mlp_dropout'),

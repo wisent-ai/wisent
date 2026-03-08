@@ -72,14 +72,14 @@ class ExtractionStrategy(str, Enum):
 
     @classmethod
     def default(cls) -> "ExtractionStrategy":
-        """Return the empirically validated best strategy.
+        """Return the empirically optimal strategy.
 
-        See VALIDATED_EXTRACTION_STRATEGY in validated_defaults.py.
+        Reads from parameters_to_validate.json via get_optimal_extraction_strategy().
         """
-        from wisent.core.control.steering_methods.configs.validated_defaults import (
-            VALIDATED_EXTRACTION_STRATEGY,
+        from wisent.core.control.steering_methods.configs.optimal import (
+            get_optimal_extraction_strategy,
         )
-        return cls(VALIDATED_EXTRACTION_STRATEGY)
+        return cls(get_optimal_extraction_strategy())
 
     @classmethod
     def list_all(cls) -> list[str]:

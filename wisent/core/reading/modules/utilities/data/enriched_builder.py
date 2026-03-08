@@ -7,7 +7,7 @@ from collections import defaultdict
 from typing import Optional
 
 from wisent.core.utils.config_tools.constants import BYTES_PER_MB
-from wisent.core.control.steering_methods.configs.validated_defaults import VALIDATED_EXTRACTION_STRATEGY
+from wisent.core.control.steering_methods.configs.optimal import get_optimal_extraction_strategy, get_optimal
 
 
 def build_enriched_from_db(
@@ -154,7 +154,7 @@ def _query_and_build(
         "task_name": task_name, "trait_label": task_name,
         "model": model_name, "layers": layers,
         "extraction_strategy": extraction_strategy,
-        "extraction_component": "residual_stream",
+        "extraction_component": get_optimal("extraction_component"),
         "raw_mode": False, "num_pairs": len(enriched_pairs),
         "calibration_norms": calibration_norms,
         "num_attention_heads": num_attention_heads,
@@ -250,7 +250,7 @@ def build_enriched_from_hf(
         output = {
             "task_name": task_name, "trait_label": task_name, "model": model_name,
             "layers": [layer], "extraction_strategy": extraction_strategy,
-            "extraction_component": "residual_stream", "raw_mode": False,
+            "extraction_component": get_optimal("extraction_component"), "raw_mode": False,
             "num_pairs": len(enriched_pairs), "calibration_norms": calibration_norms,
             "pairs": enriched_pairs,
         }
@@ -290,7 +290,7 @@ def generate_and_collect_enriched(
     execute_get_activations(argparse.Namespace(
         pairs_file=pairs_file, model=model_name,
         output=enriched_file, layers=None,
-        extraction_strategy=VALIDATED_EXTRACTION_STRATEGY, device=device,
+        extraction_strategy=get_optimal_extraction_strategy(), device=device,
         verbose=False, timing=False, raw=False,
         cached_model=cached_model))
     return enriched_file

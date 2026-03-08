@@ -6,6 +6,7 @@ import tempfile
 import torch
 from wisent.core.utils import resolve_default_device
 from wisent.core.utils.cli.optimization.specific.optimize_weights_training import _train_multi_direction_method
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 
 
 def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> tuple[dict[int, torch.Tensor], list[str], list[str]]:
@@ -62,7 +63,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 timing=False,
                 layers=args.layers,
                 method="caa",
-                normalize=True,
+                normalize=get_optimal("normalize"),
                 keep_intermediate=True,
                 intermediate_dir=os.path.dirname(temp_pairs),
                 pairs_cache_dir=getattr(args, 'pairs_cache_dir', None),
@@ -89,7 +90,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 timing=False,
                 layers=args.layers,
                 method="caa",
-                normalize=True,
+                normalize=get_optimal("normalize"),
                 keep_intermediate=True,
                 intermediate_dir=os.path.dirname(temp_pairs),
                 pairs_cache_dir=getattr(args, 'pairs_cache_dir', None),
@@ -119,7 +120,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 timing=False,
                 layers=args.layers,
                 method="caa",
-                normalize=True,
+                normalize=get_optimal("normalize"),
                 keep_intermediate=True,
                 intermediate_dir=os.path.dirname(temp_pairs),
                 pairs_cache_dir=getattr(args, 'pairs_cache_dir', None),
@@ -155,7 +156,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 layer=None,
                 layers=layers_arg,
                 method='caa',
-                normalize=True,
+                normalize=get_optimal("normalize"),
                 no_normalize=False,
                 skip_evaluation=True,
                 evaluate_steering_scales="0.0,1.0",
@@ -216,7 +217,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 timing=False,
                 layers=args.layers,
                 method="caa",
-                normalize=True,
+                normalize=get_optimal("normalize"),
                 keep_intermediate=True,
                 intermediate_dir=os.path.dirname(temp_pairs),
                 pairs_cache_dir=getattr(args, 'pairs_cache_dir', None),
@@ -243,7 +244,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 timing=False,
                 layers=args.layers,
                 method="caa",
-                normalize=True,
+                normalize=get_optimal("normalize"),
                 keep_intermediate=True,
                 intermediate_dir=os.path.dirname(temp_pairs),
                 accept_low_quality_vector=True,

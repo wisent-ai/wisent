@@ -23,6 +23,7 @@ import torch
 import torch.nn.functional as F
 
 from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
@@ -77,7 +78,7 @@ class TECZAMethod(TECZATrainingMixin, TECZAUtilsMixin, BaseSteeringMethod):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         num_dirs = _require("num_directions", kwargs)
-        auto_num = kwargs.get("auto_num_directions", False)
+        auto_num = kwargs.get("auto_num_directions", get_optimal("auto_num_directions"))
         if num_dirs == "auto":
             auto_num = True
             num_dirs = _require("num_directions", kwargs)
@@ -97,10 +98,10 @@ class TECZAMethod(TECZATrainingMixin, TECZAUtilsMixin, BaseSteeringMethod):
             separation_margin=_require("separation_margin", kwargs),
             perturbation_scale=_require("perturbation_scale", kwargs),
             universal_basis_noise=_require("universal_basis_noise", kwargs),
-            normalize=kwargs.get("normalize", True),
-            use_caa_init=kwargs.get("use_caa_init", True),
-            use_universal_basis_init=kwargs.get("use_universal_basis_init", False),
-            cone_constraint=kwargs.get("cone_constraint", True),
+            normalize=kwargs.get("normalize", get_optimal("normalize")),
+            use_caa_init=kwargs.get("use_caa_init", get_optimal("use_caa_init")),
+            use_universal_basis_init=kwargs.get("use_universal_basis_init", get_optimal("use_universal_basis_init")),
+            cone_constraint=kwargs.get("cone_constraint", get_optimal("cone_constraint")),
             min_cosine_similarity=_require("min_cosine_similarity", kwargs),
             max_cosine_similarity=_require("max_cosine_similarity", kwargs),
         )

@@ -5,6 +5,7 @@ import torch
 from wisent.core.control.steering_methods._steering_object_base import (
     BaseSteeringObject, SteeringObjectMetadata, LayerName,
 )
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 
 class TECZASteeringObject(BaseSteeringObject):
     """
@@ -89,15 +90,15 @@ class TECZASteeringObject(BaseSteeringObject):
             hidden_dim=meta_data['hidden_dim'],
             created_at=meta_data.get('created_at', ''),
             extra=meta_data.get('extra', {}),
-            extraction_component=meta_data.get('extraction_component', 'residual_stream'),
+            extraction_component=meta_data.get('extraction_component', get_optimal("extraction_component")),
         )
-        
+
         def to_tensor(v):
             return torch.tensor(v) if isinstance(v, list) else v
-        
+
         directions = {int(k): to_tensor(v) for k, v in data['directions'].items()}
         direction_weights = {int(k): to_tensor(v) for k, v in data.get('direction_weights', {}).items()}
-        
+
         return cls(
             metadata=metadata,
             directions=directions,
@@ -201,12 +202,12 @@ class TETNOSteeringObject(BaseSteeringObject):
             hidden_dim=meta_data['hidden_dim'],
             created_at=meta_data.get('created_at', ''),
             extra=meta_data.get('extra', {}),
-            extraction_component=meta_data.get('extraction_component', 'residual_stream'),
+            extraction_component=meta_data.get('extraction_component', get_optimal("extraction_component")),
         )
-        
+
         def to_tensor(v):
             return torch.tensor(v) if isinstance(v, list) else v
-        
+
         behavior_vectors = {int(k): to_tensor(v) for k, v in data['behavior_vectors'].items()}
         condition_vector = to_tensor(data['condition_vector'])
         layer_scales = {int(k): float(v) for k, v in data['layer_scales'].items()}

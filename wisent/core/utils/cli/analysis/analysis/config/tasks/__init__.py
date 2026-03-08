@@ -3,6 +3,7 @@
 import sys
 
 from wisent.core.primitives.models import get_generate_kwargs
+from wisent.core.control.steering_methods.configs.optimal import get_optimal_extraction_strategy
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
 from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_STANDARD
 
@@ -88,8 +89,8 @@ def execute_tasks(args, *, architecture_module_limit: int):
     # Handle steering mode
     if steering_mode:
         collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
-        extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
-        return execute_steering_mode(args, model, train_pair_set, test_pair_set, collector, extraction_strategy, min_norm_threshold=args.min_norm_threshold, min_clusters=getattr(args, 'min_clusters', None), geometry_cv_folds=args.geometry_cv_folds)
+        extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', get_optimal_extraction_strategy()))
+        return execute_steering_mode(args, model, train_pair_set, test_pair_set, collector, extraction_strategy, min_norm_threshold=args.min_norm_threshold, min_clusters=getattr(args, 'min_clusters', None), geometry_cv_folds=args.geometry_cv_folds, probe_small_hidden=args.probe_small_hidden, probe_mlp_hidden=args.probe_mlp_hidden, probe_mlp_alpha=args.probe_mlp_alpha, spectral_n_neighbors=args.spectral_n_neighbors, direction_n_bootstrap=args.direction_n_bootstrap, direction_subset_fraction=args.direction_subset_fraction, direction_std_penalty=args.direction_std_penalty, consistency_w_cosine=args.consistency_w_cosine, consistency_w_positive=args.consistency_w_positive, consistency_w_high_sim=args.consistency_w_high_sim, sparsity_threshold_fraction=args.sparsity_threshold_fraction, detection_threshold=args.detection_threshold, direction_moderate_similarity=args.direction_moderate_similarity)
 
     # Collect activations
     activations = collect_activations(args, model, train_pair_set, ActivationCollector, ExtractionStrategy)

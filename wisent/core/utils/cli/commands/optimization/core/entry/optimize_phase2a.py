@@ -3,6 +3,7 @@ import argparse
 import json
 import os
 
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core.utils.cli.optimization.core.optimize_helpers import save_checkpoint
 from wisent.core.utils.config_tools.constants import (
     DISPLAY_TRUNCATION_ERROR,
@@ -79,7 +80,7 @@ def run_benchmark_steering(args, benchmarks, results):
                         layer=best_layer,
                         strength=best_strength,
                         method=best_method.upper(),
-                        strategy="constant",
+                        strategy=get_optimal("steering_strategy"),
                         score=best_score,
                         metric="accuracy",
                     )

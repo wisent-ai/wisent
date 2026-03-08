@@ -19,6 +19,7 @@ from .executor import (
     execute_szlak_mode, execute_wicher_mode,
 )
 from wisent.core.weight_modification.utils import get_default_components_for_extraction
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core import constants as _C
 _LOG = setup_logger(__name__)
 
@@ -32,7 +33,7 @@ def execute_modify_weights(args):
     if args.method == "auto" or getattr(args, 'steering_method', 'auto') == "auto":
         raise ValueError("Auto method selection has been removed. Specify --method and --steering-method explicitly.")
     # Auto-select weight-modification components from extraction component
-    extraction_component = getattr(args, 'extraction_component', 'residual_stream')
+    extraction_component = getattr(args, 'extraction_component', get_optimal("extraction_component"))
     if getattr(args, 'components', None) is None and extraction_component != 'residual_stream':
         args.components = get_default_components_for_extraction(extraction_component)
         if getattr(args, 'verbose', False):

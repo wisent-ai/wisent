@@ -5,6 +5,7 @@ from wisent.core.control.steering_methods.registry.registry import (
     SteeringMethodParameter,
     SteeringMethodType,
 )
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 
 
 TETNO_STEERING_LAYER_CONFIGS = ("single_best", "range_3", "range_5")
@@ -205,7 +206,7 @@ GROM_DEFINITION = SteeringMethodDefinition(
             help="Internal shrink factor for gate network bottleneck layer", cli_flag="--grom-gate-shrink-factor"),
         SteeringMethodParameter(name="log_interval", type=int,
             help="Training log interval (every N steps)", cli_flag="--grom-log-interval"),
-        SteeringMethodParameter(name="normalize", type=bool, default=True, required=False,
+        SteeringMethodParameter(name="normalize", type=bool, default=get_optimal("normalize"), required=False,
             help="L2-normalize directions", action="store_true", cli_flag="--grom-normalize"),
         SteeringMethodParameter(name="weight_decay", type=float,
             help="Weight decay for optimizer", cli_flag="--grom-weight-decay"),

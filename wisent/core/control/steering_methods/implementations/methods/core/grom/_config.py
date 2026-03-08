@@ -1,8 +1,9 @@
 """GROM config and geometry adaptation dataclasses."""
 from __future__ import annotations
 from typing import List, Dict, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerName
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 
 # Re-export network classes from _networks for backwards compatibility
 from wisent.core.control.steering_methods.methods.grom._networks import (  # noqa: F401
@@ -146,9 +147,9 @@ class GROMConfig:
             )
 
     # Boolean flags (sensible defaults)
-    use_caa_init: bool = True
+    use_caa_init: bool = field(default_factory=lambda: get_optimal("use_caa_init"))
     """Initialize primary direction with CAA."""
-    normalize: bool = True
+    normalize: bool = field(default_factory=lambda: get_optimal("normalize"))
     """L2-normalize directions."""
     adapt_to_geometry: bool = True
     """Whether to analyze geometry and adapt configuration."""
@@ -160,7 +161,7 @@ class GROMConfig:
     """Number of manifold neighbors for geometry analysis. Must be set by caller."""
     skip_gating_if_linear: bool = True
     """Skip gating network if structure is clearly linear."""
-    auto_num_directions: bool = True
+    auto_num_directions: bool = field(default_factory=lambda: get_optimal("auto_num_directions"))
     """Automatically determine num_directions based on geometry."""
 
 

@@ -26,6 +26,7 @@ import torch.nn.functional as F
 
 from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
@@ -82,19 +83,19 @@ class TETNOConfig:
     num_layers: Optional[int] = None
     """Total layers in the model. Used to auto-compute steering_layers and sensor_layer."""
 
-    per_layer_scaling: bool = True
+    per_layer_scaling: bool = field(default_factory=lambda: get_optimal("per_layer_scaling"))
     """Whether to learn/use different scaling per layer."""
 
-    learn_threshold: bool = True
+    learn_threshold: bool = field(default_factory=lambda: get_optimal("learn_threshold"))
     """Whether to learn optimal threshold via grid search."""
 
-    use_entropy_scaling: bool = True
+    use_entropy_scaling: bool = field(default_factory=lambda: get_optimal("use_entropy_scaling"))
     """Enable entropy-based intensity modulation."""
 
-    use_caa_init: bool = True
+    use_caa_init: bool = field(default_factory=lambda: get_optimal("use_caa_init"))
     """Initialize behavior vectors using CAA."""
 
-    normalize: bool = True
+    normalize: bool = field(default_factory=lambda: get_optimal("normalize"))
     """L2-normalize vectors."""
 
     def resolve_layers(self, num_layers: int) -> None:

@@ -3,6 +3,7 @@ from __future__ import annotations
 import torch
 
 from wisent.core import constants as _C
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 
 
 def _require_arg(args, attr_name):
@@ -43,7 +44,7 @@ def _create_tecza_steering_object(
         perturbation_scale=_r(args, 'tecza_perturbation_scale'),
         universal_basis_noise=_r(args, 'tecza_universal_basis_noise'),
         log_interval=_r(args, 'tecza_log_interval'),
-        normalize=getattr(args, 'normalize', True),
+        normalize=getattr(args, 'normalize', get_optimal("normalize")),
     )
     
     directions = {}
@@ -105,8 +106,8 @@ def _create_tetno_steering_object(
         max_alpha=_require_arg(args, 'tetno_max_alpha'),
         optimization_steps=_require_arg(args, 'tetno_optimization_steps'),
         learning_rate=_require_arg(args, 'tetno_learning_rate'),
-        learn_threshold=getattr(args, 'tetno_learn_threshold', True),
-        normalize=getattr(args, 'normalize', True),
+        learn_threshold=getattr(args, 'tetno_learn_threshold', get_optimal("learn_threshold")),
+        normalize=getattr(args, 'normalize', get_optimal("normalize")),
     )
     
     # Train behavior vectors

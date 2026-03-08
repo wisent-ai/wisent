@@ -5,6 +5,7 @@ import torch
 from wisent.core.control.steering_methods._steering_object_base import (
     BaseSteeringObject, SteeringObjectMetadata, LayerName,
 )
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 
 class SimpleSteeringObject(BaseSteeringObject):
     """
@@ -76,7 +77,7 @@ class SimpleSteeringObject(BaseSteeringObject):
             created_at=meta_data.get('created_at', ''),
             extra=meta_data.get('extra', {}),
             calibration_norms=calibration_norms,
-            extraction_component=meta_data.get('extraction_component', 'residual_stream'),
+            extraction_component=meta_data.get('extraction_component', get_optimal("extraction_component")),
         )
         
         vectors = {}

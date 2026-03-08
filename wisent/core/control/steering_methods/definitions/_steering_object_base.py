@@ -21,6 +21,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from wisent.core.utils.config_tools.constants import JSON_INDENT, BASE_CLASS_NAME
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 
 
 LayerName = str
@@ -157,7 +158,7 @@ class BaseSteeringObject(ABC):
 
         return (hidden_state + delta).to(original_dtype)
     
-    def to_steering_plan(self, scale: float, normalize: bool = True) -> "SteeringPlan":
+    def to_steering_plan(self, scale: float, normalize: bool = get_optimal("normalize")) -> "SteeringPlan":
         """
         Convert this steering object to a SteeringPlan for use with WisentModel.
 

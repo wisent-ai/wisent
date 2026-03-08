@@ -65,6 +65,11 @@ def run_zwiad_with_concept_naming(
     min_concept_pairs: int,
     zwiad_score_primary: float, zwiad_score_secondary: float, zwiad_score_tertiary: float,
     zwiad_editability_threshold: float, zwiad_przelom_bonus_max: float,
+    probe_small_hidden: int, probe_mlp_hidden: int, probe_mlp_alpha: float,
+    spectral_n_neighbors: int, direction_n_bootstrap: int, direction_subset_fraction: float,
+    direction_std_penalty: float, consistency_w_cosine: float, consistency_w_positive: float,
+    consistency_w_high_sim: float, sparsity_threshold_fraction: float,
+    detection_threshold: float, direction_moderate_similarity: float,
 ) -> Dict[str, Any]:
     """Run Zwiad with geometry metrics, multi-step protocol, and concept naming."""
     if linearity_max_pairs is None:
@@ -105,7 +110,7 @@ def run_zwiad_with_concept_naming(
     if "metrics" in existing and existing["metrics"]:
         metrics = existing["metrics"]
     else:
-        metrics = compute_geometry_metrics(pos_concat, neg_concat, min_clusters=min_clusters, n_folds=cv_folds, generate_visualizations=generate_visualizations)
+        metrics = compute_geometry_metrics(pos_concat, neg_concat, min_clusters=min_clusters, n_folds=cv_folds, generate_visualizations=generate_visualizations, probe_small_hidden=probe_small_hidden, probe_mlp_hidden=probe_mlp_hidden, probe_mlp_alpha=probe_mlp_alpha, spectral_n_neighbors=spectral_n_neighbors, direction_n_bootstrap=direction_n_bootstrap, direction_subset_fraction=direction_subset_fraction, direction_std_penalty=direction_std_penalty, consistency_w_cosine=consistency_w_cosine, consistency_w_positive=consistency_w_positive, consistency_w_high_sim=consistency_w_high_sim, sparsity_threshold_fraction=sparsity_threshold_fraction, detection_threshold=detection_threshold, direction_moderate_similarity=direction_moderate_similarity)
     results = {
         "n_pairs": n_pairs, "n_layers": n_layers, "layers_used": sorted_layers,
         "total_dims": pos_concat.shape[1], "steps_run": list(steps_to_run),

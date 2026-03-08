@@ -3,8 +3,25 @@
     "description": "All steering method parameters requiring empirical validation",
     "total_parameters": 103,
     "status": "unvalidated",
-    "validated_so_far": {
-      "extraction_strategy": "chat_last"
+    "optimal": {
+      "extraction_strategy": "chat_last",
+      "steering_strategy": "constant",
+      "direction_weighting": "primary_only",
+      "prompt_strategy": "default",
+      "normalize_mode": "l2",
+      "extraction_component": "residual_stream",
+      "prompt_construction": "chat_template",
+      "normalize": true,
+      "use_caa_init": true,
+      "cone_constraint": true,
+      "use_universal_basis_init": false,
+      "auto_num_directions": false,
+      "per_layer_scaling": true,
+      "learn_threshold": true,
+      "use_entropy_scaling": true
+    },
+    "validated": {
+      "extraction_strategy": ["chat_last", "chat_mean", "chat_first", "chat_max_norm", "chat_weighted", "mc_balanced", "role_play"]
     },
     "global_unvalidated": [
       "classifier_inference_strategy"

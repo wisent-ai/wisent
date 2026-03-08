@@ -12,6 +12,7 @@ from typing import Any, Dict, Optional
 import torch
 import torch.nn.functional as F
 
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core.control.steering_methods.steering_object import (
     BaseSteeringObject,
     SteeringObjectMetadata,
@@ -151,7 +152,7 @@ class SzlakSteeringObject(BaseSteeringObject):
             created_at=meta_data.get("created_at", ""),
             extra=meta_data.get("extra", {}),
             calibration_norms=calibration_norms,
-            extraction_component=meta_data.get("extraction_component", "residual_stream"),
+            extraction_component=meta_data.get("extraction_component", get_optimal("extraction_component")),
         )
 
         def to_tensor(v):

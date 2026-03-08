@@ -34,9 +34,9 @@ def _resp_text(resp_obj: object) -> str:
 def collect_raw(
     collector,
     pair: "ContrastivePair",
-    strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
+    strategy: ExtractionStrategy = ExtractionStrategy.default(),
     layers: Sequence[LayerName] | None = None,
-    component: ExtractionComponent = ExtractionComponent.RESIDUAL_STREAM,
+    component: ExtractionComponent = ExtractionComponent.default(),
 ) -> dict:
     """
     Collect RAW hidden states (full sequences) for a contrastive pair.
@@ -96,7 +96,7 @@ def collect_single_raw(
     layers: Sequence[LayerName] | None,
     other_response: str | None = None,
     is_positive: bool = True,
-    component: ExtractionComponent = ExtractionComponent.RESIDUAL_STREAM,
+    component: ExtractionComponent = ExtractionComponent.default(),
 ) -> dict:
     """Collect raw hidden states for a single prompt-response pair."""
     collector._ensure_eval_mode()

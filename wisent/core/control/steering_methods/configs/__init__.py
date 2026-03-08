@@ -14,6 +14,11 @@ from .validated_defaults import (
     VALIDATED_EXTRACTION_STRATEGY,
     VALIDATED_METHOD_DEFAULTS,
 )
+from .optimal import (
+    get_optimal,
+    get_optimal_extraction_strategy,
+    get_validated_extraction_strategies,
+)
 
 
 def load_validated_method_defaults(method_name: str) -> Dict[str, Any]:
@@ -73,4 +78,7 @@ __all__ = [
     "load_model_task_config",
     "VALIDATED_EXTRACTION_STRATEGY",
     "VALIDATED_METHOD_DEFAULTS",
+    "get_optimal",
+    "get_optimal_extraction_strategy",
+    "get_validated_extraction_strategies",
 ]

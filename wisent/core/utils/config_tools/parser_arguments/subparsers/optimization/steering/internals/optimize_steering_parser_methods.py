@@ -256,5 +256,30 @@ def setup_method_parsers(steering_subparsers):
         required=True,
         help="Divisor for candidate layer spacing in geometry analysis",
     )
-    # Geometry args removed: compute_geometry_metrics now derives params from data
+    auto_parser.add_argument("--probe-small-hidden", type=int, required=True, dest="probe_small_hidden",
+        help="Hidden dim for small (signal-strength) probe")
+    auto_parser.add_argument("--probe-mlp-hidden", type=int, required=True, dest="probe_mlp_hidden",
+        help="Hidden dim for MLP probe")
+    auto_parser.add_argument("--probe-mlp-alpha", type=float, required=True, dest="probe_mlp_alpha",
+        help="L2 regularization alpha for MLP probe")
+    auto_parser.add_argument("--spectral-n-neighbors", type=int, required=True, dest="spectral_n_neighbors",
+        help="Neighbor count for spectral/manifold metrics")
+    auto_parser.add_argument("--direction-n-bootstrap", type=int, required=True, dest="direction_n_bootstrap",
+        help="Bootstrap iterations for direction stability")
+    auto_parser.add_argument("--direction-subset-fraction", type=float, required=True, dest="direction_subset_fraction",
+        help="Fraction of data per bootstrap sample")
+    auto_parser.add_argument("--direction-std-penalty", type=float, required=True, dest="direction_std_penalty",
+        help="Penalty weight for direction std in stability score")
+    auto_parser.add_argument("--consistency-w-cosine", type=float, required=True, dest="consistency_w_cosine",
+        help="Weight for cosine component in consistency score")
+    auto_parser.add_argument("--consistency-w-positive", type=float, required=True, dest="consistency_w_positive",
+        help="Weight for positive-fraction component in consistency score")
+    auto_parser.add_argument("--consistency-w-high-sim", type=float, required=True, dest="consistency_w_high_sim",
+        help="Weight for high-similarity component in consistency score")
+    auto_parser.add_argument("--sparsity-threshold-fraction", type=float, required=True, dest="sparsity_threshold_fraction",
+        help="Fraction threshold for sparsity metrics")
+    auto_parser.add_argument("--detection-threshold", type=float, required=True, dest="detection_threshold",
+        help="Accuracy threshold for multi-direction detection")
+    auto_parser.add_argument("--direction-moderate-similarity", type=float, required=True, dest="direction_moderate_similarity",
+        help="Threshold for moderate similarity in pairwise consistency")
 

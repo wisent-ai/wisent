@@ -4,6 +4,7 @@ import json
 import os
 
 from wisent.core.primitives.models import get_generate_kwargs
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core.utils.config_tools.constants import JSON_INDENT, SPLIT_RATIO_TRAIN_DEFAULT
 from wisent.core.utils.cli.commands.generation.vectors.generation_helpers import generate_batched, generate_sequential
 
@@ -35,7 +36,7 @@ def execute_generate_responses(args):
     if args.steering_object:
         print(f"   Steering object: {args.steering_object}")
         print(f"   Steering strength: {args.steering_strength}")
-        steering_strategy = getattr(args, 'steering_strategy', 'constant')
+        steering_strategy = getattr(args, 'steering_strategy', get_optimal("steering_strategy"))
         print(f"   Steering strategy: {steering_strategy}")
     print(f"{'='*80}\n")
 
@@ -107,7 +108,7 @@ def execute_generate_responses(args):
         gen_kwargs["temperature"] = args.temperature
     if args.top_p is not None:
         gen_kwargs["top_p"] = args.top_p
-    steering_strategy = getattr(args, 'steering_strategy', 'constant')
+    steering_strategy = getattr(args, 'steering_strategy', get_optimal("steering_strategy"))
 
     # Fall back to sequential if activation extraction is needed (requires per-prompt handling)
     if extract_activations:
@@ -134,7 +135,7 @@ def execute_generate_responses(args):
             "use_steering": args.use_steering,
             "steering_object": args.steering_object,
             "steering_strength": args.steering_strength if args.steering_object else None,
-            "steering_strategy": getattr(args, 'steering_strategy', 'constant'),
+            "steering_strategy": getattr(args, 'steering_strategy', get_optimal("steering_strategy")),
             "steering_method": steering_object.metadata.method if steering_object else None
         },
         "activation_params": {

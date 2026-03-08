@@ -265,31 +265,26 @@ def setup_steering_task_args(parser):
     parser.add_argument("--continue-on-error", action="store_true", help="Continue processing other tasks if one fails")
 
     # Benchmark caching arguments
-    parser.add_argument(
-        "--cache-benchmark",
-        action="store_true",
-        default=True,
-        help="Cache the benchmark data locally for faster future access (default: True)",
-    )
+    parser.add_argument("--cache-benchmark", action="store_true", default=True, help="Cache benchmark data locally (default: True)")
     parser.add_argument("--no-cache", dest="cache_benchmark", action="store_false", help="Disable benchmark caching")
-    parser.add_argument(
-        "--use-cached", action="store_true", default=True, help="Use cached benchmark data if available (default: True)"
-    )
-    parser.add_argument(
-        "--force-download", action="store_true", help="Force fresh download even if cached version exists"
-    )
-    parser.add_argument(
-        "--cache-dir",
-        type=str,
-        required=True,
-        help="Directory to store cached benchmark data",
-    )
+    parser.add_argument("--use-cached", action="store_true", default=True, help="Use cached benchmark data if available")
+    parser.add_argument("--force-download", action="store_true", help="Force fresh download even if cached version exists")
+    parser.add_argument("--cache-dir", type=str, required=True, help="Directory to store cached benchmark data")
     parser.add_argument("--cache-status", action="store_true", help="Show cache status and exit")
     parser.add_argument("--cleanup-cache", type=int, metavar="DAYS", help="Clean up cache entries older than DAYS days")
+    parser.add_argument("--disable-thinking", action="store_true", help="Disable thinking/reasoning mode (prevents <think> tags)")
 
-    # Thinking mode control (for Qwen models)
-    parser.add_argument(
-        "--disable-thinking",
-        action="store_true",
-        help="Disable thinking/reasoning mode (prevents <think> tags for Qwen models)",
-    )
+    # Geometry metric design-choice parameters (non-derivable from data)
+    parser.add_argument("--probe-small-hidden", type=int, required=True, dest="probe_small_hidden", help="Hidden dim for small probe")
+    parser.add_argument("--probe-mlp-hidden", type=int, required=True, dest="probe_mlp_hidden", help="Hidden dim for MLP probe")
+    parser.add_argument("--probe-mlp-alpha", type=float, required=True, dest="probe_mlp_alpha", help="L2 regularization alpha for MLP probe")
+    parser.add_argument("--spectral-n-neighbors", type=int, required=True, dest="spectral_n_neighbors", help="Neighbor count for spectral/manifold metrics")
+    parser.add_argument("--direction-n-bootstrap", type=int, required=True, dest="direction_n_bootstrap", help="Bootstrap iterations for direction stability")
+    parser.add_argument("--direction-subset-fraction", type=float, required=True, dest="direction_subset_fraction", help="Fraction per bootstrap sample")
+    parser.add_argument("--direction-std-penalty", type=float, required=True, dest="direction_std_penalty", help="Penalty weight for direction std")
+    parser.add_argument("--consistency-w-cosine", type=float, required=True, dest="consistency_w_cosine", help="Weight for cosine in consistency")
+    parser.add_argument("--consistency-w-positive", type=float, required=True, dest="consistency_w_positive", help="Weight for positive-fraction in consistency")
+    parser.add_argument("--consistency-w-high-sim", type=float, required=True, dest="consistency_w_high_sim", help="Weight for high-similarity in consistency")
+    parser.add_argument("--sparsity-threshold-fraction", type=float, required=True, dest="sparsity_threshold_fraction", help="Fraction threshold for sparsity")
+    parser.add_argument("--detection-threshold", type=float, required=True, dest="detection_threshold", help="Accuracy threshold for multi-direction detection")
+    parser.add_argument("--direction-moderate-similarity", type=float, required=True, dest="direction_moderate_similarity", help="Threshold for moderate similarity")

@@ -7,6 +7,8 @@ from typing import Any, Dict, List, Optional
 import torch
 
 from wisent.core.primitives.models.core.atoms import SteeringPlan, SteeringVector
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 
 
 logger = logging.getLogger(__name__)
@@ -121,7 +123,7 @@ def create_steering_method_from_config(config: Dict[str, Any]) -> Any:
     params = {}
     
     if method_name == "caa":
-        params = {"normalize": True}
+        params = {"normalize": get_optimal("normalize")}
 
     elif method_name == "tecza":
         params = {}
@@ -132,9 +134,9 @@ def create_steering_method_from_config(config: Dict[str, Any]) -> Any:
             if key in config:
                 params[key] = config[key]
         # Boolean flags with sensible defaults
-        params["direction_weighting"] = config.get("direction_weighting", "primary_only")
-        params["use_caa_init"] = config.get("use_caa_init", True)
-        params["cone_constraint"] = config.get("cone_constraint", True)
+        params["direction_weighting"] = config.get("direction_weighting", get_optimal("direction_weighting"))
+        params["use_caa_init"] = config.get("use_caa_init", get_optimal("use_caa_init"))
+        params["cone_constraint"] = config.get("cone_constraint", get_optimal("cone_constraint"))
 
     elif method_name == "tetno":
         params = {}
@@ -146,9 +148,9 @@ def create_steering_method_from_config(config: Dict[str, Any]) -> Any:
             if key in config:
                 params[key] = config[key]
         # Boolean flags with sensible defaults
-        params["per_layer_scaling"] = config.get("per_layer_scaling", True)
-        params["use_entropy_scaling"] = config.get("use_entropy_scaling", False)
-        params["learn_threshold"] = config.get("learn_threshold", True)
+        params["per_layer_scaling"] = config.get("per_layer_scaling", get_optimal("per_layer_scaling"))
+        params["use_entropy_scaling"] = config.get("use_entropy_scaling", get_optimal("use_entropy_scaling"))
+        params["learn_threshold"] = config.get("learn_threshold", get_optimal("learn_threshold"))
 
     elif method_name == "grom":
         params = {}
@@ -173,7 +175,7 @@ def get_optimal_steering_plan(
     task_name: str,
     train_pairs: "ContrastivePairSet",
     method: str = "*",
-    aggregation: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
+    aggregation: ExtractionStrategy = ExtractionStrategy.default(),
     *,
     architecture_module_limit: int,
 ) -> Optional[Tuple["SteeringPlan", Dict[str, Any]]]:
@@ -258,7 +260,7 @@ def get_optimal_steering_plan(
     plan = SteeringPlan.from_raw(
         {layer_str: steering_vector},
         scale=strength,
-        normalize=True,
+        normalize=get_optimal("normalize"),
         description=f"Optimal {method_name} steering for {task_name}",
     )
     

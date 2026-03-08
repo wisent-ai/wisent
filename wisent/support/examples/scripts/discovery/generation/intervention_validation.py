@@ -111,7 +111,7 @@ def run_intervention_validation(
     validation_results = ValidationResults(model=model_name)
 
     tm = TaskManager()
-    strategy = ExtractionStrategy.CHAT_LAST
+    strategy = ExtractionStrategy.default()
 
     for benchmark in benchmarks_to_test:
         print(f"\n{'-' * _C.SEPARATOR_WIDTH_MEDIUM}")

@@ -8,6 +8,7 @@ import torch
 from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, ActivationCollector
+from wisent.core.control.steering_methods.configs.optimal import get_optimal_extraction_strategy
 from wisent.core.reading.classifiers.models.logistic import LogisticClassifier
 from wisent.core.reading.classifiers.core.atoms import ClassifierTrainConfig
 from wisent.core.reading.evaluators.rotator import EvaluatorRotator
@@ -71,7 +72,7 @@ def execute_optimize_sample_size(args, *, architecture_module_limit: int):
 
         print(f"\nCollecting test activations (ONCE)...")
         layer_str = str(args.layer)
-        extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
+        extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', get_optimal_extraction_strategy()))
         collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
 
         X_test_list, y_test_list = [], []

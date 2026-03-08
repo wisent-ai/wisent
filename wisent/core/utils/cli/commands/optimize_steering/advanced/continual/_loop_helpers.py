@@ -9,7 +9,7 @@ from typing import Dict, Optional
 
 import torch
 
-from wisent.core.control.steering_methods.configs.validated_defaults import VALIDATED_EXTRACTION_STRATEGY
+from wisent.core.control.steering_methods.configs.optimal import get_optimal, get_optimal_extraction_strategy
 from wisent.core.utils.cli.optimize_steering.pipeline import _make_args
 from wisent.core.utils.cli.optimize_steering.data.contrastive_pairs_data import (
     execute_generate_pairs_from_task,
@@ -51,7 +51,7 @@ def ensure_enriched_pairs(
     print(f"   Collecting activations for {task}...")
     execute_get_activations(_make_args(
         pairs_file=pairs_file, model=model, output=enriched_path,
-        layers="all", extraction_strategy=VALIDATED_EXTRACTION_STRATEGY,
+        layers="all", extraction_strategy=get_optimal_extraction_strategy(),
         device=device, verbose=False, timing=False, raw=False,
         cached_model=None, capture_qk=True,
     ))
@@ -97,7 +97,7 @@ def evaluate_vectors(
         task=task, input_file=enriched_path, model=model, output=rf,
         num_questions=limit, min_load_limit_questions=limit,
         steering_object=sf, steering_strength=strength,
-        steering_strategy="constant", use_steering=True, device=device,
+        steering_strategy=get_optimal("steering_strategy"), use_steering=True, device=device,
         verbose=False, cached_model=None,
     ))
 

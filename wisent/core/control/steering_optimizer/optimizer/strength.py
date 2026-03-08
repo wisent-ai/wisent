@@ -18,6 +18,7 @@ from wisent.core.utils.infra_tools.errors import (
     InsufficientDataError,
 )
 from wisent.core.control.steering_methods import SteeringMethodType
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core import constants as _C
 from wisent.core.utils.config_tools.constants import (
     PARSER_DEFAULT_LAYER_START,
@@ -230,7 +231,7 @@ class StrengthOptimizationMixin:
             best_steering_layer=layer,
             best_steering_method="caa",
             best_steering_strength=strength,
-            optimal_parameters={"normalize": True},
+            optimal_parameters={"normalize": get_optimal("normalize")},
             steering_effectiveness_score=0.0,
             classification_accuracy_impact=0.0,
             optimization_time_seconds=0.0,

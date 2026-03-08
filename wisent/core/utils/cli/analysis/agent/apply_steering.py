@@ -2,6 +2,7 @@
 
 from wisent.core.primitives.models import get_generate_kwargs
 from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_MEDIUM
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 
 
 def _map_token_aggregation(aggregation_str: str):
@@ -43,7 +44,7 @@ def apply_steering_and_evaluate(
     steering_strength: float,
     token_aggregation: str,
     prompt_strategy: str,
-    steering_normalize: bool = True,
+    steering_normalize: bool = get_optimal("normalize"),
     verbose: bool = False,
     normalize_layers: bool = False,
     return_full_sequence: bool = False

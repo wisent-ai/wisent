@@ -40,7 +40,7 @@ class QualityEvaluationMixin:
         activations = Activations(
             tensor=activations_tensor,
             layer=Layer(index=classifier_params.optimal_layer, type="transformer"),
-            aggregation_strategy=ExtractionStrategy.CHAT_LAST,
+            aggregation_strategy=ExtractionStrategy.default(),
         )
 
         features = activations.extract_features_for_classifier()

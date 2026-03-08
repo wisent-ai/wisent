@@ -2,6 +2,7 @@
 from dataclasses import dataclass, field
 from typing import Any, Optional, List, Dict, Iterator, Tuple
 
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core.utils.cli.optimize_steering.method_configs import (
     MethodConfig, CAAConfig, OstrzeConfig, TECZAConfig, TETNOConfig, GROMConfig,
     NurtConfig, SzlakConfig, WicherConfig,
@@ -26,7 +27,7 @@ class HierarchicalConfig:
     """Configuration for hierarchical search."""
     # Stage 1: Layer sweep
     layer_sweep_strength: Optional[float] = None
-    layer_sweep_normalize: bool = True
+    layer_sweep_normalize: bool = field(default_factory=lambda: get_optimal("normalize"))
 
     # Stage 2: Strength sweep
     strengths: List[float] = field(kw_only=True)

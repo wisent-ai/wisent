@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List
 
-from wisent.core.control.steering_methods.configs.validated_defaults import VALIDATED_EXTRACTION_STRATEGY
+from wisent.core.control.steering_methods.configs.optimal import get_optimal_extraction_strategy
 from wisent.core.utils.config_tools.constants import PROGRESS_LOG_INTERVAL_10
 
 if TYPE_CHECKING:
@@ -36,7 +36,7 @@ def train_nurt_for_task(args, wisent_model: "WisentModel", pairs: List["Contrast
     layer_acts = {l: {"positive": [], "negative": []} for l in layers}
 
     for i, pair in enumerate(pairs):
-        enriched = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST, layers=layers)
+        enriched = collector.collect(pair, strategy=ExtractionStrategy.default(), layers=layers)
         for l in layers:
             pa = enriched.positive_response.layers_activations.get(l)
             na = enriched.negative_response.layers_activations.get(l)
@@ -50,7 +50,7 @@ def train_nurt_for_task(args, wisent_model: "WisentModel", pairs: List["Contrast
     meta = SteeringObjectMetadata(
         method="nurt", model_name=args.model,
         benchmark=getattr(args, 'task', 'unknown'), category="steering",
-        extraction_strategy=VALIDATED_EXTRACTION_STRATEGY, num_pairs=len(pairs),
+        extraction_strategy=get_optimal_extraction_strategy(), num_pairs=len(pairs),
         layers=[int(l) for l in layers], hidden_dim=0,
     )
     return _create_nurt_steering_object(meta, layer_acts, layers, args)
@@ -74,7 +74,7 @@ def train_szlak_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
     layer_acts = {l: {"positive": [], "negative": []} for l in layers}
 
     for i, pair in enumerate(pairs):
-        enriched = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST, layers=layers)
+        enriched = collector.collect(pair, strategy=ExtractionStrategy.default(), layers=layers)
         for l in layers:
             pa = enriched.positive_response.layers_activations.get(l)
             na = enriched.negative_response.layers_activations.get(l)
@@ -88,7 +88,7 @@ def train_szlak_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
     meta = SteeringObjectMetadata(
         method="szlak", model_name=args.model,
         benchmark=getattr(args, 'task', 'unknown'), category="steering",
-        extraction_strategy=VALIDATED_EXTRACTION_STRATEGY, num_pairs=len(pairs),
+        extraction_strategy=get_optimal_extraction_strategy(), num_pairs=len(pairs),
         layers=[int(l) for l in layers], hidden_dim=0,
     )
     return _create_szlak_steering_object(meta, layer_acts, layers, args)
@@ -112,7 +112,7 @@ def train_wicher_for_task(args, wisent_model: "WisentModel", pairs: List["Contra
     layer_acts = {l: {"positive": [], "negative": []} for l in layers}
 
     for i, pair in enumerate(pairs):
-        enriched = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST, layers=layers)
+        enriched = collector.collect(pair, strategy=ExtractionStrategy.default(), layers=layers)
         for l in layers:
             pa = enriched.positive_response.layers_activations.get(l)
             na = enriched.negative_response.layers_activations.get(l)
@@ -126,7 +126,7 @@ def train_wicher_for_task(args, wisent_model: "WisentModel", pairs: List["Contra
     meta = SteeringObjectMetadata(
         method="wicher", model_name=args.model,
         benchmark=getattr(args, 'task', 'unknown'), category="steering",
-        extraction_strategy=VALIDATED_EXTRACTION_STRATEGY, num_pairs=len(pairs),
+        extraction_strategy=get_optimal_extraction_strategy(), num_pairs=len(pairs),
         layers=[int(l) for l in layers], hidden_dim=0,
     )
     return _create_wicher_steering_object(meta, layer_acts, layers, args)

@@ -11,11 +11,19 @@ import torch
 
 from wisent.core.utils.config_tools.config import ModelConfigManager
 from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_WIDE, AXIS_ROWS, SEARCH_INIT_NEGATIVE, COMBO_OFFSET, SCORE_RANGE_MIN
-from wisent.core.control.steering_methods.configs.validated_defaults import VALIDATED_EXTRACTION_STRATEGY
+from wisent.core.control.steering_methods.configs.optimal import get_optimal, get_optimal_extraction_strategy
 from .training import train_recommended_method
 from .grid_search import run_grid_search
 
 logger = logging.getLogger(__name__)
+
+
+def _is_json_safe(v):
+    try:
+        json.dumps(v)
+        return True
+    except (TypeError, ValueError):
+        return False
 
 
 def run_auto_steering_optimization(
@@ -40,12 +48,16 @@ def run_auto_steering_optimization(
     auto_min_pairs_split: int = None,
     auto_layer_divisor: int = None,
     *, architecture_module_limit: int, progress_log_interval: int, train_ratio: float,
+    probe_small_hidden: int, probe_mlp_hidden: int, probe_mlp_alpha: float,
+    spectral_n_neighbors: int, direction_n_bootstrap: int, direction_subset_fraction: float,
+    direction_std_penalty: float, consistency_w_cosine: float, consistency_w_positive: float,
+    consistency_w_high_sim: float, sparsity_threshold_fraction: float,
+    detection_threshold: float, direction_moderate_similarity: float,
 ) -> Dict[str, Any]:
     """Automatically optimize steering using zwiad geometry analysis."""
-    _required = {"strength_range": strength_range,
-        "auto_min_pairs": auto_min_pairs, "auto_sample_size": auto_sample_size,
-        "auto_n_folds": auto_n_folds, "auto_min_pairs_split": auto_min_pairs_split,
-        "auto_layer_divisor": auto_layer_divisor, "train_ratio": train_ratio}
+    _required = {"strength_range": strength_range, "auto_min_pairs": auto_min_pairs,
+        "auto_sample_size": auto_sample_size, "auto_n_folds": auto_n_folds,
+        "auto_min_pairs_split": auto_min_pairs_split, "auto_layer_divisor": auto_layer_divisor, "train_ratio": train_ratio}
     for _name, _val in _required.items():
         if _val is None:
             raise ValueError(f"{_name} is required")
@@ -54,8 +66,7 @@ def run_auto_steering_optimization(
         return {"error": "Task name is required for auto steering optimization"}
     if verbose:
         sep = '=' * SEPARATOR_WIDTH_WIDE
-        print(f"\n{sep}\nAUTO STEERING OPTIMIZATION (zwiad)\n{sep}")
-        print(f"   Model: {model_name}\n   Task: {task_name}\n{sep}\nLoading model...", flush=True)
+        print(f"\n{sep}\nAUTO STEERING OPTIMIZATION (zwiad)\n{sep}\n   Model: {model_name}\n   Task: {task_name}\n{sep}\nLoading model...", flush=True)
     wisent_model = WisentModel(model_name, device=device)
     num_layers = wisent_model.num_layers
     if verbose:
@@ -65,10 +76,18 @@ def run_auto_steering_optimization(
         return {"error": f"Could not generate enough pairs for {task_name}"}
     if verbose:
         print(f"Generated {len(pairs)} contrastive pairs\n")
+    _geo_kw = dict(probe_small_hidden=probe_small_hidden, probe_mlp_hidden=probe_mlp_hidden,
+        probe_mlp_alpha=probe_mlp_alpha, spectral_n_neighbors=spectral_n_neighbors,
+        direction_n_bootstrap=direction_n_bootstrap, direction_subset_fraction=direction_subset_fraction,
+        direction_std_penalty=direction_std_penalty, consistency_w_cosine=consistency_w_cosine,
+        consistency_w_positive=consistency_w_positive, consistency_w_high_sim=consistency_w_high_sim,
+        sparsity_threshold_fraction=sparsity_threshold_fraction, detection_threshold=detection_threshold,
+        direction_moderate_similarity=direction_moderate_similarity)
     metrics, coherence, best_lpa = _run_zwiad_analysis(
         wisent_model, pairs, num_layers, min_clusters=min_clusters, verbose=verbose,
         architecture_module_limit=architecture_module_limit,
         layer_divisor=auto_layer_divisor, sample_size=auto_sample_size, min_pairs=auto_min_pairs, n_folds=auto_n_folds,
+        **_geo_kw,
     )
 
     if not methods_to_test:
@@ -143,7 +162,7 @@ def _generate_pairs(task_name: str, limit: int, *, train_ratio: float) -> List:
         return []
 
 
-def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, min_clusters: int, verbose: bool, *, architecture_module_limit: int, layer_divisor: int, sample_size: int, min_pairs: int, n_folds: int) -> tuple:
+def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, min_clusters: int, verbose: bool, *, architecture_module_limit: int, layer_divisor: int, sample_size: int, min_pairs: int, n_folds: int, **geometry_kw) -> tuple:
     """Run zwiad geometry analysis on collected activations."""
     from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
     from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
@@ -163,7 +182,7 @@ def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, min_clu
     layer_neg = {l: [] for l in candidate_layer_strs}
 
     for pair in sample_pairs:
-        enriched = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST, layers=candidate_layer_strs)
+        enriched = collector.collect(pair, strategy=ExtractionStrategy(get_optimal_extraction_strategy()), layers=candidate_layer_strs)
         for l in candidate_layer_strs:
             pos_act = enriched.positive_response.layers_activations.get(l)
             neg_act = enriched.negative_response.layers_activations.get(l)
@@ -179,7 +198,7 @@ def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, min_clu
             continue
         pt = torch.stack(layer_pos[l]).float()
         nt = torch.stack(layer_neg[l]).float()
-        m = compute_geometry_metrics(pt, nt, min_clusters=min_clusters, n_folds=n_folds)
+        m = compute_geometry_metrics(pt, nt, min_clusters=min_clusters, n_folds=n_folds, **geometry_kw)
         lpa = m.get('linear_probe_accuracy', SCORE_RANGE_MIN)
         if lpa > best_lpa:
             best_lpa, best_metrics, best_layer = lpa, m, l
@@ -228,45 +247,22 @@ def _save_config(
         'config_version': '2.0'
     }
 
-    if 'steering_optimization' not in config:
-        config['steering_optimization'] = {}
-
+    config.setdefault('steering_optimization', {})
     config['steering_optimization'].update({
-        'best_method': method, 'best_layer': layer,
-        'best_strength': strength, 'best_score': score,
-        'optimization_date': datetime.now().isoformat(),
-        'zwiad_metrics': {
-            'linear_probe_accuracy': metrics['linear_probe_accuracy'],
+        'best_method': method, 'best_layer': layer, 'best_strength': strength,
+        'best_score': score, 'optimization_date': datetime.now().isoformat(),
+        'zwiad_metrics': {'linear_probe_accuracy': metrics['linear_probe_accuracy'],
             'signal_strength': metrics['signal_strength'],
             'steerability_score': metrics['steer_steerability_score'],
-            'icd': metrics['icd_icd'],
-            'concept_coherence': coherence,
-        },
+            'icd': metrics['icd_icd'], 'concept_coherence': coherence},
         'confidence': confidence, 'reasoning': reasoning,
-        'grid_search': {
-            'layers_tested': layers_tested,
-            'strengths_tested': strengths_tested,
-            'total_combinations': len(grid_results),
-        }
-    })
-
-    if 'task_specific_steering' not in config:
-        config['task_specific_steering'] = {}
-
-    task_entry = {
-        'method': method, 'layer': layer, 'strength': strength,
-        'score': score, 'confidence': confidence,
-    }
+        'grid_search': {'layers_tested': layers_tested, 'strengths_tested': strengths_tested,
+            'total_combinations': len(grid_results)}})
+    config.setdefault('task_specific_steering', {})
+    task_entry = {'method': method, 'layer': layer, 'strength': strength, 'score': score, 'confidence': confidence}
     if method_params:
-        # Filter out non-serializable values (e.g. None layers lists)
-        serializable_params = {}
-        for k, v in method_params.items():
-            if v is not None and not callable(v):
-                try:
-                    json.dumps(v)
-                    serializable_params[k] = v
-                except (TypeError, ValueError):
-                    pass
+        serializable_params = {k: v for k, v in method_params.items()
+            if v is not None and not callable(v) and _is_json_safe(v)}
         task_entry['method_params'] = serializable_params
     config['task_specific_steering'][task_name] = task_entry
     config.setdefault('optimization_method', 'auto')
@@ -279,13 +275,13 @@ def _save_config(
             save_steering_config(
                 model_name=model_name,
                 method=method,
-                token_aggregation=VALIDATED_EXTRACTION_STRATEGY,
-                prompt_strategy="default",
-                normalize_mode="l2",
+                token_aggregation=get_optimal_extraction_strategy(),
+                prompt_strategy=get_optimal("prompt_strategy"),
+                normalize_mode=get_optimal("normalize_mode"),
                 strategy="auto",
                 optimization_method="auto",
                 metric="accuracy",
-                direction_weighting="primary_only",
+                direction_weighting=get_optimal("direction_weighting"),
                 task_name=task_name,
                 layer=layer,
                 strength=strength,

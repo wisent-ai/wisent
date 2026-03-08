@@ -32,6 +32,7 @@ from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core.control.steering_methods.methods.grom._config import (
     GROMConfig, GatingNetwork, IntensityNetwork,
     DirectionWeightNetwork, GeometryAdaptation,
@@ -227,8 +228,8 @@ class GROMMethod(BaseSteeringMethod):
             cfg["num_layers"] = kwargs.get("num_layers")
             cfg["gate_hidden_dim"] = kwargs.get("gate_hidden_dim")
             cfg["intensity_hidden_dim"] = kwargs.get("intensity_hidden_dim")
-            cfg["use_caa_init"] = kwargs.get("use_caa_init", True)
-            cfg["normalize"] = kwargs.get("normalize", True)
+            cfg["use_caa_init"] = kwargs.get("use_caa_init", get_optimal("use_caa_init"))
+            cfg["normalize"] = kwargs.get("normalize", get_optimal("normalize"))
             self.config = GROMConfig(**cfg)
         self.log_interval: int = _require("log_interval", kwargs)
         self._training_logs: List[Dict[str, float]] = []
