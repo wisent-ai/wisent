@@ -152,8 +152,13 @@ def execute_optimize_steering(args):
 
         return result
 
-    # Check for 'welfare' steering_action - AI welfare states optimization
+    # Check for 'comprehensive' steering_action - multi-method comparison
     steering_action = getattr(args, 'steering_action', None)
+    if steering_action == 'comprehensive':
+        from .pipeline.comprehensive import execute_comprehensive_optimization
+        return execute_comprehensive_optimization(args)
+
+    # Check for 'welfare' steering_action - AI welfare states optimization
     if steering_action == 'welfare':
         return _execute_welfare_optimization(args)
 
