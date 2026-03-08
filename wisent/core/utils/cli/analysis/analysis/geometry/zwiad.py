@@ -8,6 +8,7 @@ import sys
 import pickle
 from pathlib import Path
 from typing import Optional
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core import constants as _C
 
 
@@ -198,39 +199,32 @@ def execute_zwiad(args):
     print(f"Running Zwiad protocol (steps: {args.steps})")
     print(f"{'='*_C.SEPARATOR_WIDTH_STANDARD}")
 
+    _geo = {k: getattr(args, k) for k in ("probe_small_hidden", "probe_mlp_hidden", "probe_mlp_alpha",
+        "spectral_n_neighbors", "direction_n_bootstrap", "direction_subset_fraction", "direction_std_penalty",
+        "consistency_w_cosine", "consistency_w_positive", "consistency_w_high_sim",
+        "sparsity_threshold_fraction", "detection_threshold", "direction_moderate_similarity")}
     results = run_zwiad_with_concept_naming(
-        activations_by_layer=activations_by_layer,
-        llm_model=args.llm_model,
-        concept_naming_n_samples=args.concept_naming_n_samples,
-        min_clusters=getattr(args, 'min_clusters', None),
-        pair_texts=pair_texts,
-        generate_visualizations=not args.no_visualizations,
+        activations_by_layer=activations_by_layer, llm_model=args.llm_model,
+        concept_naming_n_samples=args.concept_naming_n_samples, min_clusters=getattr(args, 'min_clusters', None),
+        pair_texts=pair_texts, generate_visualizations=not args.no_visualizations,
         steps=args.steps, output_path=args.output,
         cv_folds=args.cv_folds, min_concept_pairs=args.min_concept_pairs,
         zwiad_score_primary=args.zwiad_score_primary, zwiad_score_secondary=args.zwiad_score_secondary,
         zwiad_score_tertiary=args.zwiad_score_tertiary,
         zwiad_editability_threshold=args.zwiad_editability_threshold,
-        zwiad_przelom_bonus_max=args.zwiad_przelom_bonus_max,
+        zwiad_przelom_bonus_max=args.zwiad_przelom_bonus_max, **_geo,
     )
 
-    # Print results
-    print(f"\n{'='*_C.SEPARATOR_WIDTH_STANDARD}")
-    print("RESULTS")
-    print(f"{'='*_C.SEPARATOR_WIDTH_STANDARD}")
-    print(f"\nLayers concatenated: {results.get('n_layers')} (layers {results.get('layers_used', [])})")
-    print(f"Total dimensions: {results.get('total_dims')}")
-    print(f"Pairs analyzed: {results.get('n_pairs')}")
-    print(f"\nRecommended method: {results.get('recommended_method')}")
+    _sep = '=' * _C.SEPARATOR_WIDTH_STANDARD
+    print(f"\n{_sep}\nRESULTS\n{_sep}")
+    print(f"\nLayers: {results.get('n_layers')} ({results.get('layers_used', [])})  dims: {results.get('total_dims')}  pairs: {results.get('n_pairs')}")
     conf = results.get('recommendation_confidence')
-    print(f"Confidence: {conf:.2f}" if conf is not None else "Confidence: N/A")
+    print(f"Recommended: {results.get('recommended_method')}  confidence: {f'{conf:.2f}' if conf is not None else 'N/A'}")
     metrics = results.get("metrics", {})
     if metrics:
-        print(f"\n--- Key Metrics (all-layer concatenated) ---")
-        print(f"Signal strength: {metrics['signal_strength']:.3f}")
-        print(f"Linear probe accuracy: {metrics['linear_probe_accuracy']:.3f}")
-        print(f"MLP probe accuracy: {metrics['mlp_probe_accuracy']:.3f}")
-        print(f"KNN accuracy: {metrics['knn_accuracy']:.3f}")
-        print(f"KNN PCA accuracy: {metrics['knn_pca_accuracy']:.3f}")
+        print(f"\n--- Key Metrics ---")
+        for _mk in ("signal_strength", "linear_probe_accuracy", "mlp_probe_accuracy", "knn_accuracy", "knn_pca_accuracy"):
+            print(f"  {_mk}: {metrics[_mk]:.3f}")
 
     decomposition = results.get("concept_decomposition")
     if decomposition:
@@ -277,7 +271,7 @@ def execute_zwiad(args):
         if saved_count > 0:
             print(f"\nSaved {saved_count} visualizations to: {viz_dir}/")
 
-    results["extraction_component"] = getattr(args, "extraction_component", "residual_stream")
+    results["extraction_component"] = getattr(args, "extraction_component", get_optimal("extraction_component"))
 
     if args.output:
         output_path = Path(args.output)

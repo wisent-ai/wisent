@@ -11,6 +11,7 @@ from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.primitives.models.core.atoms import SteeringPlan, SteeringVector
 from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.utils.config_tools.constants import NORM_EPS
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +85,7 @@ def train_steering_vector_for_layer(
             primary = directions.squeeze(0)
         
         # Normalize if requested
-        if params.get("normalize", True):
+        if params.get("normalize", get_optimal("normalize")):
             primary = primary / (primary.norm() + NORM_EPS)
         
         return primary
@@ -93,7 +94,7 @@ def train_steering_vector_for_layer(
         # TETNO and GROM require full ContrastivePairSet - fall back to CAA for per-layer
         # This is a simplification; for full TETNO/GROM training, use train_steering_vectors
         from wisent.core.control.steering_methods.methods.caa import CAAMethod
-        method = CAAMethod(normalize=True)
+        method = CAAMethod(normalize=get_optimal("normalize"))
         return method.train_for_layer(pos_acts, neg_acts)
     
     else:
@@ -139,7 +140,7 @@ def collect_activations_for_pair_set(
     model,
     pair_set: ContrastivePairSet,
     layers: List[str],
-    aggregation: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
+    aggregation: ExtractionStrategy = ExtractionStrategy.default(),
     *,
     architecture_module_limit: int,
 ) -> ContrastivePairSet:
@@ -156,7 +157,7 @@ def collect_activations_for_pair_set(
         Updated ContrastivePairSet with activations attached
     """
     collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
-    
+
     updated_pairs = []
     for pair in pair_set.pairs:
         updated_pair = collector.collect_for_pair(

@@ -21,6 +21,7 @@ from wisent.core.utils.config_tools.constants import (
     EVAL_F1_THRESHOLD, EVAL_GENERATION_EMBEDDING_WEIGHT,
     EVAL_GENERATION_NLI_WEIGHT, SPLIT_RATIO_TRAIN_DEFAULT,
 )
+from wisent.core.control.steering_methods.configs.optimal import get_optimal, get_optimal_extraction_strategy
 
 
 @dataclass
@@ -114,7 +115,7 @@ def run_pipeline(
         verbose=False, timing=False, **method_args,
     ))
 
-    steering_strategy = getattr(config, 'steering_strategy', 'constant')
+    steering_strategy = getattr(config, 'steering_strategy', get_optimal("steering_strategy"))
     execute_generate_responses(_make_args(
         task=task, input_file=eval_pairs_file, model=model, output=responses_file,
         num_questions=eval_limit, min_load_limit_questions=eval_limit,
@@ -149,8 +150,8 @@ def run_pipeline(
 def _build_config(method: str, params: dict) -> tuple[MethodConfig, float]:
     """Build a MethodConfig from flat params dict. Returns (config, strength)."""
     strength = params.get("strength", SCORE_RANGE_MIN)
-    ext = params.get("extraction_strategy", "chat_last")
-    steer = params.get("steering_strategy", "constant")
+    ext = get_optimal_extraction_strategy()
+    steer = params.get("steering_strategy", get_optimal("steering_strategy"))
     m = method.upper()
 
     if m == "CAA":
@@ -173,7 +174,7 @@ def _build_config(method: str, params: dict) -> tuple[MethodConfig, float]:
         cfg = TECZAConfig(
             method="TECZA", layer=int(params["layer"]),
             num_directions=int(params["num_directions"]),
-            direction_weighting=params.get("direction_weighting", "primary_only"),
+            direction_weighting=params.get("direction_weighting", get_optimal("direction_weighting")),
             retain_weight=float(params["retain_weight"]),
             optimization_steps=int(params["optimization_steps"]),
             extraction_strategy=ext, steering_strategy=steer,

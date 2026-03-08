@@ -6,6 +6,7 @@ import torch
 from pathlib import Path
 from argparse import Namespace
 from typing import Tuple
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core.utils.config_tools.constants import (
     JSON_INDENT,
     VIZ_MLP_EPOCHS,
@@ -45,7 +46,7 @@ def create_steering_object_from_pairs(args, tmpdir: Path) -> str:
     execute_create_steering_object(Namespace(
         enriched_pairs_file=str(enriched_path), method='caa', output=str(steering_path),
         layer=str(args.layer) if hasattr(args, 'layer') else None,
-        normalize=True, verbose=False, timing=False,
+        normalize=get_optimal("normalize"), verbose=False, timing=False,
     ))
     return str(steering_path)
 

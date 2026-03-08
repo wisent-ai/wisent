@@ -14,6 +14,7 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Dict, List, Tuple
 import torch
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core.control.steering_methods.steering_object import SteeringObjectMetadata
 from wisent.core.control.steering_methods.methods.przelom.przelom_steering_object import (
     PrzelomSteeringObject,
@@ -68,7 +69,7 @@ def _precompute_layer_data(
         num_pairs=len(pairs_list), layers=[int(l) for l in all_layers],
         hidden_dim=hidden_dim, created_at=datetime.now().isoformat(),
         calibration_norms={int(k): float(v) for k, v in cal_raw.items()},
-        extraction_component=data.get('extraction_component', 'residual_stream'),
+        extraction_component=data.get('extraction_component', get_optimal("extraction_component")),
         extra={'num_attention_heads': num_heads, 'num_key_value_heads': num_kv_heads},
     )
     layer_data: Dict[int, dict] = {}
@@ -261,7 +262,7 @@ def execute_transport_rl(args):
                 task=task, input_file=epf, model=model, output=rf,
                 num_questions=limit, min_load_limit_questions=limit,
                 steering_object=sf, steering_strength=layer_sweep_strength,
-                steering_strategy="constant", use_steering=True, device=device,
+                steering_strategy=get_optimal("steering_strategy"), use_steering=True, device=device,
                 verbose=False, cached_model=None,
             ))
             # Evaluate

@@ -13,7 +13,7 @@ class Activations:
     features for classifier input based on the specified extraction strategy.
     """
 
-    def __init__(self, tensor: torch.Tensor, layer: Any, extraction_strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST, weighted_decay: float = None):
+    def __init__(self, tensor: torch.Tensor, layer: Any, extraction_strategy: ExtractionStrategy = ExtractionStrategy.default(), weighted_decay: float = None):
         """Initialize Activations wrapper.
 
         Args:

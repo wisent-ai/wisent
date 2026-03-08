@@ -6,6 +6,8 @@ from wisent.core.utils.config_tools.constants import (
     COMBO_OFFSET, RECURSION_INITIAL_DEPTH,
 )
 
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
+
 logger = logging.getLogger(__name__)
 
 
@@ -57,7 +59,7 @@ def train_recommended_method(
     collector = ActivationCollector(model=wisent_model, architecture_module_limit=architecture_module_limit)
     enriched_pairs = []
     for i, pair in enumerate(pairs):
-        enriched = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST, layers=all_layers)
+        enriched = collector.collect(pair, strategy=ExtractionStrategy.default(), layers=all_layers)
         enriched_pairs.append(enriched)
         if verbose and (i + COMBO_OFFSET) % progress_log_interval == RECURSION_INITIAL_DEPTH:
             print(f"     {i + COMBO_OFFSET}/{len(pairs)} pairs processed")
@@ -138,7 +140,7 @@ def _train_caa(pair_set: Any, verbose: bool) -> Dict[str, Any]:
         print(f"   CAA trained on {len(pair_set.pairs)} pairs")
         print(f"     Layers: {len(result.directions)}")
     return {"method": "CAA", "layers": len(result.directions), "result": result,
-            "method_params": {"normalize": True}}
+            "method_params": {"normalize": get_optimal("normalize")}}
 
 
 def _train_grom(

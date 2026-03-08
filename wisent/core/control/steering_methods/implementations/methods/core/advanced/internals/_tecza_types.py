@@ -18,9 +18,10 @@ Key innovations:
 from __future__ import annotations
 
 from typing import List, Dict, Any, Optional, Tuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import torch
 import torch.nn.functional as F
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 
 from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
@@ -86,19 +87,19 @@ class TECZAConfig:
     """Noise scale when initializing from universal subspace basis."""
 
     # Optional fields with defaults
-    auto_num_directions: bool = False
+    auto_num_directions: bool = field(default_factory=lambda: get_optimal("auto_num_directions"))
     """Automatically determine num_directions based on explained variance."""
 
-    normalize: bool = True
+    normalize: bool = field(default_factory=lambda: get_optimal("normalize"))
     """Whether to L2-normalize the final directions."""
 
-    use_caa_init: bool = True
+    use_caa_init: bool = field(default_factory=lambda: get_optimal("use_caa_init"))
     """Whether to initialize first direction using CAA (difference-in-means)."""
 
-    use_universal_basis_init: bool = False
+    use_universal_basis_init: bool = field(default_factory=lambda: get_optimal("use_universal_basis_init"))
     """Whether to initialize from universal subspace basis if available."""
 
-    cone_constraint: bool = True
+    cone_constraint: bool = field(default_factory=lambda: get_optimal("cone_constraint"))
     """Whether to constrain directions to form a polyhedral cone (all positive combinations)."""
 
 

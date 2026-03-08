@@ -5,6 +5,7 @@ Extracted from multi_steering.py to keep file under 300 lines.
 from __future__ import annotations
 
 from wisent.core.utils import resolve_default_device
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 
 def run_multi_steer(
     vector_specs: list[str],
@@ -65,7 +66,7 @@ def run_multi_steer(
             print(f"Overriding layer to: {layer}")
 
     # Combine vectors with normalization
-    multi_steer.combine_vectors(normalize=True)
+    multi_steer.combine_vectors(normalize=get_optimal("normalize"))
 
     # Apply steering (non-streaming)
     output = multi_steer.apply_steering(

@@ -71,7 +71,7 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
         layers_spec: Sequence[str] | str | int | Sequence[int] | None,
         min_norm_threshold: float,
         method_kwargs: dict[str, Any] | None = None,
-        strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
+        strategy: ExtractionStrategy = ExtractionStrategy.default(),
         normalize_layers: bool = False,
         save_dir: str | Path | None = None,
         accept_low_quality_vector: bool = False,

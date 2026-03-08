@@ -121,7 +121,7 @@ class ResponseDiagnostics:
             activations = Activations(
                 tensor=activations_tensor,
                 layer=classifier_config["layer"],
-                aggregation_strategy=ExtractionStrategy.CHAT_LAST,
+                aggregation_strategy=ExtractionStrategy.default(),
             )
 
             # Get features for classifier
@@ -161,7 +161,7 @@ class ResponseDiagnostics:
             activations = Activations(
                 tensor=activations_tensor,
                 layer=classifier_config["layer"],
-                aggregation_strategy=ExtractionStrategy.CHAT_LAST,
+                aggregation_strategy=ExtractionStrategy.default(),
             )
 
             # Get features

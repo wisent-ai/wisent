@@ -52,7 +52,7 @@ def train_grom_for_task(args, model: "WisentModel", pairs: List["ContrastivePair
         layers = get_all_layers(model)
     else:
         layers = [str(l) for l in str(args.layers).split(',')]
-    strategy = ExtractionStrategy.CHAT_LAST
+    strategy = ExtractionStrategy.default()
 
     collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
     enriched_pairs = []

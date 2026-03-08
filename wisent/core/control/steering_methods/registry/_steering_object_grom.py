@@ -9,6 +9,7 @@ from wisent.core.control.steering_methods._steering_object_base import (
 )
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
 from wisent.core.utils.config_tools.constants import COMBO_OFFSET, RECURSION_INITIAL_DEPTH
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 
 class GROMGateNetwork(nn.Module):
     """Serializable gate network for GROM."""
@@ -179,7 +180,7 @@ class GROMSteeringObject(BaseSteeringObject):
             hidden_dim=meta_data['hidden_dim'],
             created_at=meta_data.get('created_at', ''),
             extra=meta_data.get('extra', {}),
-            extraction_component=meta_data.get('extraction_component', 'residual_stream'),
+            extraction_component=meta_data.get('extraction_component', get_optimal("extraction_component")),
         )
         
         def to_tensor(v):

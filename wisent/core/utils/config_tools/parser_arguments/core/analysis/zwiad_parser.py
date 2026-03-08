@@ -119,9 +119,19 @@ def setup_zwiad_parser(parser):
         default=None,
         help="Output file path for JSON results"
     )
-    parser.add_argument(
-        "--visualizations-dir",
-        type=str,
-        required=True,
-        help="Directory to save visualization PNGs"
-    )
+    parser.add_argument("--visualizations-dir", type=str, required=True, help="Directory to save visualization PNGs")
+
+    # Geometry metric design-choice parameters (non-derivable from data)
+    parser.add_argument("--probe-small-hidden", type=int, required=True, dest="probe_small_hidden", help="Hidden dim for small probe")
+    parser.add_argument("--probe-mlp-hidden", type=int, required=True, dest="probe_mlp_hidden", help="Hidden dim for MLP probe")
+    parser.add_argument("--probe-mlp-alpha", type=float, required=True, dest="probe_mlp_alpha", help="L2 regularization alpha for MLP probe")
+    parser.add_argument("--spectral-n-neighbors", type=int, required=True, dest="spectral_n_neighbors", help="Neighbor count for spectral/manifold metrics")
+    parser.add_argument("--direction-n-bootstrap", type=int, required=True, dest="direction_n_bootstrap", help="Bootstrap iterations for direction stability")
+    parser.add_argument("--direction-subset-fraction", type=float, required=True, dest="direction_subset_fraction", help="Fraction per bootstrap sample")
+    parser.add_argument("--direction-std-penalty", type=float, required=True, dest="direction_std_penalty", help="Penalty weight for direction std")
+    parser.add_argument("--consistency-w-cosine", type=float, required=True, dest="consistency_w_cosine", help="Weight for cosine in consistency")
+    parser.add_argument("--consistency-w-positive", type=float, required=True, dest="consistency_w_positive", help="Weight for positive-fraction in consistency")
+    parser.add_argument("--consistency-w-high-sim", type=float, required=True, dest="consistency_w_high_sim", help="Weight for high-similarity in consistency")
+    parser.add_argument("--sparsity-threshold-fraction", type=float, required=True, dest="sparsity_threshold_fraction", help="Fraction threshold for sparsity")
+    parser.add_argument("--detection-threshold", type=float, required=True, dest="detection_threshold", help="Accuracy threshold for multi-direction detection")
+    parser.add_argument("--direction-moderate-similarity", type=float, required=True, dest="direction_moderate_similarity", help="Threshold for moderate similarity")

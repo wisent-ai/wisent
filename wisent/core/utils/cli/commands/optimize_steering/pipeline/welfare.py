@@ -15,6 +15,7 @@ from wisent.core.utils.cli.optimize_steering.scores import execute_evaluate_resp
 from wisent.core.utils.config_tools.constants import (
     SEPARATOR_WIDTH_REPORT,
     JSON_INDENT, PARSER_DEFAULT_LAYER_START)
+from wisent.core.control.steering_methods.configs.optimal import get_optimal, get_optimal_extraction_strategy
 
 
 def _execute_welfare_optimization(args):
@@ -107,7 +108,7 @@ def _execute_welfare_optimization(args):
         def objective(trial):
             layer = trial.suggest_categorical("layer", layers)
             strength = trial.suggest_float("strength", strength_range[0], strength_range[1])
-            extraction_strategy = trial.suggest_categorical("extraction_strategy", ["chat_last", "chat_mean"])
+            extraction_strategy = get_optimal_extraction_strategy()
             steering_strategy = trial.suggest_categorical("steering_strategy", STEERING_STRATEGIES)
 
             config = CAAConfig(
@@ -143,44 +144,44 @@ def _execute_welfare_optimization(args):
         # Grid search
         best_score = 0.0
         best_params = {}
-        total_configs = len(layers) * len(strengths) * 2 * len(STEERING_STRATEGIES)
+        extraction_strategy = get_optimal_extraction_strategy()
+        total_configs = len(layers) * len(strengths) * len(STEERING_STRATEGIES)
         current = 0
 
         for layer in layers:
             for strength in strengths:
-                for extraction_strategy in ["chat_last", "chat_mean"]:
-                    for steering_strategy in STEERING_STRATEGIES:
-                        current += 1
-                        config = CAAConfig(
-                            method="CAA",
-                            layer=layer,
-                            extraction_strategy=extraction_strategy,
-                            steering_strategy=steering_strategy,
-                        )
+                for steering_strategy in STEERING_STRATEGIES:
+                    current += 1
+                    config = CAAConfig(
+                        method="CAA",
+                        layer=layer,
+                        extraction_strategy=extraction_strategy,
+                        steering_strategy=steering_strategy,
+                    )
 
-                        try:
-                            with tempfile.TemporaryDirectory() as work_dir:
-                                result = _run_welfare_pipeline(
-                                    model=model,
-                                    trait=trait,
-                                    config=config,
-                                    strength=strength,
-                                    pairs_file=pairs_file,
-                                    work_dir=work_dir,
-                                    limit=min(limit, len(pair_set.pairs)),
-                                    device=device,
-                                )
-                                if result.score > best_score:
-                                    best_score = result.score
-                                    best_params = {
-                                        "layer": layer,
-                                        "strength": strength,
-                                        "extraction_strategy": extraction_strategy,
-                                        "steering_strategy": steering_strategy,
-                                    }
-                                    print(f"   [{current}/{total_configs}] New best: {best_score:.4f} @ layer={layer}, strength={strength:.2f}")
-                        except Exception as e:
-                            print(f"   [{current}/{total_configs}] Failed: {e}")
+                    try:
+                        with tempfile.TemporaryDirectory() as work_dir:
+                            result = _run_welfare_pipeline(
+                                model=model,
+                                trait=trait,
+                                config=config,
+                                strength=strength,
+                                pairs_file=pairs_file,
+                                work_dir=work_dir,
+                                limit=min(limit, len(pair_set.pairs)),
+                                device=device,
+                            )
+                            if result.score > best_score:
+                                best_score = result.score
+                                best_params = {
+                                    "layer": layer,
+                                    "strength": strength,
+                                    "extraction_strategy": extraction_strategy,
+                                    "steering_strategy": steering_strategy,
+                                }
+                                print(f"   [{current}/{total_configs}] New best: {best_score:.4f} @ layer={layer}, strength={strength:.2f}")
+                    except Exception as e:
+                        print(f"   [{current}/{total_configs}] Failed: {e}")
 
     # Print results
     print(f"\n{'=' * SEPARATOR_WIDTH_REPORT}")
@@ -251,7 +252,7 @@ def _run_welfare_pipeline(
 
     # 3. Generate responses with steering
     # For welfare, we use the same pairs for evaluation (measuring affect shift)
-    steering_strategy = getattr(config, 'steering_strategy', 'constant')
+    steering_strategy = getattr(config, 'steering_strategy', get_optimal("steering_strategy"))
     execute_generate_responses(_make_args(
         task="welfare", input_file=pairs_file, model=model, output=responses_file,
         num_questions=limit, min_load_limit_questions=limit, steering_object=steering_file,

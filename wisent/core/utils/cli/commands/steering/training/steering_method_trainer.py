@@ -158,7 +158,7 @@ class UnifiedSteeringTrainer:
         self,
         pair_set: ContrastivePairSet,
         layers: List[str],
-        aggregation: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
+        aggregation: ExtractionStrategy = ExtractionStrategy.default(),
     ) -> LayerActivations:
         """Collect activations and train in one step."""
         # Collect activations

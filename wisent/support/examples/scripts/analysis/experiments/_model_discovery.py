@@ -132,7 +132,7 @@ def run_discovery_for_model(model_name: str, output_dir: Path, report_interval: 
                     try:
                         cached = runner._get_cached_activations(
                             benchmark, 
-                            ExtractionStrategy.CHAT_LAST,
+                            ExtractionStrategy.default(),
                             show_progress=False
                         )
                         # Use middle layer for analysis
@@ -170,7 +170,7 @@ def run_discovery_for_model(model_name: str, output_dir: Path, report_interval: 
                     try:
                         ablation = run_pairs_ablation(
                             runner, benchmark, mid_layer,
-                            ExtractionStrategy.CHAT_LAST,
+                            ExtractionStrategy.default(),
                             pair_counts=list(pair_count_ablation_series),
                         )
                         if ablation:

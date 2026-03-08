@@ -1,6 +1,7 @@
 """Batched and sequential generation helpers for generate_responses."""
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, extract_activation
+from wisent.core.control.steering_methods.configs.optimal import get_optimal_extraction_strategy
 from wisent.core.utils.config_tools.constants import (
     GENERATION_BATCH_SIZE, DISPLAY_TRUNCATION_COMPACT, INDEX_FIRST, COMBO_OFFSET, COMBO_BASE,
 )
@@ -99,7 +100,7 @@ def generate_sequential(pairs, model, gen_kwargs, args, steering_object, steerin
             entry = _build_result_entry(idx, pair, text)
             if do_extract and text:
                 messages = [{"role": "user", "content": pair.prompt}]
-                extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
+                extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', get_optimal_extraction_strategy()))
                 layers = getattr(args, 'layers', None)
                 if layers:
                     layer_list = [f"layer.{l.strip()}" for l in layers.split(',')]

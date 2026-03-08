@@ -8,9 +8,9 @@ from wisent.core.utils.services.optimization.core.parameters import (
     Param,
 )
 from wisent.core.utils.config_tools import constants as _C
+from wisent.core.control.steering_optimizer.types import SteeringApplicationStrategy
 
-EXTRACTION_STRATEGIES = ["chat_last", "chat_mean"]
-_SS = ["constant", "initial_only", "diminishing", "increasing", "gaussian"]
+_SS = [s.value for s in SteeringApplicationStrategy]
 _DW = ["primary_only", "equal"]
 
 
@@ -36,7 +36,6 @@ def _qln(mu, sigma):
 
 def _base(num_layers: int) -> dict[str, Param]:
     return {
-        "extraction_strategy": _Cat(choices=EXTRACTION_STRATEGIES),
         "steering_strategy": _Cat(choices=_SS),
         "strength": _ln(_C.SP_STRENGTH_MU, _C.SP_STRENGTH_SIGMA),
         "layer": _ri(_C.SP_LAYER_MIN, num_layers),
@@ -45,7 +44,6 @@ def _base(num_layers: int) -> dict[str, Param]:
 
 def _sensor_base(num_layers: int) -> dict[str, Param]:
     return {
-        "extraction_strategy": _Cat(choices=EXTRACTION_STRATEGIES),
         "steering_strategy": _Cat(choices=_SS),
         "strength": _ln(_C.SP_STRENGTH_MU, _C.SP_STRENGTH_SIGMA),
         "sensor_layer": _ri(_C.SP_LAYER_MIN, num_layers),

@@ -14,6 +14,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from wisent.core.control.steering_methods.core.atoms import PerLayerBaseSteeringMethod
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
 from wisent.core import constants as _C
 
@@ -162,7 +163,7 @@ class MLPMethod(PerLayerBaseSteeringMethod):
         steering_vector = self._extract_adversarial_direction(mlp, pos, neg)
         
         # Normalize if requested
-        if self.kwargs.get("normalize", True):
+        if self.kwargs.get("normalize", get_optimal("normalize")):
             steering_vector = F.normalize(steering_vector, dim=0)
         
         return steering_vector

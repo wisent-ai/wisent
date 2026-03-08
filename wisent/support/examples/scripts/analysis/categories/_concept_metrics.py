@@ -151,7 +151,7 @@ def analyze_concept(
     geometry_optimization_steps: int,
     blend_default: float,
     default_score: float,
-    strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
+    strategy: ExtractionStrategy = ExtractionStrategy.default(),
 ) -> Tuple[Dict[int, ConceptMetrics], Dict[int, Tuple[torch.Tensor, torch.Tensor]]]:
     """Analyze a single concept across multiple layers."""
     

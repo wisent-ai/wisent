@@ -124,7 +124,7 @@ def run_analysis(
             signal_linear_gap=signal_linear_gap,
             min_cloud_points=min_cloud_points,
             geometry_optimization_steps=geometry_optimization_steps,
-            strategy=ExtractionStrategy.CHAT_LAST,
+            strategy=ExtractionStrategy.default(),
         )
         concept_metrics[concept_name] = metrics
         activations_by_concept[concept_name] = activations

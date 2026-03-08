@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 
 from ..convenience import save_steering_config, get_steering_config
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 
 @dataclass
 class OptimizationResult:
@@ -29,8 +30,8 @@ class OptimizationResult:
     retain_weight: Optional[float] = None
     independence_weight: Optional[float] = None
     tecza_optimization_steps: Optional[int] = None
-    use_caa_init: bool = True
-    cone_constraint: bool = True
+    use_caa_init: bool = field(default_factory=lambda: get_optimal("use_caa_init"))
+    cone_constraint: bool = field(default_factory=lambda: get_optimal("cone_constraint"))
     min_cosine_similarity: Optional[float] = None
     max_cosine_similarity: Optional[float] = None
     # TETNO
@@ -38,10 +39,10 @@ class OptimizationResult:
     steering_layers: str = ""
     condition_threshold: Optional[float] = None
     gate_temperature: Optional[float] = None
-    per_layer_scaling: bool = True
-    use_entropy_scaling: bool = False
+    per_layer_scaling: bool = field(default_factory=lambda: get_optimal("per_layer_scaling"))
+    use_entropy_scaling: bool = field(default_factory=lambda: get_optimal("use_entropy_scaling"))
     max_alpha: Optional[float] = None
-    learn_threshold: bool = True
+    learn_threshold: bool = field(default_factory=lambda: get_optimal("learn_threshold"))
     tetno_optimization_steps: Optional[int] = None
     # GROM
     gate_hidden_dim: Optional[int] = None
@@ -68,13 +69,13 @@ def store_optimization(
     score: float = None,
     metadata: Optional[Dict[str, Any]] = None, set_as_default: bool = False,
     retain_weight: Optional[float] = None, independence_weight: Optional[float] = None,
-    tecza_optimization_steps: Optional[int] = None, use_caa_init: bool = True,
-    cone_constraint: bool = True, min_cosine_similarity: Optional[float] = None,
+    tecza_optimization_steps: Optional[int] = None, use_caa_init: bool = get_optimal("use_caa_init"),
+    cone_constraint: bool = get_optimal("cone_constraint"), min_cosine_similarity: Optional[float] = None,
     max_cosine_similarity: Optional[float] = None, sensor_layer: Optional[int] = None,
     steering_layers: str = "", condition_threshold: Optional[float] = None,
-    gate_temperature: Optional[float] = None, per_layer_scaling: bool = True,
-    use_entropy_scaling: bool = False, max_alpha: Optional[float] = None,
-    learn_threshold: bool = True, tetno_optimization_steps: Optional[int] = None,
+    gate_temperature: Optional[float] = None, per_layer_scaling: bool = get_optimal("per_layer_scaling"),
+    use_entropy_scaling: bool = get_optimal("use_entropy_scaling"), max_alpha: Optional[float] = None,
+    learn_threshold: bool = get_optimal("learn_threshold"), tetno_optimization_steps: Optional[int] = None,
     gate_hidden_dim: Optional[int] = None, intensity_hidden_dim: Optional[int] = None,
     behavior_weight: Optional[float] = None, sparse_weight: Optional[float] = None,
     grom_optimization_steps: Optional[int] = None, grom_learning_rate: Optional[float] = None,

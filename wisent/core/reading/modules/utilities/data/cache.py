@@ -2,13 +2,14 @@
 import json
 from pathlib import Path
 import torch
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
 
 CACHE_DIR = Path.home() / ".wisent_cache"
 
 
 def get_cache_path(task_name: str, cache_type: str, **kwargs) -> Path:
     """Get cache file path for a given task and type."""
-    component = kwargs.get("component", "residual_stream")
+    component = kwargs.get("component", get_optimal("extraction_component"))
     # Default component uses old path format for backward compatibility
     comp_suffix = "" if component == "residual_stream" else f"_{component}"
 

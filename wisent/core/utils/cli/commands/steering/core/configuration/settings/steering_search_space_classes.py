@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, Iterator, List, Optional
 
+from wisent.core.control.steering_methods.configs.optimal import get_optimal
+
 
 class DirectionWeighting(str, Enum):
     """How to combine multiple directions in TECZA/GROM."""
@@ -64,7 +66,7 @@ class BaseSearchSpace:
 class CAASearchSpace(BaseSearchSpace):
     """Search space for CAA method."""
     
-    normalize: List[bool] = field(default_factory=lambda: [True])
+    normalize: List[bool] = field(default_factory=lambda: [get_optimal("normalize")])
     
     def get_total_configs(self) -> int:
         return super().get_total_configs() * len(self.normalize)
@@ -88,8 +90,8 @@ class TECZASearchSpace(BaseSearchSpace):
     independence_weight: List[float] = field(default_factory=list)
     optimization_steps: List[int] = field(default_factory=list)
     learning_rate: List[float] = field(default_factory=list)
-    use_caa_init: List[bool] = field(default_factory=lambda: [True])
-    cone_constraint: List[bool] = field(default_factory=lambda: [True])
+    use_caa_init: List[bool] = field(default_factory=lambda: [get_optimal("use_caa_init")])
+    cone_constraint: List[bool] = field(default_factory=lambda: [get_optimal("cone_constraint")])
     min_cosine_similarity: List[float] = field(default_factory=list)
     max_cosine_similarity: List[float] = field(default_factory=list)
     
@@ -134,10 +136,10 @@ class TETNOSearchSpace(BaseSearchSpace):
     steering_layer_config: List[str] = field(kw_only=True)
     condition_threshold: List[float] = field(kw_only=True)
     gate_temperature: List[float] = field(kw_only=True)
-    per_layer_scaling: List[bool] = field(default_factory=lambda: [True, False])
-    use_entropy_scaling: List[bool] = field(default_factory=lambda: [True, False])
+    per_layer_scaling: List[bool] = field(default_factory=lambda: [get_optimal("per_layer_scaling"), not get_optimal("per_layer_scaling")])
+    use_entropy_scaling: List[bool] = field(default_factory=lambda: [get_optimal("use_entropy_scaling"), not get_optimal("use_entropy_scaling")])
     max_alpha: List[float] = field(kw_only=True)
-    learn_threshold: List[bool] = field(default_factory=lambda: [True])
+    learn_threshold: List[bool] = field(default_factory=lambda: [get_optimal("learn_threshold")])
     optimization_steps: List[int] = field(kw_only=True)
     
     def get_total_configs(self) -> int:
@@ -252,8 +254,8 @@ class GROMSearchSpace(BaseSearchSpace):
             yield {
                 "strength": strength,
                 "token_aggregation": token_agg,
-                "strategy": "constant",  # GROM handles this internally
-                "prompt_construction": "chat_template",
+                "strategy": get_optimal("steering_strategy"),
+                "prompt_construction": get_optimal("prompt_construction"),
                 "num_directions": num_dirs,
                 "sensor_layer_config": sensor_cfg,
                 "steering_layer_config": steering_cfg,

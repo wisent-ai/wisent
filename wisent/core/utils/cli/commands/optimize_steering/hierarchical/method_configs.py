@@ -3,9 +3,9 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 from typing import Optional as _Optional
 
+from wisent.core.control.steering_optimizer.types import SteeringApplicationStrategy
 
-# Steering application strategies
-STEERING_STRATEGIES = ["constant", "initial_only", "diminishing", "increasing", "gaussian"]
+STEERING_STRATEGIES = [s.value for s in SteeringApplicationStrategy]
 
 
 @dataclass

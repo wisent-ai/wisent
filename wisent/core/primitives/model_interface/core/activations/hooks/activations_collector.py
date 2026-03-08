@@ -40,10 +40,10 @@ class ActivationCollector:
     def collect(
         self,
         pair: ContrastivePair,
-        strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
+        strategy: ExtractionStrategy = ExtractionStrategy.default(),
         layers: Sequence[LayerName] | None = None,
         normalize: bool = False,
-        component: ExtractionComponent = ExtractionComponent.RESIDUAL_STREAM,
+        component: ExtractionComponent = ExtractionComponent.default(),
         aggregation: ExtractionStrategy | None = None,
         return_full_sequence: bool = False,
         normalize_layers: bool = False,
@@ -79,7 +79,7 @@ class ActivationCollector:
         strategy: ExtractionStrategy, layers: Sequence[LayerName] | None,
         normalize: bool = False, other_response: str | None = None,
         is_positive: bool = True,
-        component: ExtractionComponent = ExtractionComponent.RESIDUAL_STREAM,
+        component: ExtractionComponent = ExtractionComponent.default(),
         capture_qk: bool = False,
     ) -> LayerActivations:
         """Collect activations for a single prompt-response pair."""
@@ -157,9 +157,9 @@ class ActivationCollector:
     def collect_raw(
         self,
         pair: ContrastivePair,
-        strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
+        strategy: ExtractionStrategy = ExtractionStrategy.default(),
         layers: Sequence[LayerName] | None = None,
-        component: ExtractionComponent = ExtractionComponent.RESIDUAL_STREAM,
+        component: ExtractionComponent = ExtractionComponent.default(),
     ) -> dict:
         """Collect RAW hidden states (full sequences) for a contrastive pair."""
         from wisent.core.primitives.model_interface.core.activations.raw_collector import collect_raw
@@ -174,7 +174,7 @@ class ActivationCollector:
         texts: list[str],
         report_interval: int,
         batch_size: int,
-        strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
+        strategy: ExtractionStrategy = ExtractionStrategy.default(),
         layers: Sequence[LayerName] | None = None,
         show_progress: bool = True,
     ) -> list[dict[str, torch.Tensor]]:
