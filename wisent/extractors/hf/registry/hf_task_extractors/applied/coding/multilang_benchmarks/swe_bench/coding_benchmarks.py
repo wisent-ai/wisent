@@ -195,10 +195,10 @@ int main() {
 
 
 # Re-exports from split modules
-from wisent.extractors.hf.hf_task_extractors.coding_benchmarks_part2 import (
+from wisent.extractors.hf.hf_task_extractors.nl2bash_scicode import (
     NL2BashExtractor,
     SciCodeExtractor,
 )
-from wisent.extractors.hf.hf_task_extractors.coding_benchmarks_part3 import (
+from wisent.extractors.hf.hf_task_extractors.terminal_bench import (
     TerminalBenchExtractor,
 )

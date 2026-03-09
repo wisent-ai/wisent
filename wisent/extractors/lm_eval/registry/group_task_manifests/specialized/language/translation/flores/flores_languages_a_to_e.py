@@ -4,7 +4,7 @@ from __future__ import annotations
 
 BASE_IMPORT = "wisent.extractors.lm_eval.lm_task_extractors."
 
-FLORES_TASKS_PART1 = {
+FLORES_TASKS_A_TO_E = {
     "african_flores": f"{BASE_IMPORT}flores:FloresExtractor",
     "african_flores_tasks": f"{BASE_IMPORT}flores:FloresExtractor",
     "darija_translation_flores": f"{BASE_IMPORT}flores:FloresExtractor",

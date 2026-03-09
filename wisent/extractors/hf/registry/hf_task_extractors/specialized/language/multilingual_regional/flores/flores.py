@@ -14,10 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["FloresExtractor"]
 _LOG = setup_logger(__name__)
 
-from wisent.extractors.hf.hf_task_extractors.flores_task_names_part1 import FLORES_TASK_NAMES_PART1
-from wisent.extractors.hf.hf_task_extractors.flores_task_names_part2 import FLORES_TASK_NAMES_PART2
+from wisent.extractors.hf.hf_task_extractors.flores_names_a_to_e import FLORES_NAMES_A_TO_E
+from wisent.extractors.hf.hf_task_extractors.flores_names_f_to_z import FLORES_NAMES_F_TO_Z
 
-task_names = FLORES_TASK_NAMES_PART1 + FLORES_TASK_NAMES_PART2
+task_names = FLORES_NAMES_A_TO_E + FLORES_NAMES_F_TO_Z
 
 class FloresExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Flores benchmark - multilingual machine translation tasks."""

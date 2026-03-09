@@ -3,7 +3,7 @@
 from wisent.core.utils.config_tools.constants import HF_EXTRACTOR_BASE_IMPORT
 base_import: str = HF_EXTRACTOR_BASE_IMPORT
 
-EXTRACTORS_PART1: dict[str, str] = {
+EXTRACTORS_MATH_CODING: dict[str, str] = {
     # Math benchmarks
     "aime": f"{base_import}aime:AIMEExtractor",
     "aime2024": f"{base_import}aime2024:AIME2024Extractor",

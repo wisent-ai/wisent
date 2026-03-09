@@ -37,19 +37,19 @@ from wisent.core.utils.infra_tools.errors import (
 
 import threading
 
-from wisent.core.primitives.models._model_parts.wisent_model_part2 import (
+from wisent.core.primitives.models._model_parts.steering_application import (
     _apply_steering_object,
     _encode_one,
     _batch_encode,
     _extract_assistant_response,
 )
-from wisent.core.primitives.models._model_parts.wisent_model_part3 import (
+from wisent.core.primitives.models._model_parts.generation import (
     _generate,
     _set_steering_from_raw,
     _clear_steering,
 )
-from wisent.core.primitives.models._model_parts.wisent_model_part4 import _generate_with_stats
-from wisent.core.primitives.models._model_parts.wisent_model_part5 import _generate_stream
+from wisent.core.primitives.models._model_parts.generation_analytics import _generate_with_stats
+from wisent.core.primitives.models._model_parts.generation_streaming import _generate_stream
 
 __all__ = ["WisentModel"]
 

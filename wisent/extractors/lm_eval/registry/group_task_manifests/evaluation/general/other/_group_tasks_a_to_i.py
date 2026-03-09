@@ -78,7 +78,7 @@ from .hendrycks_math import HENDRYCKS_MATH_TASKS
 from .hrm8k import HRM8K_TASKS
 
 
-def get_part1_mappings() -> dict[str, str]:
+def get_a_to_i_mappings() -> dict[str, str]:
     """Get group task mappings for Part 1 benchmarks."""
     all_mappings = {}
     all_mappings.update(ACLUE_TASKS)

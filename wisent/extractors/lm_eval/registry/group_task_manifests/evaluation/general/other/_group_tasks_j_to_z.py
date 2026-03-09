@@ -80,7 +80,7 @@ from .xwinograd import XWINOGRAD_TASKS
 from .super_glue_t5_prompt import SUPER_GLUE_T5_PROMPT_TASKS
 
 
-def get_part2_mappings() -> dict[str, str]:
+def get_j_to_z_mappings() -> dict[str, str]:
     """Get group task mappings for Part 2 benchmarks."""
     all_mappings = {}
     all_mappings.update(JAPANESE_LEADERBOARD_TASKS)

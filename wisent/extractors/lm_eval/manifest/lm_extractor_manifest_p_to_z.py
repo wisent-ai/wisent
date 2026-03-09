@@ -3,7 +3,7 @@
 from wisent.core.utils.config_tools.constants import LM_EVAL_EXTRACTOR_BASE_IMPORT
 base_import: str = LM_EVAL_EXTRACTOR_BASE_IMPORT
 
-LM_EXTRACTORS_PART2: dict[str, str] = {
+LM_EXTRACTORS_P_TO_Z: dict[str, str] = {
     "paws_x": f"{base_import}pawsx:PawsXExtractor",
     "paws-x": f"{base_import}pawsx:PawsXExtractor",
     "polemo2": f"{base_import}polemo2:Polemo2Extractor",
