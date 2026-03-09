@@ -39,3 +39,27 @@ def raw_activation_hf_path(
 def pair_texts_hf_path(benchmark: str) -> str:
     """Build HF repo path for pair texts JSON."""
     return f"pair_texts/{benchmark}.json"
+
+
+def baseline_responses_hf_path(model: str, benchmark: str) -> str:
+    """Build HF repo path for baseline (unsteered) responses JSON."""
+    safe = model_to_safe_name(model)
+    return f"baselines/{safe}/{benchmark}/responses.json"
+
+
+def baseline_scores_hf_path(model: str, benchmark: str) -> str:
+    """Build HF repo path for baseline (unsteered) scores JSON."""
+    safe = model_to_safe_name(model)
+    return f"baselines/{safe}/{benchmark}/scores.json"
+
+
+def baseline_metadata_hf_path(model: str, benchmark: str) -> str:
+    """Build HF repo path for baseline metadata JSON."""
+    safe = model_to_safe_name(model)
+    return f"baselines/{safe}/{benchmark}/metadata.json"
+
+
+def personalization_baseline_hf_path(model: str) -> str:
+    """Build HF repo path for personalization baseline responses JSON."""
+    safe = model_to_safe_name(model)
+    return f"baselines/{safe}/personalization/responses.json"
