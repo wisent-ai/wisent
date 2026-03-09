@@ -4,7 +4,7 @@ from __future__ import annotations
 
 BASE_IMPORT = "wisent.extractors.lm_eval.lm_task_extractors."
 
-FLORES_TASKS_PART2 = {
+FLORES_TASKS_F_TO_Z = {
     "flores_eng_Latn-taq_Tfng_prompt_1": f"{BASE_IMPORT}flores:FloresExtractor",
     "flores_eng_Latn-taq_Tfng_prompt_2": f"{BASE_IMPORT}flores:FloresExtractor",
     "flores_eng_Latn-taq_Tfng_prompt_3": f"{BASE_IMPORT}flores:FloresExtractor",

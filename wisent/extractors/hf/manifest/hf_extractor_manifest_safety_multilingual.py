@@ -3,7 +3,7 @@
 from wisent.core.utils.config_tools.constants import HF_EXTRACTOR_BASE_IMPORT
 base_import: str = HF_EXTRACTOR_BASE_IMPORT
 
-EXTRACTORS_PART2: dict[str, str] = {
+EXTRACTORS_SAFETY_MULTILINGUAL: dict[str, str] = {
     # Software Engineering benchmarks (NOT lm-eval)
     "swe_bench_verified": f"{base_import}swe_bench_verified:SWEBenchVerifiedExtractor",
     "swe-bench-verified": f"{base_import}swe_bench_verified:SWEBenchVerifiedExtractor",

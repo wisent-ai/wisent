@@ -1,9 +1,9 @@
 """Sub-package for populate_tasks_backup split parts."""
-from wisent.core.primitives.models.lm_harness_integration._populate_backup._part2 import (
+from wisent.core.primitives.models.lm_harness_integration._populate_backup.metadata_enrichment import (
     get_benchmark_tags_with_llama,
     get_benchmark_groups_from_readme,
 )
-from wisent.core.primitives.models.lm_harness_integration._populate_backup._part3 import (
+from wisent.core.primitives.models.lm_harness_integration._populate_backup.task_discovery import (
     find_working_task_from_group,
     get_samples_from_group_task,
     load_lm_eval,
@@ -11,7 +11,7 @@ from wisent.core.primitives.models.lm_harness_integration._populate_backup._part
     get_evaluation_method,
     get_category,
 )
-from wisent.core.primitives.models.lm_harness_integration._populate_backup._part4 import (
+from wisent.core.primitives.models.lm_harness_integration._populate_backup.task_population import (
     get_task_samples_for_analysis,
 )
 from wisent.core.primitives.models.lm_harness_integration._populate_backup._inner import (

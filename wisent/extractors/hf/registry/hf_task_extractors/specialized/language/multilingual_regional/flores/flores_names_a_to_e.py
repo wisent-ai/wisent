@@ -1,7 +1,7 @@
 """FLORES task name registry - Part 1 (A-E language pairs)."""
 from __future__ import annotations
 
-FLORES_TASK_NAMES_PART1 = (
+FLORES_NAMES_A_TO_E = (
         "african_flores",
         "african_flores_tasks",
         "darija_translation_flores",

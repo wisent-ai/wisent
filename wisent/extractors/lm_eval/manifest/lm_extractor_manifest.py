@@ -3,8 +3,8 @@
 from wisent.extractors.lm_eval.group_task_manifests import (
     get_all_group_task_mappings,
 )
-from wisent.extractors.lm_eval.lm_extractor_manifest_part1 import LM_EXTRACTORS_PART1
-from wisent.extractors.lm_eval.lm_extractor_manifest_part2 import LM_EXTRACTORS_PART2
+from wisent.extractors.lm_eval.lm_extractor_manifest_a_to_o import LM_EXTRACTORS_A_TO_O
+from wisent.extractors.lm_eval.lm_extractor_manifest_p_to_z import LM_EXTRACTORS_P_TO_Z
 
 __all__ = [
     "EXTRACTORS",
@@ -14,5 +14,5 @@ __all__ = [
 EXTRACTORS: dict[str, str] = get_all_group_task_mappings()
 
 # Add individual task extractors from both parts
-EXTRACTORS.update(LM_EXTRACTORS_PART1)
-EXTRACTORS.update(LM_EXTRACTORS_PART2)
+EXTRACTORS.update(LM_EXTRACTORS_A_TO_O)
+EXTRACTORS.update(LM_EXTRACTORS_P_TO_Z)

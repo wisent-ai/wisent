@@ -11,14 +11,14 @@ from wisent.core.utils.infra_tools.errors import InsufficientDataError, TaskNotF
 from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_TINY
 from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_MEDIUM
 from wisent.core import constants as _C
-from wisent.core.primitives.models.lm_harness_integration._populate_backup._part3 import (
+from wisent.core.primitives.models.lm_harness_integration._populate_backup.task_discovery import (
     get_samples_from_group_task,
     expand_group_task,
     _get_task_docs,
     _extract_question,
     _extract_answer,
 )
-from wisent.core.primitives.models.lm_harness_integration._populate_backup._part2 import (
+from wisent.core.primitives.models.lm_harness_integration._populate_backup.metadata_enrichment import (
     get_benchmark_groups_from_readme,
 )
 

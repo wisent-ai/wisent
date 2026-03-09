@@ -3,7 +3,7 @@
 from wisent.core.utils.config_tools.constants import LM_EVAL_EXTRACTOR_BASE_IMPORT
 base_import: str = LM_EVAL_EXTRACTOR_BASE_IMPORT
 
-LM_EXTRACTORS_PART1: dict[str, str] = {
+LM_EXTRACTORS_A_TO_O: dict[str, str] = {
     # key → "module_path:ClassName" (supports dotted attr path after ':')
     "arithmetic": f"{base_import}arithmetic:ArithmeticExtractor",
     "asdiv": f"{base_import}asdiv:ASDivExtractor",

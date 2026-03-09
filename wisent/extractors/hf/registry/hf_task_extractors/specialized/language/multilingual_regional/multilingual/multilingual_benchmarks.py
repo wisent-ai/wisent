@@ -224,10 +224,10 @@ Answer:"""
 
 
 # Re-exports from split modules
-from wisent.extractors.hf.hf_task_extractors.multilingual_benchmarks_part2 import (
+from wisent.extractors.hf.hf_task_extractors.darija_eusexams import (
     DarijaBenchExtractor,
     EusExamsExtractor,
 )
-from wisent.extractors.hf.hf_task_extractors.multilingual_benchmarks_part3 import (
+from wisent.extractors.hf.hf_task_extractors.lambada_multilingual import (
     LambadaMultilingualExtractor,
 )

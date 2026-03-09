@@ -9,14 +9,14 @@ for _root, _dirs, _files in _os.walk(_base):
     if _root != _base:
         __path__.append(_root)
 
-from wisent.extractors.lm_eval.group_task_manifests._group_tasks_part1 import (
-    get_part1_mappings,
+from wisent.extractors.lm_eval.group_task_manifests._group_tasks_a_to_i import (
+    get_a_to_i_mappings,
 )
-from wisent.extractors.lm_eval.group_task_manifests._group_tasks_part1 import *  # noqa: F401,F403
-from wisent.extractors.lm_eval.group_task_manifests._group_tasks_part2 import (
-    get_part2_mappings,
+from wisent.extractors.lm_eval.group_task_manifests._group_tasks_a_to_i import *  # noqa: F401,F403
+from wisent.extractors.lm_eval.group_task_manifests._group_tasks_j_to_z import (
+    get_j_to_z_mappings,
 )
-from wisent.extractors.lm_eval.group_task_manifests._group_tasks_part2 import *  # noqa: F401,F403
+from wisent.extractors.lm_eval.group_task_manifests._group_tasks_j_to_z import *  # noqa: F401,F403
 
 
 def get_all_group_task_mappings() -> dict[str, str]:
@@ -27,6 +27,6 @@ def get_all_group_task_mappings() -> dict[str, str]:
         Dictionary mapping task names to extractor module paths.
     """
     all_mappings = {}
-    all_mappings.update(get_part1_mappings())
-    all_mappings.update(get_part2_mappings())
+    all_mappings.update(get_a_to_i_mappings())
+    all_mappings.update(get_j_to_z_mappings())
     return all_mappings

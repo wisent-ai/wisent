@@ -1,7 +1,7 @@
 """FLORES task name registry - Part 2 (F-Z language pairs)."""
 from __future__ import annotations
 
-FLORES_TASK_NAMES_PART2 = (
+FLORES_NAMES_F_TO_Z = (
         "flores_eng_Latn-taq_Tfng_prompt_2",
         "flores_eng_Latn-taq_Tfng_prompt_3",
         "flores_eng_Latn-tir_Ethi_prompt_1",
