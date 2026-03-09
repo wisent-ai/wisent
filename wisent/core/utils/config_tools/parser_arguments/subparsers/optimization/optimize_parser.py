@@ -87,19 +87,6 @@ def setup_optimize_parser(parser):
     # =========================================================================
     optuna_group = parser.add_argument_group("Optuna configuration")
     
-    optuna_group.add_argument(
-        "--n-trials",
-        type=int,
-        required=True,
-        help="Number of Optuna trials per task"
-    )
-    optuna_group.add_argument(
-        "--limit",
-        type=int,
-        default=None,
-        help="Maximum samples per benchmark"
-    )
-    
     # =========================================================================
     # EXECUTION OPTIONS
     # =========================================================================

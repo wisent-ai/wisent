@@ -19,10 +19,6 @@ set -uo pipefail
 # Configuration
 MODEL="${MODEL:-Qwen/Qwen2.5-0.5B-Instruct}"
 OUTPUT_DIR="${OUTPUT_DIR:-/home/ubuntu/output}"
-N_TRIALS="${N_TRIALS:-200}"
-TRAIN_LIMIT="${TRAIN_LIMIT:-100}"
-VAL_LIMIT="${VAL_LIMIT:-50}"
-TEST_LIMIT="${TEST_LIMIT:-50}"
 LAYER_RANGE="${LAYER_RANGE:-0-23}"
 GCS_BUCKET="${GCS_BUCKET:-wisent-images-bucket}"
 
@@ -62,7 +58,6 @@ echo "Quality Metrics Sweep"
 echo "=========================================="
 echo "Model: $MODEL"
 echo "Output: $OUTPUT_DIR"
-echo "Trials per benchmark: $N_TRIALS"
 echo "Layer range: $LAYER_RANGE"
 echo "Benchmarks: ${BENCHMARKS[*]}"
 echo "Synthetic types: ${SYNTHETIC_TYPES[*]}"
@@ -100,7 +95,6 @@ for BENCHMARK in "${BENCHMARKS[@]}"; do
     # Run the optimization using wisent CLI with baseline comparison
     if wisent optimize-steering comprehensive "$MODEL" \
         --tasks "$BENCHMARK" \
-        --limit "$TRAIN_LIMIT" \
         --compute-baseline \
         --device cuda \
         --output-dir "$OUTPUT_DIR/$BENCHMARK" \

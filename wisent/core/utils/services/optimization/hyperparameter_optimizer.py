@@ -44,8 +44,7 @@ class OptimizationConfig:
     # Validation split ratio (used when cv_folds is zero) - required
     val_split: float = None
 
-    # Maximum number of combinations to try (for performance) - required
-    max_combinations: int = None
+    # (max_combinations removed — all combinations are tested)
 
     # Random seed for reproducibility
     seed: Optional[int] = None
@@ -129,18 +128,6 @@ class HyperparameterOptimizer(HyperparameterEvaluateMixin):
             self.config.threshold_range,
             self.config.classifier_types
         ))
-        
-        # Limit combinations if too many
-        if len(combinations) > self.config.max_combinations:
-            if verbose:
-                print(f"   • Too many combinations ({len(combinations)}), sampling {self.config.max_combinations}")
-            # Sample indices since np.random.choice doesn't work on list of tuples
-            indices = np.random.choice(
-                len(combinations),
-                size=self.config.max_combinations,
-                replace=False
-            )
-            combinations = [combinations[i] for i in indices]
         
         if verbose:
             print(f"   • Testing {len(combinations)} combinations...")

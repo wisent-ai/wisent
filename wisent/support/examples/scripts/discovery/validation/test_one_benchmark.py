@@ -63,9 +63,9 @@ def test_benchmark(task_name: str, model_name: str, output_dir: str, loader_type
             task_name=task_name,
             split_ratio=SPLIT_RATIO_HALF,
             seed=DEFAULT_RANDOM_SEED,
-            limit=300,
-            training_limit=15,
-            testing_limit=15
+            limit=None,
+            training_limit=None,
+            testing_limit=None
         )
 
         test_pairs = result['test_qa_pairs']

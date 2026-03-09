@@ -9,7 +9,7 @@ This script tests coding benchmarks (HumanEval, MBPP, etc.) by:
 Usage:
     python test_one_coding_benchmark.py humaneval
     python test_one_coding_benchmark.py mbpp
-    python test_one_coding_benchmark.py humaneval --limit 5
+    python test_one_coding_benchmark.py humaneval
 """
 
 import json
@@ -31,7 +31,6 @@ from wisent.core.reading.evaluators.benchmark_specific.coding.metrics.evaluator 
 def test_coding_benchmark(
     task_name: str,
     output_dir: str = ".",
-    limit: Optional[int] = None,
 ):
     """
     Test a coding benchmark using Docker sandbox execution.
@@ -39,13 +38,10 @@ def test_coding_benchmark(
     Args:
         task_name: Name of the benchmark (e.g., "humaneval", "mbpp")
         output_dir: Directory to save results
-        limit: Maximum number of pairs to test
 
     Returns:
         True if all evaluations correct, False otherwise
     """
-    if limit is None:
-        raise ValueError("limit is required and must be explicitly provided")
     try:
         print(f"\n{'='*60}")
         print(f"Testing coding benchmark: {task_name}")
@@ -62,9 +58,9 @@ def test_coding_benchmark(
             task_name=task_name,
             split_ratio=_C.SPLIT_RATIO_HALF,
             seed=_C.DEFAULT_RANDOM_SEED,
-            limit=limit * 3,  # Load more to account for filtering
-            training_limit=limit,
-            testing_limit=limit,
+            limit=None,
+            training_limit=None,
+            testing_limit=None,
         )
 
         test_pairs = result['test_qa_pairs']
@@ -272,7 +268,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Test coding benchmarks with Docker execution")
     parser.add_argument("task", help="Benchmark name")
-    parser.add_argument("--limit", type=int, default=_C.CODING_BENCHMARK_DEFAULT_LIMIT, help="Number of pairs to test (default: 5)")
     parser.add_argument("--output", type=str, default=None, help="Output directory")
     parser.add_argument("--docker-timeout", type=int, required=True, help="Timeout in seconds for Docker availability check")
 
@@ -287,13 +282,11 @@ if __name__ == "__main__":
         sys.exit(1)
 
     print(f"\nRunning test for: {args.task}")
-    print(f"Limit: {args.limit} pairs")
     print(f"Output: {args.output}")
 
     success = test_coding_benchmark(
         task_name=args.task,
         output_dir=args.output,
-        limit=args.limit,
     )
 
     sys.exit(0 if success else 1)

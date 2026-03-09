@@ -225,9 +225,9 @@ class TaskEvaluator(BaseSteeringEvaluator):
         result = loader._load_one_task(
             task_name=self.config.task,
             split_ratio=0.8, seed=DEFAULT_RANDOM_SEED,
-            limit=30,
+            limit=None,
             training_limit=None,
-            testing_limit=30,
+            testing_limit=None,
         )
         self._test_pairs = result["test_qa_pairs"]
         self._evaluator = EvaluatorRotator(evaluator=None, task_name=self.config.task)

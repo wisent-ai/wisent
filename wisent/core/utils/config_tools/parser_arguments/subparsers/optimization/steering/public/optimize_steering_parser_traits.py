@@ -100,18 +100,6 @@ def setup_personalization_parsers(steering_subparsers):
         help="Search strategy: 'grid' for exhaustive search, 'optuna' for TPE sampling"
     )
     personalization_parser.add_argument(
-        "--n-trials",
-        type=int,
-        default=None,
-        help="Number of Optuna trials when using --search-strategy optuna (default: 300)"
-    )
-    personalization_parser.add_argument(
-        "--limit",
-        type=int,
-        required=True,
-        help="Sample limit for optimization"
-    )
-    personalization_parser.add_argument(
         "--layer-stride",
         type=int,
         required=True,

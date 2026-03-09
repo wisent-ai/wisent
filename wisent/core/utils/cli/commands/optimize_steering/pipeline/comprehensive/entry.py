@@ -8,7 +8,7 @@ import tempfile
 from typing import Any, Dict, List, Optional
 
 from wisent.core.utils.config_tools.constants import (
-    SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_WIDE, SCORE_RANGE_MIN,
+    SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_WIDE,
     JSON_INDENT, COMBO_OFFSET, RECURSION_INITIAL_DEPTH,
     SPLIT_RATIO_TRAIN_DEFAULT,
 )
@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 def execute_comprehensive_optimization(args) -> Dict[str, Any]:
     """Run comprehensive multi-method steering optimization.
 
-    For each task, trains and evaluates all requested methods using either
-    grid or Optuna search, then compares results across methods.
+    For each task, trains and evaluates all requested methods using the
+    UnifiedOptimizer, then compares results across methods.
     """
     methods = [m.upper() for m in args.methods]
     tasks = args.tasks
@@ -33,11 +33,9 @@ def execute_comprehensive_optimization(args) -> Dict[str, Any]:
     output_dir = args.output_dir
     os.makedirs(output_dir, exist_ok=True)
 
-    limit = args.limit
     device = getattr(args, "device", None)
     verbose = getattr(args, "verbose", False)
-    n_trials = args.n_trials
-    search_strategy = args.search_strategy
+    backend = getattr(args, "backend", "hyperopt")
 
     from transformers import AutoConfig as _AC
     _cfg = _AC.from_pretrained(args.model, trust_remote_code=True)
@@ -51,8 +49,7 @@ def execute_comprehensive_optimization(args) -> Dict[str, Any]:
         print(f"   Model: {args.model}")
         print(f"   Tasks: {tasks}")
         print(f"   Methods: {methods}")
-        print(f"   Search: {search_strategy} ({n_trials} trials)")
-        print(f"   Limit: {limit}")
+        print(f"   Backend: {backend}")
         print(f"{sep}\n")
 
     all_task_results = {}
@@ -65,9 +62,8 @@ def execute_comprehensive_optimization(args) -> Dict[str, Any]:
 
         task_result = _optimize_task(
             model=args.model, task_name=task_name, methods=methods,
-            num_layers=num_layers, limit=limit, device=device,
-            verbose=verbose, search_strategy=search_strategy,
-            n_trials=n_trials, n_startup_trials=args.n_startup_trials,
+            num_layers=num_layers, device=device,
+            verbose=verbose, backend=backend,
             args=args,
         )
         all_task_results[task_name] = task_result
@@ -95,20 +91,20 @@ def execute_comprehensive_optimization(args) -> Dict[str, Any]:
 
 def _optimize_task(
     model: str, task_name: str, methods: List[str],
-    num_layers: int, limit: int, device: Optional[str],
-    verbose: bool, search_strategy: str,
-    n_trials: int, n_startup_trials: int, args: Any,
+    num_layers: int, device: Optional[str],
+    verbose: bool, backend: str,
+    args: Any,
 ) -> Dict[str, Any]:
     """Optimize all methods for a single task."""
     from .runner import run_method_search
 
-    pairs_file = _generate_task_pairs(task_name, limit)
+    pairs_file = _generate_task_pairs(task_name)
 
     baseline_score = None
     if getattr(args, "compute_baseline", False):
         from .evaluation import compute_baseline_score
         baseline_score = compute_baseline_score(
-            model, task_name, pairs_file, limit, device, verbose,
+            model, task_name, pairs_file, device, verbose,
         )
         if verbose:
             print(f"   Baseline (unsteered): {baseline_score:.4f}")
@@ -119,10 +115,9 @@ def _optimize_task(
             print(f"\n   --- Method: {method} ---")
         result = run_method_search(
             model=model, task_name=task_name, method=method,
-            pairs_file=pairs_file, num_layers=num_layers, limit=limit,
+            pairs_file=pairs_file, num_layers=num_layers,
             device=device, verbose=verbose,
-            search_strategy=search_strategy, n_trials=n_trials,
-            n_startup_trials=n_startup_trials,
+            backend=backend,
             search_overrides=_extract_search_overrides(args, method),
             early_rejection_config=_extract_early_rejection(args),
         )
@@ -130,25 +125,24 @@ def _optimize_task(
 
     best_method = max(
         method_results,
-        key=lambda m: method_results[m].get("best_score", SCORE_RANGE_MIN),
+        key=lambda m: method_results[m]["best_score"],
     )
 
     return {
         "task": task_name, "baseline_score": baseline_score,
         "method_results": method_results, "best_method": best_method,
-        "best_score": method_results[best_method].get(
-            "best_score", SCORE_RANGE_MIN),
-        "best_params": method_results[best_method].get("best_params", {}),
+        "best_score": method_results[best_method]["best_score"],
+        "best_params": method_results[best_method]["best_params"],
     }
 
 
-def _generate_task_pairs(task_name: str, limit: int) -> str:
+def _generate_task_pairs(task_name: str) -> str:
     """Generate contrastive pairs and save to temp file."""
     from wisent.extractors.lm_eval.lm_task_pairs_generation import (
         build_contrastive_pairs,
     )
     pairs = build_contrastive_pairs(
-        task_name=task_name, limit=limit,
+        task_name=task_name, limit=None,
         train_ratio=SPLIT_RATIO_TRAIN_DEFAULT,
     )
     if not pairs:
@@ -192,7 +186,6 @@ def _extract_early_rejection(args) -> Dict[str, Any]:
     """Extract early rejection configuration."""
     return {
         "enabled": not getattr(args, "disable_early_rejection", False),
-        "snr_threshold": args.early_rejection_snr_threshold,
         "cv_threshold": args.early_rejection_cv_threshold,
     }
 
@@ -223,8 +216,7 @@ def _print_task_summary(task_name: str, result: Dict) -> None:
     if result.get("baseline_score") is not None:
         print(f"   Baseline: {result['baseline_score']:.4f}")
     for method, mr in result["method_results"].items():
-        score = mr.get("best_score", SCORE_RANGE_MIN)
-        print(f"   {method:8s}: {score:.4f}")
+        print(f"   {method:8s}: {mr['best_score']:.4f}")
     print(f"   Winner: {result['best_method']} ({result['best_score']:.4f})")
 
 

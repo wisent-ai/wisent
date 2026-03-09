@@ -6,7 +6,7 @@ python -m wisent.examples.scripts.test_one_benchmark <benchmark name>
 
 python -m wisent.tests.test_table.inspect_hf_dataset codeparrot/apps
 
-lm_eval --model hf --model_args pretrained=EleutherAI/gpt-neo-125M --tasks <benchmark name> --device cuda:0 --batch_size 4 --limit 20
+lm_eval --model hf --model_args pretrained=EleutherAI/gpt-neo-125M --tasks <benchmark name> --device cuda:0 --batch_size 4
 
 python -m wisent.core.main generate-vector-from-task \
 --task 20_newsgroups \
@@ -24,14 +24,13 @@ python -m wisent.core.main generate-vector-from-task \
 --timing \
 --device cuda
 
-lm_eval --model hf --model_args pretrained=EleutherAI/gpt-neo-125M --tasks boolq --device cuda:0 --batch_size 2 --limit 2
+lm_eval --model hf --model_args pretrained=EleutherAI/gpt-neo-125M --tasks boolq --device cuda:0 --batch_size 2
 
 lm_eval --model steered \
     --model_args pretrained=EleutherAI/gpt-neo-125M,steer_path=steer_config.pt \
     --tasks boolq \
     --device cuda:0 \
-    --batch_size 2 \
-    --limit 2
+    --batch_size 2
 
 
 python -m wisent.comparison.main \
@@ -45,7 +44,6 @@ python -m wisent.comparison.main \
     --max-batch-size 8 \
     --output-dir wisent/comparison/comparison_results \
     --train-ratio 0.4 \
-    --limit 10 \
     --num-pairs 10 \
     --extraction-strategy mc_completion,completion_mean
 
@@ -62,18 +60,17 @@ python -m wisent.comparison.main \
       --max-batch-size 1 \
       --output-dir wisent/comparison/comparison_results \
       --train-ratio 0.4 \
-      --limit 10 \
       --num-pairs 10
 
 
 ./run_on_aws.sh --model google/gemma-2-2b --instance-type g6e.xlarge "python -m wisent.comparison.main --model google/gemma-2-2b --tasks boolq,cb --methods fgaa      
---scales 0.5,1.0,1.5,3.0 --layers 12 --device cuda:0 --batch-size 1 --max-batch-size 1 --output-dir /home/ubuntu/output --train-ratio 0.4 --limit 10 --num-pairs 10"  
-/home/bc/Desktop/python/wisent/wisent/comparison/comparison_results       
+--scales 0.5,1.0,1.5,3.0 --layers 12 --device cuda:0 --batch-size 1 --max-batch-size 1 --output-dir /home/ubuntu/output --train-ratio 0.4 --num-pairs 10"
+/home/bc/Desktop/python/wisent/wisent/comparison/comparison_results
 
 aws ec2 describe-instances --filters "Name=tag:Name,Values=wisent-run-script" "Name=instance-state-name,Values=running" --query 'Reservations[*].Instances[*].[InstanceId,LaunchTime]' --output table
 
 ./run_on_aws.sh --model google/gemma-2-2b "python -m wisent.comparison.main --model google/gemma-2-2b --tasks boolq --methods caa      
---scales 0.5 --layers 12 --device cuda:0 --batch-size 1 --max-batch-size 1 --output-dir /home/ubuntu/output --train-ratio 0.4 --extraction-strategy mc_completion --limit 10 --num-pairs 10"  
+--scales 0.5 --layers 12 --device cuda:0 --batch-size 1 --max-batch-size 1 --output-dir /home/ubuntu/output --train-ratio 0.4 --extraction-strategy mc_completion --num-pairs 10"  
 /home/bc/Desktop/python/wisent/wisent/comparison/comparison_results
 
 python wisent/comparison/reft.py \
@@ -84,5 +81,4 @@ python wisent/comparison/reft.py \
     --device cuda:0 \
     --num-epochs 3 \
     --low-rank-dimension 4 \
-    --intervention-layers 6 \
-    --eval-limit 100
+    --intervention-layers 6

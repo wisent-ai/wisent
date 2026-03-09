@@ -109,7 +109,7 @@ def execute_zwiad(args):
             try:
                 pair_texts = load_pair_texts_from_database(
                     task_name=args.task,
-                    limit=args.limit or args.zwiad_analysis_limit,
+                    limit=None,
                     database_url=args.database_url,
                 )
                 print(f"  Loaded {len(pair_texts)} pair texts")
@@ -165,7 +165,7 @@ def execute_zwiad(args):
                     layer=layer,
                     prompt_format=args.prompt_format,
                     extraction_strategy=args.extraction_strategy, component=args.extraction_component,
-                    limit=args.limit,
+                    limit=None,
                     database_url=args.database_url,
                 )
                 if len(pos) > 0 and len(neg) > 0:
@@ -179,7 +179,7 @@ def execute_zwiad(args):
         try:
             pair_texts = load_pair_texts_from_database(
                 task_name=args.task,
-                limit=args.limit or args.zwiad_analysis_limit_small,
+                limit=None,
                 database_url=args.database_url,
             )
             print(f"  Loaded {len(pair_texts)} pair texts")

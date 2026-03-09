@@ -40,7 +40,6 @@ def setup_model_config_parser(parser):
     test_parser.add_argument(
         "--task", type=str, required=True, help="Task to test with"
     )
-    test_parser.add_argument("--limit", type=int, required=True, help="Number of samples to test with")
     test_parser.add_argument("--device", type=str, default=None, help="Device to run on")
 
     # Common arguments for all subcommands

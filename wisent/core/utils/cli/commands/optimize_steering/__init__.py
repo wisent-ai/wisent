@@ -51,7 +51,7 @@ from wisent.core.utils.services.optimization.core.unified_optimizer import Unifi
 from wisent.core.utils.cli.optimize_steering.welfare import _execute_welfare_optimization
 from wisent.core.utils.cli.optimize_steering.personalization import _execute_personalization_optimization
 from wisent.core.utils.cli.optimize_steering.continual import execute_continual_learning
-from wisent.core.utils.config_tools.constants import JSON_INDENT, SEPARATOR_WIDTH_REPORT
+from wisent.core.utils.config_tools.constants import JSON_INDENT, SEPARATOR_WIDTH_REPORT, TRIALS_PER_DIMENSION_MULTIPLIER
 
 
 def execute_optimize_steering(args):
@@ -96,7 +96,7 @@ def execute_optimize_steering(args):
         result = run_auto_steering_optimization(
             model_name=args.model,
             task_name=args.task,
-            limit=args.limit,
+            limit=None,
             min_norm_threshold=args.min_norm_threshold,
             device=getattr(args, 'device', None),
             verbose=getattr(args, 'verbose', False),
@@ -181,11 +181,9 @@ def execute_optimize_steering(args):
 
     # Default: Unified optimizer (Hyperopt or Optuna backend)
     method = getattr(args, 'method', 'CAA')
-    n_trials = args.n_trials
     enriched_pairs_file = getattr(args, 'enriched_pairs_file', None)
     task = getattr(args, 'task', None) or "custom"
     backend = getattr(args, 'backend', 'hyperopt')
-    limit = args.limit
     device = getattr(args, 'device', None)
 
     print(f"\n{'=' * SEPARATOR_WIDTH_REPORT}")
@@ -197,7 +195,6 @@ def execute_optimize_steering(args):
     else:
         print(f"   Task: {task}")
     print(f"   Method: {method}")
-    print(f"   Trials: {n_trials}")
     print(f"   Backend: {backend}")
     print(f"{'=' * SEPARATOR_WIDTH_REPORT}\n")
 
@@ -212,12 +209,13 @@ def execute_optimize_steering(args):
         print(f"   Loaded {num_layers} layers from enriched pairs file")
 
     space = get_method_space(method, num_layers)
+    n_trials = len(space) * TRIALS_PER_DIMENSION_MULTIPLIER
     optimizer = UnifiedOptimizer(backend=backend, direction="maximize")
 
     with tempfile.TemporaryDirectory() as work_dir:
         objective = create_objective(
             method=method, model=args.model, task=task,
-            num_layers=num_layers, limit=limit, device=device,
+            num_layers=num_layers, limit=None, device=device,
             work_dir=work_dir, enriched_pairs_file=enriched_pairs_file,
         )
         result = optimizer.optimize(objective, space, n_trials)

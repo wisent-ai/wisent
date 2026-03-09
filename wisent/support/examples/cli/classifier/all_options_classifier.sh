@@ -7,7 +7,7 @@ set -e
 
 # Configuration
 OUTPUT_DIR="./results/classifier_comparison"
-MODEL="meta-llama/Llama-3.2-1B-Instruct"
+: "${MODEL:?Set MODEL environment variable}"
 DEVICE="cpu"
 TASK="truthfulqa_mc1"
 
@@ -32,7 +32,6 @@ python -m wisent.core.main tasks "$TASK" \
     --model "$MODEL" \
     --layer 15 \
     --classifier-type logistic \
-    --limit 50 \
     --device "$DEVICE" \
     --output "$OUTPUT_DIR/logistic" \
     --save-classifier "$OUTPUT_DIR/models/logistic_classifier.pt" \
@@ -45,7 +44,6 @@ python -m wisent.core.main tasks "$TASK" \
     --model "$MODEL" \
     --layer 15 \
     --classifier-type mlp \
-    --limit 50 \
     --device "$DEVICE" \
     --output "$OUTPUT_DIR/mlp" \
     --save-classifier "$OUTPUT_DIR/models/mlp_classifier.pt" \
@@ -69,7 +67,6 @@ for agg in "${AGGREGATION_STRATEGIES[@]}"; do
         --layer 15 \
         --classifier-type logistic \
         --token-aggregation "$agg" \
-        --limit 30 \
         --device "$DEVICE" \
         --output "$OUTPUT_DIR/aggregation_${agg}" \
         --save-classifier "$OUTPUT_DIR/models/classifier_agg_${agg}.pt" \
@@ -91,7 +88,6 @@ python -m wisent.core.main tasks "$TASK" \
     --model "$MODEL" \
     --layer 15 \
     --classifier-type logistic \
-    --limit 30 \
     --device "$DEVICE" \
     --output "$OUTPUT_DIR/single_layer" \
     --verbose
@@ -104,7 +100,6 @@ for layer in 8 12 20; do
         --model "$MODEL" \
         --layer "$layer" \
         --classifier-type logistic \
-        --limit 20 \
         --device "$DEVICE" \
         --output "$OUTPUT_DIR/layer_${layer}" \
         --save-classifier "$OUTPUT_DIR/models/classifier_layer_${layer}.pt" \
@@ -130,7 +125,6 @@ for prompt in "${PROMPT_STRATEGIES[@]}"; do
         --layer 15 \
         --classifier-type logistic \
         --prompt-construction-strategy "$prompt" \
-        --limit 20 \
         --device "$DEVICE" \
         --output "$OUTPUT_DIR/prompt_${prompt}" \
         --verbose
@@ -147,7 +141,6 @@ for token_strat in "${TOKEN_STRATEGIES[@]}"; do
         --layer 15 \
         --classifier-type logistic \
         --token-targeting-strategy "$token_strat" \
-        --limit 20 \
         --device "$DEVICE" \
         --output "$OUTPUT_DIR/token_target_${token_strat}" \
         --verbose
@@ -171,7 +164,6 @@ for thresh in "${THRESHOLDS[@]}"; do
         --layer 15 \
         --classifier-type logistic \
         --detection-threshold "$thresh" \
-        --limit 20 \
         --device "$DEVICE" \
         --output "$OUTPUT_DIR/threshold_${thresh}" \
         --save-classifier "$OUTPUT_DIR/models/classifier_thresh_${thresh}.pt" \
@@ -180,11 +172,11 @@ for thresh in "${THRESHOLDS[@]}"; do
 done
 
 # =============================================================================
-# SECTION 6: Split Ratio & Data Limits
+# SECTION 6: Split Ratio Options
 # =============================================================================
 
 echo ""
-echo "SECTION 6: Testing Data Split & Limit Options"
+echo "SECTION 6: Testing Data Split Options"
 echo "----------------------------------------------"
 
 # 6.1 Different split ratios
@@ -196,25 +188,12 @@ for ratio in 0.6 0.7 0.8 0.9; do
         --layer 15 \
         --classifier-type logistic \
         --split-ratio "$ratio" \
-        --limit 30 \
         --device "$DEVICE" \
         --output "$OUTPUT_DIR/split_${ratio}" \
         --verbose
     echo ""
 done
 
-# 6.2 Separate training and testing limits
-echo "6.2 Testing --training-limit and --testing-limit"
-python -m wisent.core.main tasks "$TASK" \
-    --model "$MODEL" \
-    --layer 15 \
-    --classifier-type logistic \
-    --training-limit 40 \
-    --testing-limit 10 \
-    --device "$DEVICE" \
-    --output "$OUTPUT_DIR/separate_limits" \
-    --verbose
-echo ""
 
 # =============================================================================
 # SECTION 7: Optimization Options
@@ -233,8 +212,6 @@ python -m wisent.core.main tasks "$TASK" \
     --optimize \
     --optimize-layers all \
     --optimize-metric f1 \
-    --optimize-max-combinations 20 \
-    --limit 30 \
     --device "$DEVICE" \
     --output "$OUTPUT_DIR/optimize_all" \
     --verbose
@@ -249,8 +226,6 @@ python -m wisent.core.main tasks "$TASK" \
     --optimize \
     --optimize-layers "8-20" \
     --optimize-metric accuracy \
-    --optimize-max-combinations 15 \
-    --limit 30 \
     --device "$DEVICE" \
     --output "$OUTPUT_DIR/optimize_range" \
     --verbose
@@ -266,8 +241,6 @@ for metric in accuracy f1 precision recall auc; do
         --optimize \
         --optimize-layers "10,15,20" \
         --optimize-metric "$metric" \
-        --optimize-max-combinations 10 \
-        --limit 20 \
         --device "$DEVICE" \
         --output "$OUTPUT_DIR/optimize_${metric}" \
         --verbose
@@ -290,7 +263,6 @@ python -m wisent.core.main tasks "$TASK" \
     --classifier-type logistic \
     --train-only \
     --save-classifier "$OUTPUT_DIR/models/train_only_classifier.pt" \
-    --limit 30 \
     --device "$DEVICE" \
     --output "$OUTPUT_DIR/train_only" \
     --verbose
@@ -304,7 +276,6 @@ python -m wisent.core.main tasks "$TASK" \
     --classifier-type logistic \
     --inference-only \
     --load-classifier "$OUTPUT_DIR/models/train_only_classifier.pt" \
-    --limit 10 \
     --device "$DEVICE" \
     --output "$OUTPUT_DIR/inference_only" \
     --verbose
@@ -327,7 +298,6 @@ for norm in "${NORM_METHODS[@]}"; do
         --layer 15 \
         --classifier-type logistic \
         --normalization-method "$norm" \
-        --limit 20 \
         --device "$DEVICE" \
         --output "$OUTPUT_DIR/norm_${norm}" \
         --verbose
@@ -354,7 +324,6 @@ python -m wisent.core.main tasks "$TASK" \
     --export-performance-csv "$OUTPUT_DIR/performance.csv" \
     --show-memory-usage \
     --show-timing-summary \
-    --limit 20 \
     --device "$DEVICE" \
     --output "$OUTPUT_DIR/performance_monitoring" \
     --verbose
@@ -375,7 +344,6 @@ python -m wisent.core.main tasks "$TASK" \
     --layer 15 \
     --classifier-type logistic \
     --save-test-activations "$OUTPUT_DIR/test_activations.npy" \
-    --limit 30 \
     --device "$DEVICE" \
     --output "$OUTPUT_DIR/save_activations" \
     --verbose
@@ -388,7 +356,6 @@ python -m wisent.core.main tasks "$TASK" \
     --layer 15 \
     --classifier-type logistic \
     --load-test-activations "$OUTPUT_DIR/test_activations.npy" \
-    --limit 30 \
     --device "$DEVICE" \
     --output "$OUTPUT_DIR/load_activations" \
     --verbose
@@ -413,8 +380,6 @@ python -m wisent.core.main tasks "$TASK" \
     --token-targeting-strategy choice_token \
     --detection-threshold 0.6 \
     --split-ratio 0.8 \
-    --training-limit 40 \
-    --testing-limit 10 \
     --normalization-method l2_unit \
     --enable-memory-tracking \
     --enable-latency-tracking \
@@ -435,12 +400,10 @@ python -m wisent.core.main tasks "$TASK" \
     --optimize \
     --optimize-layers "10-20" \
     --optimize-metric f1 \
-    --optimize-max-combinations 30 \
     --token-aggregation average \
     --normalization-method cross_behavior \
     --save-classifier "$OUTPUT_DIR/models/optimized_best_practices.pt" \
     --save-test-activations "$OUTPUT_DIR/optimized_activations.npy" \
-    --limit 50 \
     --device "$DEVICE" \
     --output "$OUTPUT_DIR/optimized_best_practices" \
     --verbose
@@ -461,7 +424,6 @@ for seed in 42 123 456; do
         --layer 15 \
         --classifier-type logistic \
         --seed "$seed" \
-        --limit 20 \
         --device "$DEVICE" \
         --output "$OUTPUT_DIR/seed_${seed}" \
         --save-classifier "$OUTPUT_DIR/models/classifier_seed_${seed}.pt" \
@@ -483,7 +445,6 @@ python -m wisent.core.main tasks "$TASK" \
     --layer 15 \
     --classifier-type logistic \
     --csv-output "$OUTPUT_DIR/csv_results/results.csv" \
-    --limit 20 \
     --device "$DEVICE" \
     --output "$OUTPUT_DIR/csv_output" \
     --verbose
@@ -495,7 +456,6 @@ python -m wisent.core.main tasks "$TASK" \
     --layer 15 \
     --classifier-type logistic \
     --evaluation-report "$OUTPUT_DIR/evaluation_report.json" \
-    --limit 20 \
     --device "$DEVICE" \
     --output "$OUTPUT_DIR/eval_report" \
     --verbose

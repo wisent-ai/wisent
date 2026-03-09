@@ -32,7 +32,6 @@ def generate_pairs_cli(task: str, pairs_file: str, num_pairs: int):
             "generate-pairs-from-task",
             task,
             "--output", pairs_file,
-            "--limit", str(num_pairs),
         ],
         capture_output=True,
         text=True,

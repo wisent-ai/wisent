@@ -22,8 +22,6 @@ def run_intervention_validation(
     model_name: str,
     *,
     num_per_category: int,
-    training_limit: int,
-    testing_limit: int,
     steering_strengths: List[float] = [1.0, 2.0, 5.0],
 ):
     """Run intervention validation using wisent CLI."""
@@ -74,8 +72,6 @@ def run_intervention_validation(
             model=model_name,
             layer=layer,
             steering_mode=False,
-            training_limit=training_limit,
-            testing_limit=testing_limit,
         )
         print(f"  Baseline accuracy: {baseline_acc:.3f}")
         
@@ -91,8 +87,6 @@ def run_intervention_validation(
                 layer=layer,
                 steering_mode=True,
                 steering_strength=strength,
-                training_limit=training_limit,
-                testing_limit=testing_limit,
             )
             print(f"    Steered accuracy: {steered_acc:.3f} (change: {steered_acc - baseline_acc:+.3f})")
             
@@ -171,13 +165,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Intervention validation using wisent CLI")
     parser.add_argument("--model", type=str, required=True, help="Model to test")
     parser.add_argument("--num-per-category", type=int, required=True, help="Benchmarks per diagnosis category")
-    parser.add_argument("--training-limit", type=int, required=True, help="Training sample limit per benchmark")
-    parser.add_argument("--testing-limit", type=int, required=True, help="Testing sample limit per benchmark")
     args = parser.parse_args()
 
     run_intervention_validation(
         model_name=args.model,
         num_per_category=args.num_per_category,
-        training_limit=args.training_limit,
-        testing_limit=args.testing_limit,
     )

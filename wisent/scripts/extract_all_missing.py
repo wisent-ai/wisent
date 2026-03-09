@@ -76,12 +76,11 @@ def reset_conn():
         _db_conn = None
 
 
-def get_missing_benchmarks(conn, model_id: int, log_interval: int, *, target_pairs: int) -> list:
+def get_missing_benchmarks(conn, model_id: int, log_interval: int) -> list:
     """Get list of benchmarks that need more extractions for this model.
 
-    A benchmark is incomplete if it has fewer extracted pairs than:
-    - target_pairs (default 500), OR
-    - the total available pairs in the database (if less than target_pairs)
+    A benchmark is incomplete if it has fewer extracted pairs than
+    the total available pairs in the database.
 
     Returns list of (set_id, name, pairs_needed) for incomplete benchmarks.
     """
@@ -111,10 +110,8 @@ def get_missing_benchmarks(conn, model_id: int, log_interval: int, *, target_pai
         ''', (set_id, model_id))
         extracted_pairs = cur.fetchone()[0]
 
-        # Target is min of target_pairs or total available
-        target = min(target_pairs, total_pairs)
-        if extracted_pairs < target:
-            pairs_needed = target - extracted_pairs
+        if extracted_pairs < total_pairs:
+            pairs_needed = total_pairs - extracted_pairs
             missing.append((set_id, name, pairs_needed))
         else:
             complete += 1

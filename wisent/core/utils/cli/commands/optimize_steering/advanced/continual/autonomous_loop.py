@@ -38,7 +38,7 @@ from wisent.core.utils.config_tools.constants import (
     SEPARATOR_WIDTH_MEDIUM)
 
 
-def _run_replay_check(state, model, pairs_dir, limit, device,
+def _run_replay_check(state, model, pairs_dir, device,
                       replay_size, forgetting_threshold, result,
                       layer_sweep_strength):
     """Sample past tasks, evaluate, detect forgetting."""
@@ -64,7 +64,7 @@ def _run_replay_check(state, model, pairs_dir, limit, device,
         with tempfile.TemporaryDirectory() as wd:
             current_scores[rt] = evaluate_vectors(
                 rt_vectors, rt_obj.metadata, model, rt,
-                rt_enriched, limit, device, wd,
+                rt_enriched, device, wd,
                 strength=layer_sweep_strength,
             )
     degraded = detect_forgetting(
@@ -106,7 +106,6 @@ def execute_continual_learning(args):
     query_limit = getattr(args, 'query_limit', None)
     if query_limit is None:
         raise ValueError("query_limit is required (set via --query-limit)")
-    limit = args.limit
     device = getattr(args, 'device', None)
     gcs_bucket = getattr(args, 'gcs_bucket', None)
 
@@ -144,7 +143,7 @@ def execute_continual_learning(args):
         print(f"\n   Selected: {task} (priority={task_scores[task]:.2f})")
 
         # 2-3. Ensure pairs + select method
-        enriched_path = ensure_enriched_pairs(task, model, pairs_dir, device, limit)
+        enriched_path = ensure_enriched_pairs(task, model, pairs_dir, device)
         task_method = method or select_method_for_task(
             task, model, min_norm_threshold=args.min_norm_threshold,
             query_limit=query_limit, tecza_params={
@@ -214,7 +213,7 @@ def execute_continual_learning(args):
 
         # 8. Replay check
         if cycle % replay_interval == 0 and len(state.replay_buffer) > 0:
-            _run_replay_check(state, model, pairs_dir, limit, device,
+            _run_replay_check(state, model, pairs_dir, device,
                               replay_size, forgetting_threshold, result,
                               layer_sweep_strength=getattr(args, 'layer_sweep_strength', None))
 

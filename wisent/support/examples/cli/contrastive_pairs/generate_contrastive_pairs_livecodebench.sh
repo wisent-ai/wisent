@@ -17,5 +17,4 @@
 
 python -m wisent.core.main generate-pairs-from-task livecodebench \
     --output ./data/livecodebench_pairs.json \
-    --limit 5 \
     --verbose

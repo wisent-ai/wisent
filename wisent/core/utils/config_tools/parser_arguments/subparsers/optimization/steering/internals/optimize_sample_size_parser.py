@@ -41,7 +41,6 @@ def setup_sample_size_optimizer_parser(parser):
     parser.add_argument("--test-size", type=int, required=True, help="Fixed test set size")
     parser.add_argument("--test-split", type=float, required=True, help="DEPRECATED: Use --test-size instead")
     parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility")
-    parser.add_argument("--limit", type=int, default=None, help="Maximum number of samples to load from dataset")
     parser.add_argument("--save-plot", action="store_true", help="Save performance plot")
     parser.add_argument("--no-save-config", action="store_true", help="Don't save optimal sample size to model config")
     parser.add_argument("--device", type=str, default=None, help="Device to run on")

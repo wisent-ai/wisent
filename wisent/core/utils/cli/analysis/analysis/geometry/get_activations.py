@@ -51,10 +51,6 @@ def execute_get_activations(args, *, architecture_module_limit: int = ARCHITECTU
             task_name = 'unknown'
             trait_label = 'unknown'
 
-        # Apply limit if specified
-        if hasattr(args, 'limit') and args.limit:
-            pairs_list = pairs_list[:args.limit]
-
         print(f"   ✓ Loaded {len(pairs_list)} pairs")
 
         # 2. Load model (or use cached)

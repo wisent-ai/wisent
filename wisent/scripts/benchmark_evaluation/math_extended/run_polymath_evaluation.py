@@ -216,4 +216,4 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--math-timeout", type=int, required=True, help="Timeout for symbolic math equality")
     args = parser.parse_args()
-    main(limit=2, language="en", math_timeout=args.math_timeout)
+    main(limit=None, language="en", math_timeout=args.math_timeout)

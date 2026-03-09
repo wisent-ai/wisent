@@ -61,7 +61,7 @@ def test_load_single_task_with_shots():
             shots=shots,  # Few-shot examples
             split_ratio=0.8,
             seed=42,
-            limit=10,
+            limit=None,
             training_limit=None,
             testing_limit=None,
             cache_benchmark=False,
@@ -126,7 +126,7 @@ def test_load_single_task_different_benchmarks():
                 shots=0,
                 split_ratio=0.8,
                 seed=42,
-                limit=5,  # Very small limit for speed
+                limit=None,
                 training_limit=None,
                 testing_limit=None,
                 cache_benchmark=False,

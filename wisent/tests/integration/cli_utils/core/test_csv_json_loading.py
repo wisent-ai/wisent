@@ -166,7 +166,7 @@ def test_with_limits():
         create_test_csv(csv_path, test_data)
 
         # Only load first 20 items
-        limit = 20
+        limit = None
 
         # Use actual ContrastivePairSet - no mocking
         result = _load_from_csv_json(

@@ -26,10 +26,6 @@ def _execute_personalization_optimization(args):
     num_pairs = getattr(args, 'num_pairs', None)
     if num_pairs is None:
         raise ValueError("num_pairs is required (set via --num-pairs)")
-    n_trials = args.n_trials
-    limit = getattr(args, 'limit', None)
-    if limit is None:
-        raise ValueError("limit is required (set via --limit)")
     device = getattr(args, 'device', None)
     output_dir = getattr(args, 'output_dir', './personalization_optimization')
 
@@ -40,7 +36,6 @@ def _execute_personalization_optimization(args):
     print(f"   Trait: {trait}")
     print(f"   Trait Name: {trait_name}")
     print(f"   Num Pairs: {num_pairs}")
-    print(f"   Trials: {n_trials}")
     print(f"   Output: {output_dir}")
     print(f"{'=' * SEPARATOR_WIDTH_REPORT}\n")
 
@@ -129,7 +124,7 @@ def _execute_personalization_optimization(args):
                         task="personalization",
                         config=config,
                         work_dir=work_dir,
-                        limit=min(limit, len(pair_set.pairs)),
+                        limit=len(pair_set.pairs),
                         device=device,
                         strength=strength,
                     )

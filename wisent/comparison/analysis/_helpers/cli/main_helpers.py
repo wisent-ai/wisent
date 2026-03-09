@@ -28,7 +28,6 @@ def run_comparison(
     methods: list[str],
     extraction_strategies: list[str],
     *,
-    eval_limit: int | None = None,
     run_single_task_fn=None,
 ) -> list[dict]:
     """
@@ -62,7 +61,6 @@ def run_comparison(
             batch_size=batch_size,
             max_batch_size=max_batch_size,
             log_interval=log_interval,
-            eval_limit=eval_limit,
             vectors_dir=vectors_dir,
             train_ratio=train_ratio,
             caa_layers=caa_layers,
@@ -148,8 +146,6 @@ def main(run_single_task_fn, run_comparison_fn):
                         help="Batch size (int or 'auto')")
     parser.add_argument("--max-batch-size", type=int, required=True,
                         help="Max batch size for lm-eval internal batching")
-    parser.add_argument("--limit", type=int, default=None,
-                        help="Limit eval examples")
     parser.add_argument("--output-dir",
                         required=True,
                         help="Output directory")
@@ -181,7 +177,6 @@ def main(run_single_task_fn, run_comparison_fn):
         batch_size=batch_size,
         max_batch_size=args.max_batch_size,
         log_interval=args.log_interval,
-        eval_limit=args.limit,
         output_dir=args.output_dir,
         train_ratio=args.train_ratio,
         caa_layers=args.caa_layers,

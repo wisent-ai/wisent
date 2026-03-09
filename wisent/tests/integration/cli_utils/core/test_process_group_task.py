@@ -50,14 +50,14 @@ def test_process_group_task_model_methods():
     
     # Track what happens during processing
     print("\n3. Calling _process_group_task...")
-    print(f"   - limit=50 (moderate size for testing)")
+    print(f"   - limit=None (use all data)")
     print(f"   - verbose=True")
     try:
         result = _process_group_task(
             expanded=expanded,
             model=model,
             shots=0,
-            limit=50,  # Increased limit to get more documents
+            limit=None,
             split_ratio=0.8,
             seed=42,
             caps=Caps(train=10, test=5),

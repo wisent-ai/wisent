@@ -8,8 +8,6 @@ python -m wisent.core.main tasks truthfulqa_mc1 \
     --model meta-llama/Llama-3.2-1B-Instruct \
     --layer 15 \
     --classifier-type logistic \
-    --training-limit 200 \
-    --testing-limit 100 \
     --ground-truth-method lm-eval-harness \
     --token-aggregation average \
     --detection-threshold 0.6 \

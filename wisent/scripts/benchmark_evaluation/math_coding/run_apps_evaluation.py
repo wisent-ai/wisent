@@ -288,4 +288,4 @@ def main(
 
 
 if __name__ == "__main__":
-    main(limit=2, split="test", difficulty="introductory")
+    main(limit=None, split="test", difficulty="introductory")

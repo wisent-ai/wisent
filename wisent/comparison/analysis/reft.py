@@ -36,7 +36,6 @@ def main():
     parser.add_argument("--train-ratio", type=float, required=True, help="Train/test split ratio")
     parser.add_argument("--eval-batch-size", required=True, help="Eval batch size (int or 'auto')")
     parser.add_argument("--eval-max-batch-size", type=int, default=None, help="Max eval batch size for auto (required)")
-    parser.add_argument("--eval-limit", type=int, default=None, help="Limit eval examples")
     parser.add_argument("--skip-eval", action="store_true", help="Skip evaluation after training")
     parser.add_argument("--with-steering", action="store_true", help="Also evaluate ReFT + steering")
     parser.add_argument("--steering-method", required=True, choices=["caa", "fgaa"], help="Steering method")
@@ -74,7 +73,7 @@ def main():
             batch_size=eval_batch_size, max_batch_size=args.eval_max_batch_size,
             log_interval=args.log_interval,
             train_ratio=args.train_ratio,
-            limit=args.eval_limit, output_dir=args.output_dir,
+            output_dir=args.output_dir,
             num_train_pairs=args.num_pairs, num_epochs=args.num_epochs,
             low_rank_dimension=args.low_rank_dimension, intervention_layers=intervention_layers,
             learning_rate=args.learning_rate,

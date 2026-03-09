@@ -39,7 +39,6 @@ def evaluate_lora_dpo(
     min_norm_threshold: float,
     *,
     train_ratio: float,
-    limit: int | None = None,
     output_dir: str | Path = None,
     num_train_pairs: int | None = None,
     num_epochs: int | None = None,
@@ -65,17 +64,17 @@ def evaluate_lora_dpo(
     task_dict = create_test_only_task(task, train_ratio=train_ratio)
     wisent_model = WisentModel(model_name=model_name, device=device)
 
-    base_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, limit)
+    base_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, None)
     base_acc_lm_eval = extract_accuracy(base_results, task)
     print(f"Base accuracy (lm-eval): {base_acc_lm_eval:.4f}")
-    base_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=limit)
+    base_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=None)
     print(f"Base accuracy (LL): {base_acc_ll:.4f}")
 
     apply_lora_to_model(wisent_model, lora_path)
-    lora_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, limit)
+    lora_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, None)
     lora_acc_lm_eval = extract_accuracy(lora_results, task)
     print(f"DPO-LoRA accuracy (lm-eval): {lora_acc_lm_eval:.4f}")
-    lora_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=limit)
+    lora_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=None)
     print(f"DPO-LoRA accuracy (LL): {lora_acc_ll:.4f}")
 
     results = {
@@ -85,7 +84,7 @@ def evaluate_lora_dpo(
         "lora_r": lora_r, "lora_alpha": lora_alpha, "lora_dropout": lora_dropout,
         "learning_rate": learning_rate, "beta": beta,
         "max_length": max_length, "max_prompt_length": max_prompt_length,
-        "train_ratio": train_ratio, "eval_limit": limit,
+        "train_ratio": train_ratio,
         "base_accuracy_lm_eval": base_acc_lm_eval, "base_accuracy_ll": base_acc_ll,
         "lora_accuracy_lm_eval": lora_acc_lm_eval, "lora_accuracy_ll": lora_acc_ll,
         "lora_diff_lm_eval": lora_acc_lm_eval - base_acc_lm_eval,
@@ -98,7 +97,7 @@ def evaluate_lora_dpo(
             base_acc_lm_eval, lora_acc_lm_eval,
             steering_method, steering_layers, steering_num_pairs,
             steering_scales, extraction_strategy,
-            batch_size, max_batch_size, limit, device,
+            batch_size, max_batch_size, device,
             log_interval=log_interval,
             min_norm_threshold=min_norm_threshold,
         )
@@ -127,7 +126,7 @@ def _run_steering_eval(
     base_acc_lm_eval, lora_acc_lm_eval,
     steering_method, steering_layers, steering_num_pairs,
     steering_scales, extraction_strategy,
-    batch_size, max_batch_size, limit, device,
+    batch_size, max_batch_size, device,
     log_interval: int,
     min_norm_threshold: float,
 ):
@@ -172,9 +171,9 @@ def _run_steering_eval(
     }
     for scale in steering_scales:
         apply_steering_to_model(wisent_model, steering_data, scale=scale, min_norm_threshold=min_norm_threshold)
-        steer_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, limit)
+        steer_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, None)
         steer_acc_lm_eval = extract_accuracy(steer_results, task)
-        steer_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=limit)
+        steer_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=None)
         remove_steering(wisent_model)
         results["steering"]["scales"][str(scale)] = {
             "accuracy_lm_eval": steer_acc_lm_eval, "accuracy_ll": steer_acc_ll,

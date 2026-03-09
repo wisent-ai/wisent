@@ -49,7 +49,6 @@ def run_safety_welfare_steering(args, results):
                         steering_action="comprehensive",
                         tasks=["refusal"],
                         methods=methods,
-                        limit=args.limit,
                         device=args.device,
                         use_cached=False,
                         save_as_default=True,
@@ -61,7 +60,6 @@ def run_safety_welfare_steering(args, results):
                         steering_action="personalization",
                         trait=trait,
                         methods=methods,
-                        limit=args.limit,
                         device=args.device,
                     )
                 
@@ -139,12 +137,11 @@ def run_safety_welfare_steering(args, results):
                     steering_action="personalization",
                     trait=trait,
                     methods=methods,
-                    limit=args.limit,
                     device=args.device,
                 )
-                
+
                 steering_result = execute_optimize_steering(steering_args)
-                
+
                 if steering_result:
                     best_method = steering_result.get("best_method", "CAA")
                     best_layer = steering_result.get("best_layer")
@@ -204,7 +201,6 @@ def run_safety_welfare_steering(args, results):
                     steering_action="welfare",
                     trait=trait,
                     methods=methods,
-                    limit=args.limit,
                     device=args.device,
                 )
 

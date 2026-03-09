@@ -250,8 +250,7 @@ class HyperparameterEvaluateMixin:
                 'token_targeting_strategies': self.config.token_targeting_strategies,
                 'threshold_range': self.config.threshold_range,
                 'classifier_types': self.config.classifier_types,
-                'metric': self.config.metric,
-                'max_combinations': self.config.max_combinations
+                'metric': self.config.metric
             },
             'all_results': result.all_results
         }

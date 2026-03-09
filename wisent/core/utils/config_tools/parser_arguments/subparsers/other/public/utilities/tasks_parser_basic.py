@@ -133,19 +133,6 @@ def setup_basic_task_args(parser):
     )
     parser.add_argument("--shots", type=int, required=True, help="Number of few-shot examples")
     parser.add_argument("--split-ratio", type=float, default=None, help="Train/test split ratio")
-    parser.add_argument("--limit", type=int, default=None, help="Limit number of documents per task")
-    parser.add_argument(
-        "--training-limit",
-        type=int,
-        default=None,
-        help="Limit number of training documents (overrides limit for training)",
-    )
-    parser.add_argument(
-        "--testing-limit",
-        type=int,
-        default=None,
-        help="Limit number of testing documents (overrides limit for testing)",
-    )
     parser.add_argument("--output", type=str, required=True, help="Output directory for results")
     parser.add_argument(
         "--classifier-type", type=str, choices=["logistic", "mlp"], required=True, help="Type of classifier"
@@ -232,12 +219,6 @@ def setup_basic_task_args(parser):
         choices=["accuracy", "f1", "precision", "recall", "auc"],
         required=True,
         help="Metric to optimize for",
-    )
-    parser.add_argument(
-        "--optimize-max-combinations",
-        type=int,
-        required=True,
-        help="Maximum number of hyperparameter combinations to test",
     )
     parser.add_argument(
         "--auto-optimize",

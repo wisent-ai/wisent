@@ -45,14 +45,10 @@ def run_benchmark_steering(args, benchmarks, results):
                 steering_action="comprehensive",
                 tasks=[benchmark],
                 methods=methods,
-                limit=args.limit,
                 device=args.device,
                 use_cached=False,
                 save_as_default=True,
                 compute_baseline=True,
-                search_strategy=getattr(args, 'search_strategy', 'grid'),
-                n_trials=args.n_trials,
-                n_startup_trials=args.n_startup_trials,
             )
             
             steering_result = execute_optimize_steering(steering_args)
@@ -132,7 +128,6 @@ def run_benchmark_steering(args, benchmarks, results):
                     steering_action="personalization",
                     trait=trait,
                     methods=methods,
-                    limit=args.limit,
                     device=args.device,
                 )
                 

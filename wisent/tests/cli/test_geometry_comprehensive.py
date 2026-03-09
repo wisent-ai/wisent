@@ -80,7 +80,6 @@ def run_comprehensive_geometry_analysis(
                 "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-pairs-from-task",
                 task,
                 "--output", pairs_file,
-                "--limit", str(num_pairs),
             ],
             capture_output=True,
             text=True,

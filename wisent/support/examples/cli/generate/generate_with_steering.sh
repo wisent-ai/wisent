@@ -9,7 +9,6 @@ python -m wisent.core.main tasks truthfulqa_mc1 \
     meta-llama/Llama-3.2-1B-Instruct \
     --layer 15 \
     --steering-method CAA \
-    --limit 100 \
     --train-only \
     --save-vector ./vectors/truthfulness_vector.pt \
     --output ./results/vector_training \
@@ -21,7 +20,6 @@ python -m wisent.core.main tasks truthfulqa_mc1 \
     --layer 15 \
     --steering-method CAA \
     --steering-strength 1.5 \
-    --limit 20 \
     --inference-only \
     --load-vector ./vectors/truthfulness_vector.pt \
     --output ./results/steered_generation \
@@ -33,7 +31,6 @@ python -m wisent.core.main tasks arc_easy \
     --layer 12 \
     --steering-method CAA_L2 \
     --steering-strength 2.0 \
-    --limit 50 \
     --inference-only \
     --load-vector ./vectors/arc_reasoning_vector.pt \
     --output ./results/strong_steering \
@@ -46,7 +43,6 @@ python -m wisent.core.main tasks boolq \
     --layers 10 15 20 \
     --steering-method CAA \
     --steering-strength 1.2 \
-    --limit 40 \
     --inference-only \
     --vector-dir ./vectors/boolq_multilayer \
     --output ./results/multilayer_steering \

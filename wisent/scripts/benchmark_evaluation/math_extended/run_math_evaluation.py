@@ -148,4 +148,4 @@ def main(limit: int | None = None, question_type: str | None = None, level: str 
 
 
 if __name__ == "__main__":
-    main(limit=10, question_type="Precalculus", level="Level 1")
+    main(limit=None, question_type="Precalculus", level="Level 1")

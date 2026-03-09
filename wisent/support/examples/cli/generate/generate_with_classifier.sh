@@ -9,7 +9,6 @@ python -m wisent.core.main tasks truthfulqa_mc1 \
     meta-llama/Llama-3.2-1B-Instruct \
     --layer 15 \
     --classifier-type logistic \
-    --limit 100 \
     --train-only \
     --save-classifier ./models/hallucination_detector.pt \
     --output ./results/training_logs \
@@ -19,7 +18,6 @@ python -m wisent.core.main tasks truthfulqa_mc1 \
 python -m wisent.core.main tasks truthfulqa_mc1 \
     meta-llama/Llama-3.2-1B-Instruct \
     --layer 15 \
-    --limit 20 \
     --inference-only \
     --load-classifier ./models/hallucination_detector.pt \
     --output ./results/monitored_generation \
@@ -30,7 +28,6 @@ python -m wisent.core.main tasks arc_easy \
     meta-llama/Llama-3.2-1B-Instruct \
     --layer 12 \
     --classifier-type mlp \
-    --limit 50 \
     --inference-only \
     --load-classifier ./models/arc_classifier.pt \
     --threshold 0.7 \
@@ -43,7 +40,6 @@ python -m wisent.core.main tasks gsm8k \
     meta-llama/Llama-3.2-1B-Instruct \
     --layers 10 15 20 \
     --classifier-type logistic \
-    --limit 30 \
     --inference-only \
     --classifier-dir ./models/gsm8k_classifiers \
     --output ./results/multi_layer_monitoring \

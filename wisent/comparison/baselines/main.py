@@ -59,7 +59,6 @@ def run_single_task(
     sae_layers: str,
     methods: list[str],
     extraction_strategies: list[str],
-    eval_limit: int | None = None,
     vectors_dir: Path = None,
 ) -> list[dict]:
     """
@@ -131,20 +130,20 @@ def run_single_task(
     # Step 4: Run base evaluation
     base_results = run_lm_eval_evaluation(
         wisent_model=wisent_model, task_dict=task_dict, task_name=task,
-        batch_size=batch_size, max_batch_size=max_batch_size, limit=eval_limit,
+        batch_size=batch_size, max_batch_size=max_batch_size, limit=None,
     )
     base_acc = extract_accuracy(base_results, task)
 
     base_ll_acc = run_ll_evaluation(
         wisent_model=wisent_model, task_dict=task_dict,
-        task_name=task, log_interval=log_interval, limit=eval_limit,
+        task_name=task, log_interval=log_interval, limit=None,
     )
 
     # Step 5: Run ALL wisent steered evaluations
     wisent_results = _run_steered_evaluations(
         wisent_model, methods, extraction_strategies,
         steering_vectors_data, steering_scales, task_dict, task,
-        batch_size, max_batch_size, eval_limit, log_interval=log_interval,
+        batch_size, max_batch_size, log_interval=log_interval,
         min_norm_threshold=min_norm_threshold,
     )
 
@@ -159,7 +158,7 @@ def run_single_task(
     _run_native_evaluations(
         results_list, methods, extraction_strategies,
         steering_vectors_data, steering_scales, model_name, task,
-        device, batch_size, max_batch_size, eval_limit,
+        device, batch_size, max_batch_size,
         vectors_dir, wisent_results, base_acc, base_ll_acc, num_pairs,
     )
 
@@ -169,7 +168,7 @@ def run_single_task(
 def _run_steered_evaluations(
     wisent_model, methods, extraction_strategies,
     steering_vectors_data, steering_scales, task_dict, task,
-    batch_size, max_batch_size, eval_limit, log_interval: int,
+    batch_size, max_batch_size, log_interval: int,
     min_norm_threshold: float,
 ):
     """Run all wisent steered evaluations (model stays loaded)."""
@@ -186,12 +185,12 @@ def _run_steered_evaluations(
                 steered_results = run_lm_eval_evaluation(
                     wisent_model=wisent_model, task_dict=task_dict,
                     task_name=task, batch_size=batch_size,
-                    max_batch_size=max_batch_size, limit=eval_limit,
+                    max_batch_size=max_batch_size, limit=None,
                 )
                 steered_acc = extract_accuracy(steered_results, task)
                 steered_ll_acc = run_ll_evaluation(
                     wisent_model=wisent_model, task_dict=task_dict,
-                    task_name=task, log_interval=log_interval, limit=eval_limit,
+                    task_name=task, log_interval=log_interval, limit=None,
                 )
                 remove_steering(wisent_model)
                 wisent_results[(extraction_strategy, method, scale)] = {
@@ -203,7 +202,7 @@ def _run_steered_evaluations(
 def _run_native_evaluations(
     results_list, methods, extraction_strategies,
     steering_vectors_data, steering_scales, model_name, task,
-    device, batch_size, max_batch_size, eval_limit,
+    device, batch_size, max_batch_size,
     vectors_dir, wisent_results, base_acc, base_ll_acc, num_pairs,
 ):
     """Run all lm-eval native steered evaluations (one at a time)."""
@@ -223,7 +222,7 @@ def _run_native_evaluations(
                     device=device, batch_size=batch_size, max_batch_size=max_batch_size,
                 )
                 lm_eval_native_results = evaluator.evaluate(
-                    lm=lm_steered, task_dict=task_dict, limit=eval_limit,
+                    lm=lm_steered, task_dict=task_dict, limit=None,
                 )
                 lm_eval_native_acc = extract_accuracy(lm_eval_native_results, task)
                 del lm_steered

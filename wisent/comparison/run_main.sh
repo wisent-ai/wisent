@@ -33,9 +33,6 @@ MAX_BATCH_SIZE="16"
 # Train/test split ratio (0.4 = 40% train, 60% test)
 TRAIN_RATIO="0.4"
 
-# Evaluation limit (number of examples, or empty for all)
-LIMIT="300"
-
 # Number of contrastive pairs for steering vector
 NUM_PAIRS="100"
 
@@ -77,7 +74,6 @@ for ((attempt=1; attempt<=MAX_RETRIES; attempt++)); do
             --max-batch-size $MAX_BATCH_SIZE \
             --output-dir $REMOTE_OUTPUT_DIR \
             --train-ratio $TRAIN_RATIO \
-            --limit $LIMIT \
             --num-pairs $NUM_PAIRS \
             --extraction-strategy $EXTRACTION_STRATEGY" \
         "$LOCAL_OUTPUT_DIR"

@@ -71,7 +71,6 @@ def evaluate_reft(
     min_norm_threshold: float,
     *,
     train_ratio: float,
-    limit: int | None = None,
     output_dir: str | Path = None,
     num_train_pairs: int | None = None, num_epochs: int | None = None,
     low_rank_dimension: int | None = None, intervention_layers: list[int] | None = None,
@@ -88,23 +87,23 @@ def evaluate_reft(
     print(f"\n{'='*60}\nLoading model: {model_name}\n{'='*60}")
     wisent_model = WisentModel(model_name=model_name, device=device)
     print(f"\n{'='*60}\nRunning BASE evaluation (no ReFT)\n{'='*60}")
-    base_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=limit)
+    base_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=None)
     print(f"Base accuracy: {base_acc_ll:.4f}")
     print(f"\n{'='*60}\nApplying ReFT intervention from: {reft_path}\n{'='*60}")
     apply_reft_to_model(wisent_model, reft_path)
     print(f"\n{'='*60}\nRunning REFT evaluation\n{'='*60}")
-    reft_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=limit)
+    reft_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=None)
     print(f"ReFT accuracy: {reft_acc_ll:.4f}")
     results = {
         "task": task, "model": model_name, "reft_path": str(reft_path),
         "num_train_pairs": num_train_pairs, "num_epochs": num_epochs,
         "low_rank_dimension": low_rank_dimension, "intervention_layers": intervention_layers,
-        "learning_rate": learning_rate, "train_ratio": train_ratio, "eval_limit": limit,
+        "learning_rate": learning_rate, "train_ratio": train_ratio,
         "base_accuracy": base_acc_ll, "reft_accuracy": reft_acc_ll, "reft_diff": reft_acc_ll - base_acc_ll,
     }
     if with_steering:
         results = _eval_reft_with_steering(
-            wisent_model, task, task_dict, limit, base_acc_ll, reft_acc_ll,
+            wisent_model, task, task_dict, base_acc_ll, reft_acc_ll,
             steering_method, steering_layers, steering_num_pairs, steering_scales,
             extraction_strategy, device, results, log_interval=log_interval,
             min_norm_threshold=min_norm_threshold,
@@ -125,7 +124,7 @@ def evaluate_reft(
     return results
 
 
-def _eval_reft_with_steering(wisent_model, task, task_dict, limit, base_acc_ll, reft_acc_ll,
+def _eval_reft_with_steering(wisent_model, task, task_dict, base_acc_ll, reft_acc_ll,
                               steering_method, steering_layers, steering_num_pairs,
                               steering_scales, extraction_strategy, device, results, log_interval: int,
                               min_norm_threshold: float):
@@ -158,7 +157,7 @@ def _eval_reft_with_steering(wisent_model, task, task_dict, limit, base_acc_ll, 
                            "num_pairs": steering_num_pairs, "extraction_strategy": extraction_strategy, "scales": {}}
     for scale in steering_scales:
         apply_steering_to_model(wisent_model, steering_data, scale=scale, min_norm_threshold=min_norm_threshold)
-        steer_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=limit)
+        steer_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=None)
         remove_steering(wisent_model)
         results["steering"]["scales"][str(scale)] = {
             "accuracy": steer_acc_ll, "diff_from_base": steer_acc_ll - base_acc_ll,

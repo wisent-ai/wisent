@@ -83,10 +83,8 @@ def batch_create_raw_activations(get_conn_fn, reset_conn_fn, activations_data: l
 
 
 def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_id: int,
-                      num_layers: int, device: str, get_conn_fn, reset_conn_fn, max_retries: int, log_interval: int, limit: int = None):
-    """Extract raw activations for a single benchmark using 3 formats."""
-    if limit is None:
-        raise ValueError("limit is required for extract_benchmark")
+                      num_layers: int, device: str, get_conn_fn, reset_conn_fn, max_retries: int, log_interval: int):
+    """Extract raw activations for a single benchmark."""
     print(f"  [EXTRACT] Importing extraction strategy...", flush=True)
     from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, build_extraction_texts
     print(f"  [EXTRACT] Extraction strategy imported", flush=True)
@@ -103,8 +101,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
         FROM "ContrastivePair"
         WHERE "setId" = %s
         ORDER BY id
-        LIMIT %s
-    ''', (set_id, limit))
+    ''', (set_id,))
     db_pairs = cur.fetchall()
     cur.close()
     print(f"  [EXTRACT] Fetched {len(db_pairs)} pairs from database", flush=True)

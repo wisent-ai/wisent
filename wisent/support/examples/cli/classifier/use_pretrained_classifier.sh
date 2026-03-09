@@ -9,5 +9,4 @@ python -m wisent.core.main tasks truthfulqa_mc1 \
     --layer 15 \
     --load-classifier ./models/truthfulqa_classifier.pt \
     --inference-only \
-    --testing-limit 100 \
     --output ./results/inference_results

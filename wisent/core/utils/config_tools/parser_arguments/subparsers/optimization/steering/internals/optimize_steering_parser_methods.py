@@ -33,12 +33,6 @@ def setup_method_parsers(steering_subparsers):
         help=f"Methods to optimize. Available: {', '.join(AVAILABLE_METHODS)}"
     )
     hierarchical_parser.add_argument(
-        "--limit",
-        type=int,
-        required=True,
-        help="Sample limit per evaluation"
-    )
-    hierarchical_parser.add_argument(
         "--output-dir",
         type=str,
         required=True,
@@ -64,7 +58,6 @@ def setup_method_parsers(steering_subparsers):
         help=f"Steering methods to compare. Available: {', '.join(AVAILABLE_METHODS)}",
     )
     SteeringMethodRegistry.add_all_cli_arguments(method_parser)
-    method_parser.add_argument("--limit", type=int, required=True, help="Maximum samples for testing")
     method_parser.add_argument(
         "--max-time", type=float, default=None, help="Maximum optimization time in minutes"
     )
@@ -99,7 +92,6 @@ def setup_method_parsers(steering_subparsers):
     layer_parser.add_argument(
         "--strength", type=float, required=True, help="Fixed steering strength during layer search"
     )
-    layer_parser.add_argument("--limit", type=int, required=True, help="Maximum samples for testing")
     layer_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     layer_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     layer_parser.add_argument(
@@ -140,7 +132,6 @@ def setup_method_parsers(steering_subparsers):
     strength_parser.add_argument(
         "--strength-steps", type=int, required=True, help="Number of strength values to test"
     )
-    strength_parser.add_argument("--limit", type=int, required=True, help="Maximum samples for testing")
     strength_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     strength_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     strength_parser.add_argument(
@@ -175,7 +166,6 @@ def setup_method_parsers(steering_subparsers):
         help=f"Steering methods to test. Available: {', '.join(AVAILABLE_METHODS)}",
     )
     SteeringMethodRegistry.add_all_cli_arguments(auto_parser)
-    auto_parser.add_argument("--limit", type=int, required=True, help="Maximum samples for testing")
     auto_parser.add_argument("--max-time", type=float, required=True, help="Maximum optimization time in minutes")
     auto_parser.add_argument(
         "--strength-range",

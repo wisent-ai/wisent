@@ -18,7 +18,6 @@
 
 python -m wisent.core.main optimize-classification \
     meta-llama/Llama-3.2-1B-Instruct \
-    --limit 10 \
     --optimization-metric f1 \
     --max-time-per-task 15.0 \
     --layer-range "8-12" \

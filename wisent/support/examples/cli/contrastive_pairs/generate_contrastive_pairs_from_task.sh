@@ -6,5 +6,4 @@
 
 python -m wisent.core.main generate-pairs-from-task truthfulqa_mc1 \
     --output ./data/truthfulqa_mc1_pairs.json \
-    --limit 50 \
     --verbose

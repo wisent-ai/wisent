@@ -29,7 +29,6 @@ def ensure_enriched_pairs(
     model: str,
     pairs_dir: str,
     device: Optional[str],
-    limit: int,
 ) -> str:
     """Generate enriched pairs for a task if they don't already exist.
 
@@ -45,7 +44,7 @@ def ensure_enriched_pairs(
 
     print(f"   Generating contrastive pairs for {task}...")
     execute_generate_pairs_from_task(_make_args(
-        task_name=task, output=pairs_file, limit=limit, verbose=False,
+        task_name=task, output=pairs_file, limit=None, verbose=False,
     ))
 
     print(f"   Collecting activations for {task}...")
@@ -80,7 +79,6 @@ def evaluate_vectors(
     model: str,
     task: str,
     enriched_path: str,
-    limit: int,
     device: Optional[str],
     work_dir: str,
     strength: float,
@@ -95,7 +93,7 @@ def evaluate_vectors(
 
     execute_generate_responses(_make_args(
         task=task, input_file=enriched_path, model=model, output=rf,
-        num_questions=limit, min_load_limit_questions=limit,
+        num_questions=None, min_load_limit_questions=None,
         steering_object=sf, steering_strength=strength,
         steering_strategy=get_optimal("steering_strategy"), use_steering=True, device=device,
         verbose=False, cached_model=None,
@@ -143,7 +141,6 @@ def run_rl_iteration(
                 regularization=getattr(args, 'regularization', None),
                 inference_k=getattr(args, 'inference_k', None),
                 noise_scale=getattr(args, 'noise_scale', None),
-                limit=args.limit,
                 output=output_path,
                 device=getattr(args, 'device', None),
             )
@@ -158,7 +155,6 @@ def run_rl_iteration(
                 max_iterations=getattr(args, 'max_iterations', None),
                 learning_rate=getattr(args, 'learning_rate', None),
                 noise_scale=getattr(args, 'noise_scale', None),
-                limit=args.limit,
                 output=output_path,
                 device=getattr(args, 'device', None),
             )

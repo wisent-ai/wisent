@@ -21,7 +21,7 @@ def execute_preview_pairs(args):
     )
     
     task_name = args.task_name
-    limit = args.limit or 5
+    limit = None
     strategies = args.strategies or ['chat_last', 'mc_balanced', 'completion_last']
     
     print(f"\n{'='*80}")
@@ -29,7 +29,7 @@ def execute_preview_pairs(args):
     print(f"{'='*80}")
     
     # Load pairs
-    print(f"\nLoading {limit} pairs from '{task_name}'...")
+    print(f"\nLoading pairs from '{task_name}'...")
     
     try:
         task_name_lower = task_name.lower()
@@ -192,12 +192,11 @@ def execute_preview_pairs(args):
 def main():
     parser = argparse.ArgumentParser(description="Preview contrastive pairs with different strategies")
     parser.add_argument("task_name", help="Task/benchmark name (e.g., boolq, mmlu, hellaswag)")
-    parser.add_argument("--limit", "-n", type=int, default=5, help="Number of pairs to show (default: 5)")
-    parser.add_argument("--strategies", "-s", nargs="+", 
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    parser.add_argument("--strategies", "-s", nargs="+",
                         default=["chat_last", "mc_balanced", "completion_last"],
                         help="Strategies to preview")
     parser.add_argument("--output", "-o", help="Save to JSON file")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     parser.add_argument("--train-ratio", type=float, required=True, help="Fraction of docs for training")
     
     args = parser.parse_args()

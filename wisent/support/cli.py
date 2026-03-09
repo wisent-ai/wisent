@@ -14,8 +14,6 @@ def run_task_pipeline(
     task_name: str,
     model_name: str,
     layer: str,
-    training_limit: int,
-    testing_limit: int,
     token_aggregation: str,
     classifier_type: str,
     token_targeting_strategy: str,
@@ -23,7 +21,6 @@ def run_task_pipeline(
     seed: int = DEFAULT_RANDOM_SEED,
     verbose: bool = False,
     split_ratio: float = 0.8,
-    limit: Optional[int] = None,
     steering_mode: bool = False,
     detection_threshold: float = None,
     steering_strength: Optional[float] = None,
@@ -39,12 +36,9 @@ def run_task_pipeline(
         task_name: Name of the task to run
         model_name: Name or path of the model
         layer: Layer to use for activations
-        training_limit: Number of training samples
-        testing_limit: Number of testing samples
         seed: Random seed for reproducibility
         verbose: Whether to print verbose output
         split_ratio: Train/test split ratio
-        limit: Total limit of samples to load
         steering_mode: Whether to use steering mode
         token_aggregation: Token aggregation strategy
         detection_threshold: Detection threshold for classification
@@ -69,12 +63,9 @@ def run_task_pipeline(
     args.task_names = [task_name] if isinstance(task_name, str) else task_name
     args.model = model_name
     args.layer = int(layer) if isinstance(layer, str) else layer
-    args.training_limit = training_limit
-    args.testing_limit = testing_limit
     args.seed = seed
     args.verbose = verbose
     args.split_ratio = split_ratio
-    args.limit = limit if limit is not None else (training_limit + testing_limit + 100)
 
     # Set method-specific arguments
     if steering_mode:

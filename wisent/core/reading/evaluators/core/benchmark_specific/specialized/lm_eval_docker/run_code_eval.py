@@ -65,7 +65,6 @@ def run_code_eval(
         "--output_path", "/home/sandbox/output",
     ]
 
-    lm_eval_args.extend(["--limit", str(20)])
 
     # Docker command
     docker_cmd = [

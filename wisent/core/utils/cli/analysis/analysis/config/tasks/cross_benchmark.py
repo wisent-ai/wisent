@@ -26,15 +26,11 @@ def load_cross_benchmark_data(args, LMEvalDataLoader):
 
         if isinstance(train_task_obj, dict):
             all_train_pairs = []
-            training_limit_per_task = getattr(args, 'training_limit', None)
-            if training_limit_per_task:
-                training_limit_per_task = training_limit_per_task // len(train_task_obj)
-
             for subname, task_obj in train_task_obj.items():
                 subtask_pairs = lm_build_contrastive_pairs(
                     task_name=subname,
                     lm_eval_task=task_obj,
-                    limit=training_limit_per_task,
+                    limit=None,
                     train_ratio=args.train_ratio,
                 )
                 all_train_pairs.extend(subtask_pairs)
@@ -43,7 +39,7 @@ def load_cross_benchmark_data(args, LMEvalDataLoader):
             train_pairs = lm_build_contrastive_pairs(
                 task_name=train_task_name,
                 lm_eval_task=train_task_obj,
-                limit=getattr(args, 'training_limit', None),
+                limit=None,
                 train_ratio=args.train_ratio,
             )
 
@@ -56,15 +52,11 @@ def load_cross_benchmark_data(args, LMEvalDataLoader):
 
         if isinstance(eval_task_obj, dict):
             all_eval_pairs = []
-            testing_limit_per_task = getattr(args, 'testing_limit', None)
-            if testing_limit_per_task:
-                testing_limit_per_task = testing_limit_per_task // len(eval_task_obj)
-
             for subname, task_obj in eval_task_obj.items():
                 subtask_pairs = lm_build_contrastive_pairs(
                     task_name=subname,
                     lm_eval_task=task_obj,
-                    limit=testing_limit_per_task,
+                    limit=None,
                     train_ratio=args.train_ratio,
                 )
                 all_eval_pairs.extend(subtask_pairs)
@@ -73,7 +65,7 @@ def load_cross_benchmark_data(args, LMEvalDataLoader):
             eval_pairs = lm_build_contrastive_pairs(
                 task_name=eval_task_name,
                 lm_eval_task=eval_task_obj,
-                limit=getattr(args, 'testing_limit', None),
+                limit=None,
                 train_ratio=args.train_ratio,
             )
 
@@ -111,9 +103,9 @@ def load_single_task_data(args, LMEvalDataLoader):
             task_name=task_name,
             split_ratio=args.split_ratio,
             seed=args.seed,
-            limit=args.limit,
-            training_limit=args.training_limit,
-            testing_limit=args.testing_limit,
+            limit=None,
+            training_limit=None,
+            testing_limit=None,
             train_ratio=args.train_ratio,
         )
 

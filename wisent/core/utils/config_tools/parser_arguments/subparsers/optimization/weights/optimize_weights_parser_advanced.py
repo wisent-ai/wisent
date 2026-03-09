@@ -11,12 +11,6 @@ def setup_advanced_optimize_weights_args(parser: argparse.ArgumentParser) -> Non
     # ==========================================================================
     optim_group = parser.add_argument_group("optimization")
     optim_group.add_argument(
-        "--trials",
-        type=int,
-        required=True,
-        help="Number of optimization trials"
-    )
-    optim_group.add_argument(
         "--startup-trials",
         type=int,
         required=True,

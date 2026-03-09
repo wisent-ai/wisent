@@ -23,7 +23,6 @@ fi
 # Default parameters
 MODEL_NAME=${MODEL_NAME:-"meta-llama/Llama-3.2-1B-Instruct"}
 RELEASE_VERSION=${RELEASE_VERSION:-"release_v1"}
-LIMIT=${LIMIT:-10}
 MAX_TOKENS=${MAX_TOKENS:-512}
 
 # Parse command line arguments
@@ -35,10 +34,6 @@ while [[ $# -gt 0 ]]; do
             ;;
         --release-version)
             RELEASE_VERSION="$2"
-            shift 2
-            ;;
-        --limit)
-            LIMIT="$2"
             shift 2
             ;;
         --max-tokens)
@@ -55,17 +50,15 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --model-name      HuggingFace model name (default: meta-llama/Llama-3.2-1B-Instruct)"
             echo "  --release-version LiveCodeBench release version (default: release_v1)"
-            echo "  --limit          Number of problems to process (default: 10)"
             echo "  --max-tokens     Maximum tokens per generation (default: 512)"
             echo "  --build          Force rebuild of Docker image"
             echo "  -h, --help       Show this help message"
             echo ""
             echo "Environment variables:"
-            echo "  MODEL_NAME, RELEASE_VERSION, LIMIT, MAX_TOKENS can be set instead of flags"
+            echo "  MODEL_NAME, RELEASE_VERSION, MAX_TOKENS can be set instead of flags"
             echo ""
             echo "Examples:"
             echo "  $0                                    # Run with defaults"
-            echo "  $0 --limit 20 --build               # Process 20 problems and rebuild"
             echo "  MODEL_NAME=meta-llama/Llama-3.2-3B $0  # Use different model"
             exit 0
             ;;
@@ -80,7 +73,6 @@ done
 echo "Configuration:"
 echo "  Model: $MODEL_NAME"
 echo "  Release Version: $RELEASE_VERSION"
-echo "  Problem Limit: $LIMIT"
 echo "  Max Tokens: $MAX_TOKENS"
 echo ""
 
@@ -101,7 +93,6 @@ echo "🔄 Starting benchmark runner..."
 docker-compose run ${BUILD_FLAG} benchmark-runner \
     --model-name "$MODEL_NAME" \
     --release-version "$RELEASE_VERSION" \
-    --limit "$LIMIT" \
     --max-tokens "$MAX_TOKENS"
 
 echo ""

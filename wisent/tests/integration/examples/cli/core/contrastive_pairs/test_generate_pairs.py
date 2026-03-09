@@ -20,7 +20,6 @@ def test_generate_pairs_from_task():
             [
                 "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-pairs-from-task", "boolq",
                 "--output", output_file,
-                "--limit", "10",
                 "--verbose"
             ],
             capture_output=True,

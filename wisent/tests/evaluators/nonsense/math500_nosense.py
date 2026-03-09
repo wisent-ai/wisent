@@ -52,7 +52,7 @@ def test_math500_nosense():
     generator = Math500NosenseGenerator()
 
     # Load a small sample of original data
-    original_data = generator.load_original_data(limit=3)
+    original_data = generator.load_original_data(limit=None)
     print(f"Loaded {len(original_data)} original items")
 
     # Generate nonsense version

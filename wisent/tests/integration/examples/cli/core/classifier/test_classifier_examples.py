@@ -22,7 +22,6 @@ def test_train_classifier_and_save():
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--classifier-type", "logistic",
-                "--limit", "20",
                 "--save-classifier", classifier_path,
                 "--output", output_dir,
                 "--device", "cpu"
@@ -50,7 +49,6 @@ def test_use_pretrained_classifier():
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--classifier-type", "logistic",
-                "--limit", "20",
                 "--save-classifier", classifier_path,
                 "--output", training_output,
                 "--device", "cpu"
@@ -70,7 +68,6 @@ def test_use_pretrained_classifier():
                 "--layer", "3",
                 "--load-classifier", classifier_path,
                 "--inference-only",
-                "--testing-limit", "10",
                 "--output", inference_output,
                 "--device", "cpu"
             ],
@@ -94,8 +91,6 @@ def test_run_and_evaluate_on_benchmark():
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--classifier-type", "logistic",
-                "--training-limit", "20",
-                "--testing-limit", "10",
                 "--token-aggregation", "average",
                 "--detection-threshold", "0.6",
                 "--output", output_dir,
@@ -123,7 +118,6 @@ def test_classifier_with_mlp():
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--classifier-type", "mlp",
-                "--limit", "20",
                 "--save-classifier", classifier_path,
                 "--output", output_dir,
                 "--device", "cpu"

@@ -76,7 +76,7 @@ def load_reference_activations(args) -> Tuple[torch.Tensor, torch.Tensor]:
         component=args.extraction_component,
         extraction_strategy=args.extraction_strategy,
         prompt_format=args.prompt_format,
-        limit=args.limit,
+        limit=None,
         database_url=getattr(args, 'database_url', None),
     )
 

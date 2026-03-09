@@ -25,7 +25,6 @@ def maximum_abliteration(
     output_dir: str,
     baseline_acc: float,
     *,
-    full_eval_limit: int,
 ):
     """
     Run maximum abliteration optimization.
@@ -52,7 +51,7 @@ def maximum_abliteration(
     print("=" * SEPARATOR_WIDTH_REPORT)
     best_components, _ = grid_search_components(
         task, model, output_dir, baseline_acc,
-        limit=full_eval_limit,
+        limit=None,
     )
 
     # Phase 2: Find best kernel shape
@@ -62,7 +61,7 @@ def maximum_abliteration(
     best_position, best_distance, _, _ = grid_search_kernel_shape(
         task, model, output_dir, baseline_acc,
         best_components=best_components,
-        limit=full_eval_limit,
+        limit=None,
     )
 
     # Phase 3: Fine-tune strength
@@ -71,7 +70,7 @@ def maximum_abliteration(
     print("=" * SEPARATOR_WIDTH_REPORT)
     best_strength, _, _ = binary_search_strength(
         task, model, output_dir, baseline_acc,
-        limit=full_eval_limit,
+        limit=None,
     )
 
     # Phase 4: Final model with all optimized parameters
@@ -98,7 +97,7 @@ def maximum_abliteration(
         model_path = f"{output_dir}/final_pairs{num_pairs}"
         run_abliteration(config, task, model, model_path)
 
-        acc, acc_norm = evaluate_model(model_path, task, limit=full_eval_limit)
+        acc, acc_norm = evaluate_model(model_path, task, limit=None)
         gain = (acc - baseline_acc) * 100
 
         print(f"  num_pairs={num_pairs}: acc={acc:.4f} (gain={gain:+.2f}%)")
@@ -148,8 +147,6 @@ if __name__ == "__main__":
     parser.add_argument("--model", required=True, help="Model name")
     parser.add_argument("--output-dir", required=True, help="Output directory")
     parser.add_argument("--baseline", type=float, required=True, help="Baseline accuracy")
-    parser.add_argument("--eval-limit", type=int, required=True, help="Evaluation limit")
-
     args = parser.parse_args()
 
     maximum_abliteration(
@@ -157,5 +154,4 @@ if __name__ == "__main__":
         model=args.model,
         output_dir=args.output_dir,
         baseline_acc=args.baseline,
-        full_eval_limit=args.eval_limit,
     )

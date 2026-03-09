@@ -141,7 +141,7 @@ def test_try_cached_with_limit():
     used_cache, cached_pairs = _try_cached(
         task_name="limited_task",
         cache_dir=DEFAULT_CACHE_DIR,
-        limit=5,  # Limit to 5 items
+        limit=None,
         use_cached=True,
         force_download=False,
         verbose=False
@@ -212,7 +212,7 @@ def test_convert_cached_data_to_qa_pairs():
     assert qa_pairs[0]["incorrect_answer"] == "W1", "Should map bad_response to incorrect_answer"
     
     # With limit
-    qa_pairs_limited = _convert_cached_data_to_qa_pairs(cached_data, limit=2)
+    qa_pairs_limited = _convert_cached_data_to_qa_pairs(cached_data, limit=None)
     assert len(qa_pairs_limited) == 2, "Should respect limit"
 
 

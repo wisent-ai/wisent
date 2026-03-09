@@ -21,14 +21,13 @@ from wisent.core import constants as _C
 from math500_nosense import Math500NosenseGenerator
 
 
-def run_wisent_evaluation(data_source, model, limit, is_nonsense=False):
+def run_wisent_evaluation(data_source, model, is_nonsense=False):
     """
     Run wisent evaluation on data.
 
     Args:
         data_source: Task name (str) or file path for nonsense data
         model: Model name
-        limit: Sample limit
         is_nonsense: Whether this is nonsense data
 
     Returns:
@@ -40,7 +39,6 @@ def run_wisent_evaluation(data_source, model, limit, is_nonsense=False):
             "python", "-m", "wisent", "tasks", data_source,
             "--from-json",
             "--model", model,
-            "--limit", str(limit),
             "--layer", "15",
             "--verbose"
         ]
@@ -49,7 +47,6 @@ def run_wisent_evaluation(data_source, model, limit, is_nonsense=False):
         cmd = [
             "python", "-m", "wisent", "tasks", data_source,
             "--model", model,
-            "--limit", str(limit),
             "--layer", "15",
             "--verbose"
         ]
@@ -151,7 +148,7 @@ def extract_accuracy(output: str) -> dict:
     }
 
 
-def test_math500_robustness(model="EleutherAI/gpt-neo-1.3B", limit=10, verbose=False):
+def test_math500_robustness(model="EleutherAI/gpt-neo-1.3B", limit=None, verbose=False):
     """Test Math500 robustness with real vs nonsense data."""
 
     print("🧪 MATH500 ROBUSTNESS TEST")
@@ -162,7 +159,7 @@ def test_math500_robustness(model="EleutherAI/gpt-neo-1.3B", limit=10, verbose=F
 
     # Step 1: Test with real data
     print("\n📊 Testing with REAL data...")
-    real_results = run_wisent_evaluation("math500", model, limit, is_nonsense=False)
+    real_results = run_wisent_evaluation("math500", model, is_nonsense=False)
 
     if verbose and real_results.get("output"):
         print("Real data output:")
@@ -197,7 +194,7 @@ def test_math500_robustness(model="EleutherAI/gpt-neo-1.3B", limit=10, verbose=F
     # Step 3: Test with nonsense data
     print("\n🎭 Testing with NONSENSE data...")
     try:
-        nonsense_results = run_wisent_evaluation(temp_file, model, limit, is_nonsense=True)
+        nonsense_results = run_wisent_evaluation(temp_file, model, is_nonsense=True)
 
         print(f"DEBUG: nonsense_results keys: {list(nonsense_results.keys())}")
         print(f"DEBUG: nonsense_results: {nonsense_results}")
