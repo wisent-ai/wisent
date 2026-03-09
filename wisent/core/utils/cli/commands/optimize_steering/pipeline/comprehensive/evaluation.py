@@ -1,13 +1,12 @@
-"""Baseline evaluation and result helpers for comprehensive optimization."""
+"""Baseline evaluation for comprehensive optimization — delegates to HF cache."""
 from __future__ import annotations
 
-import json
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
-from wisent.core.utils.config_tools.constants import (
-    SCORE_RANGE_MIN, RECURSION_INITIAL_DEPTH, COMBO_OFFSET,
-)
+from wisent.core.utils.config_tools.constants import SCORE_RANGE_MIN
+
+from wisent.core.utils.cli.optimize_steering.pipeline.comprehensive import baseline_cache
 
 logger = logging.getLogger(__name__)
 
@@ -19,71 +18,29 @@ def compute_baseline_score(
     device: Optional[str],
     verbose: bool,
 ) -> float:
-    """Compute unsteered model accuracy on evaluation pairs.
+    """Compute unsteered model accuracy, using HF cache when available.
 
-    Loads the model, generates responses without any steering, and
-    evaluates them against ground truth using the task evaluator.
+    Checks HuggingFace for a cached baseline first. If found, loads the
+    cached accuracy. Otherwise generates baseline responses, evaluates,
+    uploads to HF for future reuse, and returns the accuracy.
     """
-    from wisent.core.primitives.models.wisent_model import WisentModel
-    from wisent.core.primitives.models import get_generate_kwargs
-    from wisent.core.reading.evaluators.rotator import EvaluatorRotator
-
-    EvaluatorRotator.discover_evaluators(
-        "wisent.core.reading.evaluators.oracles",
-    )
-    EvaluatorRotator.discover_evaluators(
-        "wisent.core.reading.evaluators.benchmark_specific",
-    )
-
-    with open(pairs_file) as f:
-        data = json.load(f)
-
-    pairs_data = data.get("pairs", [])
-    if not pairs_data:
-        logger.warning("No pairs found in %s", pairs_file)
+    if baseline_cache.check_baseline_exists(model, task_name):
+        if verbose:
+            logger.info("Loading cached baseline from HuggingFace...")
+        _, scores, meta = baseline_cache.load_baseline_from_hf(
+            model, task_name,
+        )
+        accuracy = meta.get("accuracy")
+        if accuracy is not None:
+            return accuracy
+        if scores:
+            return sum(s["correct"] for s in scores) / len(scores)
         return SCORE_RANGE_MIN
 
-    wisent_model = WisentModel(model, device=device)
-    evaluator = EvaluatorRotator(
-        evaluator=None, task_name=task_name, autoload=False,
+    if verbose:
+        logger.info("Generating baseline (no HF cache found)...")
+    accuracy, _, _ = baseline_cache.generate_and_upload_baseline(
+        model, task_name, pairs_file, device,
+        baseline_cache.build_default_hf_retry_config(),
     )
-    gen_kwargs = get_generate_kwargs()
-
-    correct = RECURSION_INITIAL_DEPTH
-    total = RECURSION_INITIAL_DEPTH
-
-    for pair_dict in pairs_data:
-        prompt = pair_dict.get("prompt", "")
-        positive = pair_dict.get("positive_response", {})
-        negative = pair_dict.get("negative_response", {})
-        expected = positive.get("model_response", "")
-        neg_response = negative.get("model_response", "")
-
-        messages = [{"role": "user", "content": prompt}]
-        response = wisent_model.generate([messages], **gen_kwargs)[
-            RECURSION_INITIAL_DEPTH
-        ]
-
-        eval_kwargs = {
-            "response": response,
-            "expected": expected,
-            "question": prompt,
-            "choices": [neg_response, expected],
-            "task_name": task_name,
-        }
-        metadata = pair_dict.get("metadata", {})
-        if metadata:
-            for key, value in metadata.items():
-                if value is not None and key not in eval_kwargs:
-                    eval_kwargs[key] = value
-
-        result = evaluator.evaluate(**eval_kwargs)
-        if result.ground_truth == "TRUTHFUL":
-            correct += COMBO_OFFSET
-        total += COMBO_OFFSET
-
-    wisent_model.detach()
-
-    if total == RECURSION_INITIAL_DEPTH:
-        return SCORE_RANGE_MIN
-    return correct / total
+    return accuracy

@@ -18,8 +18,8 @@ Environment variables (all required):
 import json
 import math
 import os
+import shutil
 import sys
-import tempfile
 import time
 from datetime import datetime
 from pathlib import Path
@@ -44,6 +44,7 @@ from wisent.core.utils.cli.optimize_steering.pipeline import (
 from wisent.core.utils.services.optimization.core.unified_optimizer import (
     UnifiedOptimizer,
 )
+from wisent.core.utils.cli.optimize_steering.pipeline.comprehensive import baseline_cache
 
 
 def _require_env(name: str) -> str:
@@ -94,6 +95,12 @@ def main():
         print(f"   {method_name.upper()}: {dims} dims, {n_trials} trials")
     print(f"{'=' * SEPARATOR_WIDTH_WIDE}\n")
 
+    # --- Baseline (unsteered) evaluation ---
+    baseline_score = _run_baseline(
+        model_name, benchmark, test_file, output_dir,
+    )
+    print(f"   Baseline:      {baseline_score:.4f}")
+
     method_results = {}
     overall_start = time.time()
 
@@ -106,7 +113,8 @@ def main():
         )
 
     _save_final_report(
-        method_results, model_name, benchmark, output_dir, overall_start,
+        method_results, model_name, benchmark, output_dir,
+        overall_start, baseline_score,
     )
 
 
@@ -162,16 +170,36 @@ def _run_method(
     method_start = time.time()
     optimizer = UnifiedOptimizer(backend=backend, direction="maximize")
 
-    with tempfile.TemporaryDirectory() as work_dir:
-        objective = create_objective(
-            method=method_upper, model=model_name, task=benchmark,
-            num_layers=num_layers, limit=n_train, device=None,
-            work_dir=work_dir,
-            train_pairs_file=train_pairs_file,
-            test_pairs_file=test_pairs_file,
-        )
-        result = optimizer.optimize(objective, space, n_trials)
+    method_dir = os.path.join(output_dir, "trials", method_name)
+    workspace = os.path.join(method_dir, "_workspace")
+    os.makedirs(workspace, exist_ok=True)
 
+    objective = create_objective(
+        method=method_upper, model=model_name, task=benchmark,
+        num_layers=num_layers, limit=n_train, device=None,
+        work_dir=workspace,
+        train_pairs_file=train_pairs_file,
+        test_pairs_file=test_pairs_file,
+    )
+
+    trial_counter = []
+
+    def persisted_objective(params):
+        score = objective(params)
+        trial_idx = len(trial_counter)
+        trial_counter.append(trial_idx)
+        trial_dir = os.path.join(method_dir, f"trial_{trial_idx:04d}")
+        os.makedirs(trial_dir, exist_ok=True)
+        for fname in ("responses.json", "scores.json"):
+            src = os.path.join(workspace, fname)
+            if os.path.exists(src):
+                shutil.copy2(src, os.path.join(trial_dir, fname))
+        with open(os.path.join(trial_dir, "trial_meta.json"), "w") as f:
+            json.dump({"params": params, "score": score, "trial": trial_idx},
+                      f, indent=JSON_INDENT, default=str)
+        return score
+
+    result = optimizer.optimize(persisted_objective, space, n_trials)
     method_time = time.time() - method_start
     entry = {
         "method": method_name,
@@ -198,8 +226,23 @@ def _run_method(
     print(f"   Saved: {incremental_path}")
 
 
+def _run_baseline(model_name, benchmark, test_file, output_dir):
+    """Evaluate unsteered model, using HF cache if available."""
+    if baseline_cache.check_baseline_exists(model_name, benchmark):
+        print("   Loading cached baseline from HuggingFace...")
+        _, scores, meta = baseline_cache.load_baseline_from_hf(model_name, benchmark)
+        return meta.get("accuracy", sum(s["correct"] for s in scores) / len(scores))
+    print("   Generating baseline (no cache found)...")
+    acc, _, _ = baseline_cache.generate_and_upload_baseline(
+        model_name, benchmark, test_file, None,
+        baseline_cache.build_default_hf_retry_config(),
+    )
+    return acc
+
+
 def _save_final_report(
     method_results, model_name, benchmark, output_dir, overall_start,
+    baseline_score,
 ):
     """Determine winner, save final JSON, print summary."""
     total_time = time.time() - overall_start
@@ -218,6 +261,7 @@ def _save_final_report(
     final_results = {
         "model": model_name,
         "benchmark": benchmark,
+        "baseline_score": baseline_score,
         "winner": winner,
         "winner_score": winner_score,
         "total_time_seconds": total_time,

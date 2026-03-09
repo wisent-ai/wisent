@@ -20,26 +20,8 @@ def evaluate_personalization(args, input_data, responses, task_name, evaluation_
     """
     print(f"🎭 Running personality trait evaluation using shared steering evaluators...")
 
-    # Check if baseline is provided
-    if not hasattr(args, 'baseline') or not args.baseline:
-        print(f"   ❌ Error: --baseline argument is required for personalization evaluation")
-        raise ValueError("--baseline argument is required for personalization evaluation")
-
-    # Load baseline responses
-    print(f"📂 Loading baseline responses...")
-    try:
-        with open(args.baseline, 'r') as f:
-            baseline_data = json.load(f)
-
-        if isinstance(baseline_data, list):
-            baseline_responses = baseline_data
-        else:
-            baseline_responses = baseline_data.get('responses', [])
-
-        print(f"   ✓ Loaded {len(baseline_responses)} baseline responses\n")
-    except Exception as e:
-        print(f"   ❌ Failed to load baseline file: {e}")
-        raise
+    # Load baseline responses — from file or HF cache
+    baseline_responses = _load_baseline(args, input_data)
 
     # Check lengths match
     if len(baseline_responses) != len(responses):
@@ -231,3 +213,33 @@ def evaluate_personalization(args, input_data, responses, task_name, evaluation_
     print(f"   Average overall score: {aggregated_metrics.get('avg_overall_score', 0):.3f}")
     print(f"{'='*80}\n")
     return aggregated_metrics
+
+
+def _load_baseline(args, input_data):
+    """Load baseline from file or HuggingFace cache."""
+    if hasattr(args, 'baseline') and args.baseline:
+        print("Loading baseline responses from file...")
+        with open(args.baseline, 'r') as f:
+            baseline_data = json.load(f)
+        if isinstance(baseline_data, list):
+            responses = baseline_data
+        else:
+            responses = baseline_data.get('responses', [])
+        print(f"   Loaded {len(responses)} baseline responses\n")
+        return responses
+    # Try HF cache
+    if isinstance(input_data, dict):
+        model_name = input_data.get('model', '')
+    else:
+        model_name = ''
+    if model_name:
+        from wisent.core.reading.evaluators.core._steering_evaluators_helpers import (
+            _load_personalization_baseline_from_hf,
+        )
+        cached = _load_personalization_baseline_from_hf(model_name)
+        if cached:
+            print(f"   Loaded {len(cached)} baseline responses from HF cache\n")
+            return cached
+    raise ValueError(
+        "--baseline argument is required (no HF cache found)"
+    )
