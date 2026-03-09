@@ -94,18 +94,6 @@ def setup_welfare_universal_parsers(steering_subparsers):
         help="Search strategy: 'grid' for exhaustive search, 'optuna' for TPE sampling"
     )
     welfare_parser.add_argument(
-        "--n-trials",
-        type=int,
-        default=None,
-        help="Number of Optuna trials when using --search-strategy optuna (default: 100)"
-    )
-    welfare_parser.add_argument(
-        "--limit",
-        type=int,
-        required=True,
-        help="Sample limit for optimization"
-    )
-    welfare_parser.add_argument(
         "--layer-stride",
         type=int,
         required=True,
@@ -143,18 +131,6 @@ def setup_welfare_universal_parsers(steering_subparsers):
         required=True,
         choices=AVAILABLE_METHODS + [m.lower() for m in AVAILABLE_METHODS],
         help=f"Steering method to optimize. Available: {', '.join(AVAILABLE_METHODS)}"
-    )
-    universal_parser.add_argument(
-        "--limit",
-        type=int,
-        default=None,
-        help="Maximum samples to use (default: 100)"
-    )
-    universal_parser.add_argument(
-        "--max-configs",
-        type=int,
-        default=None,
-        help="Maximum number of configurations to test (default: all)"
     )
     universal_parser.add_argument(
         "--output-dir",

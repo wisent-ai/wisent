@@ -41,8 +41,6 @@ def run_wisent_task(
     layer: int,
     steering_strength: Optional[float] = None,
     steering_mode: bool = False,
-    training_limit: int,
-    testing_limit: int,
 ) -> float:
     """
     Run wisent tasks command and return accuracy.
@@ -52,8 +50,6 @@ def run_wisent_task(
         "tasks", benchmark,
         "--model", model,
         "--layer", str(layer),
-        "--training-limit", str(training_limit),
-        "--testing-limit", str(testing_limit),
         "--output-mode", "likelihoods",
     ]
     

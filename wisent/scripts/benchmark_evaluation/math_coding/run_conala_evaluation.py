@@ -37,7 +37,6 @@ def evaluate_conala(
     model: WisentModel,
     evaluator: CoNaLaEvaluator,
     split: str,
-    limit: int | None = None,
 ) -> dict:
     """Evaluate model on CoNaLa dataset.
 
@@ -45,16 +44,12 @@ def evaluate_conala(
         model: WisentModel instance
         evaluator: CoNaLaEvaluator instance
         split: Dataset split ('train' or 'test')
-        limit: Optional limit on number of examples
 
     Returns:
         Dictionary with BLEU score, exact match, and detailed results
     """
 
     ds = load_dataset("neulab/conala", "curated", split=split)
-
-    if limit is not None:
-        ds = ds.select(range(min(limit, len(ds))))
 
     results = []
     generated_responses = []
@@ -117,7 +112,7 @@ def evaluate_conala(
     }
 
 
-def main(limit: int | None = None, *, split: str, bleu_threshold: float):
+def main(*, split: str, bleu_threshold: float):
     """Run CoNaLa evaluation and save results."""
     print("Loading model...")
     model_name = "Qwen/Qwen2.5-0.5B-Instruct"
@@ -128,7 +123,7 @@ def main(limit: int | None = None, *, split: str, bleu_threshold: float):
     print(f"\nEvaluating on CoNaLa {split} split")
     print("=" * SEPARATOR_WIDTH_STANDARD)
 
-    metrics = evaluate_conala(model, evaluator, split, limit)
+    metrics = evaluate_conala(model, evaluator, split)
 
     # Summary
     print("\n" + "=" * SEPARATOR_WIDTH_STANDARD)
@@ -169,8 +164,7 @@ def main(limit: int | None = None, *, split: str, bleu_threshold: float):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Run CoNaLa evaluation")
-    parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--split", type=str, required=True)
     parser.add_argument("--bleu-threshold", type=float, required=True)
     _args = parser.parse_args()
-    main(limit=_args.limit, split=_args.split, bleu_threshold=_args.bleu_threshold)
+    main(split=_args.split, bleu_threshold=_args.bleu_threshold)

@@ -72,12 +72,6 @@ def setup_zwiad_parser(parser):
         help="Transformer component to extract from"
     )
     parser.add_argument(
-        "--limit",
-        type=int,
-        default=None,
-        help="Maximum number of pairs to load (default: all)"
-    )
-    parser.add_argument(
         "--database-url",
         type=str,
         default=None,

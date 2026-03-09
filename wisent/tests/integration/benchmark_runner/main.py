@@ -101,8 +101,6 @@ def main():
                        help="HuggingFace model name")
     parser.add_argument("--release-version", required=True,
                        help="LiveCodeBench release version")
-    parser.add_argument("--limit", type=int, required=True,
-                       help="Limit number of problems to process")
     parser.add_argument("--max-tokens", type=int, default=512,
                        help="Maximum tokens to generate per problem")
     parser.add_argument("--output-dir", required=True,
@@ -117,7 +115,6 @@ def main():
     print("🚀 Starting LiveCodeBench benchmark runner")
     print(f"Model: {args.model_name}")
     print(f"Release Version: {args.release_version}")
-    print(f"Limit: {args.limit}")
     print(f"Max Tokens: {args.max_tokens}")
     
     # Setup output directory
@@ -139,7 +136,7 @@ def main():
         loader = LiveCodeBenchLoader()
         problems = loader.load_problems(
             release_version=args.release_version,
-            limit=args.limit
+            limit=None
         )
         print(f"✅ Loaded {len(problems)} problems from {args.release_version}")
         

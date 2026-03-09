@@ -23,7 +23,6 @@ def test_optimize_sample_size_basic():
                 "--token-aggregation", "average",
                 "--sample-sizes", "5", "10",
                 "--test-size", "20",
-                "--limit", "30",
                 "--device", "cpu",
                 "--verbose"
             ],
@@ -55,7 +54,6 @@ def test_optimize_sample_size_with_steering():
                 "--steering-strength", "1.0",
                 "--sample-sizes", "5", "10",
                 "--test-size", "15",
-                "--limit", "25",
                 "--device", "cpu",
                 "--verbose"
             ],
@@ -84,7 +82,6 @@ def test_optimize_sample_size_custom_threshold():
                 "--threshold", "0.6",
                 "--sample-sizes", "5", "10",
                 "--test-size", "15",
-                "--limit", "25",
                 "--device", "cpu",
                 "--seed", "123",
                 "--verbose"

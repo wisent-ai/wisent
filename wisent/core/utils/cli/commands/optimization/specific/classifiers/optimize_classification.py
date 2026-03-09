@@ -28,7 +28,6 @@ def execute_optimize_classification(args):
     print(f"CLASSIFICATION PARAMETER OPTIMIZATION")
     print(f"{'='*80}")
     print(f"   Model: {args.model}")
-    print(f"   Limit per task: {args.limit}")
     print(f"   Device: {args.device or 'auto'}")
     evaluator_type = getattr(args, 'evaluator', 'task')
     trait = getattr(args, 'trait', None)

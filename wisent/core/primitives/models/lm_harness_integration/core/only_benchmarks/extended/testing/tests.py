@@ -56,7 +56,6 @@ def test_single_benchmark_direct(benchmark_name: str, benchmark_config: dict) ->
             "tasks", task_name,
             "--model", "meta-llama/Llama-3.1-8B-Instruct",
             "--layer", "15",
-            "--limit", "5",
             "--classifier-type", "logistic",
             "--verbose",
         ]

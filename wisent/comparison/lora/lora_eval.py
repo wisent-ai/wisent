@@ -39,7 +39,7 @@ def remove_lora(wisent_model: "WisentModel") -> None:
         wisent_model.hf_model = wisent_model.hf_model.base_model.model
         print("LoRA adapter removed")
 
-def _eval_lora_with_steering(wisent_model, task, task_dict, limit, base_acc_lm_eval, base_acc_ll,
+def _eval_lora_with_steering(wisent_model, task, task_dict, base_acc_lm_eval, base_acc_ll,
                               lora_acc_lm_eval, lora_acc_ll, steering_method, steering_layers,
                               steering_num_pairs, steering_scales, extraction_strategy,
                               device, batch_size, max_batch_size, results, log_interval: int,
@@ -69,9 +69,9 @@ def _eval_lora_with_steering(wisent_model, task, task_dict, limit, base_acc_lm_e
                            "num_pairs": steering_num_pairs, "extraction_strategy": extraction_strategy, "scales": {}}
     for scale in steering_scales:
         apply_steering_to_model(wisent_model, steering_data, scale=scale, min_norm_threshold=min_norm_threshold)
-        steer_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, limit)
+        steer_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, None)
         steer_acc_lm_eval = extract_accuracy(steer_results, task)
-        steer_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=limit)
+        steer_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=None)
         remove_steering(wisent_model)
         results["steering"]["scales"][str(scale)] = {
             "accuracy_lm_eval": steer_acc_lm_eval, "accuracy_ll": steer_acc_ll,
@@ -90,7 +90,6 @@ def evaluate_lora(
     min_norm_threshold: float,
     *,
     train_ratio: float,
-    limit: int | None = None,
     output_dir: str | Path = None,
     num_train_pairs: int | None = None, num_epochs: int | None = None,
     lora_r: int | None = None, lora_alpha: int | None = None,
@@ -108,31 +107,31 @@ def evaluate_lora(
     print(f"\n{'='*60}\nLoading model: {model_name}\n{'='*60}")
     wisent_model = WisentModel(model_name=model_name, device=device)
     print(f"\n{'='*60}\nRunning BASE evaluation (no LoRA)\n{'='*60}")
-    base_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, limit)
+    base_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, None)
     base_acc_lm_eval = extract_accuracy(base_results, task)
     print(f"Base accuracy (lm-eval): {base_acc_lm_eval:.4f}")
-    base_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=limit)
+    base_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=None)
     print(f"Base accuracy (LL): {base_acc_ll:.4f}")
     print(f"\n{'='*60}\nApplying LoRA adapter from: {lora_path}\n{'='*60}")
     apply_lora_to_model(wisent_model, lora_path)
     print(f"\n{'='*60}\nRunning LORA evaluation\n{'='*60}")
-    lora_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, limit)
+    lora_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, None)
     lora_acc_lm_eval = extract_accuracy(lora_results, task)
     print(f"LoRA accuracy (lm-eval): {lora_acc_lm_eval:.4f}")
-    lora_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=limit)
+    lora_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, log_interval=log_interval, limit=None)
     print(f"LoRA accuracy (LL): {lora_acc_ll:.4f}")
     results = {
         "task": task, "model": model_name, "lora_path": str(lora_path),
         "num_train_pairs": num_train_pairs, "num_epochs": num_epochs,
         "lora_r": lora_r, "lora_alpha": lora_alpha, "lora_dropout": lora_dropout,
-        "learning_rate": learning_rate, "train_ratio": train_ratio, "eval_limit": limit,
+        "learning_rate": learning_rate, "train_ratio": train_ratio,
         "base_accuracy_lm_eval": base_acc_lm_eval, "base_accuracy_ll": base_acc_ll,
         "lora_accuracy_lm_eval": lora_acc_lm_eval, "lora_accuracy_ll": lora_acc_ll,
         "lora_diff_lm_eval": lora_acc_lm_eval - base_acc_lm_eval, "lora_diff_ll": lora_acc_ll - base_acc_ll,
     }
     if with_steering:
         results = _eval_lora_with_steering(
-            wisent_model, task, task_dict, limit, base_acc_lm_eval, base_acc_ll,
+            wisent_model, task, task_dict, base_acc_lm_eval, base_acc_ll,
             lora_acc_lm_eval, lora_acc_ll, steering_method, steering_layers,
             steering_num_pairs, steering_scales, extraction_strategy, device, batch_size, max_batch_size, results,
             log_interval=log_interval, min_norm_threshold=min_norm_threshold)

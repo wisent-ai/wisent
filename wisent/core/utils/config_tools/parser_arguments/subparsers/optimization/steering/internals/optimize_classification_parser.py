@@ -12,7 +12,6 @@ def setup_classification_optimizer_parser(parser):
         default=None,
         help="Specific tasks to optimize (e.g., 'truthfulqa_mc1 arc_easy'). If not provided, runs all supported tasks.",
     )
-    parser.add_argument("--limit", type=int, required=True, help="Maximum samples per task")
     parser.add_argument(
         "--optimization-metric",
         type=str,

@@ -80,13 +80,6 @@ def setup_get_activations_parser(parser: argparse.ArgumentParser) -> None:
         required=True,
         help="Batch size for processing"
     )
-    parser.add_argument(
-        "--limit",
-        type=int,
-        default=None,
-        help="Maximum number of pairs to process"
-    )
-
     # Display options
     parser.add_argument(
         "--verbose",

@@ -26,7 +26,7 @@ from dataclasses import dataclass
 
 import torch
 
-from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_EVAL, DISPLAY_TRUNCATION_SHORT
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_EVAL, DISPLAY_TRUNCATION_SHORT, TRIALS_PER_DIMENSION_MULTIPLIER
 from wisent.core.utils.infra_tools.errors import UnknownTypeError, InsufficientDataError
 from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.core.reading.evaluators.steering_evaluators import (
@@ -100,7 +100,6 @@ def execute_optimize_weights(args):
         evaluator_display = "unknown"
     print(f"   Evaluator: {evaluator_display}")
     print(f"   Target: {args.target_metric} = {args.target_value}")
-    print(f"   Trials: {args.trials}")
     print(f"   Output: {args.output_dir}")
     print(f"{'='*80}\n")
 
@@ -195,9 +194,15 @@ def execute_optimize_weights(args):
         num_layers=num_layers,
     )
 
+    # Derive n_trials from weight search space dimensions
+    weight_dimensions = [strength_range, max_weight_range, min_weight_range, position_range]
+    if args.optimize_direction_index:
+        weight_dimensions.append(("direction_index",))
+    n_trials = getattr(args, 'trials', None) or len(weight_dimensions) * TRIALS_PER_DIMENSION_MULTIPLIER
+
     # Create HPO config
     hpo_config = HPOConfig(
-        n_trials=args.trials,
+        n_trials=n_trials,
         direction=direction,
         sampler="tpe",
         pruner=None,
@@ -205,7 +210,7 @@ def execute_optimize_weights(args):
     )
 
     # Run optimization
-    print(f"\nStarting optimization ({args.trials} trials)...\n")
+    print(f"\nStarting optimization ({n_trials} trials)...\n")
     
     # Use checkpointing if checkpoint path is provided
     checkpoint_path = getattr(args, 'checkpoint', None)

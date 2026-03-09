@@ -76,38 +76,6 @@ def setup_optimize_all_parser(parser):
         help="Search strategy: 'grid' for exhaustive search, 'optuna' for TPE sampling"
     )
     parser.add_argument(
-        "--n-trials",
-        type=int,
-        required=True,
-        help="Number of Optuna trials for optimization"
-    )
-
-    # General limit that applies to all optimizations unless overridden
-    parser.add_argument(
-        "--limit",
-        type=int,
-        required=True,
-        help="Sample limit for all optimizations. Can be overridden by specific limits below",
-    )
-
-    # Specific limits (override general limit if provided)
-    parser.add_argument(
-        "--classification-limit",
-        type=int,
-        default=None,
-        help="Sample limit for classification optimization (overrides --limit)",
-    )
-    parser.add_argument(
-        "--sample-size-limit",
-        type=int,
-        default=None,
-        help="Sample limit for sample size optimization (overrides --limit)",
-    )
-    parser.add_argument(
-        "--steering-limit", type=int, default=None, help="Sample limit for steering optimization (overrides --limit)"
-    )
-
-    parser.add_argument(
         "--sample-sizes",
         type=int,
         nargs="+",

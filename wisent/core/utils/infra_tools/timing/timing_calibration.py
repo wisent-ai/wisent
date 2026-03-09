@@ -64,7 +64,6 @@ class TimingCalibrator:
             "optimize-classification",
             model_name,
             "--tasks", "arc_easy",
-            "--limit", "10",
             "--layer-range", f"{calibration_layer},{calibration_layer}",
             "--no-save",
             "--skip-timing-estimation"

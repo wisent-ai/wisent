@@ -35,7 +35,7 @@ class AbliterationConfig:
         return args
 
 
-def evaluate_model(model_path: str, task: str, *, limit: int) -> tuple[float, float]:
+def evaluate_model(model_path: str, task: str, *, limit: int | None = None) -> tuple[float, float]:
     """
     Evaluate model and return (acc, acc_norm).
     """
@@ -44,7 +44,6 @@ def evaluate_model(model_path: str, task: str, *, limit: int) -> tuple[float, fl
         "--model", "hf",
         "--model_args", f"pretrained={model_path}",
         "--tasks", task,
-        "--limit", str(limit),
         "--device", "mps",
         "--batch_size", "8",
     ]
@@ -124,8 +123,6 @@ def binary_search_strength(
     num_pairs: int,
     max_weight_position: float,
     min_weight_distance: float,
-    *,
-    limit: int,
 ) -> tuple[float, float, float]:
     """
     Binary search to find optimal strength.
@@ -157,7 +154,7 @@ def binary_search_strength(
         model_path = run_abliteration(config, task, model, output_dir)
 
         if model_path:
-            acc, acc_norm = evaluate_model(model_path, task, limit=limit)
+            acc, acc_norm = evaluate_model(model_path, task)
             print(f"  Iteration {i+1}: strength={mid:.3f} -> acc={acc:.4f}, acc_norm={acc_norm:.4f}")
 
             if acc > best_acc:
@@ -180,8 +177,6 @@ def grid_search_components(
     num_pairs: int,
     max_weight_position: float,
     min_weight_distance: float,
-    *,
-    limit: int,
 ) -> tuple[list[str], float]:
     """
     Test different component combinations.
@@ -220,7 +215,7 @@ def grid_search_components(
         model_path = run_abliteration(config, task, model, output_dir)
 
         if model_path:
-            acc, acc_norm = evaluate_model(model_path, task, limit=limit)
+            acc, acc_norm = evaluate_model(model_path, task)
             print(f"  Components {components}: acc={acc:.4f}")
 
             if acc > best_acc:
@@ -240,8 +235,6 @@ def grid_search_kernel_shape(
     initial_position: float,
     initial_distance: float,
     best_components: list[str] = None,
-    *,
-    limit: int,
 ) -> tuple[float, float, float, float]:
     """
     Search for optimal kernel shape (max_weight_position, min_weight_distance).
@@ -280,7 +273,7 @@ def grid_search_kernel_shape(
             model_path = run_abliteration(config, task, model, output_dir)
 
             if model_path:
-                acc, acc_norm = evaluate_model(model_path, task, limit=limit)
+                acc, acc_norm = evaluate_model(model_path, task)
 
                 if acc > best_acc:
                     best_position = pos

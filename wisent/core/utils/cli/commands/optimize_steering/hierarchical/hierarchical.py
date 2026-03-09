@@ -75,7 +75,7 @@ def execute_hierarchical_optimization(args):
         methods=methods,
         num_layers=num_layers,
         min_clusters=getattr(args, 'min_clusters', None),
-        limit=args.limit,
+        limit=None,
         device=getattr(args, 'device', None),
         enriched_pairs_file=enriched_pairs_file,
         output_dir=getattr(args, 'output_dir', './hierarchical_results'),

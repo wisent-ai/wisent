@@ -127,7 +127,6 @@ def execute_optimization(args, model, LMEvalDataLoader, *, threshold_range_short
         threshold_range=list(threshold_range_short),
         classifier_types=[args.classifier_type],
         metric=getattr(args, 'optimize_metric', 'f1'),
-        max_combinations=args.optimize_max_combinations
     )
 
     total_combos = (len(layer_range) * len(config.aggregation_methods) *
@@ -148,9 +147,9 @@ def execute_optimization(args, model, LMEvalDataLoader, *, threshold_range_short
         task_name=task_name,
         split_ratio=args.split_ratio,
         seed=args.seed,
-        limit=args.limit,
-        training_limit=args.training_limit,
-        testing_limit=args.testing_limit
+        limit=None,
+        training_limit=None,
+        testing_limit=None
     )
     train_pair_set = result['train_qa_pairs']
     test_pair_set = result['test_qa_pairs']

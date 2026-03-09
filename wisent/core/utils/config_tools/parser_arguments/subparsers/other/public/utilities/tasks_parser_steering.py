@@ -249,14 +249,14 @@ def setup_steering_task_args(parser):
     parser.add_argument(
         "--early-rejection-snr-threshold",
         type=float,
-        default=5.0,
-        help="Minimum SNR for early rejection during optimization (default: 5.0)"
+        required=True,
+        help="Minimum SNR for early rejection during optimization"
     )
     parser.add_argument(
         "--early-rejection-cv-threshold",
         type=float,
-        default=0.1,
-        help="Minimum cross-validation score for early rejection during optimization (default: 0.1)"
+        required=True,
+        help="Minimum cross-validation score for early rejection during optimization"
     )
 
     # Additional output options

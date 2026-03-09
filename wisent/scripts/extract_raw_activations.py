@@ -42,12 +42,11 @@ def main():
     parser = argparse.ArgumentParser(description="Extract raw activations for all missing benchmarks with 3 formats")
     parser.add_argument("--model", required=True, help="Model name (e.g., meta-llama/Llama-3.2-1B-Instruct)")
     parser.add_argument("--device", required=True, help="Device (cuda/mps/cpu)")
-    parser.add_argument("--limit", type=int, required=True, help="Max pairs per benchmark")
     parser.add_argument("--benchmark", default=None, help="Single benchmark to extract (optional)")
     parser.add_argument("--max-retries", type=int, required=True, help="Maximum retry attempts for DB operations")
     parser.add_argument("--log-interval", type=int, required=True, help="Progress logging interval")
     args = parser.parse_args()
-    print(f"[MAIN] Args: model={args.model}, device={args.device}, limit={args.limit}, benchmark={args.benchmark}", flush=True)
+    print(f"[MAIN] Args: model={args.model}, device={args.device}, benchmark={args.benchmark}", flush=True)
 
     print("[MAIN] Importing transformers...", flush=True)
     from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -99,7 +98,7 @@ def main():
 
         print(f"\nExtracting single benchmark: {args.benchmark}", flush=True)
         extracted = extract_benchmark(model, tokenizer, model_id, args.benchmark, set_id,
-                                       num_layers, args.device, get_conn, reset_conn, max_retries=args.max_retries, log_interval=args.log_interval, limit=args.limit)
+                                       num_layers, args.device, get_conn, reset_conn, max_retries=args.max_retries, log_interval=args.log_interval)
         print(f"\nDone! Extracted {extracted} pairs", flush=True)
     else:
         missing = get_missing_benchmarks(conn, model_id, num_layers)
@@ -115,7 +114,7 @@ def main():
             start = time.time()
 
             extracted = extract_benchmark(model, tokenizer, model_id, benchmark_name, set_id,
-                                           num_layers, args.device, get_conn, reset_conn, max_retries=args.max_retries, log_interval=args.log_interval, limit=args.limit)
+                                           num_layers, args.device, get_conn, reset_conn, max_retries=args.max_retries, log_interval=args.log_interval)
 
             total_extracted += extracted
             elapsed = time.time() - start

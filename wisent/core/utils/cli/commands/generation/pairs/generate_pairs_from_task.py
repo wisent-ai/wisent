@@ -20,9 +20,6 @@ def execute_generate_pairs_from_task(args):
 
     print(f"\n📊 Generating contrastive pairs from task: {args.task_name}")
 
-    if args.limit:
-        print(f"   Limit: {args.limit} pairs")
-
     try:
         print(f"\n🔄 Loading task '{args.task_name}'...")
         print(f"   🔨 Building contrastive pairs...")
@@ -30,7 +27,7 @@ def execute_generate_pairs_from_task(args):
         # Use unified loader - handles HF, lm-eval, and group tasks automatically
         pairs = build_contrastive_pairs(
             task_name=args.task_name,
-            limit=args.limit,
+            limit=None,
             train_ratio=args.train_ratio,
         )
         pairs_task_name = args.task_name

@@ -14,6 +14,5 @@ python -m wisent.core.main optimize-steering comprehensive \
     meta-llama/Llama-3.2-1B-Instruct \
     --tasks truthfulqa_mc1 \
     --methods CAA \
-    --limit 10 \
     --max-time-per-task 15.0 \
     --verbose

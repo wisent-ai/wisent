@@ -33,8 +33,6 @@ TRAIN_RATIO="0.8"
 # Evaluation settings
 EVAL_BATCH_SIZE="1"
 EVAL_MAX_BATCH_SIZE="1"
-EVAL_LIMIT="100"
-
 # ReFT + Steering settings (set WITH_STEERING="true" to enable)
 WITH_STEERING="false"
 STEERING_METHOD="caa"  # caa
@@ -80,11 +78,6 @@ for ((attempt=1; attempt<=MAX_RETRIES; attempt++)); do
         --train-ratio $TRAIN_RATIO \
         --eval-batch-size $EVAL_BATCH_SIZE \
         --eval-max-batch-size $EVAL_MAX_BATCH_SIZE"
-
-    # Add eval-limit only if set
-    if [ -n "$EVAL_LIMIT" ]; then
-        CMD="$CMD --eval-limit $EVAL_LIMIT"
-    fi
 
     # Add steering options if enabled
     if [ "$WITH_STEERING" = "true" ]; then

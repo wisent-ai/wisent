@@ -51,7 +51,7 @@ def _evaluate_with_vectors(vectors, metadata, args, work_dir, layer_sweep_streng
     obj.save(sf)
     execute_generate_responses(_make_args(
         task=args.task, input_file=args.enriched_pairs_file, model=args.model,
-        output=rf, num_questions=args.limit, min_load_limit_questions=args.limit,
+        output=rf, num_questions=None, min_load_limit_questions=None,
         steering_object=sf, steering_strength=layer_sweep_strength, steering_strategy=get_optimal("steering_strategy"),
         use_steering=True, device=getattr(args, 'device', None),
         verbose=False, cached_model=None,
@@ -92,7 +92,6 @@ def run_vector_rl_loop(args) -> dict:
     noise_scale = getattr(args, 'noise_scale', None)
     if noise_scale is None:
         raise ValueError("noise_scale is required")
-    limit = args.limit
     output_path = getattr(args, 'output', 'best_transport_rl.pt')
 
     print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
@@ -100,7 +99,7 @@ def run_vector_rl_loop(args) -> dict:
     print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"   Model: {args.model}  |  Task: {args.task}")
     print(f"   Base method: {method}  |  Iterations: {max_iter}  |  LR: {lr}")
-    print(f"   Noise scale: {noise_scale}  |  Limit: {limit}")
+    print(f"   Noise scale: {noise_scale}")
     print(f"{'=' * SEPARATOR_WIDTH_WIDE}\n")
 
     # 1. Create initial steering object using specified method

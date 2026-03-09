@@ -112,7 +112,7 @@ def _load_or_generate_reference_activations(args):
             component=args.extraction_component,
             extraction_strategy=args.extraction_strategy,
             prompt_format=args.prompt_format,
-            limit=args.limit,
+            limit=None,
             database_url=getattr(args, 'database_url', None),
         )
         print(f"  Found activations in database")
@@ -134,7 +134,7 @@ def _generate_reference_activations(args):
         tmpdir = Path(tmpdir)
         pairs_path = tmpdir / "pairs.json"
         pair_texts = load_pair_texts_from_database(
-            task_name=args.task, limit=args.limit,
+            task_name=args.task, limit=None,
             database_url=getattr(args, 'database_url', None)
         )
         pairs_list = [{"prompt": p.get("prompt", ""),
@@ -196,7 +196,7 @@ def _generate_and_extract(args, steering_vector):
     config = SteeringConfig(scale={layer_name: args.strength})
 
     pair_texts = load_pair_texts_from_database(
-        task_name=args.task, limit=args.limit,
+        task_name=args.task, limit=None,
         database_url=getattr(args, 'database_url', None)
     )
 

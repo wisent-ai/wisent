@@ -119,12 +119,11 @@ def format_pair_with_strategies(pair, tokenizer):
     return result
 
 
-def test_all_benchmarks(timeout_per_task: int, limit: int):
+def test_all_benchmarks(timeout_per_task: int):
     """Test contrastive pairs generation for all supported benchmarks.
 
     Args:
         timeout_per_task: Timeout in seconds per benchmark
-        limit: Number of pairs to generate per benchmark
 
     Returns:
         Dictionary with results including example pairs with all strategies
@@ -139,7 +138,7 @@ def test_all_benchmarks(timeout_per_task: int, limit: int):
     benchmarks = [b for b in all_benchmarks if b not in broken]
     
     print(f"Testing {len(benchmarks)} benchmarks (excluded {len(broken)} broken)")
-    print(f"Timeout per task: {timeout_per_task}s, limit: {limit} pairs")
+    print(f"Timeout per task: {timeout_per_task}s")
     print()
     
     tokenizer = MockTokenizer()
@@ -154,7 +153,7 @@ def test_all_benchmarks(timeout_per_task: int, limit: int):
     
     for i, benchmark in enumerate(benchmarks):
         try:
-            pairs = build_contrastive_pairs(benchmark, limit=limit, train_ratio=args.train_ratio)
+            pairs = build_contrastive_pairs(benchmark, limit=None)
 
             if pairs and len(pairs) > 0:
                 results["ok"] += 1
@@ -208,12 +207,11 @@ def main():
     
     parser = argparse.ArgumentParser(description="Test contrastive pairs for all supported benchmarks")
     parser.add_argument("--timeout", "-t", type=int, required=True, help="Timeout per task in seconds")
-    parser.add_argument("--limit", "-l", type=int, required=True, help="Number of pairs per benchmark")
     parser.add_argument("--output", "-o", type=str, required=True, help="Output JSON file for results")
-    
+
     args = parser.parse_args()
-    
-    results = test_all_benchmarks(timeout_per_task=args.timeout, limit=args.limit)
+
+    results = test_all_benchmarks(timeout_per_task=args.timeout)
     
     with open(args.output, 'w') as f:
         json.dump(results, f, indent=JSON_INDENT, ensure_ascii=False)

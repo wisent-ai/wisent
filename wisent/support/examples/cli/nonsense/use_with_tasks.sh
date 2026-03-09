@@ -12,8 +12,7 @@ wisent tasks hellaswag \
   --nonsense \
   --nonsense-mode random_chars \
   --num-synthetic-pairs 20 \
-  --save-synthetic ./task_hellaswag_nonsense.json \
-  --limit 50
+  --save-synthetic ./task_hellaswag_nonsense.json
 
 echo ""
 echo "Example 2: MMLU with word salad nonsense"
@@ -21,8 +20,7 @@ wisent tasks mmlu \
   --nonsense \
   --nonsense-mode word_salad \
   --num-synthetic-pairs 20 \
-  --save-synthetic ./task_mmlu_nonsense.json \
-  --limit 50
+  --save-synthetic ./task_mmlu_nonsense.json
 
 echo ""
 echo "✅ Task nonsense pairs generated!"

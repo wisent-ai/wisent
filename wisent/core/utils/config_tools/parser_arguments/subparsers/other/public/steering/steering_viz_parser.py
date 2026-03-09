@@ -33,12 +33,6 @@ def setup_steering_viz_parser(parser):
         help="Number of test prompts to run"
     )
     parser.add_argument(
-        "--limit",
-        type=int,
-        required=True,
-        help="Maximum reference pairs to load"
-    )
-    parser.add_argument(
         "--prompt-format",
         type=str,
         required=True,
@@ -51,18 +45,6 @@ def setup_steering_viz_parser(parser):
         required=True,
         choices=["last_token", "first_token"],
         help="Token extraction strategy"
-    )
-    parser.add_argument(
-        "--db-pair-loading-limit",
-        type=int,
-        required=True,
-        help="Maximum pairs to load from database"
-    )
-    parser.add_argument(
-        "--db-activation-loading-limit",
-        type=int,
-        required=True,
-        help="Maximum activations to load from database"
     )
     parser.add_argument(
         "--database-url",

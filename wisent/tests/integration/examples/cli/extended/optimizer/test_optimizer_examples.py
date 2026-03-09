@@ -17,7 +17,6 @@ def test_optimize_classification_parameters():
             [
                 "python", "-m", "wisent.core.primitives.model_interface.core.main", "optimize-classification",
                 "meta-llama/Llama-3.2-1B-Instruct",
-                "--limit", "10",
                 "--optimization-metric", "f1",
                 "--max-time-per-task", "5.0",
                 "--layer-range", "2-4",
@@ -42,7 +41,6 @@ def test_optimize_steering_parameters():
                 "meta-llama/Llama-3.2-1B-Instruct",
                 "--tasks", "boolq",
                 "--methods", "CAA",
-                "--limit", "10",
                 "--max-time-per-task", "5.0",
                 "--device", "cpu",
                 "--verbose"

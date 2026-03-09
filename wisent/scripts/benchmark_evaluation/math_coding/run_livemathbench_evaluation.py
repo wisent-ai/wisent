@@ -162,7 +162,7 @@ if __name__ == "__main__":
     main(
         model_name="Qwen/Qwen2.5-1.5B-Instruct",
         dataset_config="amc_en",
-        limit=3,  # Limit to 3 problems for testing
+        limit=None,
         num_samples=16,  # Reduced samples for testing
         k_values=list(LIVEMATHBENCH_K_VALUES),
         tau_values=list(LIVEMATHBENCH_TAU_VALUES),

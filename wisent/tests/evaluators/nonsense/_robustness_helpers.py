@@ -13,10 +13,6 @@ def main():
         help="Model to test"
     )
     parser.add_argument(
-        "--limit", type=int, required=True,
-        help="Number of samples to test"
-    )
-    parser.add_argument(
         "--verbose", action="store_true",
         help="Show detailed output"
     )
@@ -28,7 +24,7 @@ def main():
     try:
         test_math500_robustness(
             model=args.model,
-            limit=args.limit,
+            limit=None,
             verbose=args.verbose
         )
     except KeyboardInterrupt:

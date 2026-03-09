@@ -10,7 +10,6 @@ Usage:
     wisent optimize-weights \
         --task hellaswag \
         --model meta-llama/Llama-3.2-1B-Instruct \
-        --trials 30 \
         --output-dir ./data/modified_models/optuna
 
     # For refusal optimization:
@@ -19,7 +18,6 @@ Usage:
         --model meta-llama/Llama-3.2-1B-Instruct \
         --target-metric compliance_rate \
         --target-value 0.95 \
-        --trials 30 \
         --output-dir ./data/modified_models/optuna
 
     # For personalization optimization:
@@ -27,7 +25,6 @@ Usage:
         --task personalization \
         --trait "a pirate who speaks in nautical terms" \
         --model meta-llama/Llama-3.2-1B-Instruct \
-        --trials 30 \
         --output-dir ./data/modified_models/optuna
 
     # For custom evaluator optimization:
@@ -37,11 +34,10 @@ Usage:
         --custom-evaluator wisent.core.reading.evaluators.custom.examples.gptzero \
         --custom-evaluator-kwargs '{"api_key": "YOUR_KEY"}' \
         --model meta-llama/Llama-3.2-1B-Instruct \
-        --trials 30 \
         --output-dir ./data/modified_models/optuna
 
     # Or run this script for a complete example:
-    python optimize_abliteration_optuna.py --task hellaswag --trials 30
+    python optimize_abliteration_optuna.py --task hellaswag
 """
 
 import argparse
@@ -83,12 +79,6 @@ def main():
         help="Output directory for optimized model",
     )
     parser.add_argument(
-        "--trials",
-        type=int,
-        required=True,
-        help="Number of optimization trials",
-    )
-    parser.add_argument(
         "--num-pairs",
         type=int,
         default=None,
@@ -119,14 +109,12 @@ def main():
     print(f"Task: {args.task}")
     if args.trait:
         print(f"Trait: {args.trait}")
-    print(f"Trials: {args.trials}")
     print("=" * SEPARATOR_WIDTH_REPORT + "\n")
 
     # Build the optimize-weights command
     cmd = [
         "python", "-m", "wisent.core.primitives.model_interface.core.main", "optimize-weights",
         args.model,
-        "--trials", str(args.trials),
         "--num-pairs", str(args.num_pairs),
         "--num-eval-prompts", str(args.num_eval_prompts),
         "--output-dir", args.output_dir,

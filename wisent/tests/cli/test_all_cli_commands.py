@@ -32,7 +32,7 @@ def test_responses_file(tmp_path_factory):
 class TestPairGenerationCommands:
     def test_generate_pairs_from_task(self, tmp_path):
         of = tmp_path / "pairs.json"
-        run_ok(["generate-pairs-from-task", TASK, "--output", str(of), "--limit", "5", "--verbose"])
+        run_ok(["generate-pairs-from-task", TASK, "--output", str(of), "--verbose"])
         assert of.exists()
         with open(of) as f:
             data = json.load(f)
@@ -142,20 +142,20 @@ class TestMultiSteerCommands:
 
 class TestOptimizationCommands:
     def test_optimize_classification(self):
-        run_ok(["optimize-classification", MODEL, "--limit", "50", "--optimization-metric", "f1",
+        run_ok(["optimize-classification", MODEL, "--optimization-metric", "f1",
                 "--layer-range", "2-8", "--aggregation-methods", "average", "final", "first",
                 "--threshold-range", "0.3", "0.5", "0.7"])
 
     def test_optimize_steering(self):
         run_ok(["optimize-steering", "comprehensive", MODEL, "--tasks", TASK,
-                "--methods", "CAA", "PCA", "--limit", "50", "--verbose"])
+                "--methods", "CAA", "PCA", "--verbose"])
 
     def test_optimize_sample_size(self):
-        run_ok(["optimize-sample-size", MODEL, "--task", TASK, "--limit", "100",
+        run_ok(["optimize-sample-size", MODEL, "--task", TASK,
                 "--sample-sizes", "10", "25", "50", "100", "--layer", "5", "--verbose"])
 
     def test_optimize_all(self, tmp_path):
-        run_ok(["optimize-all", MODEL, "--tasks", TASK, "--limit", "50", "--n-trials", "10",
+        run_ok(["optimize-all", MODEL, "--tasks", TASK,
                 "--output-dir", str(tmp_path / "optimized"), "--verbose"])
 
 
@@ -168,7 +168,7 @@ class TestConfigUtilityCommands:
         run_ok(["tasks", "--task-info", TASK])
 
     def test_tasks_run(self, tmp_path):
-        run_ok(["tasks", TASK, "--model", MODEL, "--layer", "3", "--limit", "5",
+        run_ok(["tasks", TASK, "--model", MODEL, "--layer", "3",
                 "--output", str(tmp_path / "task_output"), "--token-aggregation", "average", "--verbose"])
 
     def test_inference_config_show(self):
@@ -194,7 +194,7 @@ class TestFullPipeline:
         pf = tmp_path / "pairs.json"
         ef = tmp_path / "enriched.json"
         vf = tmp_path / "vector.pt"
-        run_ok(["generate-pairs-from-task", TASK, "--output", str(pf), "--limit", "5"])
+        run_ok(["generate-pairs-from-task", TASK, "--output", str(pf)])
         assert pf.exists()
         run_ok(["get-activations", str(pf), "--output", str(ef), "--model", MODEL,
                 "--layers", "3", "--token-aggregation", "average"])

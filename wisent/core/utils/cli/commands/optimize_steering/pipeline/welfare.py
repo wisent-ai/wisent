@@ -14,7 +14,7 @@ from wisent.core.utils.cli.optimize_steering.data.responses import execute_gener
 from wisent.core.utils.cli.optimize_steering.scores import execute_evaluate_responses
 from wisent.core.utils.config_tools.constants import (
     SEPARATOR_WIDTH_REPORT,
-    JSON_INDENT, PARSER_DEFAULT_LAYER_START)
+    JSON_INDENT, PARSER_DEFAULT_LAYER_START, TRIALS_PER_DIMENSION_MULTIPLIER)
 from wisent.core.control.steering_methods.configs.optimal import get_optimal, get_optimal_extraction_strategy
 
 
@@ -31,10 +31,6 @@ def _execute_welfare_optimization(args):
     trait = args.trait
     direction = getattr(args, 'direction', 'positive')
     model = args.model
-    n_trials = args.n_trials
-    limit = getattr(args, 'limit', None)
-    if limit is None:
-        raise ValueError("limit is required (set via --limit)")
     device = getattr(args, 'device', None)
     output_dir = getattr(args, 'output_dir', './welfare_optimization')
 
@@ -44,7 +40,6 @@ def _execute_welfare_optimization(args):
     print(f"   Model: {model}")
     print(f"   Welfare Trait: {trait}")
     print(f"   Direction: {direction}")
-    print(f"   Trials: {n_trials}")
     print(f"   Output: {output_dir}")
     print(f"{'=' * SEPARATOR_WIDTH_REPORT}\n")
 
@@ -105,6 +100,10 @@ def _execute_welfare_optimization(args):
 
     if search_strategy == 'optuna':
         # Optuna-based optimization
+        # Derive n_trials from search dimensions
+        optuna_dimensions = [layers, strength_range, STEERING_STRATEGIES]
+        n_trials = len(optuna_dimensions) * TRIALS_PER_DIMENSION_MULTIPLIER
+
         def objective(trial):
             layer = trial.suggest_categorical("layer", layers)
             strength = trial.suggest_float("strength", strength_range[0], strength_range[1])
@@ -127,7 +126,7 @@ def _execute_welfare_optimization(args):
                         strength=strength,
                         pairs_file=pairs_file,
                         work_dir=work_dir,
-                        limit=min(limit, len(pair_set.pairs)),
+                        limit=len(pair_set.pairs),
                         device=device,
                     )
                     return result.score
@@ -168,7 +167,7 @@ def _execute_welfare_optimization(args):
                                 strength=strength,
                                 pairs_file=pairs_file,
                                 work_dir=work_dir,
-                                limit=min(limit, len(pair_set.pairs)),
+                                limit=len(pair_set.pairs),
                                 device=device,
                             )
                             if result.score > best_score:

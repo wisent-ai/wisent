@@ -6,10 +6,10 @@ This script processes all JSON files in the seed_pairs directory and generates
 corresponding control vectors serialized as JSON with plain activations.
 
 Usage:
-    python generate_all_control_vectors.py [--model MODEL] [--layer LAYER] [--device DEVICE] [--limit LIMIT]
+    python generate_all_control_vectors.py [--model MODEL] [--layer LAYER] [--device DEVICE]
 
 Example:
-    python generate_all_control_vectors.py --model microsoft/DialoGPT-small --layer 5 --limit 10
+    python generate_all_control_vectors.py --model microsoft/DialoGPT-small --layer 5
 """
 import argparse
 import json
@@ -77,13 +77,6 @@ def main():
     )
 
     parser.add_argument(
-        '--limit',
-        type=int,
-        default=None,
-        help='Limit number of files to process (for testing)'
-    )
-
-    parser.add_argument(
         '--resume-from',
         default=None,
         help='Resume from specific trait name (alphabetically)'
@@ -112,7 +105,6 @@ def main():
     logger.info(f"Model: {args.model}")
     logger.info(f"Layer: {args.layer}")
     logger.info(f"Device: {args.device}")
-    logger.info(f"Limit: {args.limit}")
     logger.info(f"Resume from: {args.resume_from}")
     #logger.info(f"Multiple-choice format: {args.multiple_choice}")
 
@@ -129,11 +121,6 @@ def main():
         sys.exit(1)
 
     logger.info(f"Found {len(json_files)} JSON files")
-
-    # Apply limit if specified
-    if args.limit:
-        json_files = json_files[:args.limit]
-        logger.info(f"Limited to {len(json_files)} files")
 
     # Apply resume filter if specified
     if args.resume_from:

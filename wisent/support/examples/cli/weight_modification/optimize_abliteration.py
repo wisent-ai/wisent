@@ -85,7 +85,7 @@ def run_modification(config: AbliterationConfig, task: str, output_dir: str, mod
     return model_path
 
 
-def evaluate_model(model_path: str, task: str, *, limit: int) -> tuple[float, float]:
+def evaluate_model(model_path: str, task: str) -> tuple[float, float]:
     """
     Evaluate model on benchmark.
 
@@ -99,7 +99,6 @@ def evaluate_model(model_path: str, task: str, *, limit: int) -> tuple[float, fl
         "--model", "hf",
         "--model_args", f"pretrained={model_path}",
         "--tasks", task,
-        "--limit", str(limit),
         "--batch_size", "8",
         "--output_path", eval_output,
         "--device", "mps"
@@ -150,8 +149,6 @@ def optimize_abliteration(
     model: str,
     baseline_accuracy: float,
     output_dir: str = "./data/modified_models",
-    *,
-    eval_limit: int,
 ) -> EvaluationResult:
     """
     Optimize abliteration parameters through grid search.
@@ -161,7 +158,6 @@ def optimize_abliteration(
         model: Base model name
         baseline_accuracy: Baseline model accuracy on task
         output_dir: Directory to save modified models
-        eval_limit: Number of examples to evaluate
 
     Returns:
         Best performing configuration and results
@@ -216,7 +212,7 @@ def optimize_abliteration(
         model_path = run_modification(config, task, output_dir, model)
 
         # Evaluate
-        accuracy, acc_norm = evaluate_model(model_path, task, limit=eval_limit)
+        accuracy, acc_norm = evaluate_model(model_path, task)
 
         # Store results
         result = EvaluationResult(
@@ -274,7 +270,6 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, required=True, help="Base model name")
     parser.add_argument("--baseline-accuracy", type=float, required=True, help="Baseline accuracy")
     parser.add_argument("--output-dir", type=str, required=True, help="Output directory")
-    parser.add_argument("--eval-limit", type=int, required=True, help="Evaluation limit")
     args = parser.parse_args()
 
     best = optimize_abliteration(
@@ -282,7 +277,6 @@ if __name__ == "__main__":
         model=args.model,
         baseline_accuracy=args.baseline_accuracy,
         output_dir=args.output_dir,
-        eval_limit=args.eval_limit,
     )
 
     print(f"\nOptimization complete!")

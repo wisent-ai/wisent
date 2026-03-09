@@ -53,7 +53,6 @@ def main():
     parser.add_argument("--train-ratio", type=float, required=True, help="Train/test split ratio")
     parser.add_argument("--eval-batch-size", required=True, help="Eval batch size")
     parser.add_argument("--eval-max-batch-size", type=int, default=None, help="Max eval batch size (required)")
-    parser.add_argument("--eval-limit", type=int, default=None, help="Limit eval examples")
     parser.add_argument("--skip-eval", action="store_true", help="Skip evaluation after training")
     # DPO-LoRA + Steering args
     parser.add_argument("--with-steering", action="store_true", help="Also evaluate DPO-LoRA + steering")
@@ -109,7 +108,6 @@ def main():
             max_batch_size=args.eval_max_batch_size,
             log_interval=args.log_interval,
             train_ratio=args.train_ratio,
-            limit=args.eval_limit,
             output_dir=args.output_dir,
             # Training metadata
             num_train_pairs=args.num_pairs,

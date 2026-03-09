@@ -16,7 +16,6 @@ def compute_baseline_score(
     model: str,
     task_name: str,
     pairs_file: str,
-    limit: int,
     device: Optional[str],
     verbose: bool,
 ) -> float:

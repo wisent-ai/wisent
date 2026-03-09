@@ -119,4 +119,4 @@ def main(limit: int | None = None):
 
 
 if __name__ == "__main__":
-    main(limit=50)
+    main(limit=None)

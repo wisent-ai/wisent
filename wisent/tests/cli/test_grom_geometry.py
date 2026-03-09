@@ -35,7 +35,6 @@ def test_grom_geometry_on_truthfulqa(*, geometry_optimization_steps: int, prefli
                 "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-pairs-from-task",
                 "truthfulqa_gen",
                 "--output", pairs_file,
-                "--limit", "30",
                 "--verbose"
             ],
             capture_output=True,

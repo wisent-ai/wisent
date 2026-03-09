@@ -128,7 +128,6 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
             clf_args = argparse.Namespace(
                 model=args.model,
                 tasks=benchmarks[:args.optimization_benchmark_limit] if len(benchmarks) > args.optimization_benchmark_limit else benchmarks,
-                limit=args.limit,
                 device=args.device,
                 verbose=getattr(args, 'verbose', False),
                 layer_range=None,
@@ -193,7 +192,7 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
                         trait=task,
                         task=None,
                         steering_vectors=None,
-                        trials=args.n_trials,
+                        trials=None,
                         target_metric="score",
                         target_value=args.optimize_weight_mod_target,
                         device=args.device,

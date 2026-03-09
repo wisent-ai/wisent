@@ -16,12 +16,6 @@ def setup_generate_pairs_from_task_parser(parser):
         help="Output file path for the generated pairs (JSON format)"
     )
     parser.add_argument(
-        "--limit",
-        type=int,
-        default=None,
-        help="Maximum number of pairs to generate (default: all available)"
-    )
-    parser.add_argument(
         "--seed",
         type=int,
         default=None,

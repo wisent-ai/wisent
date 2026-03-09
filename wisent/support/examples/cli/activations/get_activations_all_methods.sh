@@ -12,7 +12,6 @@ OUTPUT_DIR="./data/activations_comparison"
 MODEL="meta-llama/Llama-3.2-1B-Instruct"
 LAYERS="8,12,15"
 DEVICE="cpu"
-LIMIT=10
 
 # Create output directory
 mkdir -p "$OUTPUT_DIR"
@@ -55,7 +54,6 @@ for agg in "${AGGREGATION_STRATEGIES[@]}"; do
         --token-aggregation "$agg" \
         --prompt-strategy chat_template \
         --device "$DEVICE" \
-        --limit "$LIMIT" \
         --verbose \
         --timing
 
@@ -84,7 +82,6 @@ for prompt in "${PROMPT_STRATEGIES[@]}"; do
         --token-aggregation average \
         --prompt-strategy "$prompt" \
         --device "$DEVICE" \
-        --limit "$LIMIT" \
         --verbose \
         --timing
 
@@ -112,7 +109,6 @@ python -m wisent.core.main get-activations \
     --token-aggregation final \
     --prompt-strategy direct_completion \
     --device "$DEVICE" \
-    --limit "$LIMIT" \
     --verbose
 echo ""
 
@@ -126,7 +122,6 @@ python -m wisent.core.main get-activations \
     --token-aggregation first \
     --prompt-strategy instruction_following \
     --device "$DEVICE" \
-    --limit "$LIMIT" \
     --verbose
 echo ""
 
@@ -140,7 +135,6 @@ python -m wisent.core.main get-activations \
     --token-aggregation max \
     --prompt-strategy multiple_choice \
     --device "$DEVICE" \
-    --limit "$LIMIT" \
     --verbose
 echo ""
 
@@ -154,7 +148,6 @@ python -m wisent.core.main get-activations \
     --token-aggregation average \
     --prompt-strategy role_playing \
     --device "$DEVICE" \
-    --limit "$LIMIT" \
     --verbose
 echo ""
 
@@ -174,7 +167,6 @@ python -m wisent.core.main get-activations \
     --token-aggregation average \
     --prompt-strategy chat_template \
     --device "$DEVICE" \
-    --limit "$LIMIT" \
     --verbose
 echo ""
 
@@ -188,7 +180,6 @@ python -m wisent.core.main get-activations \
     --token-aggregation average \
     --prompt-strategy chat_template \
     --device "$DEVICE" \
-    --limit "$LIMIT" \
     --verbose
 echo ""
 
@@ -202,7 +193,6 @@ python -m wisent.core.main get-activations \
     --token-aggregation average \
     --prompt-strategy chat_template \
     --device "$DEVICE" \
-    --limit 5 \
     --verbose
 echo ""
 

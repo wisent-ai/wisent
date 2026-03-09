@@ -17,7 +17,6 @@
 
 MODEL="meta-llama/Llama-3.2-1B-Instruct"
 TASKS="boolq"
-LIMIT=30
 METHODS="CAA"
 DEVICE="cpu"
 VECTOR_DIR="./steering_vectors"
@@ -28,7 +27,6 @@ echo "Comprehensive Steering Optimization with Examples"
 echo "=================================================="
 echo "Model: $MODEL"
 echo "Tasks: $TASKS"
-echo "Sample limit: $LIMIT per task"
 echo "Methods: $METHODS"
 echo "Device: $DEVICE"
 echo "Vector output: $VECTOR_DIR"
@@ -39,7 +37,6 @@ echo ""
 python -m wisent.core.main optimize-steering comprehensive "$MODEL" \
     --tasks $TASKS \
     --methods $METHODS \
-    --limit $LIMIT \
     --device $DEVICE \
     --save-best-vector "$VECTOR_DIR" \
     --save-generation-examples \

@@ -47,8 +47,6 @@ def _setup_transport_rl_parser(steering_subparsers):
                    help="k-NN neighbors at inference (required)")
     p.add_argument("--noise-scale", type=float, required=True, dest="noise_scale",
                    help="ES noise scale relative to vector norm")
-    p.add_argument("--limit", type=int, required=True,
-                   help="Evaluation samples per iteration")
     p.add_argument("--output", type=str, required=True,
                    help="Output path for best steering object")
     p.add_argument("--device", type=str, default=None, help="Compute device (default: auto)")
@@ -86,8 +84,6 @@ def _setup_continual_learning_parser(steering_subparsers):
                    help="Cycles without improvement before stopping")
     p.add_argument("--epsilon", type=float, required=True,
                    help="Entropic regularization temperature for transport methods")
-    p.add_argument("--limit", type=int, required=True,
-                   help="Evaluation samples per task")
     p.add_argument("--device", type=str, default=None, help="Compute device (default: auto)")
     p.add_argument("--gcs-bucket", type=str, default=None, dest="gcs_bucket",
                    help="GCS bucket for checkpoint upload (optional)")
