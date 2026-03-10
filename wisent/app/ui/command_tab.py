@@ -8,7 +8,9 @@ import argparse
 import importlib
 import traceback
 import gradio as gr
-from wisent.core.utils.config_tools.constants import INDEX_FIRST
+from wisent.core.utils.config_tools.constants import INDEX_FIRST, GRADIO_GALLERY_COLUMNS
+
+_GALLERY_COLUMNS = GRADIO_GALLERY_COLUMNS
 from wisent.app.ui.form_components import action_to_component, components_to_args
 from wisent.app.core.runner import run_command
 
@@ -40,18 +42,21 @@ def build_command_tab(cmd_info):
         label="Output", interactive=False,
         elem_classes=["output-box"],
     )
+    gallery = gr.Gallery(
+        label="Visualizations", visible=True, columns=_GALLERY_COLUMNS,
+    )
 
     if components:
         run_btn.click(
             fn=_make_handler(cmd_info.name, dests),
             inputs=components,
-            outputs=[output],
+            outputs=[output, gallery],
         )
     else:
         run_btn.click(
-            fn=lambda: run_command(cmd_info.name, []),
+            fn=lambda name=cmd_info.name: run_command(name, []),
             inputs=[],
-            outputs=[output],
+            outputs=[output, gallery],
         )
 
 
@@ -94,13 +99,16 @@ def build_subparser_tab(cmd_info):
         label="Output", interactive=False,
         elem_classes=["output-box"],
     )
+    gallery = gr.Gallery(
+        label="Visualizations", visible=True, columns=_GALLERY_COLUMNS,
+    )
 
     inputs = [sub_dropdown] + all_components
 
     run_btn.click(
         fn=_make_subparser_handler(cmd_info.name, all_dests),
         inputs=inputs,
-        outputs=[output],
+        outputs=[output, gallery],
     )
 
 
@@ -143,9 +151,10 @@ def _make_handler(command_name, dests):
     def handler(*values):
         try:
             arg_list = components_to_args(values, dests, command_name)
-            return run_command(command_name, arg_list)
+            text, images = run_command(command_name, arg_list)
+            return text, images or None
         except Exception:
-            return traceback.format_exc()
+            return traceback.format_exc(), None
     return handler
 
 
@@ -155,7 +164,8 @@ def _make_subparser_handler(command_name, dests):
         try:
             arg_list = [sub_action] if sub_action else []
             arg_list.extend(components_to_args(values, dests, command_name))
-            return run_command(command_name, arg_list)
+            text, images = run_command(command_name, arg_list)
+            return text, images or None
         except Exception:
-            return traceback.format_exc()
+            return traceback.format_exc(), None
     return handler
