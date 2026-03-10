@@ -98,13 +98,13 @@ def _optimize_task(
     """Optimize all methods for a single task."""
     from .runner import run_method_search
 
-    pairs_file = _generate_task_pairs(task_name)
+    train_file, test_file = _generate_task_pairs(task_name)
 
     baseline_score = None
     if getattr(args, "compute_baseline", False):
         from .evaluation import compute_baseline_score
         baseline_score = compute_baseline_score(
-            model, task_name, pairs_file, device, verbose,
+            model, task_name, test_file, device, verbose,
         )
         if verbose:
             print(f"   Baseline (unsteered): {baseline_score:.4f}")
@@ -117,7 +117,8 @@ def _optimize_task(
         method_output = os.path.join(_output_dir, task_name) if _output_dir else None
         result = run_method_search(
             model=model, task_name=task_name, method=method,
-            pairs_file=pairs_file, num_layers=num_layers,
+            train_pairs_file=train_file, test_pairs_file=test_file,
+            num_layers=num_layers,
             device=device, verbose=verbose,
             backend=backend,
             search_overrides=_extract_search_overrides(args, method),
@@ -139,8 +140,12 @@ def _optimize_task(
     }
 
 
-def _generate_task_pairs(task_name: str) -> str:
-    """Generate contrastive pairs and save to temp file."""
+def _generate_task_pairs(task_name: str) -> tuple[str, str]:
+    """Generate contrastive pairs and split into train/test files.
+
+    Returns (train_path, test_path). The steering object is trained
+    on train pairs and evaluated on test pairs to avoid data leakage.
+    """
     from wisent.extractors.lm_eval.lm_task_pairs_generation import (
         build_contrastive_pairs,
     )
@@ -150,12 +155,26 @@ def _generate_task_pairs(task_name: str) -> str:
     )
     if not pairs:
         raise ValueError(f"No contrastive pairs generated for {task_name}")
-    pairs_data = {"task": task_name, "pairs": [p.to_dict() for p in pairs]}
+    n_train = int(len(pairs) * SPLIT_RATIO_TRAIN_DEFAULT)
+    train_pairs = pairs[:n_train]
+    test_pairs = pairs[n_train:]
+    if not test_pairs:
+        raise ValueError(f"Not enough pairs to create test split for {task_name}")
+    train_path = _write_pairs_file(task_name, train_pairs, "train")
+    test_path = _write_pairs_file(task_name, test_pairs, "test")
+    return train_path, test_path
+
+
+def _write_pairs_file(
+    task_name: str, pairs: list, tag: str,
+) -> str:
+    """Serialize contrastive pairs to a temp JSON file."""
+    data = {"task": task_name, "pairs": [p.to_dict() for p in pairs]}
     fd, path = tempfile.mkstemp(
-        suffix=".json", prefix=f"pairs_{task_name}_",
+        suffix=".json", prefix=f"pairs_{task_name}_{tag}_",
     )
     with os.fdopen(fd, "w") as f:
-        json.dump(pairs_data, f, indent=JSON_INDENT)
+        json.dump(data, f, indent=JSON_INDENT)
     return path
 
 

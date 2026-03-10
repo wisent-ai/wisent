@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 
 def run_method_search(
     model: str, task_name: str, method: str,
-    pairs_file: str, num_layers: int,
+    train_pairs_file: str, test_pairs_file: str,
+    num_layers: int,
     device: Optional[str], verbose: bool,
     backend: str,
     search_overrides: Dict[str, Any],
@@ -31,8 +32,8 @@ def run_method_search(
     optuna). The number of trials is derived from the search space
     dimensionality: len(space) * TRIALS_PER_DIMENSION_MULTIPLIER.
 
-    When output_dir is provided, replays the best config and persists
-    the steered responses and scores to disk.
+    Trains on train_pairs_file and evaluates on test_pairs_file to
+    prevent data leakage.
     """
     from wisent.core.utils.cli.optimize_steering.search_space import (
         get_method_space,
@@ -61,7 +62,8 @@ def run_method_search(
         raw_objective = create_objective(
             method=method, model=model, task=task_name,
             num_layers=num_layers, limit=None, device=device,
-            work_dir=work_dir, train_pairs_file=pairs_file,
+            work_dir=work_dir, train_pairs_file=train_pairs_file,
+            test_pairs_file=test_pairs_file,
         )
         if early_rejection_config["enabled"]:
             objective = _wrap_with_early_rejection(
@@ -85,7 +87,8 @@ def run_method_search(
     if output_dir:
         _replay_best_config(
             model, task_name, method, result.best_params,
-            pairs_file, device, verbose, output_dir, summary,
+            train_pairs_file, test_pairs_file,
+            device, verbose, output_dir, summary,
         )
 
     return summary
@@ -119,7 +122,8 @@ def _apply_search_overrides(
 
 def _replay_best_config(
     model: str, task_name: str, method: str,
-    best_params: Dict[str, Any], pairs_file: str,
+    best_params: Dict[str, Any],
+    train_pairs_file: str, test_pairs_file: str,
     device: Optional[str], verbose: bool,
     output_dir: str, summary: Dict[str, Any],
 ) -> None:
@@ -139,7 +143,8 @@ def _replay_best_config(
         model=model, task=task_name, config=config,
         work_dir=method_dir, strength=strength,
         limit=None, device=device,
-        train_pairs_file=pairs_file,
+        train_pairs_file=train_pairs_file,
+        test_pairs_file=test_pairs_file,
     )
 
     summary_path = os.path.join(method_dir, "optimization_summary.json")
