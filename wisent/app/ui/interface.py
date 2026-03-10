@@ -8,6 +8,7 @@ import gradio as gr
 from wisent.core.utils.config_tools.constants import GRADIO_MODEL_PLACEHOLDER
 from wisent.app.core.groups import get_command_groups
 from wisent.app.ui.command_tab import build_command_tab, build_subparser_tab
+from wisent.app.ui.wizard import build_wizard_tab
 
 _SUBPARSER_COMMANDS = frozenset({"optimize-steering"})
 
@@ -33,6 +34,8 @@ def build_interface():
     groups = get_command_groups()
 
     with gr.Tabs():
+        with gr.Tab(label="Wizard"):
+            build_wizard_tab()
         for group in groups:
             with gr.Tab(label=group.label):
                 gr.Markdown(f"*{group.description}*")
