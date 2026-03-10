@@ -174,23 +174,12 @@ def _param_to_hyperopt(name: str, param: Param):
 
 def _float_to_hyperopt(name: str, p: FloatParam):
     from hyperopt import hp
-    from hyperopt.pyll import scope
 
     d = p.distribution
     if d == "normal":
-        expr = hp.normal(name, p.mu, p.sigma)
-        if p.high is not None:
-            expr = scope.min(expr, p.high)
-        if p.low is not None:
-            expr = scope.max(expr, p.low)
-        return expr
+        return hp.normal(name, p.mu, p.sigma)
     if d == "lognormal":
-        expr = hp.lognormal(name, p.mu, p.sigma)
-        if p.high is not None:
-            expr = scope.min(expr, p.high)
-        if p.low is not None:
-            expr = scope.max(expr, p.low)
-        return expr
+        return hp.lognormal(name, p.mu, p.sigma)
     if d == "uniform":
         return hp.uniform(name, p.low, p.high)
     raise ValueError(f"Unknown float distribution: {d}")
@@ -233,18 +222,10 @@ def _float_to_optuna(trial, name: str, p: FloatParam):
     if d == "normal":
         lo = p.mu - spread * p.sigma
         hi = p.mu + spread * p.sigma
-        if p.low is not None:
-            lo = max(lo, p.low)
-        if p.high is not None:
-            hi = min(hi, p.high)
         return trial.suggest_float(name, lo, hi)
     if d == "lognormal":
         lo = math.exp(p.mu - spread * p.sigma)
         hi = math.exp(p.mu + spread * p.sigma)
-        if p.low is not None:
-            lo = max(lo, p.low)
-        if p.high is not None:
-            hi = min(hi, p.high)
         return trial.suggest_float(name, lo, hi, log=True)
     raise ValueError(f"Unknown float distribution: {d}")
 
