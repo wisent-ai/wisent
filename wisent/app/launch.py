@@ -16,7 +16,7 @@ from wisent.core.utils.config_tools.constants import (
 )
 
 
-_APP_TITLE = "Wisent - AI Safety & Alignment Toolkit"
+_APP_TITLE = "Wisent - World's Best AI through Representation Engineering"
 
 
 def _build_theme():
