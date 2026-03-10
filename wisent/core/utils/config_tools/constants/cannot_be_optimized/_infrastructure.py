@@ -139,3 +139,8 @@ GRADIO_APPEND_LINES = 3
 GRADIO_MODEL_PLACEHOLDER = "e.g. meta-llama/Llama-3.2-1B-Instruct"
 GRADIO_PIP_SPEC = "gradio>=4.0.0"
 GRADIO_GALLERY_COLUMNS = 2
+# --- Degeneration detection (StoppingCriteria) ---
+DEGEN_WARMUP_TOKENS = 100
+DEGEN_NGRAM_SIZE = 4
+DEGEN_MAX_REPEATS = 3
+DEGEN_WINDOW_SIZE = 50

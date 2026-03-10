@@ -11,6 +11,8 @@ from wisent.core.primitives.models.core.atoms import SteeringPlan
 from wisent.core.control.generation.prompts.core.atom import ChatMessage
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
 from wisent.core.primitives.models.config import get_generate_kwargs
+from wisent.core.primitives.models.extended._helpers.generation_stopping import build_repetition_stopping_criteria
+from wisent.core.utils.config_tools.constants import AXIS_COLS
 
 # Non-blocking join for the generation worker thread
 _JOIN_NOWAIT = 0.0
@@ -112,6 +114,10 @@ def _generate_stream(
         logits_processors = build_diversity_processors(self.tokenizer, phrase_ledger)
         if logits_processors:
             generation_kwargs['logits_processor'] = logits_processors
+
+    # Add degeneration detection — stops sequences with repetitive n-grams
+    prompt_length = batch["input_ids"].shape[AXIS_COLS]
+    generation_kwargs["stopping_criteria"] = build_repetition_stopping_criteria(prompt_length)
 
     worker = threading.Thread(
         target=self.hf_model.generate,
