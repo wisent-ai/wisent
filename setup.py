@@ -32,6 +32,7 @@ setup(
             "support/parameters/lm_eval/*.json",
             "support/parameters/tasks/*.json",
             "scripts/*.sh",
+            "core/control/steering_methods/configs/*.json",
         ],
     },
     classifiers=[
@@ -82,6 +83,9 @@ setup(
         ],
         "sparsify": [
             "sparsify>=0.1.0",
+        ],
+        "app": [
+            "gradio>=4.0.0",
         ],
     },
     entry_points={

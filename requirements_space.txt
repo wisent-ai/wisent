@@ -1,0 +1,5 @@
+wisent
+gradio>=4.0.0
+torch>=2.0.0
+transformers>=4.46.0
+accelerate>=0.20.0

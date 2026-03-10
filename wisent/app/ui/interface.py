@@ -1,0 +1,45 @@
+"""Build the complete tabbed Gradio interface for Wisent.
+
+Creates a model selector header and one tab per command group, each
+containing sub-tabs for individual commands.
+"""
+
+import gradio as gr
+from wisent.core.utils.config_tools.constants import GRADIO_MODEL_PLACEHOLDER
+from wisent.app.core.groups import get_command_groups
+from wisent.app.ui.command_tab import build_command_tab, build_subparser_tab
+
+_SUBPARSER_COMMANDS = frozenset({"optimize-steering"})
+
+
+def build_interface():
+    """Construct the full Gradio interface inside an active gr.Blocks context."""
+    gr.Markdown(
+        "# Wisent - AI Safety & Alignment Toolkit\n"
+        "Browser interface for all Wisent CLI commands. "
+        "Select a category tab, choose a command, fill in parameters, "
+        "and click Run."
+    )
+
+    with gr.Row():
+        gr.Textbox(
+            label="Model Name (shared across commands)",
+            value="",
+            placeholder=GRADIO_MODEL_PLACEHOLDER,
+            interactive=True,
+            elem_id="global-model",
+        )
+
+    groups = get_command_groups()
+
+    with gr.Tabs():
+        for group in groups:
+            with gr.Tab(label=group.label):
+                gr.Markdown(f"*{group.description}*")
+                with gr.Tabs():
+                    for cmd in group.commands:
+                        with gr.Tab(label=cmd.name):
+                            if cmd.name in _SUBPARSER_COMMANDS:
+                                build_subparser_tab(cmd)
+                            else:
+                                build_command_tab(cmd)
