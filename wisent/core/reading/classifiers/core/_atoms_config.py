@@ -16,6 +16,16 @@ from torch.nn.modules.loss import _Loss
 from wisent.core.utils.infra_tools.errors import DuplicateNameError, InvalidRangeError, UnknownTypeError
 from wisent.core.utils import preferred_dtype
 from typing import Optional as _Optional
+from wisent.core.utils.config_tools.constants import (
+    VIZ_MLP_EPOCHS,
+    CLASSIFIER_BATCH_SIZE_MIN,
+    CLASSIFIER_BATCH_SIZE_MAX,
+    CLASSIFIER_BATCH_DIVISOR,
+    CLASSIFIER_TEST_SIZE_MIN,
+    CLASSIFIER_TEST_SIZE_MAX,
+    CLASSIFIER_MIN_TEST_SAMPLES,
+    CLASSIFIER_DEFAULT_LR,
+)
 
 __all__ = [
     "ClassifierTrainConfig",
@@ -53,6 +63,28 @@ class ClassifierTrainConfig:
     test_size: float
     monitor: Optional[str] = None
     random_state: _Optional[int] = None
+
+    @classmethod
+    def from_data_shape(cls, n_samples: int, n_features: int) -> ClassifierTrainConfig:
+        """Derive training config from data dimensions.
+
+        Same pattern as derive_geometry_params: clamped formulas from data shape.
+        """
+        batch_size = min(
+            CLASSIFIER_BATCH_SIZE_MAX,
+            max(CLASSIFIER_BATCH_SIZE_MIN, n_samples // CLASSIFIER_BATCH_DIVISOR),
+        )
+        test_size = min(
+            CLASSIFIER_TEST_SIZE_MAX,
+            max(CLASSIFIER_TEST_SIZE_MIN, CLASSIFIER_MIN_TEST_SAMPLES / n_samples),
+        )
+        return cls(
+            num_epochs=VIZ_MLP_EPOCHS,
+            batch_size=batch_size,
+            learning_rate=CLASSIFIER_DEFAULT_LR,
+            test_size=test_size,
+            monitor="auc",
+        )
 
 @dataclass(slots=True, frozen=True)
 class ClassifierMetrics:

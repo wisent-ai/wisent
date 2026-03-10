@@ -4,6 +4,13 @@ import torch
 from torch import nn
 
 from wisent.core.reading.classifiers.core.atoms import BaseClassifier
+from wisent.core.utils.config_tools.constants import (
+    CHANCE_LEVEL_ACCURACY,
+    CLASSIFIER_HIDDEN_DIM_MIN,
+    CLASSIFIER_HIDDEN_DIM_MAX,
+    CLASSIFIER_DROPOUT_MIN,
+    CLASSIFIER_DROPOUT_MAX,
+)
 
 __all__ = ["MLPClassifier"]
 
@@ -43,6 +50,23 @@ class MLPClassifier(BaseClassifier):
         dp = float(model_params.get("dropout", self._dropout))
         self._hidden_dim = hd
         return MLPModel(input_dim, hidden_dim=hd, dropout=dp)
+
+    @classmethod
+    def from_data_shape(cls, n_samples: int, n_features: int, **base_kwargs) -> MLPClassifier:
+        """Create self-configured MLPClassifier from data dimensions.
+
+        hidden_dim: sqrt(n_features) clamped by CLASSIFIER_HIDDEN_DIM bounds
+        dropout: sqrt(n_features)/n_samples clamped by CLASSIFIER_DROPOUT bounds
+        """
+        hidden_dim = max(
+            CLASSIFIER_HIDDEN_DIM_MIN,
+            min(int(n_features ** CHANCE_LEVEL_ACCURACY), CLASSIFIER_HIDDEN_DIM_MAX),
+        )
+        dropout = min(
+            CLASSIFIER_DROPOUT_MAX,
+            max(CLASSIFIER_DROPOUT_MIN, n_features ** CHANCE_LEVEL_ACCURACY / n_samples),
+        )
+        return cls(hidden_dim=hidden_dim, dropout=dropout, **base_kwargs)
 
     def model_hyperparams(self) -> dict[str, int]:
         return {"hidden_dim": self._hidden_dim, "dropout": self._dropout}
