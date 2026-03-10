@@ -10,7 +10,7 @@ from wisent.core.weight_modification.export._generic import (
     load_steered_model,
     _save_standalone_loader,
 )
-from wisent.core.utils.config_tools.constants import JSON_INDENT
+from wisent.core.utils.config_tools.constants import JSON_INDENT, WICHER_DEFAULT_SOLVER
 
 _LOG = setup_logger(__name__)
 
@@ -64,6 +64,7 @@ def export_wicher_model(
         "layer_variance": {
             str(k): v for k, v in wicher_steering.layer_variance.items()
         },
+        "solver": getattr(wicher_steering, "solver", WICHER_DEFAULT_SOLVER),
     }
 
     meta = wicher_steering.metadata
@@ -238,6 +239,7 @@ def load_wicher_model(
             beta=wicher_data["beta"],
             alpha_decay=wicher_data["alpha_decay"],
             base_strength=wicher_data["base_strength"],
+            solver=wicher_data.get("solver", WICHER_DEFAULT_SOLVER),
         )
         hooks.install()
         log.info(

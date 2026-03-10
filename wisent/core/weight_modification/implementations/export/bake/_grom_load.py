@@ -187,7 +187,7 @@ def load_grom_model(
         
         def predict_gate(hidden_state):
             if grom_result.gate_network is not None:
-                return grom_result.gate_network(hidden_state.float()).to(hidden_state.dtype)
+                return grom_result.gate_network(hidden_state.float(), grom_result.gate_temperature).to(hidden_state.dtype)
             return torch.ones(hidden_state.shape[0], device=hidden_state.device, dtype=hidden_state.dtype)
         
         def predict_intensity(hidden_state):

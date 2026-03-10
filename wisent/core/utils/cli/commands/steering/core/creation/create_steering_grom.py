@@ -104,6 +104,8 @@ def _create_grom_steering_object(
     retain_weight = _require_arg(args, 'grom_retain_weight')
     max_grad_norm = _require_arg(args, 'grom_max_grad_norm')
 
+    gate_temperature = _require_arg(args, 'grom_gate_temperature')
+
     print(f"   Training GROM ({num_directions} directions, {len(layer_order)} layers)...")
 
     optimization_steps = _require_arg(args, 'grom_optimization_steps')
@@ -113,8 +115,8 @@ def _create_grom_steering_object(
         total_loss = torch.tensor(0.0)
         
         # Gate loss
-        pos_gate = gate_network(sensor_pos)
-        neg_gate = gate_network(sensor_neg)
+        pos_gate = gate_network(sensor_pos, gate_temperature)
+        neg_gate = gate_network(sensor_neg, gate_temperature)
         gate_loss = torch.relu(create_gate_threshold - pos_gate).mean() + torch.relu(neg_gate - create_gate_threshold).mean()
         total_loss = total_loss + gate_loss
         
@@ -167,6 +169,6 @@ def _create_grom_steering_object(
         gate_network=gate_network,
         intensity_network=intensity_network,
         layer_order=layer_order,
-        gate_temperature=_require_arg(args, 'grom_gate_temperature'),
+        gate_temperature=gate_temperature,
         max_alpha=max_alpha,
     )

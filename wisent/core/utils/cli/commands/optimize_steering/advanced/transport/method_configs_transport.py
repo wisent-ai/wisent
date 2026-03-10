@@ -15,12 +15,10 @@ class PrzelomConfig(MethodConfig):
     inference_k: Optional[int] = None
 
     def to_args(self) -> Dict[str, Any]:
-        return {
+        base = {
             "method": "przelom",
             "layer": self.layer,
-            "przelom_epsilon": self.epsilon,
-            "przelom_target_mode": self.target_mode,
-            "przelom_regularization": self.regularization,
-            "przelom_inference_k": self.inference_k,
             "steering_strategy": self.steering_strategy,
         }
+        base.update(self._extra_args)
+        return base

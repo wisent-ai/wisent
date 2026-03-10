@@ -286,5 +286,5 @@ def setup_steering_task_args(parser):
     parser.add_argument("--consistency-w-positive", type=float, required=True, dest="consistency_w_positive", help="Weight for positive-fraction in consistency")
     parser.add_argument("--consistency-w-high-sim", type=float, required=True, dest="consistency_w_high_sim", help="Weight for high-similarity in consistency")
     parser.add_argument("--sparsity-threshold-fraction", type=float, required=True, dest="sparsity_threshold_fraction", help="Fraction threshold for sparsity")
-    parser.add_argument("--detection-threshold", type=float, required=True, dest="detection_threshold", help="Accuracy threshold for multi-direction detection")
+    # --detection-threshold is already registered by tasks_parser_basic.py
     parser.add_argument("--direction-moderate-similarity", type=float, required=True, dest="direction_moderate_similarity", help="Threshold for moderate similarity")

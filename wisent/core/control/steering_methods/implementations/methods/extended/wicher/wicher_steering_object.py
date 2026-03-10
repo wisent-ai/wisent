@@ -19,8 +19,15 @@ from wisent.core.control.steering_methods.steering_object import (
     BaseSteeringObject,
     SteeringObjectMetadata,
 )
-from .solvers.broyden import wicher_broyden_step
-from wisent.core.utils.config_tools.constants import NORM_EPS
+from .solvers import get_solver_fn
+from wisent.core.utils.config_tools.constants import (
+    NORM_EPS,
+    WICHER_DEFAULT_SOLVER,
+    INDEX_FIRST,
+    NDIM_VECTOR,
+    NDIM_MATRIX,
+    NDIM_BATCH_SEQ,
+)
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
 
 __all__ = ["WicherSteeringObject"]
@@ -43,6 +50,7 @@ class WicherSteeringObject(BaseSteeringObject):
         beta: float,
         alpha_decay: float,
         layer_variance: Optional[Dict[int, float]] = None,
+        solver: str = WICHER_DEFAULT_SOLVER,
     ):
         super().__init__(metadata)
         self.concept_directions = concept_directions
@@ -54,6 +62,8 @@ class WicherSteeringObject(BaseSteeringObject):
         self.beta = beta
         self.alpha_decay = alpha_decay
         self.layer_variance = layer_variance or {}
+        self.solver = solver
+        self._solver_fn = get_solver_fn(solver)
 
         self._variance_weights: Dict[int, float] = {}
         if self.layer_variance:
@@ -93,7 +103,7 @@ class WicherSteeringObject(BaseSteeringObject):
         layer: int,
         base_strength: float,
     ) -> torch.Tensor:
-        """Apply WICHER Broyden steering with layer variance weighting."""
+        """Apply WICHER steering with layer variance weighting."""
         if layer not in self.concept_directions:
             return hidden_state
         if layer not in self.concept_bases:
@@ -105,12 +115,12 @@ class WicherSteeringObject(BaseSteeringObject):
 
         effective_strength = base_strength
 
-        return self._apply_broyden(
+        return self._apply_solver(
             hidden_state, concept_dir, effective_strength,
             layer, original_shape, original_dtype,
         )
 
-    def _apply_broyden(
+    def _apply_solver(
         self,
         hidden_state: torch.Tensor,
         concept_dir: torch.Tensor,
@@ -119,7 +129,7 @@ class WicherSteeringObject(BaseSteeringObject):
         original_shape: torch.Size,
         original_dtype: torch.dtype,
     ) -> torch.Tensor:
-        """Broyden iteration in SVD concept subspace."""
+        """Solver iteration in SVD concept subspace."""
         cd = concept_dir.to(hidden_state.device)
         cd = cd / cd.norm().clamp(min=NORM_EPS)
         basis = self.concept_bases[layer].float().to(hidden_state.device)
@@ -127,15 +137,15 @@ class WicherSteeringObject(BaseSteeringObject):
             hidden_state.device
         )
 
-        if hidden_state.dim() == 1:
-            h = hidden_state.unsqueeze(0).float()
-        elif hidden_state.dim() == 2:
+        if hidden_state.dim() == NDIM_VECTOR:
+            h = hidden_state.unsqueeze(INDEX_FIRST).float()
+        elif hidden_state.dim() == NDIM_MATRIX:
             h = hidden_state.float()
         else:
             b, s, hd = hidden_state.shape
             h = hidden_state.reshape(b * s, hd).float()
 
-        h_new = wicher_broyden_step(
+        h_new = self._solver_fn(
             h, cd * base_strength,
             concept_basis=basis,
             component_variances=comp_var,
@@ -147,9 +157,9 @@ class WicherSteeringObject(BaseSteeringObject):
         )
         h_new = h_new.to(original_dtype)
 
-        if hidden_state.dim() == 1:
-            return h_new.squeeze(0)
-        if hidden_state.dim() == 3:
+        if hidden_state.dim() == NDIM_VECTOR:
+            return h_new.squeeze(INDEX_FIRST)
+        if hidden_state.dim() == NDIM_BATCH_SEQ:
             return h_new.reshape(original_shape)
         return h_new
 
@@ -188,6 +198,7 @@ class WicherSteeringObject(BaseSteeringObject):
             "eta": self.eta,
             "beta": self.beta,
             "alpha_decay": self.alpha_decay,
+            "solver": self.solver,
             "layer_variance": {
                 str(k): v for k, v in self.layer_variance.items()
             },
@@ -253,4 +264,5 @@ class WicherSteeringObject(BaseSteeringObject):
             beta=data["beta"],
             alpha_decay=data["alpha_decay"],
             layer_variance=layer_variance,
+            solver=data.get("solver", WICHER_DEFAULT_SOLVER),
         )

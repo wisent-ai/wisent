@@ -5,7 +5,11 @@ from __future__ import annotations
 import torch
 from typing import Dict, Optional, TYPE_CHECKING
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
-from wisent.core.utils.config_tools.constants import NORM_EPS, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import (
+    NORM_EPS,
+    SEPARATOR_WIDTH_STANDARD,
+    WICHER_DEFAULT_SOLVER,
+)
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -34,6 +38,7 @@ class WicherRuntimeHooks:
         eta: float,
         beta: float,
         alpha_decay: float,
+        solver: str = WICHER_DEFAULT_SOLVER,
     ):
         self.model = model
         self.concept_directions = concept_directions
@@ -46,6 +51,7 @@ class WicherRuntimeHooks:
         self.beta = beta
         self.alpha_decay = alpha_decay
         self.base_strength = base_strength
+        self.solver = solver
         self._hooks = []
 
         self._variance_weights: Dict[int, float] = {}
@@ -95,10 +101,11 @@ class WicherRuntimeHooks:
     def _apply_broyden(
         self, hidden_states: torch.Tensor, layer_idx: int,
     ) -> torch.Tensor:
-        """Run Broyden iterations in SVD concept subspace."""
-        from wisent.core.control.steering_methods.methods.wicher.solvers.broyden import (
-            wicher_broyden_step,
+        """Run solver iterations in SVD concept subspace."""
+        from wisent.core.control.steering_methods.methods.wicher.solvers import (
+            get_solver_fn,
         )
+        solver_fn = get_solver_fn(self.solver)
 
         concept_dir = self.concept_directions[layer_idx].float()
         concept_dir = concept_dir / concept_dir.norm().clamp(min=NORM_EPS)
@@ -122,7 +129,7 @@ class WicherRuntimeHooks:
         basis_dev = basis.to(h.device)
         comp_var_dev = comp_var.to(h.device)
 
-        h_new = wicher_broyden_step(
+        h_new = solver_fn(
             h, cd * effective_strength,
             concept_basis=basis_dev,
             component_variances=comp_var_dev,

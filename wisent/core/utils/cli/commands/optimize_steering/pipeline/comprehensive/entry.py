@@ -113,6 +113,8 @@ def _optimize_task(
     for method in methods:
         if verbose:
             print(f"\n   --- Method: {method} ---")
+        _output_dir = getattr(args, "output_dir", None)
+        method_output = os.path.join(_output_dir, task_name) if _output_dir else None
         result = run_method_search(
             model=model, task_name=task_name, method=method,
             pairs_file=pairs_file, num_layers=num_layers,
@@ -120,6 +122,7 @@ def _optimize_task(
             backend=backend,
             search_overrides=_extract_search_overrides(args, method),
             early_rejection_config=_extract_early_rejection(args),
+            output_dir=method_output,
         )
         method_results[method] = result
 
