@@ -159,10 +159,6 @@ GRADIO_MODEL_EXAMPLES = (
     "HuggingFaceTB/SmolLM2-360M-Instruct",
     "Qwen/Qwen3-0.6B",
     "meta-llama/Llama-3.2-1B-Instruct",
-    "meta-llama/Llama-3.2-3B-Instruct",
-    "Qwen/Qwen3-4B-Instruct-2507",
-    "meta-llama/Llama-3.1-8B-Instruct",
-    "Qwen/Qwen3-8B",
 )
 # --- Degeneration detection (StoppingCriteria) ---
 DEGEN_WARMUP_TOKENS = 100
