@@ -12,7 +12,10 @@ import torch
 
 from wisent.core.control.steering_methods.steering_object import SteeringObjectMetadata
 from .wicher_steering_object import WicherSteeringObject
-from wisent.core.utils.config_tools.constants import LOG_EPS
+from wisent.core.utils.config_tools.constants import (
+    LOG_EPS, WICHER_CONCEPT_DIM_MIN, WICHER_CONCEPT_DIM_MAX,
+    WICHER_DEFAULT_SOLVER,
+)
 
 
 def _require_arg(args, attr_name):
@@ -59,6 +62,7 @@ def _create_wicher_steering_object(
     eta = _require_arg(args, "wicher_eta")
     beta = _require_arg(args, "wicher_beta")
     alpha_decay = _require_arg(args, "wicher_alpha_decay")
+    solver = getattr(args, "wicher_solver", WICHER_DEFAULT_SOLVER)
 
     concept_dirs = {}
     concept_bases = {}
@@ -88,7 +92,11 @@ def _create_wicher_steering_object(
         total_var = s_squared.sum().item()
         layer_variances[layer_int] = total_var
 
-        k = _select_concept_dim(s_squared, concept_dim, variance_threshold)
+        k = _select_concept_dim(
+            s_squared, concept_dim, variance_threshold,
+            min_concept_dim=WICHER_CONCEPT_DIM_MIN,
+            max_concept_dim=WICHER_CONCEPT_DIM_MAX,
+        )
         concept_bases[layer_int] = Vh[:k].detach()
         comp_variances[layer_int] = s_squared[:k].detach()
 
@@ -111,4 +119,5 @@ def _create_wicher_steering_object(
         beta=beta,
         alpha_decay=alpha_decay,
         layer_variance=layer_variances,
+        solver=solver,
     )

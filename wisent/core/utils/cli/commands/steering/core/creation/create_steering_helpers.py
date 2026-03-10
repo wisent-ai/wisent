@@ -158,7 +158,7 @@ def _create_tetno_steering_object(
     condition_vec = condition_vec.clone().requires_grad_(True)
     optimizer = torch.optim.Adam([condition_vec], lr=_require_arg(args, 'tetno_learning_rate'))
     
-    for _ in range(_require_arg(args, 'tetno_condition_vec_opt_iters')):
+    for _ in range(_require_arg(args, 'tetno_optimization_steps')):
         optimizer.zero_grad()
         c_norm = torch.nn.functional.normalize(condition_vec, dim=0)
         pos_norm = torch.nn.functional.normalize(pos_sensor, dim=1)

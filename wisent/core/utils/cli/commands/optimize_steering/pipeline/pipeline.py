@@ -96,6 +96,7 @@ def run_pipeline(
         pairs_file = os.path.join(work_dir, "pairs.json")
         execute_generate_pairs_from_task(_make_args(
             task_name=task, output=pairs_file, limit=limit, verbose=False,
+            train_ratio=SPLIT_RATIO_TRAIN_DEFAULT,
         ))
         layer = getattr(config, 'layer', None) or getattr(config, 'sensor_layer', None)
         if layer is None:
@@ -147,113 +148,61 @@ def run_pipeline(
     return OptimizationResult(config=config, score=score, details=scores_data)
 
 
+from wisent.core.utils.config_tools.constants import COMBO_OFFSET as _LAYER_OFFSET
+
+_STRUCTURAL = frozenset({
+    "layer", "sensor_layer", "steering_start", "steering_end",
+    "strength", "steering_strategy", "direction_weighting",
+})
+_NAME_MAP = {
+    "tecza": {"min_cosine_similarity": "min_cosine_sim", "max_cosine_similarity": "max_cosine_sim"},
+    "nurt": {"flow_hidden_dim": "hidden_dim"},
+}
+_ALREADY_PREFIXED = {"mlp": frozenset({"mlp_input_divisor", "mlp_early_stopping_patience"})}
+
+
+def _prefix_params(method: str, params: dict) -> dict:
+    """Auto-prefix non-structural params with the method name."""
+    prefix = method.lower()
+    overrides = _NAME_MAP.get(prefix, {})
+    already = _ALREADY_PREFIXED.get(prefix, frozenset())
+    extra = {}
+    for k, v in params.items():
+        if k in _STRUCTURAL:
+            continue
+        if k in already:
+            extra[k] = v
+            continue
+        extra[f"{prefix}_{overrides.get(k, k)}"] = v
+    return extra
+
+
 def _build_config(method: str, params: dict) -> tuple[MethodConfig, float]:
     """Build a MethodConfig from flat params dict. Returns (config, strength)."""
     strength = params.get("strength", SCORE_RANGE_MIN)
     ext = get_optimal_extraction_strategy()
     steer = params.get("steering_strategy", get_optimal("steering_strategy"))
     m = method.upper()
-
-    if m == "CAA":
-        cfg = CAAConfig(method="CAA", layer=int(params["layer"]),
-                        extraction_strategy=ext, steering_strategy=steer)
-    elif m == "OSTRZE":
-        cfg = OstrzeConfig(method="Ostrze", layer=int(params["layer"]),
-                           extraction_strategy=ext, steering_strategy=steer)
-    elif m == "MLP":
-        cfg = MLPConfig(
-            method="MLP", layer=int(params["layer"]),
-            hidden_dim=int(params["hidden_dim"]),
-            num_layers=int(params["num_layers"]),
-            mlp_input_divisor=int(params.get("mlp_input_divisor", params.get("layer"))),
-            mlp_early_stopping_patience=int(params.get("mlp_early_stopping_patience", params.get("layer"))),
-            mlp_gating_hidden_dim_divisor=int(params.get("gating_hidden_dim_divisor", params.get("layer"))),
-            extraction_strategy=ext, steering_strategy=steer,
-        )
-    elif m == "TECZA":
-        cfg = TECZAConfig(
-            method="TECZA", layer=int(params["layer"]),
-            num_directions=int(params["num_directions"]),
-            direction_weighting=params.get("direction_weighting", get_optimal("direction_weighting")),
-            retain_weight=float(params["retain_weight"]),
-            optimization_steps=int(params["optimization_steps"]),
-            extraction_strategy=ext, steering_strategy=steer,
-        )
-    elif m == "TETNO":
-        start = int(params["steering_start"])
-        end = int(params["steering_end"])
+    extra = _prefix_params(method, params)
+    kw = dict(extraction_strategy=ext, steering_strategy=steer, _extra_args=extra)
+    if m in ("CAA", "OSTRZE", "MLP", "TECZA", "NURT", "SZLAK", "WICHER", "PRZELOM"):
+        cls = {"CAA": CAAConfig, "OSTRZE": OstrzeConfig, "MLP": MLPConfig,
+               "TECZA": TECZAConfig, "NURT": NurtConfig, "SZLAK": SzlakConfig,
+               "WICHER": WicherConfig, "PRZELOM": PrzelomConfig}[m]
+        method_name = {"OSTRZE": "Ostrze", "NURT": "nurt", "SZLAK": "szlak",
+                       "WICHER": "wicher", "PRZELOM": "przelom"}.get(m, m)
+        cfg = cls(method=method_name, layer=int(params["layer"]), **kw)
+    elif m in ("TETNO", "GROM"):
+        start, end = int(params["steering_start"]), int(params["steering_end"])
         if end < start:
             start, end = end, start
-        cfg = TETNOConfig(
-            method="TETNO", sensor_layer=int(params["sensor_layer"]),
-            steering_layers=list(range(start, end + _LAYER_OFFSET)),
-            condition_threshold=float(params["condition_threshold"]),
-            gate_temperature=float(params["gate_temperature"]),
-            max_alpha=float(params["max_alpha"]),
-            extraction_strategy=ext, steering_strategy=steer,
-        )
-    elif m == "GROM":
-        start = int(params["steering_start"])
-        end = int(params["steering_end"])
-        if end < start:
-            start, end = end, start
-        cfg = GROMConfig(
-            method="GROM", sensor_layer=int(params["sensor_layer"]),
-            steering_layers=list(range(start, end + _LAYER_OFFSET)),
-            num_directions=int(params["num_directions"]),
-            gate_hidden_dim=int(params["gate_hidden_dim"]),
-            intensity_hidden_dim=int(params["intensity_hidden_dim"]),
-            behavior_weight=float(params.get("behavior_weight", SCORE_RANGE_MIN)),
-            retain_weight=float(params.get("retain_weight", SCORE_RANGE_MIN)),
-            sparse_weight=float(params.get("sparse_weight", SCORE_RANGE_MIN)),
-            max_alpha=float(params.get("max_alpha", SCORE_RANGE_MIN)),
-            optimization_steps=int(params["optimization_steps"]),
-            extraction_strategy=ext, steering_strategy=steer,
-        )
-    elif m == "NURT":
-        cfg = NurtConfig(
-            method="nurt", layer=int(params["layer"]),
-            variance_threshold=float(params.get("variance_threshold", SCORE_RANGE_MIN)),
-            training_epochs=int(params.get("training_epochs", params.get("layer"))),
-            lr=float(params.get("lr", SCORE_RANGE_MIN)),
-            num_integration_steps=int(params.get("num_integration_steps", params.get("layer"))),
-            t_max=float(params.get("t_max", SCORE_RANGE_MIN)),
-            extraction_strategy=ext, steering_strategy=steer,
-        )
-    elif m == "SZLAK":
-        cfg = SzlakConfig(
-            method="szlak", layer=int(params["layer"]),
-            sinkhorn_reg=float(params["sinkhorn_reg"]),
-            inference_k=int(params["inference_k"]),
-            extraction_strategy=ext, steering_strategy=steer,
-        )
-    elif m == "WICHER":
-        cfg = WicherConfig(
-            method="wicher", layer=int(params["layer"]),
-            concept_dim=int(params["concept_dim"]),
-            variance_threshold=float(params["variance_threshold"]),
-            num_steps=int(params["num_steps"]),
-            alpha=float(params["alpha"]),
-            eta=float(params["eta"]),
-            beta=float(params["beta"]),
-            alpha_decay=float(params["alpha_decay"]),
-            extraction_strategy=ext, steering_strategy=steer,
-        )
-    elif m == "PRZELOM":
-        cfg = PrzelomConfig(
-            method="przelom", layer=int(params["layer"]),
-            epsilon=float(params["epsilon"]),
-            target_mode=params["target_mode"],
-            regularization=float(params["regularization"]),
-            inference_k=int(params["inference_k"]),
-            extraction_strategy=ext, steering_strategy=steer,
-        )
+        layers = list(range(start, end + _LAYER_OFFSET))
+        cls = TETNOConfig if m == "TETNO" else GROMConfig
+        cfg = cls(method=m, sensor_layer=int(params["sensor_layer"]),
+                  steering_layers=layers, **kw)
     else:
         raise ValueError(f"Unknown method: {method}")
     return cfg, strength
-
-
-from wisent.core.utils.config_tools.constants import COMBO_OFFSET as _LAYER_OFFSET
 
 
 def create_objective(

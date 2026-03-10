@@ -227,5 +227,13 @@ WICHER_DEFINITION = SteeringMethodDefinition(
             help="Per-step decay factor for alpha",
             cli_flag="--wicher-alpha-decay",
         ),
+        SteeringMethodParameter(
+            name="solver",
+            type=str,
+            default="broyden", required=False,
+            help="Solver type: broyden, newton, or halley",
+            cli_flag="--wicher-solver",
+            choices=["broyden", "newton", "halley"],
+        ),
     ],
 )

@@ -25,32 +25,7 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 from wisent.core.utils.config_tools.constants import NORM_EPS, SHERMAN_MORRISON_EPS
-
-
-def _compute_residual(
-    z: torch.Tensor,
-    z_0: torch.Tensor,
-    w: torch.Tensor,
-    alpha: float,
-    lam: float,
-) -> torch.Tensor:
-    """
-    Nonlinear residual F(z) for the Broyden solver.
-
-    F(z) = (z - z_0 - alpha * w) + lam * (||z||/||z_0|| - 1) * z/||z||
-
-    First term: alignment gap (how far from target displacement).
-    Second term: norm penalty (nonlinear via ||z||). This creates the
-    curvature that Broyden needs to build a useful inverse Jacobian.
-
-    F(z*) = 0 when z* is displaced by alpha*w from z_0 AND ||z*|| = ||z_0||.
-    """
-    displacement_gap = (z - z_0) - alpha * w
-    z_norm = z.norm().clamp(min=NORM_EPS)
-    z0_norm = z_0.norm().clamp(min=NORM_EPS)
-    norm_ratio = z_norm / z0_norm
-    norm_penalty = lam * (norm_ratio - 1.0) * (z / z_norm)
-    return displacement_gap + norm_penalty
+from ._residual import compute_residual
 
 
 def _sherman_morrison_update(
@@ -129,7 +104,7 @@ def wicher_broyden_step(
         alpha_t = alpha
         v_prev = torch.zeros(k, device=device, dtype=torch.float32)
 
-        r = _compute_residual(z, z_0, w, alpha_t, lam)
+        r = compute_residual(z, z_0, w, alpha_t, lam)
 
         for _step in range(num_steps):
             direction = H @ (-r)
@@ -137,7 +112,7 @@ def wicher_broyden_step(
                 direction = beta * v_prev + (1.0 - beta) * direction
 
             z_new = z + eta * direction
-            r_new = _compute_residual(z_new, z_0, w, alpha_t, lam)
+            r_new = compute_residual(z_new, z_0, w, alpha_t, lam)
 
             delta_z = z_new - z
             delta_r = r_new - r

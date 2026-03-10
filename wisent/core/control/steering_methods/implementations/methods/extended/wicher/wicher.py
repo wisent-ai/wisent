@@ -28,7 +28,7 @@ from wisent.core.primitives.model_interface.core.activations.core.atoms import (
 )
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
-from wisent.core.utils.config_tools.constants import LOG_EPS
+from wisent.core.utils.config_tools.constants import LOG_EPS, WICHER_DEFAULT_SOLVER
 
 __all__ = [
     "WicherMethod",
@@ -65,6 +65,8 @@ class WicherConfig:
     """Per-step decay factor for alpha."""
     variance_threshold: float
     """Cumulative variance threshold for auto dim selection."""
+    solver: str = WICHER_DEFAULT_SOLVER
+    """Solver type: broyden, newton, or halley."""
 
 
 @dataclass
@@ -108,6 +110,7 @@ class WicherMethod(BaseSteeringMethod):
             beta=_require("beta", kwargs),
             alpha_decay=_require("alpha_decay", kwargs),
             variance_threshold=_require("variance_threshold", kwargs),
+            solver=kwargs.get("solver", WICHER_DEFAULT_SOLVER),
         )
 
     def train(self, pair_set: ContrastivePairSet) -> LayerActivations:

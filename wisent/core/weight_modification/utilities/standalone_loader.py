@@ -191,7 +191,7 @@ class GROMHooks:
 
         if self.gate_network is not None:
             with torch.no_grad():
-                self._current_gate = self.gate_network(sensor_hidden.float())
+                self._current_gate = self.gate_network(sensor_hidden.float(), self.gate_temperature)
         else:
             self._current_gate = torch.ones(
                 sensor_hidden.shape[0], 1, device=sensor_hidden.device)

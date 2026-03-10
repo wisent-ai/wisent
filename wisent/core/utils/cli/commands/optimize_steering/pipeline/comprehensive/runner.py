@@ -1,11 +1,14 @@
 """Per-method optimization runner for comprehensive comparison."""
 from __future__ import annotations
 
+import json
 import logging
+import os
 import tempfile
 from typing import Any, Dict, List, Optional
 
 from wisent.core.utils.config_tools.constants import (
+    JSON_INDENT,
     SCORE_RANGE_MIN,
     TRIALS_PER_DIMENSION_MULTIPLIER,
 )
@@ -20,12 +23,16 @@ def run_method_search(
     backend: str,
     search_overrides: Dict[str, Any],
     early_rejection_config: Dict[str, Any],
+    output_dir: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Run optimization for a single method.
 
     Uses the UnifiedOptimizer with the specified backend (hyperopt or
     optuna). The number of trials is derived from the search space
     dimensionality: len(space) * TRIALS_PER_DIMENSION_MULTIPLIER.
+
+    When output_dir is provided, replays the best config and persists
+    the steered responses and scores to disk.
     """
     from wisent.core.utils.cli.optimize_steering.search_space import (
         get_method_space,
@@ -54,7 +61,7 @@ def run_method_search(
         raw_objective = create_objective(
             method=method, model=model, task=task_name,
             num_layers=num_layers, limit=None, device=device,
-            work_dir=work_dir, enriched_pairs_file=pairs_file,
+            work_dir=work_dir, train_pairs_file=pairs_file,
         )
         if early_rejection_config["enabled"]:
             objective = _wrap_with_early_rejection(
@@ -68,12 +75,20 @@ def run_method_search(
         print(f"   {method}: best={result.best_score:.4f} "
               f"({len(result.all_trials)} trials)")
 
-    return {
+    summary = {
         "method": method, "best_score": result.best_score,
         "best_params": result.best_params,
         "all_trials": result.all_trials,
         "n_trials": n_trials, "backend": backend,
     }
+
+    if output_dir:
+        _replay_best_config(
+            model, task_name, method, result.best_params,
+            pairs_file, device, verbose, output_dir, summary,
+        )
+
+    return summary
 
 
 def _apply_search_overrides(
@@ -100,6 +115,40 @@ def _apply_search_overrides(
         ]
         space["steering_strategy"] = CategoricalParam(choices=strats)
     return space
+
+
+def _replay_best_config(
+    model: str, task_name: str, method: str,
+    best_params: Dict[str, Any], pairs_file: str,
+    device: Optional[str], verbose: bool,
+    output_dir: str, summary: Dict[str, Any],
+) -> None:
+    """Re-run the best config and persist responses + scores."""
+    from wisent.core.utils.cli.optimize_steering.pipeline import (
+        run_pipeline, _build_config,
+    )
+
+    method_dir = os.path.join(output_dir, method.lower())
+    os.makedirs(method_dir, exist_ok=True)
+
+    if verbose:
+        print(f"   Replaying best {method} config to persist responses...")
+
+    config, strength = _build_config(method, best_params)
+    result = run_pipeline(
+        model=model, task=task_name, config=config,
+        work_dir=method_dir, strength=strength,
+        limit=None, device=device,
+        train_pairs_file=pairs_file,
+    )
+
+    summary_path = os.path.join(method_dir, "optimization_summary.json")
+    with open(summary_path, "w") as f:
+        json.dump(summary, f, indent=JSON_INDENT, default=str)
+
+    if verbose:
+        print(f"   Saved responses to {method_dir}/responses.json")
+        print(f"   Saved scores to {method_dir}/scores.json")
 
 
 def _wrap_with_early_rejection(objective_fn, config: Dict[str, Any]):

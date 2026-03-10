@@ -9,7 +9,10 @@ from __future__ import annotations
 from typing import Any, List, Mapping
 
 from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.utils.config_tools.constants import ROUNDING_PRECISION_FINE
+from wisent.core.utils.config_tools.constants import (
+    EVAL_MIN_SIMILARITY_THRESHOLD_DEFAULT,
+    ROUNDING_PRECISION_FINE,
+)
 
 __all__ = ["TruthfulQAGenEvaluator"]
 
@@ -37,7 +40,7 @@ class TruthfulQAGenEvaluator(BaseEvaluator):
     def __init__(
         self,
         *,
-        min_similarity_threshold: float,
+        min_similarity_threshold: float = EVAL_MIN_SIMILARITY_THRESHOLD_DEFAULT,
     ) -> None:
         self._min_similarity_threshold = min_similarity_threshold
 

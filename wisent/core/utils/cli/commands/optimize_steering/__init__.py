@@ -229,17 +229,39 @@ def execute_optimize_steering(args):
     for k, v in result.best_params.items():
         print(f"   {k}: {v}")
 
+    # Replay best config to persist responses + scores
+    replay_dir = getattr(args, 'output_dir', None) or './optimization_results'
+    import os
+    os.makedirs(replay_dir, exist_ok=True)
+    from wisent.core.utils.cli.optimize_steering.pipeline import (
+        run_pipeline, _build_config,
+    )
+    config, strength = _build_config(method, result.best_params)
+    print(f"\n   Replaying best config to persist responses...")
+    replay_result = run_pipeline(
+        model=args.model, task=task, config=config,
+        work_dir=replay_dir, strength=strength,
+        limit=None, device=device,
+        enriched_pairs_file=enriched_pairs_file,
+    )
+    print(f"   Responses saved to: {replay_dir}/responses.json")
+    print(f"   Scores saved to: {replay_dir}/scores.json")
+
+    output_data = {
+        "model": args.model,
+        "task": task,
+        "method": method,
+        "n_trials": n_trials,
+        "backend": backend,
+        "best_score": result.best_score,
+        "best_params": result.best_params,
+        "all_trials": result.all_trials,
+    }
+    summary_path = os.path.join(replay_dir, "optimization_summary.json")
+    with open(summary_path, 'w') as f:
+        json.dump(output_data, f, indent=JSON_INDENT)
+
     if hasattr(args, 'output') and args.output:
-        output_data = {
-            "model": args.model,
-            "task": task,
-            "method": method,
-            "n_trials": n_trials,
-            "backend": backend,
-            "best_score": result.best_score,
-            "best_params": result.best_params,
-            "all_trials": result.all_trials,
-        }
         with open(args.output, 'w') as f:
             json.dump(output_data, f, indent=JSON_INDENT)
         print(f"\n   Results saved to: {args.output}")

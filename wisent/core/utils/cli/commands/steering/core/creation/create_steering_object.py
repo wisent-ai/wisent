@@ -175,10 +175,11 @@ def execute_create_steering_object(args):
                 metadata, layer_activations, available_layers, args
             )
         elif method_name == 'tetno':
+            from wisent.core.utils.config_tools.constants import SEARCH_INIT_NEGATIVE, SCORE_RANGE_MIN
             steering_obj = _create_tetno_steering_object(
                 metadata, layer_activations, available_layers, args,
-                threshold_search_init_value=_require_arg(args, 'tetno_threshold_search_init_value'),
-                default_score=_require_arg(args, 'tetno_default_score'),
+                threshold_search_init_value=SEARCH_INIT_NEGATIVE,
+                default_score=SCORE_RANGE_MIN,
             )
         elif method_name == 'grom':
             _r = _require_arg
