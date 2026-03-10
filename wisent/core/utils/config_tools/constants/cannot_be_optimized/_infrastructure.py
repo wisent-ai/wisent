@@ -155,14 +155,14 @@ WISENT_COLOR_MINT_ACCENT_DARK = "#2d8a4e"
 WISENT_LOGO_FILENAME = "wisent_logo.png"
 WISENT_LOGO_DISPLAY_WIDTH = 80
 GRADIO_MODEL_EXAMPLES = (
+    "HuggingFaceTB/SmolLM2-135M-Instruct",
+    "HuggingFaceTB/SmolLM2-360M-Instruct",
+    "Qwen/Qwen3-0.6B",
     "meta-llama/Llama-3.2-1B-Instruct",
     "meta-llama/Llama-3.2-3B-Instruct",
-    "meta-llama/Llama-3.1-8B-Instruct",
-    "mistralai/Mistral-7B-Instruct-v0.3",
     "Qwen/Qwen3-4B-Instruct-2507",
+    "meta-llama/Llama-3.1-8B-Instruct",
     "Qwen/Qwen3-8B",
-    "google/gemma-2-2b-it",
-    "google/gemma-2-9b-it",
 )
 # --- Degeneration detection (StoppingCriteria) ---
 DEGEN_WARMUP_TOKENS = 100
