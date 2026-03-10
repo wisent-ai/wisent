@@ -82,6 +82,8 @@ Thumbs.db
 !/README.md
 !/requirements.txt
 !/setup.py
+!/app.py
+!/requirements_space.txt
 !/pyproject.toml
 !/LICENSE
 !/banner.png

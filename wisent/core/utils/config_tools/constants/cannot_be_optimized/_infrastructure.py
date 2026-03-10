@@ -113,6 +113,8 @@ EVAL_GENERATION_NLI_WEIGHT = 0.5
 ARCHITECTURE_MODULE_LIMIT_DEFAULT = 200
 # --- API fetch limits ---
 SUPABASE_REST_LAYER_QUERY_LIMIT = 2000
+# --- Evaluator similarity defaults ---
+EVAL_MIN_SIMILARITY_THRESHOLD_DEFAULT = 0.5
 # --- Early rejection ---
 EARLY_REJECTION_CV_THRESHOLD_DEFAULT = 0.1
 # --- HuggingFace upload retry defaults ---
@@ -124,3 +126,9 @@ HF_RETRY_JITTER_MAX = 1.2
 HF_RETRY_RETRYABLE_PATTERNS = ("429", "412", "timeout", "Timeout", "ConnectionError")
 # --- Database statement controls ---
 PG_STATEMENT_NO_LIMIT = "0"
+# --- Gradio app defaults ---
+GRADIO_SERVER_PORT = 7860
+GRADIO_SERVER_HOST = "0.0.0.0"
+GRADIO_APPEND_LINES = 3
+GRADIO_MODEL_PLACEHOLDER = "e.g. meta-llama/Llama-3.2-1B-Instruct"
+GRADIO_PIP_SPEC = "gradio>=4.0.0"
