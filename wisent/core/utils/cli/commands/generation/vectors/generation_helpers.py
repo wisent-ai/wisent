@@ -1,5 +1,8 @@
 """Batched and sequential generation helpers for generate_responses."""
 
+import time
+from datetime import datetime, timezone
+
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, extract_activation
 from wisent.core.control.steering_methods.configs.optimal import get_optimal_extraction_strategy
 from wisent.core.utils.config_tools.constants import (
@@ -53,13 +56,27 @@ def generate_batched(pairs, model, gen_kwargs, args, steering_object, steering_s
     results = []
     total = len(pairs)
     batch_num = INDEX_FIRST
+    n_batches = (total + GENERATION_BATCH_SIZE - COMBO_OFFSET) // GENERATION_BATCH_SIZE
+    gen_start = time.monotonic()
+    print(
+        f"[generate_batched] {datetime.now(timezone.utc).isoformat()} "
+        f"start: {total} prompts, {n_batches} batches, "
+        f"max_new_tokens={gen_kwargs.get('max_new_tokens')}, "
+        f"strength={getattr(args, 'steering_strength', None)}, "
+        f"strategy={steering_strategy}",
+        flush=True,
+    )
     for batch_start in range(INDEX_FIRST, total, GENERATION_BATCH_SIZE):
         batch_pairs = pairs[batch_start:batch_start + GENERATION_BATCH_SIZE]
         first_idx = batch_start + COMBO_OFFSET
         last_idx = batch_start + len(batch_pairs)
         batch_num += COMBO_OFFSET
-        if args.verbose:
-            print(f"Batch {batch_num}: questions {first_idx}-{last_idx}/{total}")
+        batch_t0 = time.monotonic()
+        print(
+            f"[generate_batched] {datetime.now(timezone.utc).isoformat()} "
+            f"batch {batch_num}/{n_batches} start (questions {first_idx}-{last_idx})",
+            flush=True,
+        )
         try:
             batch_messages = [[{"role": "user", "content": p.prompt}] for p in batch_pairs]
             responses = model.generate(
@@ -69,6 +86,14 @@ def generate_batched(pairs, model, gen_kwargs, args, steering_object, steering_s
                 steering_object=steering_object,
                 steering_strength=args.steering_strength,
                 steering_strategy=steering_strategy,
+            )
+            batch_elapsed = time.monotonic() - batch_t0
+            token_counts = [len(r) for r in responses]
+            print(
+                f"[generate_batched] {datetime.now(timezone.utc).isoformat()} "
+                f"batch {batch_num}/{n_batches} done in {batch_elapsed:.1f}s, "
+                f"response_chars={token_counts}",
+                flush=True,
             )
             for i, pair in enumerate(batch_pairs):
                 idx = batch_start + i + COMBO_OFFSET
@@ -86,6 +111,12 @@ def generate_batched(pairs, model, gen_kwargs, args, steering_object, steering_s
                 except Exception as e:
                     print(f"   Error generating response for question {idx}: {e}")
                     results.append(_build_error_entry(idx, pair, e))
+    total_elapsed = time.monotonic() - gen_start
+    print(
+        f"[generate_batched] {datetime.now(timezone.utc).isoformat()} "
+        f"all batches done in {total_elapsed:.1f}s, {len(results)} results",
+        flush=True,
+    )
     return results
 
 
