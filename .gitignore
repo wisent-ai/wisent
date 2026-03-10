@@ -71,8 +71,9 @@ Thumbs.db
 # Whitelist approach - only include specific folders
 /*
 !/wisent/
-# scripts/ kept locally, not tracked in git
-# tests/ kept locally, not tracked in git
+!/scripts/
+/scripts/*
+!/scripts/versioning/
 !/.github/
 !/.runpod/
 
@@ -87,7 +88,6 @@ Thumbs.db
 !/pyproject.toml
 !/LICENSE
 !/banner.png
-!/upload_to_pypi.sh
 
 
 # HuggingFace model files (too large for GitHub)
