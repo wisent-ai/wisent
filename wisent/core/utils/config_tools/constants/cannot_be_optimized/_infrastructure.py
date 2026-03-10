@@ -147,8 +147,23 @@ WISENT_COLOR_DARK_BG = "#2b2b2b"
 WISENT_COLOR_DARK_SURFACE = "#3a3a3a"
 WISENT_COLOR_TEXT_LIGHT = "#f0f0f0"
 WISENT_COLOR_TEXT_MUTED = "#b0b0b0"
+WISENT_COLOR_LIGHT_BG = "#f8faf8"
+WISENT_COLOR_LIGHT_SURFACE = "#ffffff"
+WISENT_COLOR_LIGHT_TEXT = "#1a1a1a"
+WISENT_COLOR_LIGHT_TEXT_MUTED = "#555555"
+WISENT_COLOR_MINT_ACCENT_DARK = "#2d8a4e"
 WISENT_LOGO_FILENAME = "wisent_logo.png"
 WISENT_LOGO_DISPLAY_WIDTH = 80
+GRADIO_MODEL_EXAMPLES = (
+    "meta-llama/Llama-3.2-1B-Instruct",
+    "meta-llama/Llama-3.2-3B-Instruct",
+    "meta-llama/Llama-3.1-8B-Instruct",
+    "mistralai/Mistral-7B-Instruct-v0.3",
+    "Qwen/Qwen3-4B-Instruct-2507",
+    "Qwen/Qwen3-8B",
+    "google/gemma-2-2b-it",
+    "google/gemma-2-9b-it",
+)
 # --- Degeneration detection (StoppingCriteria) ---
 DEGEN_WARMUP_TOKENS = 100
 DEGEN_NGRAM_SIZE = 4
