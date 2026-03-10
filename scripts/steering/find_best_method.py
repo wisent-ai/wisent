@@ -115,7 +115,7 @@ def main():
 
     _save_final_report(
         method_results, model_name, benchmark, output_dir,
-        overall_start, baseline_score,
+        overall_start, baseline_score, train_file, test_file,
     )
 
 
@@ -191,7 +191,7 @@ def _run_method(
         trial_counter.append(trial_idx)
         trial_dir = os.path.join(method_dir, f"trial_{trial_idx:04d}")
         os.makedirs(trial_dir, exist_ok=True)
-        for fname in ("responses.json", "scores.json"):
+        for fname in ("responses.json", "scores.json", "steering.pt"):
             src = os.path.join(workspace, fname)
             if os.path.exists(src):
                 shutil.copy2(src, os.path.join(trial_dir, fname))
@@ -243,10 +243,11 @@ def _run_baseline(model_name, benchmark, test_file, output_dir):
 
 def _save_final_report(
     method_results, model_name, benchmark, output_dir, overall_start,
-    baseline_score,
+    baseline_score, train_file, test_file,
 ):
-    """Determine winner, save final JSON with delta and diff."""
+    """Determine winner, save final JSON with delta, diff, and activation effect."""
     from scripts.steering.find_best_method_diff import build_winner_diff
+    from scripts.steering.find_best.activations import measure_activation_space_effect
     total_time = time.time() - overall_start
     scored = {n: r["best_score"] for n, r in method_results.items() if "best_score" in r}
     if not scored:
@@ -258,34 +259,39 @@ def _save_final_report(
         key=lambda x: x["score"], reverse=True,
     )
     diff = build_winner_diff(output_dir, winner, model_name, benchmark)
+    act_effect = measure_activation_space_effect(
+        output_dir, winner, method_results[winner]["best_params"],
+        model_name, benchmark, train_file, test_file,
+    )
     final_results = {
         "model": model_name, "benchmark": benchmark,
         "baseline_score": baseline_score, "winner": winner,
         "winner_score": scored[winner], "winner_delta": scored[winner] - baseline_score,
-        "winner_response_diff": diff, "total_time_seconds": total_time,
+        "winner_response_diff": diff, "activation_space_effect": act_effect,
+        "total_time_seconds": total_time,
         "timestamp": datetime.now().isoformat(),
         "method_results": method_results, "ranking": ranking,
     }
     final_path = os.path.join(output_dir, f"best_method_{benchmark}.json")
     with open(final_path, "w") as f:
         json.dump(final_results, f, indent=JSON_INDENT, default=str)
-    print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
-    print(f"RESULTS: {benchmark} (baseline: {baseline_score:.4f})")
-    print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
+    _print_final_report(ranking, winner, baseline_score, benchmark, diff, act_effect, total_time, final_path)
+
+
+def _print_final_report(ranking, winner, baseline, benchmark, diff, act, total_time, path):
+    """Print summary to stdout."""
+    sep = "=" * SEPARATOR_WIDTH_WIDE
+    print(f"\n{sep}\nRESULTS: {benchmark} (baseline: {baseline:.4f})\n{sep}")
     for r in ranking:
         sign = "+" if r["delta"] >= SCORE_RANGE_MIN else ""
         mk = " <-- WINNER" if r["method"] == winner else ""
-        nm = r["method"].rjust(SEPARATOR_WIDTH_REPORT)
-        print(f"   {nm}: {r['score']:.4f} ({sign}{r['delta']:.4f}){mk}")
+        print(f"   {r['method'].rjust(SEPARATOR_WIDTH_REPORT)}: {r['score']:.4f} ({sign}{r['delta']:.4f}){mk}")
     if "error" not in diff:
-        print(f"\n   Response diff (winner {winner}):")
-        print(f"     Flipped correct: {diff['flipped_correct']}")
-        print(f"     Flipped wrong:   {diff['flipped_wrong']}")
-        print(f"     Unchanged:       {diff['unchanged']}")
-        print(f"     Net improvement:  {diff['net_improvement']}")
-    print(f"\n   Total time: {total_time:.1f}s")
-    print(f"   Results: {final_path}")
-    print(f"{'=' * SEPARATOR_WIDTH_WIDE}\n")
+        print(f"\n   Response diff ({winner}): +{diff['flipped_correct']} -{diff['flipped_wrong']} ={diff['unchanged']} net={diff['net_improvement']}")
+    if "error" not in act:
+        print(f"\n   Activation effect ({winner}): acc={act['classifier_accuracy']:.4f} auc={act['classifier_auc']:.4f}")
+        print(f"     prob: base={act['base_mean_prob']:.4f} steered={act['steered_mean_prob']:.4f} shift={act['prob_shift']:.4f} region_shift={act['region_shift']}")
+    print(f"\n   Time: {total_time:.1f}s  Results: {path}\n{sep}\n")
 
 
 if __name__ == "__main__":
