@@ -81,27 +81,48 @@ def load_reference_activations(args) -> Tuple[torch.Tensor, torch.Tensor]:
     )
 
 
-def train_classifier_and_predict(pos_ref, neg_ref, base_activations, steered_activations, log_frequency: int, test_size: float = None, classifier_type='mlp', mlp_hidden_dim: int = None, batch_size: int = None, learning_rate: float = None):
+def train_classifier_and_predict(
+    pos_ref, neg_ref, base_activations, steered_activations,
+    log_frequency: int, test_size: float = None, classifier_type='mlp',
+    mlp_hidden_dim: int = None, batch_size: int = None,
+    learning_rate: float = None, dropout: float = None,
+    threshold: float = None,
+):
     """Train classifier on reference data and predict on response activations."""
     from wisent.core.reading.classifiers.models.logistic import LogisticClassifier
     from wisent.core.reading.classifiers.models.mlp import MLPClassifier
     from wisent.core.reading.classifiers.core.atoms import ClassifierTrainConfig
 
-    X_train = torch.cat([pos_ref, neg_ref], dim=0).cpu().numpy()
+    X_train = torch.cat([pos_ref, neg_ref], dim=_C.RECURSION_INITIAL_DEPTH).cpu().numpy()
     y_train = np.concatenate([np.ones(len(pos_ref)), np.zeros(len(neg_ref))])
     if classifier_type == "mlp":
         if mlp_hidden_dim is None:
             raise ValueError("mlp_hidden_dim is required when classifier_type is 'mlp'")
-        classifier = MLPClassifier(device="cpu", hidden_dim=mlp_hidden_dim)
+        if dropout is None:
+            raise ValueError("dropout is required when classifier_type is 'mlp'")
+        if threshold is None:
+            raise ValueError("threshold is required for train_classifier_and_predict")
+        classifier = MLPClassifier(
+            device="cpu", hidden_dim=mlp_hidden_dim,
+            dropout=dropout, threshold=threshold,
+        )
     else:
-        classifier = LogisticClassifier(device="cpu")
+        if threshold is None:
+            raise ValueError("threshold is required for train_classifier_and_predict")
+        classifier = LogisticClassifier(device="cpu", threshold=threshold)
     if batch_size is None:
         raise ValueError("batch_size is required for train_classifier_and_predict")
     if learning_rate is None:
         raise ValueError("learning_rate is required for train_classifier_and_predict")
     if test_size is None:
         raise ValueError("test_size is required for train_classifier_and_predict")
-    train_report = classifier.fit(X_train, y_train, log_frequency=log_frequency, config=ClassifierTrainConfig(num_epochs=VIZ_MLP_EPOCHS, batch_size=batch_size, learning_rate=learning_rate, test_size=test_size))
+    train_report = classifier.fit(
+        X_train, y_train, log_frequency=log_frequency,
+        config=ClassifierTrainConfig(
+            num_epochs=VIZ_MLP_EPOCHS, batch_size=batch_size,
+            learning_rate=learning_rate, test_size=test_size,
+        ),
+    )
     base_probs = classifier.predict_proba(base_activations.cpu().numpy())
     steered_probs = classifier.predict_proba(steered_activations.cpu().numpy())
     base_probs = base_probs if isinstance(base_probs, list) else [base_probs]
