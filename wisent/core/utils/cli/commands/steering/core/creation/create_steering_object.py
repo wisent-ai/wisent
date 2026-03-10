@@ -87,7 +87,7 @@ def execute_create_steering_object(args):
         layers = data.get('layers', [])
         token_aggregation = data.get('token_aggregation', 'unknown')
         from wisent.core.control.steering_methods.configs.optimal import get_optimal
-    extraction_component = data.get('extraction_component', get_optimal("extraction_component"))
+        extraction_component = data.get('extraction_component', get_optimal("extraction_component"))
         pairs_list = data.get('pairs', [])
         
         print(f"   ✓ Loaded {len(pairs_list)} pairs")

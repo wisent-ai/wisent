@@ -64,19 +64,17 @@ def build_contrastive_pairs(
 ) -> list["ContrastivePair"]:
     """
     Unified loader for contrastive pairs - handles both HuggingFace and lm-eval tasks.
-    
-    Automatically:
-    - Detects if task is HF or lm-eval
-    - Handles group tasks (including nested groups) by sampling from all subtasks
-    - Adds evaluator_name to each pair's metadata
-    
+
+    Loads from storage first (cache -> HF -> Supabase). If not found in any
+    storage, generates via extractors and uploads to HF for future reuse.
+
     arguments:
         task_name:
             Name of the benchmark/task (e.g., "winogrande", "mmlu", "humaneval").
         limit:
             Optional upper bound on the number of pairs to return.
-            Values <= 0 are treated as "no limit".
-            
+            Non-positive values are treated as no limit.
+
     returns:
         A list of ContrastivePair objects, each with metadata containing
         'evaluator_name' and 'source_task'.
@@ -87,17 +85,30 @@ def build_contrastive_pairs(
     # Normalize limit
     max_items = None if (limit is None or limit <= 0) else int(limit)
     
+    # Try loading from storage first (cache -> HF -> Supabase)
+    from wisent.extractors.lm_eval.registry.lm_task_pairs_storage import (
+        try_load_from_storage, upload_pairs_to_hf,
+    )
+    stored_pairs = try_load_from_storage(task_name, max_items)
+    if stored_pairs:
+        extractor = get_extractor(task_name)
+        evaluator_name = getattr(extractor, 'evaluator_name', None)
+        return _add_evaluator_to_pairs(stored_pairs, evaluator_name, task_name)
+
+    log.info("No stored pairs found, generating from extractors")
+
     # Get extractor
     extractor = get_extractor(task_name)
     log.info("Using extractor", extra={"extractor": extractor.__class__.__name__})
-    
+
     # Get evaluator_name from extractor
     evaluator_name = getattr(extractor, 'evaluator_name', None)
-    
+
     # HuggingFace extractor - load directly
     if isinstance(extractor, HuggingFaceBenchmarkExtractor):
         log.info("HuggingFace task - loading directly")
         pairs = extractor.extract_contrastive_pairs(limit=max_items)
+        upload_pairs_to_hf(task_name, pairs)
         return _add_evaluator_to_pairs(pairs, evaluator_name, task_name)
     
     # lm-eval extractor - need to load task
@@ -116,6 +127,7 @@ def build_contrastive_pairs(
     if isinstance(task_obj, ConfigurableTask):
         log.info("Single task")
         pairs = extractor.extract_contrastive_pairs(task_obj, limit=max_items, train_ratio=train_ratio)
+        upload_pairs_to_hf(task_name, pairs)
         return _add_evaluator_to_pairs(pairs, evaluator_name, task_name)
 
     # Group task (dict) - flatten and sample from all subtasks
@@ -169,6 +181,7 @@ def build_contrastive_pairs(
             all_pairs = all_pairs[:max_items]
         
         log.info(f"Extracted {len(all_pairs)} pairs from group task")
+        upload_pairs_to_hf(task_name, all_pairs)
         return all_pairs
     
     log.error(f"Unexpected task_obj type: {type(task_obj)}")

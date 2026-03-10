@@ -28,6 +28,7 @@ from wisent.core.utils.config_tools.constants import (
     COMBO_OFFSET,
     EXIT_CODE_ERROR,
     JSON_INDENT,
+    SCORE_RANGE_MIN,
     SEPARATOR_WIDTH_REPORT,
     SEPARATOR_WIDTH_WIDE,
     SPLIT_RATIO_TRAIN_DEFAULT,
@@ -244,52 +245,44 @@ def _save_final_report(
     method_results, model_name, benchmark, output_dir, overall_start,
     baseline_score,
 ):
-    """Determine winner, save final JSON, print summary."""
+    """Determine winner, save final JSON with delta and diff."""
+    from scripts.steering.find_best_method_diff import build_winner_diff
     total_time = time.time() - overall_start
-    scored = {
-        name: r["best_score"]
-        for name, r in method_results.items()
-        if "best_score" in r
-    }
-
+    scored = {n: r["best_score"] for n, r in method_results.items() if "best_score" in r}
     if not scored:
         print("ERROR: No method produced a score")
         sys.exit(EXIT_CODE_ERROR)
     winner = max(scored, key=scored.get)
-    winner_score = scored[winner]
-
-    final_results = {
-        "model": model_name,
-        "benchmark": benchmark,
-        "baseline_score": baseline_score,
-        "winner": winner,
-        "winner_score": winner_score,
-        "total_time_seconds": total_time,
-        "timestamp": datetime.now().isoformat(),
-        "method_results": method_results,
-        "ranking": sorted(
-            [
-                {"method": n, "score": r["best_score"]}
-                for n, r in method_results.items()
-            ],
-            key=lambda x: x["score"],
-            reverse=True,
-        ),
-    }
-
-    final_path = os.path.join(
-        output_dir, f"best_method_{benchmark}.json",
+    ranking = sorted(
+        [{"method": n, "score": s, "delta": s - baseline_score} for n, s in scored.items()],
+        key=lambda x: x["score"], reverse=True,
     )
+    diff = build_winner_diff(output_dir, winner, model_name, benchmark)
+    final_results = {
+        "model": model_name, "benchmark": benchmark,
+        "baseline_score": baseline_score, "winner": winner,
+        "winner_score": scored[winner], "winner_delta": scored[winner] - baseline_score,
+        "winner_response_diff": diff, "total_time_seconds": total_time,
+        "timestamp": datetime.now().isoformat(),
+        "method_results": method_results, "ranking": ranking,
+    }
+    final_path = os.path.join(output_dir, f"best_method_{benchmark}.json")
     with open(final_path, "w") as f:
         json.dump(final_results, f, indent=JSON_INDENT, default=str)
-
     print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
-    print(f"RESULTS: {benchmark}")
+    print(f"RESULTS: {benchmark} (baseline: {baseline_score:.4f})")
     print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
-    for rank_entry in final_results["ranking"]:
-        marker = " <-- WINNER" if rank_entry["method"] == winner else ""
-        name = rank_entry["method"].rjust(SEPARATOR_WIDTH_REPORT)
-        print(f"   {name}: {rank_entry['score']:.4f}{marker}")
+    for r in ranking:
+        sign = "+" if r["delta"] >= SCORE_RANGE_MIN else ""
+        mk = " <-- WINNER" if r["method"] == winner else ""
+        nm = r["method"].rjust(SEPARATOR_WIDTH_REPORT)
+        print(f"   {nm}: {r['score']:.4f} ({sign}{r['delta']:.4f}){mk}")
+    if "error" not in diff:
+        print(f"\n   Response diff (winner {winner}):")
+        print(f"     Flipped correct: {diff['flipped_correct']}")
+        print(f"     Flipped wrong:   {diff['flipped_wrong']}")
+        print(f"     Unchanged:       {diff['unchanged']}")
+        print(f"     Net improvement:  {diff['net_improvement']}")
     print(f"\n   Total time: {total_time:.1f}s")
     print(f"   Results: {final_path}")
     print(f"{'=' * SEPARATOR_WIDTH_WIDE}\n")
