@@ -7,7 +7,7 @@ containing sub-tabs for individual commands.
 import os
 import gradio as gr
 from wisent.core.utils.config_tools.constants import (
-    GRADIO_MODEL_PLACEHOLDER,
+    GRADIO_MODEL_EXAMPLES,
     WISENT_LOGO_FILENAME,
     WISENT_LOGO_DISPLAY_WIDTH,
 )
@@ -46,10 +46,11 @@ def build_interface():
     )
 
     with gr.Row():
-        gr.Textbox(
+        gr.Dropdown(
             label="Model Name (shared across commands)",
-            value="",
-            placeholder=GRADIO_MODEL_PLACEHOLDER,
+            choices=list(GRADIO_MODEL_EXAMPLES),
+            value=None,
+            allow_custom_value=True,
             interactive=True,
             elem_id="global-model",
         )
