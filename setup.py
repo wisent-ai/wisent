@@ -33,6 +33,7 @@ setup(
             "support/parameters/tasks/*.json",
             "scripts/*.sh",
             "core/control/steering_methods/configs/*.json",
+            "app/*.png",
         ],
     },
     classifiers=[
