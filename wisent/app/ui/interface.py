@@ -40,7 +40,7 @@ def build_interface():
         )
     gr.Markdown(
         "# Wisent\n"
-        "### AI Safety & Alignment Toolkit\n"
+        "### World's Best AI through Representation Engineering\n"
         "Select a category tab, choose a command, fill in parameters, "
         "and click Run."
     )
