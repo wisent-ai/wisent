@@ -34,7 +34,6 @@ def build_interface():
         gr.Image(
             value=logo_path,
             show_label=False,
-            show_download_button=False,
             interactive=False,
             width=WISENT_LOGO_DISPLAY_WIDTH,
             container=False,
