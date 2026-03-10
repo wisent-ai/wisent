@@ -8,13 +8,13 @@ from wisent.core.utils.config_tools.constants import (
 )
 
 
+_APP_TITLE = "Wisent - AI Safety & Alignment Toolkit"
+_APP_CSS = ".output-box { font-family: monospace; white-space: pre-wrap; }"
+
+
 def create_app() -> gr.Blocks:
     """Create and return the Gradio Blocks application."""
-    with gr.Blocks(
-        title="Wisent - AI Safety & Alignment Toolkit",
-        theme=gr.themes.Soft(),
-        css=".output-box { font-family: monospace; white-space: pre-wrap; }",
-    ) as app:
+    with gr.Blocks(title=_APP_TITLE) as app:
         build_interface()
     return app
 
@@ -31,7 +31,11 @@ def launch(**kwargs):
         "server_port": GRADIO_SERVER_PORT,
     }
     defaults.update(kwargs)
-    app.launch(**defaults)
+    app.launch(
+        theme=gr.themes.Soft(),
+        css=_APP_CSS,
+        **defaults,
+    )
 
 
 if __name__ == "__main__":
