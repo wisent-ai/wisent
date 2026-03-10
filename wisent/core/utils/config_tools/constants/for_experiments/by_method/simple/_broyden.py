@@ -6,7 +6,6 @@ priors (UNINFORMATIVE_MU, UNINFORMATIVE_SIGMA) and need no constants.
 """
 # --- Shared ---
 SS_LAYER_MIN = 1
-SS_STRENGTH_MAX = 100.0
 
 # --- MLP code-enforced bounds ---
 SS_MLP_NUM_LAYERS_MIN = 1
