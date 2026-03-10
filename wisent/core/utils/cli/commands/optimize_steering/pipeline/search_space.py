@@ -18,10 +18,11 @@ _SS = [s.value for s in SteeringApplicationStrategy]
 _DW = ["primary_only", "equal"]
 U_MU = _C.UNINFORMATIVE_MU
 U_SIG = _C.UNINFORMATIVE_SIGMA
+_S_MAX = _C.SS_STRENGTH_MAX
 
 
-def _ln(mu, sigma):
-    return _Fp(distribution="lognormal", mu=mu, sigma=sigma)
+def _ln(mu, sigma, high=None):
+    return _Fp(distribution="lognormal", mu=mu, sigma=sigma, high=high)
 
 
 def _nm(mu, sigma):
@@ -43,7 +44,7 @@ def _qln(mu, sigma):
 def _base(num_layers: int) -> dict[str, Param]:
     return {
         "steering_strategy": _Cat(choices=_SS),
-        "strength": _ln(U_MU, U_SIG),
+        "strength": _ln(U_MU, U_SIG, high=_S_MAX),
         "layer": _ri(_C.SS_LAYER_MIN, num_layers),
     }
 
@@ -51,7 +52,7 @@ def _base(num_layers: int) -> dict[str, Param]:
 def _sensor_base(num_layers: int) -> dict[str, Param]:
     return {
         "steering_strategy": _Cat(choices=_SS),
-        "strength": _ln(U_MU, U_SIG),
+        "strength": _ln(U_MU, U_SIG, high=_S_MAX),
         "sensor_layer": _ri(_C.SS_LAYER_MIN, num_layers),
         "steering_start": _ri(_C.SS_LAYER_MIN, num_layers),
         "steering_end": _ri(_C.SS_LAYER_MIN, num_layers),
