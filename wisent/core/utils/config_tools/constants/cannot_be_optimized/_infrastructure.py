@@ -174,6 +174,12 @@ GRADIO_MODEL_EXAMPLES = (
     "Qwen/Qwen3-1.7B",
     "Qwen/Qwen3.5-2B",
 )
+# --- GPU memory estimation (matches run_on_gcp.sh line 58: size*2+4) ---
+FP16_GB_PER_BILLION_PARAMS = 2
+GPU_FRAMEWORK_OVERHEAD_GB = 4
+MB_PER_GB = 1024
+TRANSFORMER_PARAM_FACTOR = 12
+PARAMS_PER_BILLION = 1000000000
 # --- Degeneration detection (StoppingCriteria) ---
 DEGEN_WARMUP_TOKENS = 100
 DEGEN_NGRAM_SIZE = 4
