@@ -155,8 +155,6 @@ WISENT_COLOR_MINT_ACCENT_DARK = "#2d8a4e"
 WISENT_LOGO_FILENAME = "wisent_logo.png"
 WISENT_LOGO_DISPLAY_WIDTH = 80
 GRADIO_MODEL_EXAMPLES = (
-    "HuggingFaceTB/SmolLM2-135M-Instruct",
-    "HuggingFaceTB/SmolLM2-360M-Instruct",
     "Qwen/Qwen3-0.6B",
     "Qwen/Qwen3.5-0.8B",
     "meta-llama/Llama-3.2-1B-Instruct",
