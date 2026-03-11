@@ -74,6 +74,7 @@ Thumbs.db
 !/scripts/
 /scripts/*
 !/scripts/versioning/
+!/scripts/steering/
 !/.github/
 !/.runpod/
 

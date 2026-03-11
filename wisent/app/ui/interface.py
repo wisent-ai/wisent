@@ -15,7 +15,7 @@ from wisent.app.core.groups import get_command_groups
 from wisent.app.ui.command_tab import build_command_tab, build_subparser_tab
 from wisent.app.ui.wizard import build_wizard_tab
 
-_SUBPARSER_COMMANDS = frozenset({"optimize-steering"})
+_SUBPARSER_COMMANDS = frozenset({"optimize-steering", "inference-config"})
 
 
 def _find_logo():
