@@ -129,7 +129,7 @@ class WisentIOMixin:
         Returns:
             Self for chaining
         """
-        data = torch.load(path, map_location=self.device)
+        data = torch.load(path, map_location=self.device, weights_only=False)
 
         for trait, trait_data in data.items():
             if "default_scale" not in trait_data:

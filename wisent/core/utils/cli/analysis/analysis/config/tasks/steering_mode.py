@@ -65,7 +65,7 @@ def _load_steering_vector(args, layer, layer_str):
         print(f"   ❌ Layer {layer} not found in vector file")
         sys.exit(1)
     else:
-        vector_data = torch.load(args.load_steering_vector)
+        vector_data = torch.load(args.load_steering_vector, weights_only=False)
         steering_vector = vector_data.get('steering_vector', vector_data.get('vector'))
         print(f"   ✓ Loaded steering vector, dim={steering_vector.shape[0]}")
         return steering_vector

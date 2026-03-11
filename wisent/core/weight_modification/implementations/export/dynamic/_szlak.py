@@ -183,7 +183,7 @@ def load_szlak_model(
             data_exists = False
 
     if install_hooks and data_exists:
-        szlak_data = torch.load(data_path, map_location="cpu")
+        szlak_data = torch.load(data_path, map_location="cpu", weights_only=False)
 
         from wisent.core.weight_modification.directional.hooks.transport.szlak import (
             SzlakRuntimeHooks,

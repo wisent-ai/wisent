@@ -232,7 +232,7 @@ def load_nurt_model(
             data_exists = False
 
     if install_hooks and data_exists:
-        flow_data = torch.load(data_path, map_location="cpu")
+        flow_data = torch.load(data_path, map_location="cpu", weights_only=False)
 
         from wisent.core.control.steering_methods.methods.nurt.flow_network import (
             FlowVelocityNetwork,

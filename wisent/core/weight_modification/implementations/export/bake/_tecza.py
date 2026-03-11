@@ -175,12 +175,12 @@ def load_tecza_model(
     if is_local:
         data_path = Path(model_path_str) / "tecza_steering.pt"
         if data_path.exists():
-            tecza_data = torch.load(data_path, map_location="cpu")
+            tecza_data = torch.load(data_path, map_location="cpu", weights_only=False)
             log.info(f"Loaded TECZA data ({tecza_data['mode']} mode)")
     else:
         try:
             data_path = hf_hub_download(repo_id=model_path_str, filename="tecza_steering.pt")
-            tecza_data = torch.load(data_path, map_location="cpu")
+            tecza_data = torch.load(data_path, map_location="cpu", weights_only=False)
             log.info(f"Loaded TECZA data from HuggingFace")
         except Exception:
             pass

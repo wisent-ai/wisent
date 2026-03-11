@@ -230,7 +230,7 @@ def load_tetno_model(
             data_exists = False
     
     if install_hooks and mode in ("dynamic", "hybrid") and data_exists:
-        tetno_data = torch.load(data_path, map_location="cpu")
+        tetno_data = torch.load(data_path, map_location="cpu", weights_only=False)
         
         from wisent.core.weight_modification.directional import TETNORuntimeHooks
         from types import SimpleNamespace

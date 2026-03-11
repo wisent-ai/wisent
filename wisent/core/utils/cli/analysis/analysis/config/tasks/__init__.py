@@ -154,7 +154,7 @@ def _handle_inference_only(args):
     print(f"\n🎯 Starting inference with steering vector")
     print(f"   Loading vector from: {args.load_steering_vector}")
 
-    vector_data = torch.load(args.load_steering_vector)
+    vector_data = torch.load(args.load_steering_vector, weights_only=False)
     steering_vector = vector_data['vector']
     layer = vector_data['layer']
 

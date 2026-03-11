@@ -6,7 +6,8 @@ from datetime import datetime, timezone
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, extract_activation
 from wisent.core.control.steering_methods.configs.optimal import get_optimal_extraction_strategy
 from wisent.core.utils.config_tools.constants import (
-    GENERATION_BATCH_SIZE, DISPLAY_TRUNCATION_COMPACT, INDEX_FIRST, COMBO_OFFSET, COMBO_BASE,
+    GENERATION_BATCH_SIZE, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_MEDIUM,
+    INDEX_FIRST, COMBO_OFFSET, COMBO_BASE,
 )
 
 
@@ -88,13 +89,20 @@ def generate_batched(pairs, model, gen_kwargs, args, steering_object, steering_s
                 steering_strategy=steering_strategy,
             )
             batch_elapsed = time.monotonic() - batch_t0
-            token_counts = [len(r) for r in responses]
+            char_counts = [len(r) for r in responses]
             print(
                 f"[generate_batched] {datetime.now(timezone.utc).isoformat()} "
                 f"batch {batch_num}/{n_batches} done in {batch_elapsed:.1f}s, "
-                f"response_chars={token_counts}",
+                f"response_chars={char_counts}",
                 flush=True,
             )
+            for ri, resp in enumerate(responses):
+                preview = resp[:DISPLAY_TRUNCATION_MEDIUM].replace('\n', ' ') if resp else '<empty>'
+                print(
+                    f"[generate_batched]   response[{ri}] "
+                    f"len={len(resp)} preview: {preview}",
+                    flush=True,
+                )
             for i, pair in enumerate(batch_pairs):
                 idx = batch_start + i + COMBO_OFFSET
                 text = responses[i] if i < len(responses) else ""
