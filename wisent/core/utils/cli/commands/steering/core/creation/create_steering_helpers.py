@@ -90,25 +90,12 @@ def _create_tetno_steering_object(
     default_score: float,
 ) -> TETNOSteeringObject:
     """Create TETNO steering object with conditional gating."""
-    from wisent.core.control.steering_methods.methods.advanced import TETNOMethod
-    
     # Determine sensor layer — use last available layer if not specified
     num_layers = len(available_layers)
     sensor_layer_idx = getattr(args, 'tetno_sensor_layer', None)
     if sensor_layer_idx is None:
-        sensor_layer_idx = num_layers - 1
-    sensor_layer = int(available_layers[min(sensor_layer_idx, num_layers - 1)])
-    
-    method = TETNOMethod(
-        sensor_layer=sensor_layer,
-        condition_threshold=_require_arg(args, 'tetno_condition_threshold'),
-        gate_temperature=_require_arg(args, 'tetno_gate_temperature'),
-        max_alpha=_require_arg(args, 'tetno_max_alpha'),
-        optimization_steps=_require_arg(args, 'tetno_optimization_steps'),
-        learning_rate=_require_arg(args, 'tetno_learning_rate'),
-        learn_threshold=getattr(args, 'tetno_learn_threshold', get_optimal("learn_threshold")),
-        normalize=getattr(args, 'normalize', get_optimal("normalize")),
-    )
+        sensor_layer_idx = num_layers - _C.COMBO_OFFSET
+    sensor_layer = int(available_layers[min(sensor_layer_idx, num_layers - _C.COMBO_OFFSET)])
     
     # Train behavior vectors
     behavior_vectors = {}
