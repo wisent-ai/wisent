@@ -1,19 +1,17 @@
-"""Single-method worker for parallel GCP steering optimization.
+"""Worker for GCP steering optimization (single or multi-method).
 
-Loads pairs from storage (HF/Supabase/cache), runs optimization
-for ONE method, uploads results to GCS.
+Loads pairs from storage, runs optimization, uploads results to GCS.
+Supports comma-separated METHOD for parallel multi-method runs on one
+instance using ProcessPoolExecutor with spawn context for CUDA isolation.
 
 Environment variables (all required):
-    MODEL_NAME: HuggingFace model ID
-    BENCHMARK: Benchmark task name
-    METHOD: Steering method name (e.g. CAA, OSTRZE)
-    JOB_ID: Shared job identifier for GCS paths
-    TRIALS_MULTIPLIER: Trials per dimension
-    BACKEND: Optimizer backend ('hyperopt' or 'optuna')
-    GCS_BUCKET: GCS bucket name
+    MODEL_NAME, BENCHMARK, METHOD (comma-separated),
+    JOB_ID, TRIALS_MULTIPLIER, BACKEND, GCS_BUCKET
 """
+import concurrent.futures
 import json
 import math
+import multiprocessing as mp
 import os
 import shutil
 import subprocess
@@ -22,9 +20,8 @@ import time
 from pathlib import Path
 
 from wisent.core.utils.config_tools.constants import (
-    EXIT_CODE_ERROR,
-    JSON_INDENT,
-    SPLIT_RATIO_TRAIN_DEFAULT,
+    EXIT_CODE_ERROR, INDEX_FIRST, JSON_INDENT,
+    N_JOBS_SINGLE, SPLIT_RATIO_TRAIN_DEFAULT,
 )
 from wisent.core.utils.cli.optimize_steering.search_space import (
     get_method_space,
@@ -33,11 +30,13 @@ from wisent.core.utils.cli.optimize_steering.pipeline import (
     create_objective,
 )
 from wisent.core.utils.services.optimization.core.atoms import (
-    BaseOptimizer,
-    HPOConfig,
+    BaseOptimizer, HPOConfig,
 )
 from wisent.core.utils.cli.optimize_steering.pipeline.comprehensive import (
     baseline_cache,
+)
+from wisent.core.utils.infra_tools.infra.core.hardware import (
+    estimate_max_gpu_workers,
 )
 
 
@@ -50,7 +49,6 @@ def _require_env(name: str) -> str:
 
 
 def _gcs_upload(local_path: str, gcs_path: str):
-    """Upload a file or directory to GCS."""
     cmd = ["gcloud", "storage", "cp"]
     if os.path.isdir(local_path):
         cmd.append("-r")
@@ -58,61 +56,24 @@ def _gcs_upload(local_path: str, gcs_path: str):
     subprocess.run(cmd, check=True)
 
 
-def main():
-    model_name = _require_env("MODEL_NAME")
-    benchmark = _require_env("BENCHMARK")
-    method = _require_env("METHOD")
-    job_id = _require_env("JOB_ID")
-    trials_mult = int(_require_env("TRIALS_MULTIPLIER"))
-    backend = _require_env("BACKEND")
-    gcs_bucket = _require_env("GCS_BUCKET")
-
-    output_dir = f"/home/ubuntu/output/{method}"
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
-
-    gcs_base = f"gs://{gcs_bucket}/find_best_method/{job_id}"
-
-    # Load pairs from storage (HF/Supabase/cache) or generate
-    pairs = _load_and_split_pairs(benchmark, output_dir)
-    train_file, test_file, n_train = pairs
-
-    from transformers import AutoConfig as _AC
-    cfg = _AC.from_pretrained(model_name, trust_remote_code=True)
-    num_layers = cfg.num_hidden_layers
-
+def _run_single_method(
+    method, model_name, benchmark, num_layers,
+    train_file, test_file, n_train,
+    trials_mult, backend, output_dir,
+) -> dict:
+    """Run optimization for one method. All args are primitives for spawn."""
     method_upper = method.upper()
     space = get_method_space(method_upper, num_layers)
     n_trials = len(space) * trials_mult
-
-    print(f"Worker: {method_upper}")
-    print(f"  Model: {model_name}")
-    print(f"  Benchmark: {benchmark}")
-    print(f"  Dims: {len(space)}, Trials: {n_trials}")
-    print(f"  Train pairs: {n_train}")
-    sys.stdout.flush()
-
-    # Baseline (HF cache handles deduplication)
-    baseline_score = _run_baseline(model_name, benchmark, test_file)
-    print(f"  Baseline: {baseline_score:.4f}")
-    sys.stdout.flush()
-
-    # Run optimization
-    method_start = time.time()
-    optimizer = BaseOptimizer()
-    optimizer.direction = "maximize"
-
     trials_dir = os.path.join(output_dir, "trials", method)
     workspace = os.path.join(trials_dir, "_workspace")
     os.makedirs(workspace, exist_ok=True)
-
     objective = create_objective(
         method=method_upper, model=model_name, task=benchmark,
         num_layers=num_layers, limit=n_train, device=None,
         work_dir=workspace,
-        train_pairs_file=train_file,
-        test_pairs_file=test_file,
+        train_pairs_file=train_file, test_pairs_file=test_file,
     )
-
     trial_counter = []
 
     def persisted_objective(params):
@@ -125,22 +86,139 @@ def main():
             src = os.path.join(workspace, fname)
             if os.path.exists(src):
                 shutil.copy2(src, os.path.join(trial_dir, fname))
-        meta = {
-            "params": params,
-            "score": score,
-            "trial": trial_idx,
-        }
+        meta = {"params": params, "score": score, "trial": trial_idx}
         with open(os.path.join(trial_dir, "trial_meta.json"), "w") as f:
             json.dump(meta, f, indent=JSON_INDENT, default=str)
         return score
 
-    result = optimizer.optimize_fn(persisted_objective, space, n_trials, cfg=HPOConfig(backend=backend))
-    method_time = time.time() - method_start
-
-    _save_and_upload(
-        output_dir, method, result, method_time,
-        baseline_score, gcs_base,
+    method_start = time.time()
+    optimizer = BaseOptimizer()
+    optimizer.direction = "maximize"
+    result = optimizer.optimize_fn(
+        persisted_objective, space, n_trials,
+        cfg=HPOConfig(backend=backend),
     )
+    return {
+        "method": method, "best_score": result.best_score,
+        "best_params": result.best_params, "n_trials": result.n_trials,
+        "backend": result.backend, "all_trials": result.all_trials,
+        "time_seconds": time.time() - method_start,
+    }
+
+
+def _dispatch_parallel(
+    methods, model_name, benchmark, num_layers,
+    train_file, test_file, n_train,
+    trials_mult, backend, output_dir, baseline_score, gcs_base,
+):
+    """Run multiple methods in parallel via ProcessPoolExecutor."""
+    max_workers = estimate_max_gpu_workers(model_name)
+    print(f"GPU capacity: {max_workers} parallel workers "
+          f"for {len(methods)} methods")
+    sys.stdout.flush()
+    ctx = mp.get_context("spawn")
+    completed = []
+    with concurrent.futures.ProcessPoolExecutor(
+        max_workers=max_workers, mp_context=ctx,
+    ) as pool:
+        futures = {}
+        for method in methods:
+            method_dir = os.path.join(output_dir, method)
+            Path(method_dir).mkdir(parents=True, exist_ok=True)
+            fut = pool.submit(
+                _run_single_method, method, model_name, benchmark,
+                num_layers, train_file, test_file, n_train,
+                trials_mult, backend, method_dir,
+            )
+            futures[fut] = method
+        for fut in concurrent.futures.as_completed(futures):
+            method = futures[fut]
+            try:
+                result_dict = fut.result()
+                print(f"  Completed {method.upper()}: "
+                      f"score={result_dict['best_score']:.4f}")
+                _save_and_upload(
+                    os.path.join(output_dir, method), method,
+                    result_dict, baseline_score, gcs_base,
+                )
+                completed.append(method)
+            except Exception as exc:
+                print(f"  FAILED {method.upper()}: {exc}")
+            sys.stdout.flush()
+    print(f"\nFinished: {len(completed)}/{len(methods)} methods succeeded")
+
+
+def _save_and_upload(
+    output_dir, method, result_dict, baseline_score, gcs_base,
+):
+    """Save method result summary and upload to GCS."""
+    delta = result_dict["best_score"] - baseline_score
+    summary = {
+        "method": result_dict["method"],
+        "best_score": result_dict["best_score"],
+        "best_params": result_dict["best_params"],
+        "n_trials": result_dict["n_trials"],
+        "backend": result_dict["backend"],
+        "time_seconds": result_dict["time_seconds"],
+        "all_trials": result_dict["all_trials"],
+        "baseline_score": baseline_score,
+        "delta": delta,
+    }
+    summary_path = os.path.join(output_dir, "method_result.json")
+    with open(summary_path, "w") as f:
+        json.dump(summary, f, indent=JSON_INDENT, default=str)
+    method_upper = method.upper()
+    print(f"\n  {method_upper}: score={result_dict['best_score']:.4f} "
+          f"delta={delta:+.4f} in {result_dict['time_seconds']:.1f}s")
+    gcs_method = f"{gcs_base}/methods/{method}/"
+    _gcs_upload(output_dir, gcs_method)
+    print(f"  Uploaded to {gcs_method}")
+
+
+def main():
+    model_name = _require_env("MODEL_NAME")
+    benchmark = _require_env("BENCHMARK")
+    method_str = _require_env("METHOD")
+    job_id = _require_env("JOB_ID")
+    trials_mult = int(_require_env("TRIALS_MULTIPLIER"))
+    backend = _require_env("BACKEND")
+    gcs_bucket = _require_env("GCS_BUCKET")
+    methods = [m.strip() for m in method_str.split(",")]
+    output_dir = f"/home/ubuntu/output/{job_id}"
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    gcs_base = f"gs://{gcs_bucket}/find_best_method/{job_id}"
+    # Load pairs and baseline ONCE (shared across all methods)
+    pairs = _load_and_split_pairs(benchmark, output_dir)
+    train_file, test_file, n_train = pairs
+    from transformers import AutoConfig as _AC
+    cfg = _AC.from_pretrained(model_name, trust_remote_code=True)
+    num_layers = cfg.num_hidden_layers
+    baseline_score = _run_baseline(model_name, benchmark, test_file)
+    print(f"  Baseline: {baseline_score:.4f}")
+    sys.stdout.flush()
+    if len(methods) == N_JOBS_SINGLE:
+        method = methods[INDEX_FIRST]
+        method_dir = os.path.join(output_dir, method)
+        Path(method_dir).mkdir(parents=True, exist_ok=True)
+        print(f"Worker: {method.upper()} (single mode)")
+        sys.stdout.flush()
+        result_dict = _run_single_method(
+            method, model_name, benchmark, num_layers,
+            train_file, test_file, n_train,
+            trials_mult, backend, method_dir,
+        )
+        _save_and_upload(
+            method_dir, method, result_dict, baseline_score, gcs_base,
+        )
+    else:
+        print(f"Worker: {len(methods)} methods (parallel mode)")
+        sys.stdout.flush()
+        _dispatch_parallel(
+            methods, model_name, benchmark, num_layers,
+            train_file, test_file, n_train,
+            trials_mult, backend, output_dir,
+            baseline_score, gcs_base,
+        )
 
 
 def _load_and_split_pairs(benchmark, output_dir):
@@ -148,23 +226,19 @@ def _load_and_split_pairs(benchmark, output_dir):
     from wisent.extractors.lm_eval.lm_task_pairs_generation import (
         build_contrastive_pairs,
     )
-
     pairs = build_contrastive_pairs(
-        task_name=benchmark,
-        train_ratio=SPLIT_RATIO_TRAIN_DEFAULT,
+        task_name=benchmark, train_ratio=SPLIT_RATIO_TRAIN_DEFAULT,
     )
     if not pairs:
         print(f"ERROR: No pairs for {benchmark}")
         sys.exit(EXIT_CODE_ERROR)
-
     split_idx = math.floor(len(pairs) * SPLIT_RATIO_TRAIN_DEFAULT)
     train_pairs = pairs[:split_idx]
     test_pairs = pairs[split_idx:]
 
     def _save(pair_list, path):
         data = {
-            "task_name": benchmark,
-            "num_pairs": len(pair_list),
+            "task_name": benchmark, "num_pairs": len(pair_list),
             "pairs": [p.to_dict() for p in pair_list],
         }
         with open(path, "w") as f:
@@ -174,37 +248,9 @@ def _load_and_split_pairs(benchmark, output_dir):
     test_path = os.path.join(output_dir, f"test_pairs_{benchmark}.json")
     _save(train_pairs, train_path)
     _save(test_pairs, test_path)
-    print(f"  Pairs: {len(pairs)} total, {len(train_pairs)} train, {len(test_pairs)} test")
+    print(f"  Pairs: {len(pairs)} total, "
+          f"{len(train_pairs)} train, {len(test_pairs)} test")
     return train_path, test_path, len(train_pairs)
-
-
-def _save_and_upload(
-    output_dir, method, result, method_time, baseline_score, gcs_base,
-):
-    """Save method result summary and upload to GCS."""
-    summary = {
-        "method": method,
-        "best_score": result.best_score,
-        "best_params": result.best_params,
-        "n_trials": result.n_trials,
-        "backend": result.backend,
-        "time_seconds": method_time,
-        "all_trials": result.all_trials,
-        "baseline_score": baseline_score,
-        "delta": result.best_score - baseline_score,
-    }
-    summary_path = os.path.join(output_dir, "method_result.json")
-    with open(summary_path, "w") as f:
-        json.dump(summary, f, indent=JSON_INDENT, default=str)
-
-    method_upper = method.upper()
-    print(f"\n  {method_upper}: score={result.best_score:.4f} "
-          f"delta={result.best_score - baseline_score:+.4f} "
-          f"in {method_time:.1f}s")
-
-    gcs_method = f"{gcs_base}/methods/{method}/"
-    _gcs_upload(output_dir, gcs_method)
-    print(f"  Uploaded to {gcs_method}")
 
 
 def _run_baseline(model_name, benchmark, test_file):

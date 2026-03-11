@@ -2,8 +2,18 @@
 from __future__ import annotations
 
 import os
+import re
 from dataclasses import dataclass
 from functools import lru_cache
+
+from wisent.core.utils.config_tools.constants import (
+    FP16_GB_PER_BILLION_PARAMS,
+    GPU_FRAMEWORK_OVERHEAD_GB,
+    MB_PER_GB,
+    COMBO_OFFSET,
+    TRANSFORMER_PARAM_FACTOR,
+    PARAMS_PER_BILLION,
+)
 
 
 @dataclass(frozen=True)
@@ -177,6 +187,52 @@ def docker_sandbox_mem_limit_mb() -> int:
 def safe_docker_nproc_default() -> int:
     """docker_nproc() // 2, min 32."""
     return max(32, docker_nproc() // 2)
+
+
+# ---------------------------------------------------------------------------
+# GPU memory estimation -- per-worker and max-parallel-workers
+# ---------------------------------------------------------------------------
+
+
+def _extract_param_billions(model_name: str) -> float:
+    """Extract parameter count in billions from model name."""
+    match = re.search(r'(\d+\.?\d*)[Bb]', model_name)
+    if match:
+        return float(match.group(COMBO_OFFSET))
+    return _estimate_params_from_config(model_name)
+
+
+def _estimate_params_from_config(model_name: str) -> float:
+    """Estimate parameter count in billions from HuggingFace AutoConfig."""
+    from transformers import AutoConfig
+    cfg = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
+    hidden = getattr(cfg, "hidden_size", None)
+    layers = getattr(cfg, "num_hidden_layers", None)
+    vocab = getattr(cfg, "vocab_size", None)
+    if hidden and layers and vocab:
+        total_params = (
+            TRANSFORMER_PARAM_FACTOR * layers * hidden * hidden
+            + vocab * hidden
+        )
+        return total_params / PARAMS_PER_BILLION
+    raise ValueError(f"Cannot estimate parameters for {model_name}")
+
+
+def estimate_model_memory_mb(model_name: str) -> int:
+    """Estimate per-worker GPU memory in MB for a model."""
+    params_b = _extract_param_billions(model_name)
+    memory_gb = params_b * FP16_GB_PER_BILLION_PARAMS + GPU_FRAMEWORK_OVERHEAD_GB
+    return int(memory_gb * MB_PER_GB)
+
+
+def estimate_max_gpu_workers(model_name: str) -> int:
+    """Estimate max parallel workers fitting on the current GPU."""
+    res = detect_system_resources()
+    if not res.gpu_mem_mb:
+        return COMBO_OFFSET
+    per_worker_mb = estimate_model_memory_mb(model_name)
+    workers = res.gpu_mem_mb // per_worker_mb
+    return max(COMBO_OFFSET, workers)
 
 
 # ---------------------------------------------------------------------------
