@@ -53,13 +53,6 @@ from .wicher import (
     WicherSteeringObject,
 )
 
-from .zapis import (
-    ZapisMethod,
-    ZapisConfig,
-    ZapisResult,
-    ZapisSteeringObject,
-)
-
 __all__ = [
     # Simple methods
     "CAAMethod",
@@ -97,9 +90,4 @@ __all__ = [
     "WicherConfig",
     "WicherResult",
     "WicherSteeringObject",
-    # Zapis method
-    "ZapisMethod",
-    "ZapisConfig",
-    "ZapisResult",
-    "ZapisSteeringObject",
 ]

@@ -100,6 +100,12 @@ class ActivationCollector:
             n_blocks = self.model.num_layers
             names_by_idx = [str(i) for i in range(1, n_blocks + 1)]
             keep = self._select_indices(layers, n_blocks)
+            if component.needs_cache:
+                from wisent.core.primitives.model_interface.core.activations.hooks.cache.kv_cache_collector import collect_kv_cache
+                return collect_kv_cache(
+                    self.model.hf_model, full_enc, keep, names_by_idx,
+                    strategy, answer_text, tok, prompt_len,
+                    store_device=self.store_device, dtype=self.dtype)
             qk_mgrs = []
             if capture_qk:
                 from wisent.core.primitives.model_interface.core.activations.component_hooks import ComponentHookManager

@@ -9,7 +9,7 @@ from typing import Optional
 
 from wisent.core.utils.cli.optimize_steering.method_configs import (
     MethodConfig, CAAConfig, OstrzeConfig, MLPConfig, TECZAConfig,
-    TETNOConfig, GROMConfig, NurtConfig, SzlakConfig, WicherConfig, ZapisConfig,
+    TETNOConfig, GROMConfig, NurtConfig, SzlakConfig, WicherConfig,
 )
 from wisent.core.utils.cli.optimize_steering.transport.method_configs_transport import PrzelomConfig
 from wisent.core.utils.cli.optimize_steering.data.contrastive_pairs_data import execute_generate_pairs_from_task
@@ -188,6 +188,7 @@ from wisent.core.utils.config_tools.constants import COMBO_OFFSET as _LAYER_OFFS
 _STRUCTURAL = frozenset({
     "layer", "sensor_layer", "steering_start", "steering_end",
     "strength", "steering_strategy", "direction_weighting",
+    "extraction_component",
 })
 _NAME_MAP = {
     "tecza": {"min_cosine_similarity": "min_cosine_sim", "max_cosine_similarity": "max_cosine_sim"},
@@ -219,13 +220,15 @@ def _build_config(method: str, params: dict) -> tuple[MethodConfig, float]:
     steer = params.get("steering_strategy", get_optimal("steering_strategy"))
     m = method.upper()
     extra = _prefix_params(method, params)
+    ec = params.get("extraction_component", get_optimal("extraction_component"))
+    extra["extraction_component"] = ec
     kw = dict(extraction_strategy=ext, steering_strategy=steer, _extra_args=extra)
-    if m in ("CAA", "OSTRZE", "MLP", "TECZA", "NURT", "SZLAK", "WICHER", "PRZELOM", "ZAPIS"):
+    if m in ("CAA", "OSTRZE", "MLP", "TECZA", "NURT", "SZLAK", "WICHER", "PRZELOM"):
         cls = {"CAA": CAAConfig, "OSTRZE": OstrzeConfig, "MLP": MLPConfig,
                "TECZA": TECZAConfig, "NURT": NurtConfig, "SZLAK": SzlakConfig,
-               "WICHER": WicherConfig, "PRZELOM": PrzelomConfig, "ZAPIS": ZapisConfig}[m]
+               "WICHER": WicherConfig, "PRZELOM": PrzelomConfig}[m]
         method_name = {"OSTRZE": "Ostrze", "NURT": "nurt", "SZLAK": "szlak",
-                       "WICHER": "wicher", "PRZELOM": "przelom", "ZAPIS": "zapis"}.get(m, m)
+                       "WICHER": "wicher", "PRZELOM": "przelom"}.get(m, m)
         cfg = cls(method=method_name, layer=int(params["layer"]), **kw)
     elif m in ("TETNO", "GROM"):
         start, end = int(params["steering_start"]), int(params["steering_end"])

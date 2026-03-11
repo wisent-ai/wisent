@@ -32,7 +32,6 @@ class SteeringMethodType(Enum):
     SZLAK = "szlak"
     WICHER = "wicher"
     PRZELOM = "przelom"
-    ZAPIS = "zapis"
 
 
 @dataclass
@@ -135,7 +134,6 @@ from wisent.core.control.steering_methods._definitions_mlp_nurt_szlak_wicher imp
     NURT_DEFINITION,
     SZLAK_DEFINITION,
     WICHER_DEFINITION,
-    ZAPIS_DEFINITION,
 )
 
 
@@ -172,7 +170,6 @@ class SteeringMethodRegistry:
         "szlak": SZLAK_DEFINITION,
         "wicher": WICHER_DEFINITION,
         "przelom": PRZELOM_DEFINITION,
-        "zapis": ZAPIS_DEFINITION,
     }
     
     @classmethod

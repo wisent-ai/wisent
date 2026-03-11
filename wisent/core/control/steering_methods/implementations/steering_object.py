@@ -76,9 +76,6 @@ def create_steering_object(
     elif method == 'przelom':
         from wisent.core.control.steering_methods.methods.przelom import PrzelomSteeringObject
         return PrzelomSteeringObject(metadata, **kwargs)
-    elif method == 'zapis':
-        from wisent.core.control.steering_methods.methods.zapis import ZapisSteeringObject
-        return ZapisSteeringObject(metadata, **kwargs)
     else:
         raise ValueError(f"Unknown steering method: {method}")
 

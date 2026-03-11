@@ -73,6 +73,9 @@ def register_component_steering_hooks(
             "for RESIDUAL_STREAM; use the default layer-output path."
         )
 
+    if component == ExtractionComponent.KV_CACHE:
+        return  # KV cache steering is handled in _generate via cache modification
+
     tc = _COMPONENT_MAP.get(component)
     if tc is None:
         raise ValueError(
