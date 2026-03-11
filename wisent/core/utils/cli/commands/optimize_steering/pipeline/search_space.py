@@ -215,6 +215,13 @@ def przelom_space(num_layers: int) -> dict[str, Param]:
     return s
 
 
+def zapis_space(num_layers: int) -> dict[str, Param]:
+    s = _base(num_layers)
+    s["c_keys"] = _uf(_C.SS_ZAPIS_C_KEYS_LOW, _C.SS_ZAPIS_C_KEYS_HIGH)
+    s["c_values"] = _uf(_C.SS_ZAPIS_C_VALUES_LOW, _C.SS_ZAPIS_C_VALUES_HIGH)
+    return s
+
+
 def get_method_space(method: str, num_layers: int) -> dict[str, Param]:
     """Look up the search space for a method by name."""
     dispatch = {
@@ -222,6 +229,7 @@ def get_method_space(method: str, num_layers: int) -> dict[str, Param]:
         "TECZA": tecza_space, "TETNO": tetno_space, "GROM": grom_space,
         "NURT": nurt_space, "SZLAK": szlak_space,
         "WICHER": wicher_space, "PRZELOM": przelom_space,
+        "ZAPIS": zapis_space,
     }
     fn = dispatch.get(method.upper())
     if fn is None:

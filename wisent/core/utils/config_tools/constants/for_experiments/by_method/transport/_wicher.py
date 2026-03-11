@@ -1,4 +1,4 @@
-"""WICHER (Whirlwind) steering method constants and search space bounds."""
+"""WICHER (Whirlwind) and ZAPIS (Inscription) steering method constants."""
 from wisent.core.utils.config_tools.constants.for_experiments.by_method.simple import *  # noqa: F401,F403
 
 # --- WICHER code-enforced bounds ---
@@ -29,3 +29,12 @@ WICHER_DEFAULT_SOLVER = WICHER_SOLVER_BROYDEN
 HALLEY_CORRECTION_HALF = 0.5
 HALLEY_HESSIAN_DOT_FACTOR = 2
 HALLEY_HESSIAN_NORM_FACTOR = 3
+
+# --- ZAPIS code-enforced bounds (from arxiv 2507.08799) ---
+SS_ZAPIS_C_KEYS_LOW = 0.0
+SS_ZAPIS_C_KEYS_HIGH = 0.4
+SS_ZAPIS_C_VALUES_LOW = 1.0
+SS_ZAPIS_C_VALUES_HIGH = 10.0
+
+# --- ZAPIS offset token default ---
+ZAPIS_OFFSET_TOKEN_DEFAULT = "\n"

@@ -202,39 +202,35 @@ def execute_create_steering_object(args):
         elif method_name == 'szlak':
             from wisent.core.control.steering_methods.methods.szlak.create import _create_szlak_steering_object
             steering_obj = _create_szlak_steering_object(
-                metadata, layer_activations, available_layers, args
-            )
+                metadata, layer_activations, available_layers, args)
         elif method_name == 'wicher':
             from wisent.core.control.steering_methods.methods.wicher.create import _create_wicher_steering_object
             steering_obj = _create_wicher_steering_object(
-                metadata, layer_activations, available_layers, args
-            )
+                metadata, layer_activations, available_layers, args)
         elif method_name == 'przelom':
             from wisent.core.control.steering_methods.methods.przelom.create import _create_przelom_steering_object
             steering_obj = _create_przelom_steering_object(
-                metadata, layer_activations, available_layers, args
-            )
+                metadata, layer_activations, available_layers, args)
+        elif method_name == 'zapis':
+            from wisent.core.control.steering_methods.methods.zapis.create import _create_zapis_steering_object
+            steering_obj = _create_zapis_steering_object(
+                metadata, layer_activations, available_layers, args)
         else:
             raise ValueError(f"Unknown method: {args.method}")
-        
         # 5. Save steering object
         print(f"\n💾 Saving steering object to '{args.output}'...")
         os.makedirs(os.path.dirname(os.path.abspath(args.output)) or '.', exist_ok=True)
         steering_obj.save(args.output)
         print(f"   ✓ Saved steering object")
-        
         # 6. Summary
         print(f"\n📈 Steering Object Summary:")
         print(f"   Method: {steering_obj.method_name}")
         print(f"   Layers: {metadata.layers}")
         print(f"   Hidden dim: {metadata.hidden_dim}")
         print(f"   Num pairs: {metadata.num_pairs}")
-        
         if start_time:
             print(f"   ⏱️  Time: {time.time() - start_time:.2f}s")
-        
         print(f"\n✅ Steering object created successfully!\n")
-        
     except Exception as e:
         print(f"\n❌ Error: {str(e)}", file=sys.stderr)
         if getattr(args, 'verbose', False):
@@ -244,15 +240,10 @@ def execute_create_steering_object(args):
 
 
 def _create_simple_steering_object(
-    method_name: str,
-    metadata: SteeringObjectMetadata,
-    layer_activations: dict,
-    available_layers: list,
-    args,
+    method_name: str, metadata: SteeringObjectMetadata,
+    layer_activations: dict, available_layers: list, args,
 ) -> BaseSteeringObject:
     """Create CAA, Ostrze, or MLP steering object."""
-    
-    # Get method class
     if method_name == 'caa':
         from wisent.core.control.steering_methods.methods.caa import CAAMethod
         from wisent.core.control.steering_methods._steering_object_simple import CAASteeringObject
@@ -263,8 +254,7 @@ def _create_simple_steering_object(
         from wisent.core.control.steering_methods._steering_object_simple import OstrzeSteeringObject
         method = OstrzeMethod(
             normalize=getattr(args, 'normalize', get_optimal("normalize")),
-            C=_require_arg(args, 'ostrze_C'),
-        )
+            C=_require_arg(args, 'ostrze_C'))
         obj_class = OstrzeSteeringObject
     elif method_name == 'mlp':
         from wisent.core.control.steering_methods.methods.mlp import MLPMethod
@@ -279,12 +269,10 @@ def _create_simple_steering_object(
             weight_decay=_require_arg(args, 'mlp_weight_decay'), early_stop_tol=_require_arg(args, 'mlp_early_stop_tol'),
             mlp_input_divisor=_require_arg(args, 'mlp_input_divisor'),
             mlp_early_stopping_patience=_require_arg(args, 'mlp_early_stopping_patience'),
-            gating_hidden_dim_divisor=_require_arg(args, 'mlp_gating_hidden_dim_divisor'),
-        )
+            gating_hidden_dim_divisor=_require_arg(args, 'mlp_gating_hidden_dim_divisor'))
         obj_class = MLPSteeringObject
     else:
         raise ValueError(f"Unknown simple method: {method_name}")
-    
     vectors = {}
     for layer_str in available_layers:
         pos_list = layer_activations[layer_str]["positive"]
@@ -296,5 +284,3 @@ def _create_simple_steering_object(
         print(f"   Layer {layer_str}: norm={vector.norm().item():.4f}")
     intensity = getattr(args, 'default_intensity', STEERING_DEFAULT_INTENSITY)
     return obj_class(metadata=metadata, vectors=vectors, default_intensity=intensity)
-
-
