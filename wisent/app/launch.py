@@ -100,7 +100,7 @@ def launch(**kwargs):
         "server_port": GRADIO_SERVER_PORT,
     }
     defaults.update(kwargs)
-    app.launch(theme=_build_theme(), css=_APP_CSS, **defaults)
+    app.launch(theme=_build_theme(), css=_APP_CSS, ssr_mode=False, **defaults)
 
 
 if __name__ == "__main__":
