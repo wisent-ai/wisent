@@ -71,6 +71,7 @@ setup(
         "pacmap>=0.7.0",
         "optuna>=3.0.0",
         "hyperopt",
+        "psutil",
     ],
     extras_require={
         "harness": [
