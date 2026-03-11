@@ -59,9 +59,11 @@ def _gcs_upload(local_path: str, gcs_path: str):
 def _run_single_method(
     method, model_name, benchmark, num_layers,
     train_file, test_file, n_train,
-    trials_mult, backend, output_dir,
+    trials_mult, backend, output_dir, gpu_id=None,
 ) -> dict:
     """Run optimization for one method. All args are primitives for spawn."""
+    if gpu_id is not None:
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
     method_upper = method.upper()
     space = get_method_space(method_upper, num_layers)
     n_trials = len(space) * trials_mult
@@ -106,29 +108,41 @@ def _run_single_method(
     }
 
 
+def _detect_gpu_layout(model_name):
+    """Detect GPU count and compute workers per GPU and total."""
+    import torch
+    num_gpus = max(N_JOBS_SINGLE, torch.cuda.device_count())
+    workers_per_gpu = estimate_max_gpu_workers(model_name)
+    total_workers = workers_per_gpu * num_gpus
+    return num_gpus, workers_per_gpu, total_workers
+
+
 def _dispatch_parallel(
     methods, model_name, benchmark, num_layers,
     train_file, test_file, n_train,
     trials_mult, backend, output_dir, baseline_score, gcs_base,
 ):
     """Run multiple methods in parallel via ProcessPoolExecutor."""
-    max_workers = estimate_max_gpu_workers(model_name)
-    print(f"GPU capacity: {max_workers} parallel workers "
-          f"for {len(methods)} methods")
+    num_gpus, workers_per_gpu, total_workers = _detect_gpu_layout(
+        model_name,
+    )
+    print(f"GPU layout: {num_gpus} GPU(s), {workers_per_gpu} workers/GPU, "
+          f"{total_workers} total for {len(methods)} methods")
     sys.stdout.flush()
     ctx = mp.get_context("spawn")
     completed = []
     with concurrent.futures.ProcessPoolExecutor(
-        max_workers=max_workers, mp_context=ctx,
+        max_workers=total_workers, mp_context=ctx,
     ) as pool:
         futures = {}
-        for method in methods:
+        for idx, method in enumerate(methods):
+            gpu_id = idx % num_gpus
             method_dir = os.path.join(output_dir, method)
             Path(method_dir).mkdir(parents=True, exist_ok=True)
             fut = pool.submit(
                 _run_single_method, method, model_name, benchmark,
                 num_layers, train_file, test_file, n_train,
-                trials_mult, backend, method_dir,
+                trials_mult, backend, method_dir, gpu_id,
             )
             futures[fut] = method
         for fut in concurrent.futures.as_completed(futures):
