@@ -115,7 +115,7 @@ def load_grom_model(
             grom_data_exists = False
     
     if install_hooks and mode in ("dynamic", "hybrid") and grom_data_exists:
-        grom_data = torch.load(grom_data_path, map_location="cpu")
+        grom_data = torch.load(grom_data_path, map_location="cpu", weights_only=False)
         
         # Reconstruct GROMResult-like object for hooks
         from wisent.core.weight_modification.directional import GROMRuntimeHooks

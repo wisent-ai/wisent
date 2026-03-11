@@ -193,7 +193,7 @@ def load_wicher_model(
             data_exists = False
 
     if install_hooks and data_exists:
-        wicher_data = torch.load(data_path, map_location="cpu")
+        wicher_data = torch.load(data_path, map_location="cpu", weights_only=False)
 
         from wisent.core.weight_modification.directional.hooks.transport.wicher import (
             WicherRuntimeHooks,

@@ -202,7 +202,7 @@ def _load_steering_data(model_path: Path, steering_type: str) -> Optional[Dict]:
 
     data_file = model_path / data_files.get(steering_type, "steering.pt")
     if data_file.exists():
-        return torch.load(data_file, map_location="cpu")
+        return torch.load(data_file, map_location="cpu", weights_only=False)
     return None
 
 

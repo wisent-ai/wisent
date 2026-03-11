@@ -170,7 +170,7 @@ class ModelPersistence:
             raise FileNotFoundError(f"Steering vector file not found: {vector_path}")
         
         # Load vector
-        save_data = torch.load(vector_path, map_location=device)
+        save_data = torch.load(vector_path, map_location=device, weights_only=False)
         
         return save_data['vector'], save_data.get('metadata', {})
     

@@ -158,7 +158,7 @@ def load_steered_model(
     mlp_bias_path = model_path / "mlp_biases.pt"
     if mlp_bias_path.exists():
         log.info("Loading MLP biases from mlp_biases.pt")
-        mlp_biases = torch.load(mlp_bias_path, map_location="cpu")
+        mlp_biases = torch.load(mlp_bias_path, map_location="cpu", weights_only=False)
         
         # Get model layers
         if hasattr(model, "model"):

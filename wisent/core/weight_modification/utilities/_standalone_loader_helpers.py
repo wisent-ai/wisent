@@ -201,12 +201,12 @@ def load_model(
         if grom_config and grom_config.get("mode") in ("dynamic", "hybrid"):
             if is_local:
                 grom_data = torch.load(
-                    model_path / "grom_steering.pt", map_location="cpu")
+                    model_path / "grom_steering.pt", map_location="cpu", weights_only=False)
             else:
                 from huggingface_hub import hf_hub_download
                 data_file = hf_hub_download(
                     repo_id=str(model_path), filename="grom_steering.pt")
-                grom_data = torch.load(data_file, map_location="cpu")
+                grom_data = torch.load(data_file, map_location="cpu", weights_only=False)
 
             if GROMHooksClass is not None:
                 hooks = GROMHooksClass(model, grom_data)
@@ -215,12 +215,12 @@ def load_model(
         elif tetno_config and tetno_config.get("mode") in ("dynamic", "hybrid"):
             if is_local:
                 tetno_data = torch.load(
-                    model_path / "tetno_steering.pt", map_location="cpu")
+                    model_path / "tetno_steering.pt", map_location="cpu", weights_only=False)
             else:
                 from huggingface_hub import hf_hub_download
                 data_file = hf_hub_download(
                     repo_id=str(model_path), filename="tetno_steering.pt")
-                tetno_data = torch.load(data_file, map_location="cpu")
+                tetno_data = torch.load(data_file, map_location="cpu", weights_only=False)
 
             gate_scale = tetno_config.get("gate_scale_factor")
             if gate_scale is None:
