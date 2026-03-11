@@ -210,7 +210,7 @@ def execute_optimize_steering(args):
 
     space = get_method_space(method, num_layers)
     n_trials = len(space) * TRIALS_PER_DIMENSION_MULTIPLIER
-    optimizer = BaseOptimizer.__new__(BaseOptimizer)
+    optimizer = BaseOptimizer()
     optimizer.direction = "maximize"
 
     with tempfile.TemporaryDirectory() as work_dir:

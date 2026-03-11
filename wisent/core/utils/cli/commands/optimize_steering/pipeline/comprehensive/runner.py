@@ -55,7 +55,7 @@ def run_method_search(
         print(f"   {method}: {n_trials} total configurations "
               f"(backend={backend})")
 
-    optimizer = BaseOptimizer.__new__(BaseOptimizer)
+    optimizer = BaseOptimizer()
     optimizer.direction = "maximize"
 
     with tempfile.TemporaryDirectory() as work_dir:

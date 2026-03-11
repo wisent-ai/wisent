@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable, Literal
 
@@ -71,7 +70,7 @@ class HPORun:
     best_value: float
 
 
-class BaseOptimizer(ABC):
+class BaseOptimizer:
     """
     Base class for task-agnostic optimizers.
 
@@ -140,9 +139,8 @@ class BaseOptimizer(ABC):
 
         raise ValueError(f"Unknown backend: {cfg.backend}")
 
-    @abstractmethod
     def _objective(self, trial: optuna.Trial) -> float:
-        """Implement one trial; return objective value."""
+        """Implement one trial; return objective value. Override in subclasses."""
         raise NotImplementedError
 
     def _make_sampler(self, cfg: HPOConfig) -> optuna.samplers.BaseSampler | None:

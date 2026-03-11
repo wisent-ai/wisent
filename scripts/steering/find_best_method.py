@@ -199,9 +199,9 @@ def _run_method(
                       f, indent=JSON_INDENT, default=str)
         return score
 
-    _opt = BaseOptimizer.__new__(BaseOptimizer)
-    _opt.direction = "maximize"
-    result = _opt.optimize_fn(persisted_objective, space, n_trials, cfg=HPOConfig(backend=backend))
+    optimizer = BaseOptimizer()
+    optimizer.direction = "maximize"
+    result = optimizer.optimize_fn(persisted_objective, space, n_trials, cfg=HPOConfig(backend=backend))
     method_time = time.time() - method_start
     entry = {
         "method": method_name,
