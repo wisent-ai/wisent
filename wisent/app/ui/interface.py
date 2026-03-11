@@ -5,6 +5,7 @@ one tab per command group, each containing sub-tabs for individual
 commands.
 """
 
+import base64
 import os
 import platform
 
@@ -224,12 +225,12 @@ def build_interface():
     """Construct the full Gradio interface inside an active gr.Blocks context."""
     logo_path = _find_logo()
     if logo_path:
-        gr.Image(
-            value=logo_path,
-            show_label=False,
-            interactive=False,
-            width=WISENT_LOGO_DISPLAY_WIDTH,
-            container=False,
+        with open(logo_path, "rb") as _f:
+            _b64 = base64.b64encode(_f.read()).decode()
+        gr.HTML(
+            f'<img src="data:image/png;base64,{_b64}" '
+            f'width="{WISENT_LOGO_DISPLAY_WIDTH}" '
+            f'style="display:block;" />'
         )
     gr.Markdown(
         "# Wisent\n"
