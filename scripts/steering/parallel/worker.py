@@ -36,7 +36,9 @@ from wisent.core.utils.cli.optimize_steering.pipeline.comprehensive import (
     baseline_cache,
 )
 from wisent.core.utils.infra_tools.infra.core.hardware import (
+    detect_system_resources,
     estimate_max_gpu_workers,
+    estimate_model_memory_mb,
 )
 
 
@@ -109,11 +111,19 @@ def _run_single_method(
 
 
 def _detect_gpu_layout(model_name):
-    """Detect GPU count and compute workers per GPU and total."""
+    """Detect GPU count and compute workers per GPU and total.
+
+    If model exceeds single-GPU VRAM, all GPUs serve one copy
+    via tensor parallelism — only one worker fits.
+    """
     import torch
     num_gpus = max(N_JOBS_SINGLE, torch.cuda.device_count())
-    workers_per_gpu = estimate_max_gpu_workers(model_name)
-    total_workers = workers_per_gpu * num_gpus
+    per_worker_mb = estimate_model_memory_mb(model_name)
+    res = detect_system_resources()
+    if not res.gpu_mem_mb or per_worker_mb > res.gpu_mem_mb:
+        return num_gpus, N_JOBS_SINGLE, N_JOBS_SINGLE
+    workers_per_gpu = res.gpu_mem_mb // per_worker_mb
+    total_workers = max(N_JOBS_SINGLE, workers_per_gpu * num_gpus)
     return num_gpus, workers_per_gpu, total_workers
 
 
