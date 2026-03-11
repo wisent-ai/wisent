@@ -89,6 +89,9 @@ setup(
         "app": [
             "gradio>=4.0.0",
         ],
+        "zerogpu": [
+            "spaces",
+        ],
     },
     entry_points={
         "console_scripts": [

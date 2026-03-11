@@ -56,6 +56,15 @@ def _find_logo():
 # --- Resource monitor helpers ---
 
 
+def _is_zerogpu():
+    """Return True when running on a HuggingFace ZeroGPU Space."""
+    try:
+        import spaces
+        return hasattr(spaces, "GPU")
+    except ImportError:
+        return False
+
+
 def _get_gpu_info():
     """Return (gpu_name, gpu_count, gpu_mem_used_mb, gpu_mem_total_mb)."""
     try:
@@ -71,6 +80,8 @@ def _get_gpu_info():
             return name, count, mem_used, mem_total
     except Exception:
         pass
+    if _is_zerogpu():
+        return "H200 (ZeroGPU)", GRADIO_RESOURCE_GPU_COUNT_SINGLE, None, None
     try:
         import torch
         if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():

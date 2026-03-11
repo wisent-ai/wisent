@@ -3,6 +3,11 @@
 Builds CLI argument lists, parses them through the standard argparse
 setup, looks up handlers via the command dispatch map, and captures
 stdout/stderr output. Collects generated PNG visualizations.
+
+Uses the HuggingFace ZeroGPU ``@spaces.GPU`` decorator so that
+GPU-accelerated commands automatically receive an on-demand GPU
+when running on ZeroGPU Spaces. The decorator is a no-op outside
+that environment.
 """
 
 import io
@@ -10,6 +15,15 @@ import os
 import contextlib
 import traceback
 from pathlib import Path
+
+from wisent.core.utils.config_tools.constants import ZEROGPU_DEFAULT_DURATION_S
+
+try:
+    import spaces
+    _gpu_decorator = spaces.GPU(duration=ZEROGPU_DEFAULT_DURATION_S)
+except (ImportError, OSError):
+    def _gpu_decorator(fn):
+        return fn
 
 
 _COMMAND_MAP = {
@@ -51,6 +65,7 @@ _COMMAND_MAP = {
 }
 
 
+@_gpu_decorator
 def run_command(command_name, arg_list):
     """Run a Wisent CLI command and capture its output.
 
