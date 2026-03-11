@@ -45,9 +45,13 @@ if [[ "$INSTANCE_COUNT" == "auto" || "$INSTANCE_COUNT" == "1" ]]; then
         elif (( MEM_SINGLE <= 160 )); then PER_GPU=40;  NUM_GPUS=4
         else                               PER_GPU=80;  NUM_GPUS=4
         fi
-        WORKERS_PER_GPU=$((PER_GPU / MEM_SINGLE))
-        if [[ "$WORKERS_PER_GPU" -lt 1 ]]; then WORKERS_PER_GPU=1; fi
-        WORKERS_PER_INSTANCE=$((WORKERS_PER_GPU * NUM_GPUS))
+        # If model exceeds single GPU, all GPUs serve one copy (tensor parallel)
+        if (( MEM_SINGLE > PER_GPU )); then
+            WORKERS_PER_INSTANCE=1
+        else
+            WORKERS_PER_GPU=$((PER_GPU / MEM_SINGLE))
+            WORKERS_PER_INSTANCE=$((WORKERS_PER_GPU * NUM_GPUS))
+        fi
         INSTANCE_COUNT=$(( (${#METHODS[@]} + WORKERS_PER_INSTANCE - 1) / WORKERS_PER_INSTANCE ))
         echo "Auto: ${#METHODS[@]} methods, ${MEM_SINGLE}GB/worker, ${NUM_GPUS}x${PER_GPU}GB GPU"
         echo "  -> $WORKERS_PER_INSTANCE workers/instance -> $INSTANCE_COUNT instance(s)"
