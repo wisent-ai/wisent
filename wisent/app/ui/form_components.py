@@ -62,9 +62,6 @@ def action_to_component(action):
             placeholder="Space-separated values",
         ), dest
 
-    if _is_file_arg(action):
-        return gr.File(label=label), dest
-
     val = str(default) if default is not None else ""
     required = action.required if hasattr(action, "required") else False
     is_positional = not action.option_strings
@@ -87,13 +84,6 @@ def _build_label(action):
     if action.help and action.help != argparse.SUPPRESS:
         return f"{name} -- {action.help}"
     return name
-
-
-def _is_file_arg(action):
-    """Heuristic: detect if this arg expects a file path."""
-    dest_lower = action.dest.lower()
-    file_hints = ("file", "path", "dir", "output", "pairs")
-    return any(h in dest_lower for h in file_hints)
 
 
 def components_to_args(component_values, component_dests, command_name):
@@ -142,10 +132,6 @@ def components_to_args(component_values, component_dests, command_name):
             if parts:
                 args.append(flag)
                 args.extend(parts)
-            continue
-
-        if hasattr(value, "name"):
-            args.extend([flag, value.name])
             continue
 
         args.extend([flag, str(value)])
