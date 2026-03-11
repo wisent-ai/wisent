@@ -44,6 +44,7 @@ _IMPORT_MAP = {
     'execute_per_concept_steering_viz': '.steering.viz.per_concept_steering_viz',
     'execute_agent': '.agent.main',
     'execute_migrate_activations': '.data.migrate_activations',
+    'execute_find_best_method': '.optimize_steering.pipeline.find_best.handler',
 }
 
 

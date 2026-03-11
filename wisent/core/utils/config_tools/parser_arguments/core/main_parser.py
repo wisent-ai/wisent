@@ -56,7 +56,8 @@ from wisent.core.utils.config_tools.parser_arguments.optimization.weights import
     setup_optimize_weights_parser,
 )
 from wisent.core.utils.config_tools.parser_arguments.other.steering import (
-    setup_multi_steer_parser, setup_steering_viz_parser, setup_discover_steering_parser,
+    setup_multi_steer_parser, setup_steering_viz_parser,
+    setup_discover_steering_parser, setup_find_best_method_parser,
 )
 from wisent.core.utils.config_tools.parser_arguments.evaluation import (
     setup_evaluate_parser, setup_evaluate_responses_parser,
@@ -285,4 +286,6 @@ def setup_parser() -> argparse.ArgumentParser:
     setup_migrate_activations_parser(migrate_activations_parser)
     compare_steering_parser = subparsers.add_parser("compare-steering", help="Compare steering objects across traits")
     setup_compare_steering_parser(compare_steering_parser)
+    find_best_parser = subparsers.add_parser("find-best-method", help="Find the best steering method for a benchmark")
+    setup_find_best_method_parser(find_best_parser)
     return parser

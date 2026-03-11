@@ -97,6 +97,8 @@ def get_command_groups() -> list:
                 "optimization.weights", "setup_optimize_weights_parser"),
             _ci("optimization-cache", "Manage cached optimization results",
                 "optimization.weights", "setup_optimization_cache_parser"),
+            _ci("find-best-method", "Find the best steering method for a benchmark",
+                "other.steering", "setup_find_best_method_parser"),
         ],
     )
     analysis = CommandGroup(
