@@ -32,17 +32,25 @@ else
     METHODS=("${ALL_METHODS[@]}")
 fi
 
-# Auto-compute instance count to fill all GPU capacity
+# Auto-compute instance count using same GPU selection as run_on_gcp.sh
 if [[ "$INSTANCE_COUNT" == "auto" || "$INSTANCE_COUNT" == "1" ]]; then
     PARAM_B=$(echo "$MODEL_NAME" | grep -oE "[0-9]+\.?[0-9]*[Bb]" | head -n1 | tr -d "Bb")
     if [[ -n "$PARAM_B" ]]; then
-        MEM_PER_WORKER=$(echo "$PARAM_B * 2 + 4" | bc)
-        GPU_MEM=24
-        if (( $(echo "$MEM_PER_WORKER > 6" | bc -l) )); then GPU_MEM=40; fi
-        WORKERS_PER=$(echo "$GPU_MEM / $MEM_PER_WORKER" | bc)
-        if [[ "$WORKERS_PER" -lt 1 ]]; then WORKERS_PER=1; fi
-        INSTANCE_COUNT=$(( (${#METHODS[@]} + WORKERS_PER - 1) / WORKERS_PER ))
-        echo "Auto: ${#METHODS[@]} methods / $WORKERS_PER workers-per-GPU = $INSTANCE_COUNT instances"
+        MEM_SINGLE=$((PARAM_B * 2 + 4))
+        # Mirror run_on_gcp.sh select_instance_type: mem -> GPU VRAM per card x card count
+        if   (( MEM_SINGLE <= 24 ));  then PER_GPU=24;  NUM_GPUS=1
+        elif (( MEM_SINGLE <= 40 ));  then PER_GPU=40;  NUM_GPUS=1
+        elif (( MEM_SINGLE <= 48 ));  then PER_GPU=24;  NUM_GPUS=2
+        elif (( MEM_SINGLE <= 80 ));  then PER_GPU=40;  NUM_GPUS=2
+        elif (( MEM_SINGLE <= 160 )); then PER_GPU=40;  NUM_GPUS=4
+        else                               PER_GPU=80;  NUM_GPUS=4
+        fi
+        WORKERS_PER_GPU=$((PER_GPU / MEM_SINGLE))
+        if [[ "$WORKERS_PER_GPU" -lt 1 ]]; then WORKERS_PER_GPU=1; fi
+        WORKERS_PER_INSTANCE=$((WORKERS_PER_GPU * NUM_GPUS))
+        INSTANCE_COUNT=$(( (${#METHODS[@]} + WORKERS_PER_INSTANCE - 1) / WORKERS_PER_INSTANCE ))
+        echo "Auto: ${#METHODS[@]} methods, ${MEM_SINGLE}GB/worker, ${NUM_GPUS}x${PER_GPU}GB GPU"
+        echo "  -> $WORKERS_PER_INSTANCE workers/instance -> $INSTANCE_COUNT instance(s)"
     fi
 fi
 
