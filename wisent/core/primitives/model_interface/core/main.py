@@ -83,6 +83,7 @@ def main():
         'discover-steering': 'execute_discover_steering',
         'migrate-activations': 'execute_migrate_activations',
         'compare-steering': 'execute_compare_steering',
+        'find-best-method': 'execute_find_best_method',
     }
 
     # Handle steering-viz specially (has per_concept variant)

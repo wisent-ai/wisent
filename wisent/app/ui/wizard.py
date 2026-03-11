@@ -47,6 +47,7 @@ _SUBGOALS = {
         "Find optimal training sample size",
         "Optimize weight modification parameters",
         "Manage cached optimization results",
+        "Find the best steering method for a benchmark",
     ],
     "Analyze geometry and diagnostics": [
         "Diagnose contrastive pair quality",
@@ -183,6 +184,13 @@ _RECOMMENDATIONS = {
         "optimization-cache",
         "View, clear, or export cached optimization results. Inspect "
         "previous runs or reset the cache before a fresh sweep.",
+    ),
+    "Find the best steering method for a benchmark": (
+        "find-best-method",
+        "Exhaustively trials every registered steering method on a "
+        "benchmark and ranks them. Generates all contrastive pairs once, "
+        "splits train/test, optimizes each method independently, and "
+        "reports the winner with response diff and activation analysis.",
     ),
     "Diagnose contrastive pair quality": (
         "diagnose-pairs",

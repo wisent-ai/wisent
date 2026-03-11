@@ -62,6 +62,7 @@ _COMMAND_MAP = {
     'compare-steering': 'execute_compare_steering',
     'steering-viz': 'execute_steering_viz',
     'generate-vector': 'execute_generate_vector_from_synthetic',
+    'find-best-method': 'execute_find_best_method',
 }
 
 
