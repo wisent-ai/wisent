@@ -1,4 +1,4 @@
-"""Steering method definitions: MLP, NURT, SZLAK, WICHER, ZAPIS."""
+"""Steering method definitions: MLP, NURT, SZLAK, WICHER."""
 
 from wisent.core.control.steering_methods.registry.registry import (
     SteeringMethodDefinition,
@@ -239,30 +239,3 @@ WICHER_DEFINITION = SteeringMethodDefinition(
 )
 
 
-ZAPIS_DEFINITION = SteeringMethodDefinition(
-    name="zapis",
-    method_type=SteeringMethodType.ZAPIS,
-    description="ZAPIS — KV cache steering via one-shot cache injection after prefill.",
-    method_class_path="wisent.core.control.steering_methods.methods.zapis.ZapisMethod",
-    parameters=[
-        SteeringMethodParameter(
-            name="c_keys",
-            type=float,
-            help="Key cache injection coefficient",
-            cli_flag="--zapis-c-keys",
-        ),
-        SteeringMethodParameter(
-            name="c_values",
-            type=float,
-            help="Value cache injection coefficient",
-            cli_flag="--zapis-c-values",
-        ),
-        SteeringMethodParameter(
-            name="offset_token",
-            type=str,
-            default="\n", required=False,
-            help="Alignment token for KV position matching",
-            cli_flag="--zapis-offset-token",
-        ),
-    ],
-)

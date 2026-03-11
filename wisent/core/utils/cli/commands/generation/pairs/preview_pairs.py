@@ -17,7 +17,6 @@ def execute_preview_pairs(args):
     from wisent.core.primitives.model_interface.core.activations import (
         ExtractionStrategy,
         build_extraction_texts,
-        get_strategy_for_model,
     )
     
     task_name = args.task_name

@@ -58,7 +58,7 @@ def _apply_steering_object(
     from wisent.core.control.steering_methods.steering_object import BaseSteeringObject
 
     # KV cache steering handled in _generate, no hooks needed
-    if hasattr(steering_obj, 'steer_cache'):
+    if getattr(getattr(steering_obj, 'metadata', None), 'extraction_component', None) == "kv_cache":
         return
 
     if max_new_tokens is None:

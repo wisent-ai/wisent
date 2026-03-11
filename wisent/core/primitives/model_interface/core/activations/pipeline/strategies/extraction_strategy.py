@@ -175,26 +175,27 @@ class ExtractionComponent(str, Enum):
     """Per-head attention score scaling via Q-proj. Dim = num_heads."""
     LOGITS = "logits"
     """Output of lm_head (vocab space). Forward hook on lm_head. Global."""
+    KV_CACHE = "kv_cache"
+    """KV cache (past_key_values). No hooks — reads cache directly after forward pass."""
     @classmethod
     def default(cls) -> "ExtractionComponent":
         return cls.RESIDUAL_STREAM
-
     @classmethod
     def list_all(cls) -> list[str]:
         return [c.value for c in cls]
-
     @property
     def needs_hooks(self) -> bool:
         """Whether this component requires forward hooks (vs hidden_states)."""
-        return self != ExtractionComponent.RESIDUAL_STREAM
+        return self not in (ExtractionComponent.RESIDUAL_STREAM, ExtractionComponent.KV_CACHE)
+    @property
+    def needs_cache(self) -> bool:
+        """Whether this component reads from past_key_values instead of hidden states."""
+        return self == ExtractionComponent.KV_CACHE
 
 def tokenizer_has_chat_template(tokenizer) -> bool:
     """Check if tokenizer supports chat template."""
-    has_method = hasattr(tokenizer, "apply_chat_template") and callable(getattr(tokenizer, "apply_chat_template"))
-    has_template = hasattr(tokenizer, "chat_template") and tokenizer.chat_template is not None
-    return has_method and has_template
-
-# ROLE_PLAY_TOKENS imported from wisent.core.utils.config_tools.constants
+    return (hasattr(tokenizer, "apply_chat_template") and callable(getattr(tokenizer, "apply_chat_template"))
+            and hasattr(tokenizer, "chat_template") and tokenizer.chat_template is not None)
 
 def extract_activation(
     strategy: ExtractionStrategy,
@@ -295,6 +296,3 @@ def add_extraction_component_args(parser: argparse.ArgumentParser) -> None:
         help=f"Transformer component to extract from. Default: {ExtractionComponent.default().value}",
     )
 
-def get_strategy_for_model(tokenizer, prefer_mc: bool = False) -> ExtractionStrategy:
-    """Get the best extraction strategy for a given tokenizer."""
-    return ExtractionStrategy.for_tokenizer(tokenizer, prefer_mc=prefer_mc)

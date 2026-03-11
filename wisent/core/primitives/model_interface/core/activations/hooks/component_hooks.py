@@ -50,6 +50,9 @@ _GLOBAL_COMPONENTS = {
     ExtractionComponent.LOGITS,
 }
 
+# Cache components — no hooks, read past_key_values directly
+_CACHE_COMPONENTS = {ExtractionComponent.KV_CACHE}
+
 
 def _get_submodule(model: nn.Module, target: str) -> nn.Module:
     """Resolve a dotted path to a submodule."""
@@ -128,6 +131,8 @@ class ComponentHookManager:
 
     def _register_hooks(self) -> None:
         """Register hooks on the appropriate submodules."""
+        if self.component in _CACHE_COMPONENTS:
+            return  # Cache components read past_key_values directly, no hooks needed
         tc = _COMPONENT_MAP.get(self.component)
         if tc is None:
             raise ValueError(

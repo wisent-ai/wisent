@@ -211,10 +211,6 @@ def execute_create_steering_object(args):
             from wisent.core.control.steering_methods.methods.przelom.create import _create_przelom_steering_object
             steering_obj = _create_przelom_steering_object(
                 metadata, layer_activations, available_layers, args)
-        elif method_name == 'zapis':
-            from wisent.core.control.steering_methods.methods.zapis.create import _create_zapis_steering_object
-            steering_obj = _create_zapis_steering_object(
-                metadata, layer_activations, available_layers, args)
         else:
             raise ValueError(f"Unknown method: {args.method}")
         # 5. Save steering object

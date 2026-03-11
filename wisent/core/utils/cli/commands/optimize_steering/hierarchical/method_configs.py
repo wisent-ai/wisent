@@ -164,16 +164,3 @@ class WicherConfig(MethodConfig):
         return base
 
 
-@dataclass
-class ZapisConfig(MethodConfig):
-    """ZAPIS KV cache steering parameters."""
-    layer: _Optional[int] = None
-    c_keys: _Optional[float] = None
-    c_values: _Optional[float] = None
-    offset_token: _Optional[str] = None
-
-    def to_args(self) -> Dict[str, Any]:
-        base = {"method": "zapis", "layer": self.layer,
-                "steering_strategy": self.steering_strategy}
-        base.update(self._extra_args)
-        return base

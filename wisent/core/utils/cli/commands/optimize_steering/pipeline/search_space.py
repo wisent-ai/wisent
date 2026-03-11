@@ -13,8 +13,10 @@ from wisent.core.utils.services.optimization.core.parameters import (
 )
 from wisent.core.utils.config_tools import constants as _C
 from wisent.core.control.steering_optimizer.types import SteeringApplicationStrategy
+from wisent.core.primitives.model_interface.core.activations.strategies.extraction_strategy import ExtractionComponent
 
 _SS = [s.value for s in SteeringApplicationStrategy]
+_EC = ExtractionComponent.list_all()
 _DW = ["primary_only", "equal"]
 U_MU = _C.UNINFORMATIVE_MU
 U_SIG = _C.UNINFORMATIVE_SIGMA
@@ -43,6 +45,7 @@ def _qln(mu, sigma):
 def _base(num_layers: int) -> dict[str, Param]:
     return {
         "steering_strategy": _Cat(choices=_SS),
+        "extraction_component": _Cat(choices=_EC),
         "strength": _ln(U_MU, U_SIG),
         "layer": _ri(_C.SS_LAYER_MIN, num_layers),
     }
@@ -215,13 +218,6 @@ def przelom_space(num_layers: int) -> dict[str, Param]:
     return s
 
 
-def zapis_space(num_layers: int) -> dict[str, Param]:
-    s = _base(num_layers)
-    s["c_keys"] = _uf(_C.SS_ZAPIS_C_KEYS_LOW, _C.SS_ZAPIS_C_KEYS_HIGH)
-    s["c_values"] = _uf(_C.SS_ZAPIS_C_VALUES_LOW, _C.SS_ZAPIS_C_VALUES_HIGH)
-    return s
-
-
 def get_method_space(method: str, num_layers: int) -> dict[str, Param]:
     """Look up the search space for a method by name."""
     dispatch = {
@@ -229,7 +225,6 @@ def get_method_space(method: str, num_layers: int) -> dict[str, Param]:
         "TECZA": tecza_space, "TETNO": tetno_space, "GROM": grom_space,
         "NURT": nurt_space, "SZLAK": szlak_space,
         "WICHER": wicher_space, "PRZELOM": przelom_space,
-        "ZAPIS": zapis_space,
     }
     fn = dispatch.get(method.upper())
     if fn is None:

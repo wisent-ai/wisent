@@ -13,7 +13,7 @@ from wisent.core.primitives.contrastive_pairs.diagnostics import run_control_ste
 from wisent.core.utils.infra_tools.errors import ControlVectorDiagnosticsError
 from wisent.core.primitives.models.config import get_generate_kwargs
 from wisent.core.primitives.models.extended._helpers.generation_stopping import build_repetition_stopping_criteria
-from wisent.core.utils.config_tools.constants import AXIS_COLS, INDEX_LAST, STEERING_DEFAULT_INTENSITY
+from wisent.core.utils.config_tools.constants import AXIS_COLS, INDEX_FIRST, INDEX_LAST, STEERING_DEFAULT_INTENSITY
 
 logger = logging.getLogger(__name__)
 
@@ -118,10 +118,11 @@ def _generate(
     generation_kwargs["stopping_criteria"] = build_repetition_stopping_criteria(prompt_length)
 
     # KV cache steering: prefill -> modify cache -> generate from cache
-    if steering_object is not None and hasattr(steering_object, 'steer_cache'):
+    _ec = getattr(getattr(steering_object, 'metadata', None), 'extraction_component', None)
+    if steering_object is not None and _ec == "kv_cache":
         prefill_out = self.hf_model(**batch, use_cache=True)
         past_kv = prefill_out.past_key_values
-        steering_object.steer_cache(past_kv)
+        _apply_kv_cache_steering(steering_object, past_kv, steering_strength)
         # Generate from modified cache (last token as seed, no hooks)
         cache_gen_kwargs = dict(
             input_ids=batch["input_ids"][:, INDEX_LAST:],
@@ -201,3 +202,25 @@ def _clear_steering(self) -> None:
     """
     self._steering_plan = SteeringPlan()
     self.detach()
+
+
+def _apply_kv_cache_steering(steering_obj, past_kv, strength: float) -> None:
+    """Apply steering vectors to KV cache in-place using standard BaseSteeringObject.
+
+    For each layer in steering_obj.metadata.layers, gets the steering vector,
+    reshapes it from flat [num_kv_heads * head_dim] to [num_kv_heads, head_dim]
+    using the actual cache shape (GQA-safe), and adds strength * vec to both
+    key and value caches at the last sequence position.
+    """
+    for layer_idx in steering_obj.metadata.layers:
+        vec = steering_obj.get_steering_vector(layer_idx)
+        # past_kv[layer] = (key_cache, value_cache)
+        # cache shape: [batch, num_kv_heads, seq_len, head_dim]
+        k_cache = past_kv[layer_idx][INDEX_FIRST]
+        v_cache = past_kv[layer_idx][AXIS_COLS]
+        num_kv_heads = k_cache.shape[AXIS_COLS]
+        head_dim = k_cache.shape[INDEX_LAST]
+        vec = vec.to(k_cache.device, k_cache.dtype)
+        vec_shaped = vec[:num_kv_heads * head_dim].view(num_kv_heads, head_dim)
+        k_cache[:, :, INDEX_LAST, :] += strength * vec_shaped
+        v_cache[:, :, INDEX_LAST, :] += strength * vec_shaped
