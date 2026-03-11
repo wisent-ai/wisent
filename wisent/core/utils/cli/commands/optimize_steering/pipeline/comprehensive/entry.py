@@ -23,7 +23,7 @@ def execute_comprehensive_optimization(args) -> Dict[str, Any]:
     """Run comprehensive multi-method steering optimization.
 
     For each task, trains and evaluates all requested methods using the
-    UnifiedOptimizer, then compares results across methods.
+    BaseOptimizer, then compares results across methods.
     """
     methods = [m.upper() for m in args.methods]
     tasks = args.tasks

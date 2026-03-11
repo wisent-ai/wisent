@@ -1,6 +1,6 @@
 """Find the best steering method for a given benchmark.
 
-Uses the UnifiedOptimizer with distribution-based search spaces
+Uses the BaseOptimizer with distribution-based search spaces
 to optimize each steering method independently and rank them.
 
 Generates ALL contrastive pairs once, splits into train/test,
@@ -42,8 +42,9 @@ from wisent.core.utils.cli.optimize_steering.search_space import (
 from wisent.core.utils.cli.optimize_steering.pipeline import (
     create_objective,
 )
-from wisent.core.utils.services.optimization.core.unified_optimizer import (
-    UnifiedOptimizer,
+from wisent.core.utils.services.optimization.core.atoms import (
+    BaseOptimizer,
+    HPOConfig,
 )
 from wisent.core.utils.cli.optimize_steering.pipeline.comprehensive import baseline_cache
 
@@ -169,8 +170,6 @@ def _run_method(
     print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
 
     method_start = time.time()
-    optimizer = UnifiedOptimizer(backend=backend, direction="maximize")
-
     method_dir = os.path.join(output_dir, "trials", method_name)
     workspace = os.path.join(method_dir, "_workspace")
     os.makedirs(workspace, exist_ok=True)
@@ -200,7 +199,9 @@ def _run_method(
                       f, indent=JSON_INDENT, default=str)
         return score
 
-    result = optimizer.optimize(persisted_objective, space, n_trials)
+    _opt = BaseOptimizer.__new__(BaseOptimizer)
+    _opt.direction = "maximize"
+    result = _opt.optimize_fn(persisted_objective, space, n_trials, cfg=HPOConfig(backend=backend))
     method_time = time.time() - method_start
     entry = {
         "method": method_name,

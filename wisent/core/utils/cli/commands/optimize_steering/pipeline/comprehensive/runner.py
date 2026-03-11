@@ -28,7 +28,7 @@ def run_method_search(
 ) -> Dict[str, Any]:
     """Run optimization for a single method.
 
-    Uses the UnifiedOptimizer with the specified backend (hyperopt or
+    Uses the BaseOptimizer with the specified backend (hyperopt or
     optuna). The number of trials is derived from the search space
     dimensionality: len(space) * TRIALS_PER_DIMENSION_MULTIPLIER.
 
@@ -41,8 +41,9 @@ def run_method_search(
     from wisent.core.utils.cli.optimize_steering.pipeline import (
         create_objective,
     )
-    from wisent.core.utils.services.optimization.core.unified_optimizer import (
-        UnifiedOptimizer,
+    from wisent.core.utils.services.optimization.core.atoms import (
+        BaseOptimizer,
+        HPOConfig,
     )
 
     space = get_method_space(method, num_layers)
@@ -54,9 +55,8 @@ def run_method_search(
         print(f"   {method}: {n_trials} total configurations "
               f"(backend={backend})")
 
-    optimizer = UnifiedOptimizer(
-        backend=backend, direction="maximize",
-    )
+    optimizer = BaseOptimizer.__new__(BaseOptimizer)
+    optimizer.direction = "maximize"
 
     with tempfile.TemporaryDirectory() as work_dir:
         raw_objective = create_objective(
@@ -71,7 +71,7 @@ def run_method_search(
             )
         else:
             objective = raw_objective
-        result = optimizer.optimize(objective, space, n_trials)
+        result = optimizer.optimize_fn(objective, space, n_trials, cfg=HPOConfig(backend=backend))
 
     if verbose:
         print(f"   {method}: best={result.best_score:.4f} "

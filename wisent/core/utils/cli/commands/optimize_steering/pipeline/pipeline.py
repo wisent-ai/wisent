@@ -253,7 +253,7 @@ def create_objective(
     test_pairs_file: Optional[str] = None,
     cached_model=None,
 ):
-    """Create an objective function for the UnifiedOptimizer.
+    """Create an objective function for the BaseOptimizer.
 
     Returns a callable that takes a flat params dict and returns a score.
     When train_pairs_file/test_pairs_file are set, trains on train and
