@@ -47,7 +47,7 @@ from wisent.core.utils.cli.optimize_steering.search_space import get_method_spac
 from wisent.core.utils.cli.optimize_steering.pipeline import (
     OptimizationResult, run_pipeline, create_objective, _make_args,
 )
-from wisent.core.utils.services.optimization.core.unified_optimizer import UnifiedOptimizer
+from wisent.core.utils.services.optimization.core.atoms import BaseOptimizer, HPOConfig
 from wisent.core.utils.cli.optimize_steering.welfare import _execute_welfare_optimization
 from wisent.core.utils.cli.optimize_steering.personalization import _execute_personalization_optimization
 from wisent.core.utils.cli.optimize_steering.continual import execute_continual_learning
@@ -210,7 +210,8 @@ def execute_optimize_steering(args):
 
     space = get_method_space(method, num_layers)
     n_trials = len(space) * TRIALS_PER_DIMENSION_MULTIPLIER
-    optimizer = UnifiedOptimizer(backend=backend, direction="maximize")
+    optimizer = BaseOptimizer.__new__(BaseOptimizer)
+    optimizer.direction = "maximize"
 
     with tempfile.TemporaryDirectory() as work_dir:
         objective = create_objective(
@@ -218,7 +219,7 @@ def execute_optimize_steering(args):
             num_layers=num_layers, limit=None, device=device,
             work_dir=work_dir, enriched_pairs_file=enriched_pairs_file,
         )
-        result = optimizer.optimize(objective, space, n_trials)
+        result = optimizer.optimize_fn(objective, space, n_trials, cfg=HPOConfig(backend=backend))
 
     print(f"\n{'=' * SEPARATOR_WIDTH_REPORT}")
     print(f"OPTIMIZATION COMPLETE")
@@ -274,7 +275,7 @@ __all__ = [
     "run_pipeline",
     "get_method_space",
     "create_objective",
-    "UnifiedOptimizer",
+    "BaseOptimizer",
     "MethodConfig",
     "CAAConfig",
     "OstrzeConfig",

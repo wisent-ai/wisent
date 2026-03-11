@@ -2,12 +2,21 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Callable, Literal
 
 import optuna
 
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
-from wisent.core.utils.config_tools.constants import BASE_OPTIMIZER_NAME
+from wisent.core.utils.config_tools.constants import (
+    BASE_OPTIMIZER_NAME,
+    HYPEROPT_BACKEND_NAME,
+    OPTUNA_BACKEND_NAME,
+)
+from wisent.core.utils.services.optimization.core.parameters import (
+    OptimizationRun,
+    Param,
+)
+
 __all__ = [
     "Direction",
     "HPOConfig",
@@ -21,19 +30,19 @@ Direction = Literal["maximize", "minimize"]
 @dataclass(slots=True, frozen=True)
 class HPOConfig:
     """
-    Configuration for hyperparameter optimization (HPO) using Optuna.
+    Configuration for hyperparameter optimization (HPO).
 
     attributes:
         n_trials:
-            number of trials (ignored if timeout is reached).
+            number of trials to run.
         direction:
             global default direction ("maximize" or "minimize").
+        backend:
+            optimizer backend ("optuna" or "hyperopt").
         sampler:
             one of {"tpe", "random", "cmaes"} or None for Optuna default.
         pruner:
             one of {"nop", "median", "sha", "asha", "hyperband"} or None for default.
-        timeout:
-            optional global seconds budget.
         study_name:
             optional persistent study name.
         storage:
@@ -45,9 +54,9 @@ class HPOConfig:
     """
     n_trials: int = None
     direction: Direction = "maximize"
+    backend: str = OPTUNA_BACKEND_NAME
     sampler: str | None = "tpe"
     pruner: str | None = "asha"
-    timeout: int | None = None
     storage: str | None = None
     study_name: str | None = None
     seed: int | None = None
@@ -56,9 +65,7 @@ class HPOConfig:
 
 @dataclass(slots=True, frozen=True)
 class HPORun:
-    """
-    Result of an HPO run.
-    """
+    """Result of an HPO run."""
     study: optuna.Study
     best_params: dict[str, Any]
     best_value: float
@@ -66,26 +73,18 @@ class HPORun:
 
 class BaseOptimizer(ABC):
     """
-    Base class for building task-agnostic Optuna optimizers.
+    Base class for task-agnostic optimizers.
 
-    Subclasses must implement '_objective(trial)' and return a float objective.
-    This class wires up samplers/pruners and runs 'study.optimize(...)'.
+    Supports two usage patterns:
+    1. OOP: subclass and implement '_objective(trial)' with trial.suggest_*()
+    2. Functional: call 'optimize_fn()' with an objective_fn + Param space dict
     """
 
     name: str = BASE_OPTIMIZER_NAME
     direction: Direction = "maximize"
 
     def optimize(self, cfg: HPOConfig) -> HPORun:
-        """
-        Run the optimization process.
-
-        arguments:
-            cfg: 
-                HPOConfig object with optimization settings.
-
-        returns:
-            HPORun object with the results of the optimization.
-        """
+        """Run optimization using the OOP subclass pattern."""
         if cfg.n_trials is None:
             raise ValueError("n_trials is required in HPOConfig")
         sampler = self._make_sampler(cfg)
@@ -101,29 +100,53 @@ class BaseOptimizer(ABC):
             load_if_exists=bool(cfg.storage and cfg.study_name and cfg.load_if_exists),
         )
 
-        study.optimize(self._objective, n_trials=cfg.n_trials, timeout=cfg.timeout, show_progress_bar=False)
+        study.optimize(self._objective, n_trials=cfg.n_trials, show_progress_bar=False)
         return HPORun(study=study, best_params=study.best_params, best_value=study.best_value)
+
+    def optimize_fn(
+        self,
+        objective_fn: Callable[[dict[str, Any]], float],
+        space: dict[str, Param],
+        n_trials: int,
+        cfg: HPOConfig | None = None,
+    ) -> OptimizationRun:
+        """Run optimization using a functional objective + Param space.
+
+        arguments:
+            objective_fn: callable that takes a dict of param values and returns a score.
+            space: dict mapping param names to Param objects.
+            n_trials: number of trials to run.
+            cfg: optional HPOConfig for backend/sampler/pruner/storage settings.
+        """
+        if cfg is None:
+            cfg = HPOConfig(n_trials=n_trials, direction=self.direction)
+        direction = getattr(self, "direction", cfg.direction)
+
+        from wisent.core.utils.services.optimization.core._backend_converters import (
+            run_hyperopt,
+            run_optuna_functional,
+        )
+
+        if cfg.backend == HYPEROPT_BACKEND_NAME:
+            return run_hyperopt(objective_fn, space, n_trials, direction, cfg.seed)
+
+        if cfg.backend == OPTUNA_BACKEND_NAME:
+            sampler = self._make_sampler(cfg)
+            pruner = self._make_pruner(cfg)
+            return run_optuna_functional(
+                objective_fn, space, n_trials, direction,
+                sampler, pruner, cfg.storage, cfg.study_name, cfg.load_if_exists,
+            )
+
+        raise ValueError(f"Unknown backend: {cfg.backend}")
 
     @abstractmethod
     def _objective(self, trial: optuna.Trial) -> float:
-        """
-        Implement one trial; return objective value.
-        """
+        """Implement one trial; return objective value."""
         raise NotImplementedError
 
     def _make_sampler(self, cfg: HPOConfig) -> optuna.samplers.BaseSampler | None:
-        """
-        Create an Optuna sampler based on the config.
-        
-        arguments:
-            cfg: HPOConfig object.
-            
-        returns:
-            An Optuna sampler instance or None for default.
-
-        raises:
-            ValueError if the sampler name is unknown.
-        """
+        """Create an Optuna sampler based on the config."""
         if cfg.sampler is None:
             return None
         s = cfg.sampler.lower()
@@ -136,18 +159,7 @@ class BaseOptimizer(ABC):
         raise UnknownTypeError(entity_type="sampler", value=cfg.sampler, valid_values=["tpe", "random", "cmaes"])
 
     def _make_pruner(self, cfg: HPOConfig) -> optuna.pruners.BasePruner | None:
-        """
-        Create an Optuna pruner based on the config.
-
-        arguments:
-            cfg: HPOConfig object.
-
-        returns:
-            An Optuna pruner instance or None for default.
-        
-        raises:
-            ValueError if the pruner name is unknown.
-        """
+        """Create an Optuna pruner based on the config."""
         if cfg.pruner is None:
             return None
         p = cfg.pruner.lower()
@@ -163,17 +175,7 @@ class BaseOptimizer(ABC):
 
     @staticmethod
     def report_and_maybe_prune(trial: optuna.Trial, value: float, step: int) -> None:
-        """
-        Report an intermediate metric and prune if the pruner suggests it.
-
-        arguments:
-            trial:
-                Optuna trial object.
-            value:
-                Metric value to report.
-            step:
-                Step number (e.g., epoch).
-        """
+        """Report an intermediate metric and prune if the pruner suggests it."""
         trial.report(float(value), step=step)
         if trial.should_prune():
             raise optuna.exceptions.TrialPruned()
