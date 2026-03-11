@@ -81,20 +81,8 @@ _APP_CSS = (
 )
 
 
-def _prewarm_imports():
-    """Pre-import heavy modules so first command click is responsive."""
-    try:
-        import wisent.core.utils.cli  # noqa: F401
-        from wisent.core.utils.config_tools.parser_arguments import (
-            setup_parser,  # noqa: F401
-        )
-    except Exception:
-        pass
-
-
 def create_app() -> gr.Blocks:
     """Create and return the Gradio Blocks application."""
-    _prewarm_imports()
     with gr.Blocks(title=_APP_TITLE) as app:
         build_interface()
     return app
