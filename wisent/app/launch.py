@@ -70,16 +70,6 @@ def _build_theme():
         button_primary_text_color_dark=WISENT_COLOR_CHARCOAL,
         input_background_fill=WISENT_COLOR_LIGHT_SURFACE,
         input_background_fill_dark=WISENT_COLOR_DARK_SURFACE,
-        input_text_color=WISENT_COLOR_LIGHT_TEXT,
-        input_text_color_dark=WISENT_COLOR_TEXT_LIGHT,
-        checkbox_label_text_color=WISENT_COLOR_LIGHT_TEXT,
-        checkbox_label_text_color_dark=WISENT_COLOR_TEXT_LIGHT,
-        checkbox_label_text_color_selected=WISENT_COLOR_TEXT_LIGHT,
-        checkbox_label_text_color_selected_dark=WISENT_COLOR_CHARCOAL,
-        checkbox_label_background_fill=WISENT_COLOR_LIGHT_SURFACE,
-        checkbox_label_background_fill_dark=WISENT_COLOR_DARK_SURFACE,
-        checkbox_label_background_fill_selected=WISENT_COLOR_MINT_ACCENT_DARK,
-        checkbox_label_background_fill_selected_dark=WISENT_COLOR_MINT,
         border_color_primary=WISENT_COLOR_MINT_DARK,
         border_color_primary_dark=WISENT_COLOR_MINT_DARK,
     )
@@ -87,7 +77,22 @@ def _build_theme():
 
 _APP_CSS = (
     ".output-box { font-family: monospace; white-space: pre-wrap; } "
-    ".gradio-container { max-width: none !important; }"
+    ".gradio-container { max-width: none !important; } "
+    f":root {{ "
+    f"--input-text-color: {WISENT_COLOR_LIGHT_TEXT}; "
+    f"--checkbox-label-text-color: {WISENT_COLOR_LIGHT_TEXT}; "
+    f"--checkbox-label-text-color-selected: {WISENT_COLOR_TEXT_LIGHT}; "
+    f"--checkbox-label-background-fill: {WISENT_COLOR_LIGHT_SURFACE}; "
+    f"--checkbox-label-background-fill-selected: "
+    f"{WISENT_COLOR_MINT_ACCENT_DARK}; "
+    f"}} "
+    f".dark {{ "
+    f"--input-text-color: {WISENT_COLOR_TEXT_LIGHT}; "
+    f"--checkbox-label-text-color: {WISENT_COLOR_TEXT_LIGHT}; "
+    f"--checkbox-label-text-color-selected: {WISENT_COLOR_CHARCOAL}; "
+    f"--checkbox-label-background-fill: {WISENT_COLOR_DARK_SURFACE}; "
+    f"--checkbox-label-background-fill-selected: {WISENT_COLOR_MINT}; "
+    f"}} "
 )
 
 
