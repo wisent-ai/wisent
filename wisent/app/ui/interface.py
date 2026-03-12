@@ -41,6 +41,7 @@ from wisent.core.utils.config_tools.constants import (
 )
 from wisent.app.core.groups import get_command_groups
 from wisent.app.ui.command_tab import build_command_tab, build_subparser_tab
+from wisent.app.ui.wiring.navigation import wire_wizard_navigation
 from wisent.app.ui.wizard import build_wizard_tab
 
 _SUBPARSER_COMMANDS = frozenset({"optimize-steering", "inference-config"})
@@ -262,16 +263,24 @@ def build_interface():
 
     groups = get_command_groups()
 
-    with gr.Tabs():
-        with gr.Tab(label="Wizard"):
-            build_wizard_tab()
+    outer_tabs = gr.Tabs(elem_id="main-tabs")
+    inner_tabs_map = {}
+    with outer_tabs:
+        with gr.Tab(label="Wizard", id="wizard"):
+            wizard_components = build_wizard_tab()
         for group in groups:
-            with gr.Tab(label=group.label):
+            with gr.Tab(label=group.label, id=group.label):
                 gr.Markdown(f"*{group.description}*")
-                with gr.Tabs():
+                group_tabs = gr.Tabs(elem_id=f"tabs-{group.label}")
+                inner_tabs_map[group.label] = group_tabs
+                with group_tabs:
                     for cmd in group.commands:
-                        with gr.Tab(label=cmd.name):
+                        with gr.Tab(label=cmd.name, id=cmd.name):
                             if cmd.name in _SUBPARSER_COMMANDS:
                                 build_subparser_tab(cmd)
                             else:
                                 build_command_tab(cmd)
+
+    wire_wizard_navigation(
+        groups, wizard_components, outer_tabs, inner_tabs_map,
+    )
