@@ -224,20 +224,25 @@ def _build_resource_monitor():
 def build_interface():
     """Construct the full Gradio interface inside an active gr.Blocks context."""
     logo_path = _find_logo()
-    if logo_path:
-        with open(logo_path, "rb") as _f:
-            _b64 = base64.b64encode(_f.read()).decode()
-        gr.HTML(
-            f'<img src="data:image/png;base64,{_b64}" '
-            f'width="{WISENT_LOGO_DISPLAY_WIDTH}" '
-            f'style="display:block;" />'
-        )
-    gr.Markdown(
-        "# Wisent\n"
-        "### World's Best AI through Representation Engineering\n"
-        "Select a category tab, choose a command, fill in parameters, "
-        "and click Run."
-    )
+    with gr.Row(equal_height=False):
+        if logo_path:
+            with open(logo_path, "rb") as _f:
+                _b64 = base64.b64encode(_f.read()).decode()
+            with gr.Column(
+                scale=INDEX_FIRST, min_width=WISENT_LOGO_DISPLAY_WIDTH,
+            ):
+                gr.HTML(
+                    f'<img src="data:image/png;base64,{_b64}" '
+                    f'width="{WISENT_LOGO_DISPLAY_WIDTH}" '
+                    f'style="display:block;" />'
+                )
+        with gr.Column():
+            gr.Markdown(
+                "# Wisent\n"
+                "### World's Best AI through Representation Engineering\n"
+                "Select a category tab, choose a command, "
+                "fill in parameters, and click Run."
+            )
 
     _build_resource_monitor()
 
