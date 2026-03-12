@@ -33,6 +33,7 @@ from wisent.core.utils.config_tools.constants import (
     WISENT_COLOR_DARK_SURFACE,
     WISENT_COLOR_MINT,
     WISENT_COLOR_MINT_ACCENT_DARK,
+    WISENT_COLOR_LIGHT_TEXT_MUTED,
     WISENT_COLOR_TEXT_LIGHT,
     WISENT_COLOR_TEXT_MUTED,
     WISENT_LOGO_DISPLAY_WIDTH,
@@ -98,7 +99,7 @@ def _bar_css():
         f"display:inline-block;"
         f"width:{GRADIO_RESOURCE_BAR_WIDTH_PX}px;"
         f"height:{GRADIO_RESOURCE_BAR_HEIGHT_PX}px;"
-        f"background:{WISENT_COLOR_DARK_SURFACE};"
+        f"background:{WISENT_COLOR_LIGHT_TEXT_MUTED};"
         f"border-radius:{GRADIO_RESOURCE_BAR_RADIUS_PX}px;"
         f"overflow:hidden;vertical-align:middle;"
         f"margin:{INDEX_FIRST} {GRADIO_RESOURCE_BAR_MARGIN_PX}px;"
