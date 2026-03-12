@@ -83,6 +83,7 @@ _APP_CSS = (
     f"--checkbox-label-text-color: {WISENT_COLOR_LIGHT_TEXT}; "
     f"--checkbox-label-text-color-selected: {WISENT_COLOR_TEXT_LIGHT}; "
     f"--checkbox-label-background-fill: {WISENT_COLOR_LIGHT_SURFACE}; "
+    f"--checkbox-label-background-fill-hover: {WISENT_COLOR_MINT_LIGHT}; "
     f"--checkbox-label-background-fill-selected: "
     f"{WISENT_COLOR_MINT_ACCENT_DARK}; "
     f"}} "
@@ -91,6 +92,7 @@ _APP_CSS = (
     f"--checkbox-label-text-color: {WISENT_COLOR_TEXT_LIGHT}; "
     f"--checkbox-label-text-color-selected: {WISENT_COLOR_CHARCOAL}; "
     f"--checkbox-label-background-fill: {WISENT_COLOR_DARK_SURFACE}; "
+    f"--checkbox-label-background-fill-hover: {WISENT_COLOR_CHARCOAL}; "
     f"--checkbox-label-background-fill-selected: {WISENT_COLOR_MINT}; "
     f"}} "
 )
