@@ -142,13 +142,11 @@ def get_command_groups() -> list:
         ],
     )
     other = CommandGroup(
-        label="Other",
-        description="Agent, data migration, and utilities",
+        label="Agent",
+        description="Autonomous agent interaction",
         commands=[
             _ci("agent", "Interact with autonomous agent",
                 "other", "setup_agent_parser"),
-            _ci("migrate-activations", "Migrate activation data to HuggingFace Hub",
-                "data", "setup_migrate_activations_parser"),
         ],
     )
     return [generation, steering, evaluation, optimization,
