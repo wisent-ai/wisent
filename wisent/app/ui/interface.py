@@ -115,8 +115,11 @@ def _fill_css(clamped):
 
 
 def _section_style():
-    """Return per-section margin CSS."""
-    return f"margin-right:{GRADIO_RESOURCE_SECTION_MARGIN_PX}px;"
+    """Return per-section margin and text color CSS."""
+    return (
+        f"margin-right:{GRADIO_RESOURCE_SECTION_MARGIN_PX}px;"
+        f"color:{WISENT_COLOR_TEXT_LIGHT};"
+    )
 
 
 def _build_progress_bar(percent):
@@ -201,7 +204,7 @@ def _format_resource_html():
 
     system_label = platform.node() or "local"
     label_css = (
-        f"color:{WISENT_COLOR_MINT_ACCENT_DARK};"
+        f"color:{WISENT_COLOR_MINT};"
         f"font-weight:bold;"
         f"margin-right:{GRADIO_RESOURCE_LABEL_MARGIN_PX}px;"
     )
