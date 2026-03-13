@@ -249,17 +249,15 @@ def build_interface():
                 "fill in parameters, and click Run."
             )
 
-    _build_resource_monitor()
-
     with gr.Row():
         gr.Dropdown(
             label="Model Name (shared across commands)",
             choices=list(GRADIO_MODEL_EXAMPLES),
             value=None,
-            allow_custom_value=True,
             interactive=True,
             elem_id="global-model",
         )
+        _build_resource_monitor()
 
     groups = get_command_groups()
 
