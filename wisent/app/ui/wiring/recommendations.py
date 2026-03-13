@@ -218,25 +218,25 @@ RECOMMENDATIONS = {
 
 PRESETS = (
     (
-        "\u270d\ufe0f",
+        "icon_hidden.svg",
         "Undetectable by AI humanizers",
         "generate-vector-from-synthetic",
         "Steer writing style to be more natural and human-like.",
     ),
     (
-        "\U0001f9ed",
+        "icon_sliders.svg",
         "Steer political alignment",
         "generate-vector-from-synthetic",
         "Shift the model's political leaning with contrastive steering.",
     ),
     (
-        "\U0001f9e0",
+        "icon_mood_happy.svg",
         "Analyze happiness representation",
         "zwiad",
         "Zwiad geometry analysis of how happiness is encoded.",
     ),
     (
-        "\U0001f52c",
+        "icon_code.svg",
         "Diagnose Livecodebench",
         "zwiad",
         "Layer sensitivity, method comparison, similarity heatmaps.",

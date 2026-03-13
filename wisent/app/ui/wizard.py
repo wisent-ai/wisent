@@ -4,6 +4,8 @@ Shows preset use-case cards at the top, followed by a multi-step
 goal/subgoal wizard for browsing all commands.
 """
 
+import os
+
 import gradio as gr
 from wisent.core.utils.config_tools.constants import (
     INDEX_FIRST,
@@ -11,23 +13,37 @@ from wisent.core.utils.config_tools.constants import (
     PRESET_CARD_TITLE_SIZE_PX,
     PRESET_CARD_DESC_SIZE_PX,
     PRESET_CARD_GAP_PX,
-    WISENT_COLOR_MINT_ACCENT_DARK,
+    WISENT_COLOR_MINT,
     WISENT_COLOR_TEXT_MUTED,
 )
 from wisent.app.ui.wiring.recommendations import (
     GOALS, SUBGOALS, RECOMMENDATIONS, PRESETS,
 )
 
+_ICONS_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "icons",
+)
 
-def _card_html(icon, title, description):
+
+def _load_icon_svg(filename):
+    """Load an SVG icon file and return its markup."""
+    path = os.path.join(_ICONS_DIR, filename)
+    with open(path) as fh:
+        return fh.read().strip()
+
+
+def _card_html(icon_svg, title, description):
     """Build the HTML for a single preset card."""
     return (
         f'<div class="preset-card">'
-        f'<div style="font-size:{PRESET_CARD_ICON_SIZE_PX}px;'
-        f'margin-bottom:{PRESET_CARD_GAP_PX}px;">{icon}</div>'
+        f'<div style="color:{WISENT_COLOR_MINT};'
+        f'width:{PRESET_CARD_ICON_SIZE_PX}px;'
+        f'height:{PRESET_CARD_ICON_SIZE_PX}px;'
+        f'margin:{INDEX_FIRST} auto {PRESET_CARD_GAP_PX}px auto;">'
+        f'{icon_svg}</div>'
         f'<div style="font-weight:bold;'
         f'font-size:{PRESET_CARD_TITLE_SIZE_PX}px;'
-        f'color:{WISENT_COLOR_MINT_ACCENT_DARK};'
         f'margin-bottom:{PRESET_CARD_GAP_PX}px;">{title}</div>'
         f'<div style="font-size:{PRESET_CARD_DESC_SIZE_PX}px;'
         f'color:{WISENT_COLOR_TEXT_MUTED};">{description}</div>'
@@ -47,9 +63,10 @@ def build_wizard_tab():
 
     gr.Markdown("### Quick start")
     with gr.Row(equal_height=True):
-        for icon, label, cmd, desc in PRESETS:
+        for icon_file, label, cmd, desc in PRESETS:
+            icon_svg = _load_icon_svg(icon_file)
             with gr.Column(min_width=INDEX_FIRST):
-                card = gr.HTML(value=_card_html(icon, label, desc))
+                card = gr.HTML(value=_card_html(icon_svg, label, desc))
                 card.click(
                     fn=_make_preset_handler(cmd, label),
                     inputs=[],
