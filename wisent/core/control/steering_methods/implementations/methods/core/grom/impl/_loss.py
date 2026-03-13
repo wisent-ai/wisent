@@ -6,7 +6,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.utils.config_tools.constants import NORM_EPS
+from wisent.core.utils.config_tools.constants import NORM_EPS, STEERING_SCALE_IDENTITY
+
 
 def _compute_grom_loss_impl(
     self,
@@ -133,9 +134,12 @@ def _compute_grom_loss_impl(
     # Pos should have high gate (target=1), neg should have low gate (target=0)
     # Use BCE loss which provides gradient even when predictions are at 0.5
     # (The old relu-based loss had zero gradient at 0.5, causing the network to get stuck)
+    _upper = STEERING_SCALE_IDENTITY - NORM_EPS
+    pos_gate_clamped = pos_gate.clamp(NORM_EPS, _upper)
+    neg_gate_clamped = neg_gate.clamp(NORM_EPS, _upper)
     gate_loss = (
-        F.binary_cross_entropy(pos_gate, torch.ones_like(pos_gate)) +
-        F.binary_cross_entropy(neg_gate, torch.zeros_like(neg_gate))
+        F.binary_cross_entropy(pos_gate_clamped, torch.ones_like(pos_gate)) +
+        F.binary_cross_entropy(neg_gate_clamped, torch.zeros_like(neg_gate))
     )
     loss_components["gate"] = gate_loss
 
