@@ -1,4 +1,66 @@
-"""Wizard presets and recommendation text for each subgoal."""
+"""Wizard presets, goals, subgoals, and recommendation text."""
+
+GOALS = [
+    "Generate contrastive data",
+    "Create steering vectors",
+    "Steer a model at inference",
+    "Evaluate model outputs",
+    "Optimize parameters",
+    "Analyze geometry and diagnostics",
+    "Modify model weights",
+    "Configure settings",
+]
+
+SUBGOALS = {
+    "Generate contrastive data": [
+        "Generate synthetic contrastive pairs from a custom trait",
+        "Generate pairs from an lm-eval benchmark task",
+        "Generate model responses to evaluation questions",
+        "Run the full synthetic pipeline end-to-end",
+    ],
+    "Create steering vectors": [
+        "From an lm-eval task (full pipeline)",
+        "From synthetic contrastive pairs",
+        "From existing enriched pairs",
+        "Discover the best steering direction automatically",
+    ],
+    "Steer a model at inference": [
+        "Combine multiple steering vectors at inference",
+        "Visualize how steering affects activation space",
+        "Verify steered activations are aligned correctly",
+        "Compare steering objects across traits",
+    ],
+    "Evaluate model outputs": [
+        "Evaluate response quality with embedded evaluator",
+        "Evaluate model refusal rate on harmful prompts",
+    ],
+    "Optimize parameters": [
+        "Run all optimizations at once",
+        "Optimize classification thresholds",
+        "Optimize steering parameters (method, layer, strength)",
+        "Find optimal training sample size",
+        "Optimize weight modification parameters",
+        "Manage cached optimization results",
+        "Find the best steering method for a benchmark",
+    ],
+    "Analyze geometry and diagnostics": [
+        "Diagnose contrastive pair quality",
+        "Diagnose steering vector quality",
+        "Check if a representation is linear",
+        "Cluster benchmarks by direction similarity",
+        "Search for unified goodness direction",
+        "Run full Zwiad geometry analysis",
+    ],
+    "Modify model weights": [
+        "Permanently modify model weights with steering",
+        "Collect activations from contrastive pairs",
+        "Train a unified goodness vector from benchmarks",
+    ],
+    "Configure settings": [
+        "View and update inference settings",
+        "Run evaluation tasks",
+    ],
+}
 
 RECOMMENDATIONS = {
     "Generate synthetic contrastive pairs from a custom trait": (
