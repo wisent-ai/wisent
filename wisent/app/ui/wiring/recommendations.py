@@ -173,34 +173,4 @@ PRESETS = (
         "Run full Zwiad geometry analysis to understand how happiness "
         "is encoded across the model's layers and dimensions.",
     ),
-    (
-        "Make my model more truthful on TruthfulQA",
-        "generate-vector-from-task",
-        "Full pipeline: extract pairs from the TruthfulQA benchmark, "
-        "collect activations, and train a truthfulness steering vector.",
-    ),
-    (
-        "Permanently bake helpfulness into model weights",
-        "modify-weights",
-        "Apply a helpfulness steering vector directly to the model "
-        "weights so the effect persists without runtime steering.",
-    ),
-    (
-        "Find which steering method works best for my task",
-        "find-best-method",
-        "Trial every registered steering method on a benchmark and "
-        "rank them to find the best one for your use case.",
-    ),
-    (
-        "Optimize all steering parameters automatically",
-        "optimize-steering",
-        "Search for the best method, target layer, and strength via "
-        "Bayesian optimization.",
-    ),
-    (
-        "Check if my contrastive pairs are high quality",
-        "diagnose-pairs",
-        "Analyze pairs for quality issues: semantic divergence, length "
-        "imbalance, duplication, and consistency.",
-    ),
 )
