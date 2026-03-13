@@ -218,28 +218,27 @@ RECOMMENDATIONS = {
 
 PRESETS = (
     (
-        "Create a model that is undetectable by AI humanizers",
+        "\u270d\ufe0f",
+        "Undetectable by AI humanizers",
         "generate-vector-from-synthetic",
-        "Generate a steering vector from synthetic pairs that shifts "
-        "the model's writing style to be more natural and human-like.",
+        "Steer writing style to be more natural and human-like.",
     ),
     (
-        "Steer the model to be left-wing",
+        "\U0001f9ed",
+        "Steer political alignment",
         "generate-vector-from-synthetic",
-        "Generate a steering vector from synthetic contrastive pairs "
-        "that shifts the model's political alignment.",
+        "Shift the model's political leaning with contrastive steering.",
     ),
     (
-        "Analyze the structure of the model's happiness representation",
+        "\U0001f9e0",
+        "Analyze happiness representation",
         "zwiad",
-        "Run full Zwiad geometry analysis to understand how happiness "
-        "is encoded across the model's layers and dimensions.",
+        "Zwiad geometry analysis of how happiness is encoded.",
     ),
     (
-        "Diagnose the representation of Livecodebench",
+        "\U0001f52c",
+        "Diagnose Livecodebench",
         "zwiad",
-        "Run full Zwiad geometry analysis on the Livecodebench "
-        "representation: layer sensitivity, method comparison, and "
-        "similarity heatmaps.",
+        "Layer sensitivity, method comparison, similarity heatmaps.",
     ),
 )
