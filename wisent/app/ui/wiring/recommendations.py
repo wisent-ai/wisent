@@ -173,4 +173,10 @@ PRESETS = (
         "Run full Zwiad geometry analysis to understand how happiness "
         "is encoded across the model's layers and dimensions.",
     ),
+    (
+        "Diagnose the representation of Livecodebench",
+        "diagnose-vectors",
+        "Analyze a steering vector trained on Livecodebench: activation "
+        "separability, direction stability, and layer interference.",
+    ),
 )
