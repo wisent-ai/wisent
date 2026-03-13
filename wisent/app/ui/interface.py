@@ -251,7 +251,7 @@ def build_interface():
 
     with gr.Row():
         gr.Dropdown(
-            label="Model Name (shared across commands)",
+            label="Type or select model name",
             choices=list(GRADIO_MODEL_EXAMPLES),
             value=None,
             allow_custom_value=True,
