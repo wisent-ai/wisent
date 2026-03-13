@@ -5,6 +5,7 @@ from wisent.app.ui.interface import build_interface
 from wisent.core.utils.config_tools.constants import (
     GRADIO_SERVER_PORT,
     GRADIO_SERVER_HOST,
+    PRESET_CARD_RADIUS_PX,
     WISENT_COLOR_MINT,
     WISENT_COLOR_MINT_LIGHT,
     WISENT_COLOR_MINT_DARK,
@@ -78,9 +79,23 @@ def _build_theme():
     )
 
 
+_CARD_CSS = (
+    f".preset-card {{ cursor:pointer; text-align:center; "
+    f"padding:{PRESET_CARD_RADIUS_PX}px; "
+    f"border-radius:{PRESET_CARD_RADIUS_PX}px; "
+    f"border:1px solid {WISENT_COLOR_MINT_DARK}; "
+    f"background:{WISENT_COLOR_LIGHT_SURFACE}; "
+    f"transition:border-color 0.2s,transform 0.2s; }} "
+    f".preset-card:hover {{ border-color:{WISENT_COLOR_MINT}; "
+    f"transform:translateY(-2px); }} "
+    f".dark .preset-card {{ "
+    f"background:{WISENT_COLOR_DARK_SURFACE}; }} "
+)
+
 _APP_CSS = (
     ".output-box { font-family: monospace; white-space: pre-wrap; } "
     ".gradio-container { max-width: none !important; } "
+    f"{_CARD_CSS}"
     f":root {{ "
     f"--input-text-color: {WISENT_COLOR_LIGHT_TEXT}; "
     f"--checkbox-label-text-color: {WISENT_COLOR_LIGHT_TEXT}; "
