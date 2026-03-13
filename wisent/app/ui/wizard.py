@@ -1,7 +1,7 @@
 """Interactive command wizard for the Wisent Gradio interface.
 
-Shows natural-language use-case presets that navigate directly to
-the right command tab.
+Shows natural-language use-case presets as clickable buttons that
+navigate directly to the right command tab.
 """
 
 import gradio as gr
@@ -16,30 +16,29 @@ def build_wizard_tab():
     """
     gr.Markdown(
         "## What do you want to do?\n"
-        "Pick a use case below, or browse the tabs to find a command."
+        "Pick a use case to get started, or browse the tabs above."
     )
 
-    preset_labels = [label for label, _cmd, _desc in PRESETS]
-    preset_map = {label: (cmd, desc) for label, cmd, desc in PRESETS}
-
-    preset_radio = gr.Radio(
-        label="Use cases",
-        choices=preset_labels,
-        value=None,
-    )
-    recommendation = gr.Markdown(value="", label="Details")
     cmd_state = gr.State(value=None)
     go_btn = gr.Button("Go to command", variant="primary", visible=False)
+    recommendation = gr.Markdown(value="")
 
-    def on_preset_change(selected):
-        if selected and selected in preset_map:
-            cmd_name, description = preset_map[selected]
-            text = f"### `{cmd_name}`\n\n{description}"
-            return text, gr.update(visible=True), cmd_name
-        return "", gr.update(visible=False), None
+    preset_map = {label: (cmd, desc) for label, cmd, desc in PRESETS}
 
-    preset_radio.change(
-        fn=on_preset_change, inputs=[preset_radio],
-        outputs=[recommendation, go_btn, cmd_state],
-    )
+    for label, cmd, desc in PRESETS:
+        btn = gr.Button(label, variant="secondary")
+        btn.click(
+            fn=_make_preset_handler(cmd, desc),
+            inputs=[],
+            outputs=[recommendation, go_btn, cmd_state],
+        )
+
     return go_btn, cmd_state
+
+
+def _make_preset_handler(cmd_name, description):
+    """Create a click handler for a preset button."""
+    def handler():
+        text = f"### `{cmd_name}`\n\n{description}"
+        return text, gr.update(visible=True), cmd_name
+    return handler
