@@ -254,6 +254,7 @@ def build_interface():
             label="Model Name (shared across commands)",
             choices=list(GRADIO_MODEL_EXAMPLES),
             value=None,
+            allow_custom_value=True,
             interactive=True,
             elem_id="global-model",
         )
