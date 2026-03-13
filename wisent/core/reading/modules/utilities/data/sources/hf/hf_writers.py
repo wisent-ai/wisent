@@ -6,7 +6,13 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import torch
-from wisent.core.utils.config_tools.constants import JSON_INDENT
+from wisent.core.utils.config_tools.constants import (
+    COMBO_OFFSET,
+    INDEX_FIRST,
+    INDEX_LAST,
+    JSON_INDENT,
+    MIN_COMBO_PATH_PARTS,
+)
 from .hf_config import (
     HF_REPO_ID,
     HF_REPO_TYPE,
@@ -214,46 +220,54 @@ def write_marker(
         Path(tmp_path).unlink(missing_ok=True)
 
 
+def _list_model_dirs(api) -> List[str]:
+    """List model directories under activations/ using tree API."""
+    entries = api.list_repo_tree(
+        repo_id=HF_REPO_ID, repo_type=HF_REPO_TYPE,
+        path_in_repo="activations", recursive=False,
+    )
+    return [e.path for e in entries if hasattr(e, "path")]
+
+
 def consolidate_index(dry_run: bool = False) -> Dict[str, List[int]]:
-    """Build unified index.json from all marker files and upload it."""
+    """Build unified index.json by scanning activation files in HF repo."""
+    import re
     from huggingface_hub import HfApi
 
-    api = HfApi(token=_get_hf_token())
-    all_files = api.list_repo_tree(
-        repo_id=HF_REPO_ID,
-        repo_type=HF_REPO_TYPE,
-        path_in_repo="markers",
-        recursive=True,
+    token = _get_hf_token()
+    api = HfApi(token=token)
+    model_dirs = _list_model_dirs(api)
+    print(f"Found {len(model_dirs)} model directories")
+    layer_re = re.compile(
+        r"layer_(?P<layer>\d+)\.safetensors$"
     )
-    marker_paths = []
-    all_files_list = list(all_files)
-    print(f"list_repo_tree returned {len(all_files_list)} items")
-    for f in all_files_list:
-        p = getattr(f, "path", None) or getattr(f, "rpath", None)
-        print(f"  item: type={type(f).__name__} path={p}")
-        if p and p.endswith(".json"):
-            marker_paths.append(p)
-    print(f"Found {len(marker_paths)} marker files")
     index: Dict[str, List[int]] = {}
-    from huggingface_hub import hf_hub_download
-    for mp in marker_paths:
-        if not mp.startswith("markers/") or not mp.endswith(".json"):
-            continue
-        inner = mp[len("markers/"):-len(".json")].split("/")
-        if len(inner) < 3:
-            continue
-        key = f"{inner[0]}/{'/'.join(inner[1:-1])}/{inner[-1]}"
-        local = hf_hub_download(
-            repo_id=HF_REPO_ID, filename=mp,
-            repo_type=HF_REPO_TYPE, token=_get_hf_token(),
+    for model_dir in model_dirs:
+        model_name = model_dir.split("/")[INDEX_LAST]
+        print(f"  Scanning {model_name}...")
+        entries = api.list_repo_tree(
+            repo_id=HF_REPO_ID, repo_type=HF_REPO_TYPE,
+            path_in_repo=model_dir, recursive=True,
         )
-        with open(local, "r") as f:
-            data = json.load(f)
-        existing = set(index.get(key, []))
-        existing.update(data.get("layers", []))
-        index[key] = sorted(existing)
-
-    print(f"Consolidated index: {len(index)} entries")
+        for entry in entries:
+            fp = getattr(entry, "path", None)
+            if not fp:
+                continue
+            m = layer_re.search(fp)
+            if not m:
+                continue
+            layer_num = int(m.group("layer"))
+            rel = fp[len(model_dir) + COMBO_OFFSET:]
+            parts = rel.split("/")
+            if len(parts) < MIN_COMBO_PATH_PARTS:
+                continue
+            strategy = parts[INDEX_LAST - COMBO_OFFSET]
+            benchmark = "/".join(parts[:INDEX_LAST - COMBO_OFFSET])
+            key = f"{model_name}/{benchmark}/{strategy}"
+            index.setdefault(key, []).append(layer_num)
+    for key in index:
+        index[key] = sorted(index[key])
+    print(f"Consolidated index: {len(index)} entries (from activation files)")
 
     if dry_run:
         for k, v in sorted(index.items()):
