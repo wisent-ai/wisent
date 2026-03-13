@@ -174,12 +174,20 @@ GRADIO_MODEL_EXAMPLES = (
     "Qwen/Qwen3-1.7B",
     "Qwen/Qwen3.5-2B",
 )
-# --- GPU memory estimation (matches run_on_gcp.sh line 58: size*2+4) ---
+# --- GPU memory estimation ---
+# weights_mb = params_b * FP16_GB_PER_BILLION_PARAMS * MB_PER_GB
+# kv_cache_mb = num_layers * KV_PAIR_FACTOR * num_kv_heads * head_dim * max_seq * FP16_BYTES / BYTES_PER_MB
+# total = weights_mb + kv_cache_mb + CUDA_CONTEXT_MB
 FP16_GB_PER_BILLION_PARAMS = 2
-GPU_FRAMEWORK_OVERHEAD_GB = 4
+FP16_BYTES = 2
+KV_PAIR_FACTOR = 2
+CUDA_CONTEXT_MB = 512
+GPU_FRAMEWORK_OVERHEAD_GB = 8
 MB_PER_GB = 1024
 TRANSFORMER_PARAM_FACTOR = 12
 PARAMS_PER_BILLION = 1000000000
+# --- HF index consolidation ---
+MIN_COMBO_PATH_PARTS = 3
 # --- Degeneration detection (StoppingCriteria) ---
 DEGEN_WARMUP_TOKENS = 100
 DEGEN_NGRAM_SIZE = 4
