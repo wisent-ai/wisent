@@ -253,7 +253,7 @@ def build_interface():
         gr.Dropdown(
             label="Type or select model name",
             choices=list(GRADIO_MODEL_EXAMPLES),
-            value=None,
+            value=GRADIO_MODEL_EXAMPLES[INDEX_FIRST],
             allow_custom_value=True,
             interactive=True,
             elem_id="global-model",
