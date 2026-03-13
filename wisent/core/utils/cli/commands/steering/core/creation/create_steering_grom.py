@@ -2,7 +2,12 @@
 from __future__ import annotations
 import torch
 
-from wisent.core.utils.config_tools.constants import RECURSION_INITIAL_DEPTH
+from wisent.core.utils.config_tools.constants import (
+    RECURSION_INITIAL_DEPTH,
+    COMBO_OFFSET,
+    AXIS_ROWS,
+    SS_GROM_BEHAVIOR_TARGET,
+)
 
 
 def _require_arg(args, attr_name):
@@ -13,6 +18,33 @@ def _require_arg(args, attr_name):
             f"Run 'wisent optimize-steering auto' first, or pass it explicitly."
         )
     return val
+
+
+def _grom_training_step(
+    gate_network, sensor_pos, sensor_neg, gate_temperature,
+    gate_threshold, layer_order, directions, direction_weights,
+    all_pos, all_neg, retain_weight,
+):
+    """Single GROM training step — computes total loss."""
+    total_loss = torch.zeros(())
+    pos_gate = gate_network(sensor_pos, gate_temperature)
+    neg_gate = gate_network(sensor_neg, gate_temperature)
+    gate_loss = (
+        torch.relu(gate_threshold - pos_gate).mean()
+        + torch.relu(neg_gate - gate_threshold).mean()
+    )
+    total_loss = total_loss + gate_loss
+    for layer in layer_order:
+        if layer not in directions:
+            continue
+        dirs = torch.nn.functional.normalize(directions[layer], dim=COMBO_OFFSET)
+        weights = torch.softmax(direction_weights[layer], dim=AXIS_ROWS)
+        effective_dir = (weights.unsqueeze(-COMBO_OFFSET) * dirs).sum(dim=AXIS_ROWS)
+        pos_proj = (all_pos[layer] * effective_dir).sum(dim=COMBO_OFFSET)
+        neg_proj = (all_neg[layer] * effective_dir).sum(dim=COMBO_OFFSET).abs()
+        total_loss = total_loss + torch.relu(SS_GROM_BEHAVIOR_TARGET - pos_proj).mean()
+        total_loss = total_loss + neg_proj.mean() * retain_weight
+    return total_loss
 
 
 def _create_grom_steering_object(
@@ -108,46 +140,46 @@ def _create_grom_steering_object(
 
     print(f"   Training GROM ({num_directions} directions, {len(layer_order)} layers)...")
 
+    best_loss = float('inf')
+    best_state = None
     optimization_steps = _require_arg(args, 'grom_optimization_steps')
     for step in range(optimization_steps):
         optimizer.zero_grad()
-        
-        total_loss = torch.tensor(0.0)
-        
-        # Gate loss
-        pos_gate = gate_network(sensor_pos, gate_temperature)
-        neg_gate = gate_network(sensor_neg, gate_temperature)
-        gate_loss = torch.relu(create_gate_threshold - pos_gate).mean() + torch.relu(neg_gate - create_gate_threshold).mean()
-        total_loss = total_loss + gate_loss
-        
-        # Per-layer losses
-        for i, layer in enumerate(layer_order):
-            if layer not in directions:
-                continue
-            
-            dirs = torch.nn.functional.normalize(directions[layer], dim=1)
-            weights = torch.softmax(direction_weights[layer], dim=0)
-            effective_dir = (weights.unsqueeze(-1) * dirs).sum(dim=0)
-            
-            pos_data = all_pos[layer]
-            neg_data = all_neg[layer]
-            
-            # Behavior loss
-            pos_proj = (pos_data * effective_dir).sum(dim=1)
-            behavior_loss = torch.relu(1.0 - pos_proj).mean()
-            
-            # Retain loss
-            neg_proj = (neg_data * effective_dir).sum(dim=1).abs()
-            retain_loss = neg_proj.mean() * retain_weight
-            
-            total_loss = total_loss + behavior_loss + retain_loss
-        
+
+        total_loss = _grom_training_step(
+            gate_network, sensor_pos, sensor_neg, gate_temperature,
+            create_gate_threshold, layer_order, directions,
+            direction_weights, all_pos, all_neg, retain_weight,
+        )
+        current_loss = total_loss.item()
+        if torch.isnan(total_loss) or torch.isinf(total_loss):
+            print(f"      Step {step}: NaN/Inf detected, reverting to best state")
+            break
+
         total_loss.backward()
+        for p in all_params:
+            if p.grad is not None:
+                p.grad = torch.nan_to_num(p.grad)
         torch.nn.utils.clip_grad_norm_(all_params, max_norm=max_grad_norm)
         optimizer.step()
-        
+
+        if current_loss < best_loss:
+            best_loss = current_loss
+            best_state = {
+                "directions": {l: p.detach().clone() for l, p in directions.items()},
+                "dw": {l: p.detach().clone() for l, p in direction_weights.items()},
+                "gate": gate_network.state_dict(),
+                "intensity": intensity_network.state_dict(),
+            }
         if step % log_interval == RECURSION_INITIAL_DEPTH:
-            print(f"      Step {step}: loss={total_loss.item():.4f}")
+            print(f"      Step {step}: loss={current_loss:.4f}")
+
+    if best_state is not None:
+        for l in directions:
+            directions[l].data.copy_(best_state["directions"][l])
+            direction_weights[l].data.copy_(best_state["dw"][l])
+        gate_network.load_state_dict(best_state["gate"])
+        intensity_network.load_state_dict(best_state["intensity"])
     
     # Finalize directions
     final_directions = {}
