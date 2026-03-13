@@ -138,34 +138,43 @@ class MLPMethod(PerLayerBaseSteeringMethod):
         
         mlp.train()
         best_loss = float('inf')
-        patience_counter = 0
+        patience_counter = _C.RECURSION_INITIAL_DEPTH
         patience = int(_require("mlp_early_stopping_patience", self.kwargs))
-        
+
         for epoch in range(epochs):
             optimizer.zero_grad()
             logits = mlp(X)
             loss = F.binary_cross_entropy_with_logits(logits, y)
+
+            if not torch.isfinite(loss):
+                break
+
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(mlp.parameters(), max_norm=float(_C.COMBO_OFFSET))
             optimizer.step()
             scheduler.step()
-            
-            # Early stopping
-            if loss.item() < best_loss - early_stop_tol:
-                best_loss = loss.item()
-                patience_counter = 0
+
+            current_loss = loss.item()
+            if current_loss < best_loss - early_stop_tol:
+                best_loss = current_loss
+                patience_counter = _C.RECURSION_INITIAL_DEPTH
             else:
-                patience_counter += 1
+                patience_counter += _C.COMBO_OFFSET
                 if patience_counter >= patience:
                     break
-        
+
         # Extract adversarial gradient direction
         mlp.eval()
         steering_vector = self._extract_adversarial_direction(mlp, pos, neg)
-        
+
+        # Fall back to CAA direction if MLP produced NaN
+        if not torch.isfinite(steering_vector).all():
+            steering_vector = pos.mean(dim=_C.RECURSION_INITIAL_DEPTH) - neg.mean(dim=_C.RECURSION_INITIAL_DEPTH)
+
         # Normalize if requested
         if self.kwargs.get("normalize", get_optimal("normalize")):
-            steering_vector = F.normalize(steering_vector, dim=0)
-        
+            steering_vector = F.normalize(steering_vector, dim=_C.RECURSION_INITIAL_DEPTH)
+
         return steering_vector
     
     def _extract_adversarial_direction(
