@@ -1,10 +1,9 @@
 """HuggingFace Hub upload functions for activation data."""
 import json
 import os
-import time
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import torch
 from wisent.core.utils.config_tools.constants import JSON_INDENT
@@ -37,22 +36,6 @@ def _get_api():
     return HfApi(token=_get_hf_token())
 
 
-def _retry_upload(fn, max_retries: int, base_wait: int, backoff_max_exponent: int, jitter_min: float, jitter_max: float, retryable_patterns: Tuple[str, ...]):
-    """Call fn(); on 429/412/timeout, back off and retry."""
-    import random
-    for attempt in range(max_retries):
-        try:
-            return fn()
-        except Exception as exc:
-            msg = str(exc)
-            retryable = any(k in msg for k in retryable_patterns)
-            if not retryable or attempt == max_retries - 1:
-                raise
-            wait = int(base_wait * (2 ** min(attempt, backoff_max_exponent)) * random.uniform(jitter_min, jitter_max))
-            print(f"  Retryable error. Waiting {wait}s (attempt {attempt + 1}/{max_retries})...")
-            time.sleep(wait)
-
-
 def upload_activation_shard(
     model_name: str,
     benchmark: str,
@@ -61,7 +44,6 @@ def upload_activation_shard(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
     pair_ids: List[int],
-    hf_retry_config: Dict,
     dry_run: bool = False,
     staging_dir: Optional[str] = None,
 ) -> str:
@@ -95,10 +77,10 @@ def upload_activation_shard(
     try:
         save_file(tensors, tmp_path, metadata=metadata)
         api = _get_api()
-        _retry_upload(lambda: api.upload_file(
+        api.upload_file(
             path_or_fileobj=tmp_path, path_in_repo=hf_path,
             repo_id=HF_REPO_ID, repo_type=HF_REPO_TYPE,
-        ), **hf_retry_config)
+        )
         print(f"  Uploaded {hf_path} ({n_pairs} pairs, dim={dim})")
     finally:
         Path(tmp_path).unlink(missing_ok=True)
@@ -114,7 +96,6 @@ def upload_raw_activation_shard(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
     pair_ids: List[int],
-    hf_retry_config: Dict,
     dry_run: bool = False,
     staging_dir: Optional[str] = None,
 ) -> str:
@@ -146,10 +127,10 @@ def upload_raw_activation_shard(
     try:
         save_file(tensors, tmp_path, metadata=metadata)
         api = _get_api()
-        _retry_upload(lambda: api.upload_file(
+        api.upload_file(
             path_or_fileobj=tmp_path, path_in_repo=hf_path,
             repo_id=HF_REPO_ID, repo_type=HF_REPO_TYPE,
-        ), **hf_retry_config)
+        )
         print(f"  Uploaded {hf_path} ({len(pair_ids)} pairs)")
     finally:
         Path(tmp_path).unlink(missing_ok=True)
@@ -159,7 +140,6 @@ def upload_raw_activation_shard(
 def upload_pair_texts(
     benchmark: str,
     pairs: Dict[int, Dict[str, str]],
-    hf_retry_config: Dict,
     dry_run: bool = False,
     staging_dir: Optional[str] = None,
 ) -> str:
@@ -182,25 +162,25 @@ def upload_pair_texts(
         tmp_path = tmp.name
     try:
         api = _get_api()
-        _retry_upload(lambda: api.upload_file(
+        api.upload_file(
             path_or_fileobj=tmp_path, path_in_repo=hf_path,
             repo_id=HF_REPO_ID, repo_type=HF_REPO_TYPE,
-        ), **hf_retry_config)
+        )
         print(f"  Uploaded {hf_path} ({len(pairs)} pairs)")
     finally:
         Path(tmp_path).unlink(missing_ok=True)
     return hf_path
 
 
-def flush_staging_dir(staging_dir: str, hf_retry_config: Dict, path_in_repo: str = "."):
+def flush_staging_dir(staging_dir: str, path_in_repo: str = "."):
     """Upload everything in staging_dir as a single commit."""
     api = _get_api()
-    _retry_upload(lambda: api.upload_folder(
+    api.upload_folder(
         folder_path=staging_dir,
         path_in_repo=path_in_repo,
         repo_id=HF_REPO_ID,
         repo_type=HF_REPO_TYPE,
-    ), **hf_retry_config)
+    )
     print(f"  Flushed staging dir to HF ({path_in_repo})")
 
 
@@ -209,7 +189,6 @@ def write_marker(
     benchmark: str,
     strategy: str,
     layers: List[int],
-    hf_retry_config: Dict,
     dry_run: bool = False,
 ) -> None:
     """Write a per-combo marker file (markers/{safe_model}/{benchmark}/{strategy}.json)."""
@@ -226,16 +205,16 @@ def write_marker(
         tmp_path = tmp.name
     try:
         api = _get_api()
-        _retry_upload(lambda: api.upload_file(
+        api.upload_file(
             path_or_fileobj=tmp_path, path_in_repo=marker_path,
             repo_id=HF_REPO_ID, repo_type=HF_REPO_TYPE,
-        ), **hf_retry_config)
+        )
         print(f"  Wrote marker: {marker_path} -> {payload}")
     finally:
         Path(tmp_path).unlink(missing_ok=True)
 
 
-def consolidate_index(hf_retry_config: Dict, dry_run: bool = False) -> Dict[str, List[int]]:
+def consolidate_index(dry_run: bool = False) -> Dict[str, List[int]]:
     """Build unified index.json from all marker files and upload it."""
     from huggingface_hub import HfApi
 
@@ -246,10 +225,14 @@ def consolidate_index(hf_retry_config: Dict, dry_run: bool = False) -> Dict[str,
         path_in_repo="markers",
         recursive=True,
     )
-    marker_paths = [
-        f.rpath for f in all_files
-        if hasattr(f, "rpath") and f.rpath.endswith(".json")
-    ]
+    marker_paths = []
+    all_files_list = list(all_files)
+    print(f"list_repo_tree returned {len(all_files_list)} items")
+    for f in all_files_list:
+        p = getattr(f, "path", None) or getattr(f, "rpath", None)
+        print(f"  item: type={type(f).__name__} path={p}")
+        if p and p.endswith(".json"):
+            marker_paths.append(p)
     print(f"Found {len(marker_paths)} marker files")
     index: Dict[str, List[int]] = {}
     from huggingface_hub import hf_hub_download
@@ -281,10 +264,10 @@ def consolidate_index(hf_retry_config: Dict, dry_run: bool = False) -> Dict[str,
         json.dump(index, tmp, indent=JSON_INDENT)
         tmp_path = tmp.name
     try:
-        _retry_upload(lambda: api.upload_file(
+        api.upload_file(
             path_or_fileobj=tmp_path, path_in_repo="index.json",
             repo_id=HF_REPO_ID, repo_type=HF_REPO_TYPE,
-        ), **hf_retry_config)
+        )
         print(f"  Uploaded consolidated index.json")
     finally:
         Path(tmp_path).unlink(missing_ok=True)
