@@ -100,9 +100,7 @@ _APP_CSS = (
 
 def create_app() -> gr.Blocks:
     """Create and return the Gradio Blocks application."""
-    with gr.Blocks(
-        title=_APP_TITLE, theme=_build_theme(), css=_APP_CSS,
-    ) as app:
+    with gr.Blocks(title=_APP_TITLE) as app:
         build_interface()
     return app
 
@@ -119,7 +117,9 @@ def launch(**kwargs):
         "server_port": GRADIO_SERVER_PORT,
     }
     defaults.update(kwargs)
-    app.launch(ssr_mode=False, **defaults)
+    app.launch(
+        theme=_build_theme(), css=_APP_CSS, ssr_mode=False, **defaults,
+    )
 
 
 if __name__ == "__main__":
