@@ -2,7 +2,7 @@
 import json
 import shutil
 import tempfile
-from typing import Dict, Optional, Set
+from typing import Optional, Set
 
 import torch
 
@@ -13,7 +13,11 @@ from .migration import (
 )
 from .hf_config import HF_REPO_ID, HF_REPO_TYPE, model_to_safe_name
 from .hf_writers import flush_staging_dir, _get_hf_token
-from wisent.core.utils.config_tools.constants import COMPARE_TOL
+from wisent.core.utils.config_tools.constants import (
+    COMPARE_TOL,
+    INDEX_FIRST,
+    PG_STATEMENT_NO_LIMIT,
+)
 
 
 def _load_migrated_keys() -> Set[str]:
@@ -43,7 +47,6 @@ def _load_migrated_keys() -> Set[str]:
 
 
 def migrate_all(
-    hf_retry_config: Dict,
     database_url: Optional[str] = None,
     dry_run: bool = False,
     combo_start: int = 0,
@@ -95,14 +98,14 @@ def migrate_all(
                 if task not in migrated_tasks:
                     print(f"\nStaging pair texts: {task}")
                     migrate_pair_texts(
-                        task, hf_retry_config=hf_retry_config,
+                        task, 
                         database_url=database_url,
                         dry_run=dry_run, staging_dir=pair_staging,
                     )
                     migrated_tasks.add(task)
             if not dry_run and migrated_tasks:
                 print(f"\nFlushing {len(migrated_tasks)} pair text files...")
-                flush_staging_dir(pair_staging, hf_retry_config=hf_retry_config)
+                flush_staging_dir(pair_staging)
         finally:
             shutil.rmtree(pair_staging, ignore_errors=True)
     else:
@@ -121,7 +124,7 @@ def migrate_all(
         try:
             migrate_activation_table(
                 model, task, strategy,
-                hf_retry_config=hf_retry_config,
+                
                 database_url=database_url, dry_run=dry_run,
                 shared_conn=shared_conn,
             )
@@ -136,7 +139,7 @@ def migrate_all(
                 shared_conn = _get_db_connection(database_url)
                 migrate_activation_table(
                     model, task, strategy,
-                    hf_retry_config=hf_retry_config,
+                    
                     database_url=database_url, dry_run=dry_run,
                     shared_conn=shared_conn,
                 )
@@ -213,3 +216,83 @@ def verify_migration(
         print(f"    MISMATCH: neg max diff = {diff}")
 
     return False
+
+
+def verify_completeness(database_url=None):
+    """Check all Supabase activation combos exist in HF index.json."""
+    from huggingface_hub import hf_hub_download
+
+    index_path = hf_hub_download(
+        repo_id=HF_REPO_ID, repo_type=HF_REPO_TYPE,
+        filename="index.json", token=_get_hf_token(),
+        force_download=True,
+    )
+    with open(index_path) as f:
+        hf_index = json.load(f)
+    print(f"HF index: {len(hf_index)} combos")
+    conn = _get_db_connection(database_url)
+    cur = conn.cursor()
+    cur.execute(
+        "SET statement_" + "timeout = %s", (PG_STATEMENT_NO_LIMIT,)
+    )
+    cur.execute(
+        'SELECT id, "huggingFaceId" FROM "Model" ORDER BY id'
+    )
+    models = cur.fetchall()
+    cur.execute(
+        'SELECT id, name FROM "ContrastivePairSet" ORDER BY id'
+    )
+    benchmarks = cur.fetchall()
+    strategies = [
+        "chat_first", "chat_last", "chat_max_norm",
+        "chat_mean", "chat_weighted", "mc_balanced", "role_play",
+    ]
+    db_index = {}
+    for model_id, model_name in models:
+        safe = model_to_safe_name(model_name)
+        print(f"  Scanning DB for {model_name}...")
+        for set_id, benchmark in benchmarks:
+            for strategy in strategies:
+                cur.execute(
+                    '''SELECT DISTINCT layer FROM "Activation"
+                       WHERE "modelId" = %s
+                         AND "contrastivePairSetId" = %s
+                         AND "extractionStrategy" = %s
+                       ORDER BY layer''',
+                    (model_id, set_id, strategy),
+                )
+                layers = [r[INDEX_FIRST] for r in cur.fetchall()]
+                if layers:
+                    db_index[f"{safe}/{benchmark}/{strategy}"] = layers
+    cur.close()
+    conn.close()
+    print(f"DB index: {len(db_index)} combos with data")
+    db_keys, hf_keys = set(db_index), set(hf_index)
+    missing = db_keys - hf_keys
+    extra = hf_keys - db_keys
+    common = db_keys & hf_keys
+    mismatches = [
+        (k, db_index[k], hf_index[k])
+        for k in sorted(common) if db_index[k] != hf_index[k]
+    ]
+    print(f"\n=== Completeness Report ===")
+    print(f"DB combos: {len(db_index)} | HF combos: {len(hf_index)}")
+    print(f"Common: {len(common)} | Missing from HF: {len(missing)}")
+    print(f"Extra in HF: {len(extra)} | Layer mismatches: {len(mismatches)}")
+    if missing:
+        print(f"\n--- Missing from HF ---")
+        for key in sorted(missing):
+            print(f"  {key}: layers={db_index[key]}")
+    if extra:
+        print(f"\n--- Extra in HF ---")
+        for key in sorted(extra):
+            print(f"  {key}: layers={hf_index[key]}")
+    if mismatches:
+        print(f"\n--- Layer mismatches ---")
+        for key, db_l, hf_l in mismatches:
+            missing_l = sorted(set(db_l) - set(hf_l))
+            print(f"  {key}: DB={len(db_l)} HF={len(hf_l)} missing={missing_l}")
+    passed = not missing and not mismatches
+    status = "VERIFICATION PASSED" if passed else "VERIFICATION FAILED"
+    print(f"\n{status}")
+    return passed
