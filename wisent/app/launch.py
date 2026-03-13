@@ -18,6 +18,9 @@ from wisent.core.utils.config_tools.constants import (
     WISENT_COLOR_LIGHT_TEXT,
     WISENT_COLOR_LIGHT_TEXT_MUTED,
     WISENT_COLOR_MINT_ACCENT_DARK,
+    WISENT_COLOR_NEUTRAL_200,
+    WISENT_COLOR_NEUTRAL_400,
+    WISENT_COLOR_NEUTRAL_500,
 )
 
 
@@ -42,16 +45,16 @@ def _build_theme():
         ),
         neutral_hue=gr.themes.Color(
             c50=WISENT_COLOR_LIGHT_BG,
-            c100=WISENT_COLOR_LIGHT_SURFACE,
-            c200=WISENT_COLOR_LIGHT_TEXT_MUTED,
+            c100=WISENT_COLOR_TEXT_LIGHT,
+            c200=WISENT_COLOR_NEUTRAL_200,
             c300=WISENT_COLOR_TEXT_MUTED,
-            c400=WISENT_COLOR_TEXT_MUTED,
-            c500=WISENT_COLOR_DARK_SURFACE,
-            c600=WISENT_COLOR_CHARCOAL,
-            c700=WISENT_COLOR_CHARCOAL,
-            c800=WISENT_COLOR_DARK_BG,
+            c400=WISENT_COLOR_NEUTRAL_400,
+            c500=WISENT_COLOR_NEUTRAL_500,
+            c600=WISENT_COLOR_LIGHT_TEXT_MUTED,
+            c700=WISENT_COLOR_DARK_SURFACE,
+            c800=WISENT_COLOR_CHARCOAL,
             c900=WISENT_COLOR_DARK_BG,
-            c950=WISENT_COLOR_DARK_BG,
+            c950=WISENT_COLOR_LIGHT_TEXT,
         ),
     ).set(
         body_background_fill=WISENT_COLOR_LIGHT_BG,
