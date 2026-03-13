@@ -136,6 +136,17 @@ def setup_migrate_activations_parser(parser):
     )
     _add_hf_retry_args(raw_parser)
 
+    # verify-completeness - check all DB combos exist in HF
+    vc_parser = subparsers.add_parser(
+        "verify-completeness",
+        help="Check all Supabase activation combos exist in HF index",
+    )
+    vc_parser.add_argument(
+        "--database-url", type=str, default=None,
+        help="Database URL (defaults to DATABASE_URL env var)",
+    )
+    _add_hf_retry_args(vc_parser)
+
     # verify - verify migration for a single layer
     verify_parser = subparsers.add_parser(
         "verify", help="Verify HF data matches Supabase"
