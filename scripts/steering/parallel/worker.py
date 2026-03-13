@@ -21,7 +21,8 @@ from pathlib import Path
 
 from wisent.core.utils.config_tools.constants import (
     EXIT_CODE_ERROR, INDEX_FIRST, JSON_INDENT,
-    N_JOBS_SINGLE, SPLIT_RATIO_TRAIN_DEFAULT,
+    MB_PER_GB, N_JOBS_SINGLE, OPTUNA_BACKEND_NAME,
+    SPLIT_RATIO_TRAIN_DEFAULT,
 )
 from wisent.core.utils.cli.optimize_steering.search_space import (
     get_method_space,
@@ -51,11 +52,8 @@ def _require_env(name: str) -> str:
 
 
 def _gcs_upload(local_path: str, gcs_path: str):
-    cmd = ["gcloud", "storage", "cp"]
-    if os.path.isdir(local_path):
-        cmd.append("-r")
-    cmd.extend([local_path, gcs_path])
-    subprocess.run(cmd, check=True)
+    cmd = ["gcloud", "storage", "cp"] + (["-r"] if os.path.isdir(local_path) else [])
+    subprocess.run(cmd + [local_path, gcs_path], check=True)
 
 
 def _run_single_method(
@@ -64,8 +62,12 @@ def _run_single_method(
     trials_mult, backend, output_dir, gpu_id=None,
 ) -> dict:
     """Run optimization for one method. All args are primitives for spawn."""
+    import torch
     if gpu_id is not None:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
+    has_gpu = torch.cuda.is_available()
+    if has_gpu:
+        torch.cuda.reset_peak_memory_stats()
     method_upper = method.upper()
     space = get_method_space(method_upper, num_layers)
     n_trials = len(space) * trials_mult
@@ -90,7 +92,8 @@ def _run_single_method(
             src = os.path.join(workspace, fname)
             if os.path.exists(src):
                 shutil.copy2(src, os.path.join(trial_dir, fname))
-        meta = {"params": params, "score": score, "trial": trial_idx}
+        peak_mb = torch.cuda.max_memory_reserved() // MB_PER_GB // MB_PER_GB if has_gpu else None
+        meta = {"params": params, "score": score, "trial": trial_idx, "reserved_gpu_mb": peak_mb}
         with open(os.path.join(trial_dir, "trial_meta.json"), "w") as f:
             json.dump(meta, f, indent=JSON_INDENT, default=str)
         return score
@@ -100,13 +103,14 @@ def _run_single_method(
     optimizer.direction = "maximize"
     result = optimizer.optimize_fn(
         persisted_objective, space, n_trials,
-        cfg=HPOConfig(backend=backend),
+        cfg=HPOConfig(backend=OPTUNA_BACKEND_NAME),
     )
+    peak_mb = torch.cuda.max_memory_reserved() // MB_PER_GB // MB_PER_GB if has_gpu else None
     return {
         "method": method, "best_score": result.best_score,
         "best_params": result.best_params, "n_trials": result.n_trials,
         "backend": result.backend, "all_trials": result.all_trials,
-        "time_seconds": time.time() - method_start,
+        "time_seconds": time.time() - method_start, "reserved_gpu_mb": peak_mb,
     }
 
 
@@ -176,24 +180,12 @@ def _save_and_upload(
     output_dir, method, result_dict, baseline_score, gcs_base,
 ):
     """Save method result summary and upload to GCS."""
-    delta = result_dict["best_score"] - baseline_score
-    summary = {
-        "method": result_dict["method"],
-        "best_score": result_dict["best_score"],
-        "best_params": result_dict["best_params"],
-        "n_trials": result_dict["n_trials"],
-        "backend": result_dict["backend"],
-        "time_seconds": result_dict["time_seconds"],
-        "all_trials": result_dict["all_trials"],
-        "baseline_score": baseline_score,
-        "delta": delta,
-    }
-    summary_path = os.path.join(output_dir, "method_result.json")
-    with open(summary_path, "w") as f:
+    summary = dict(result_dict, baseline_score=baseline_score,
+                   delta=result_dict["best_score"] - baseline_score)
+    with open(os.path.join(output_dir, "method_result.json"), "w") as f:
         json.dump(summary, f, indent=JSON_INDENT, default=str)
-    method_upper = method.upper()
-    print(f"\n  {method_upper}: score={result_dict['best_score']:.4f} "
-          f"delta={delta:+.4f} in {result_dict['time_seconds']:.1f}s")
+    print(f"\n  {method.upper()}: score={result_dict['best_score']:.4f} "
+          f"delta={summary['delta']:+.4f} reserved_gpu_mb={result_dict.get('reserved_gpu_mb')}")
     gcs_method = f"{gcs_base}/methods/{method}/"
     _gcs_upload(output_dir, gcs_method)
     print(f"  Uploaded to {gcs_method}")
@@ -291,7 +283,6 @@ def _run_baseline(model_name, benchmark, test_file):
     print("  Generating baseline (no cache found)...")
     acc, _, _ = baseline_cache.generate_and_upload_baseline(
         model_name, benchmark, test_file, None,
-        baseline_cache.build_default_hf_retry_config(),
     )
     return acc
 
