@@ -34,6 +34,7 @@ setup(
             "scripts/*.sh",
             "core/control/steering_methods/configs/*.json",
             "app/*.png",
+            "app/icons/*.svg",
         ],
     },
     classifiers=[
