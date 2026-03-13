@@ -175,8 +175,9 @@ PRESETS = (
     ),
     (
         "Diagnose the representation of Livecodebench",
-        "diagnose-vectors",
-        "Analyze a steering vector trained on Livecodebench: activation "
-        "separability, direction stability, and layer interference.",
+        "zwiad",
+        "Run full Zwiad geometry analysis on the Livecodebench "
+        "representation: layer sensitivity, method comparison, and "
+        "similarity heatmaps.",
     ),
 )
