@@ -2,7 +2,7 @@
 
 import gradio as gr
 from wisent.app.ui.interface import build_interface
-from wisent import constants as _C
+from wisent.core.utils.config_tools import constants as _C
 
 
 _APP_TITLE = "Wisent - World's Best AI through Representation Engineering"
