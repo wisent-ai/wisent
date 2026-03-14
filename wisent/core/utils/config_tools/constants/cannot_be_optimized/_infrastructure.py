@@ -212,7 +212,3 @@ DEGEN_NGRAM_SIZE = 4
 DEGEN_MAX_REPEATS = 3
 DEGEN_WINDOW_SIZE = 50
 DEGEN_DIVERSITY_THRESHOLD = 0.4
-# --- GPU memory fragmentation overhead ---
-# PyTorch CUDA allocator fragmentation + steering object overhead.
-# Accounts for memory not captured by weights+KV+context formula.
-GPU_FRAGMENTATION_OVERHEAD_FACTOR = 1.5
