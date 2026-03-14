@@ -7,15 +7,7 @@ goal/subgoal wizard for browsing all commands.
 import os
 
 import gradio as gr
-from wisent.core.utils.config_tools.constants import (
-    INDEX_FIRST,
-    PRESET_CARD_ICON_SIZE_PX,
-    PRESET_CARD_TITLE_SIZE_PX,
-    PRESET_CARD_DESC_SIZE_PX,
-    PRESET_CARD_GAP_PX,
-    WISENT_COLOR_MINT,
-    WISENT_COLOR_TEXT_MUTED,
-)
+from wisent.core.utils.config_tools.constants import INDEX_FIRST
 from wisent.app.ui.wiring.recommendations import (
     GOALS, SUBGOALS, RECOMMENDATIONS, PRESETS,
 )
@@ -37,16 +29,9 @@ def _card_html(icon_svg, title, description):
     """Build the HTML for a single preset card."""
     return (
         f'<div class="preset-card">'
-        f'<div style="color:{WISENT_COLOR_MINT};'
-        f'width:{PRESET_CARD_ICON_SIZE_PX}px;'
-        f'height:{PRESET_CARD_ICON_SIZE_PX}px;'
-        f'margin:{INDEX_FIRST} auto {PRESET_CARD_GAP_PX}px auto;">'
-        f'{icon_svg}</div>'
-        f'<div style="font-weight:bold;'
-        f'font-size:{PRESET_CARD_TITLE_SIZE_PX}px;'
-        f'margin-bottom:{PRESET_CARD_GAP_PX}px;">{title}</div>'
-        f'<div style="font-size:{PRESET_CARD_DESC_SIZE_PX}px;'
-        f'color:{WISENT_COLOR_TEXT_MUTED};">{description}</div>'
+        f'<div class="pc-icon">{icon_svg}</div>'
+        f'<div class="pc-title">{title}</div>'
+        f'<div class="pc-desc">{description}</div>'
         f'</div>'
     )
 
