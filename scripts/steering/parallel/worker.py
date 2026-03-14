@@ -1,12 +1,7 @@
 """Worker for GCP steering optimization (single or multi-method).
 
-Loads pairs from storage, runs optimization, uploads results to GCS.
-Supports comma-separated METHOD for parallel multi-method runs on one
-instance using ProcessPoolExecutor with spawn context for CUDA isolation.
-
-Environment variables (all required):
-    MODEL_NAME, BENCHMARK, METHOD (comma-separated),
-    JOB_ID, TRIALS_MULTIPLIER, BACKEND, GCS_BUCKET
+Loads pairs, runs optimization, uploads results to GCS.
+Env vars: MODEL_NAME, BENCHMARK, METHOD, JOB_ID, TRIALS_MULTIPLIER, BACKEND, GCS_BUCKET
 """
 import concurrent.futures
 import gc
@@ -23,7 +18,7 @@ from pathlib import Path
 from wisent.core.utils.config_tools.constants import (
     EXIT_CODE_ERROR, INDEX_FIRST, JSON_INDENT,
     MB_PER_GB, N_JOBS_SINGLE, OPTUNA_BACKEND_NAME,
-    SPLIT_RATIO_TRAIN_DEFAULT,
+    SCORE_RANGE_MIN, SPLIT_RATIO_TRAIN_DEFAULT,
 )
 from wisent.core.utils.cli.optimize_steering.search_space import (
     get_method_space,
@@ -84,7 +79,14 @@ def _run_single_method(
     trial_counter = []
 
     def persisted_objective(params):
-        score = objective(params)
+        try:
+            score = objective(params)
+        except torch.cuda.OutOfMemoryError:
+            print(f"  OOM on trial {len(trial_counter)}, returning min score")
+            if has_gpu:
+                torch.cuda.empty_cache()
+            gc.collect()
+            score = SCORE_RANGE_MIN
         trial_idx = len(trial_counter)
         trial_counter.append(trial_idx)
         trial_dir = os.path.join(trials_dir, f"trial_{trial_idx:04d}")
@@ -112,23 +114,18 @@ def _run_single_method(
         persisted_objective, space, n_trials,
         cfg=HPOConfig(backend=OPTUNA_BACKEND_NAME),
     )
-    peak_mb = torch.cuda.max_memory_reserved() // MB_PER_GB // MB_PER_GB if has_gpu else None
-    alloc_mb = torch.cuda.max_memory_allocated() // MB_PER_GB // MB_PER_GB if has_gpu else None
     return {
         "method": method, "best_score": result.best_score,
         "best_params": result.best_params, "n_trials": result.n_trials,
         "backend": result.backend, "all_trials": result.all_trials,
         "time_seconds": time.time() - method_start,
-        "reserved_gpu_mb": peak_mb, "allocated_gpu_mb": alloc_mb,
+        "reserved_gpu_mb": torch.cuda.max_memory_reserved() // MB_PER_GB // MB_PER_GB if has_gpu else None,
+        "allocated_gpu_mb": torch.cuda.max_memory_allocated() // MB_PER_GB // MB_PER_GB if has_gpu else None,
     }
 
 
 def _detect_gpu_layout(model_name):
-    """Detect GPU count and compute workers per GPU and total.
-
-    If model exceeds single-GPU VRAM, all GPUs serve one copy
-    via tensor parallelism — only one worker fits.
-    """
+    """Detect GPU count and compute workers per GPU and total."""
     import torch
     num_gpus = max(N_JOBS_SINGLE, torch.cuda.device_count())
     per_worker_mb = estimate_model_memory_mb(model_name)
