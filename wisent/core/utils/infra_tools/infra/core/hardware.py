@@ -8,12 +8,19 @@ from functools import lru_cache
 
 from wisent.core.utils.config_tools.constants import (
     FP16_GB_PER_BILLION_PARAMS,
+    FP16_BYTES,
+    KV_PAIR_FACTOR,
+    CUDA_CONTEXT_MB,
     GPU_FRAMEWORK_OVERHEAD_GB,
     MB_PER_GB,
     COMBO_OFFSET,
     TRANSFORMER_PARAM_FACTOR,
     PARAMS_PER_BILLION,
+    GENERATION_BATCH_SIZE,
+    GENERATION_DEFAULT_MAX_NEW_TOKENS,
+    GPU_FRAGMENTATION_OVERHEAD_FACTOR,
 )
+from wisent.core.utils.config_tools.constants.validated._validated import BYTES_PER_MB
 
 
 @dataclass(frozen=True)
@@ -218,15 +225,46 @@ def _estimate_params_from_config(model_name: str) -> float:
     raise ValueError(f"Cannot estimate parameters for {model_name}")
 
 
+def calculate_peak_gpu_mb(
+    model_name: str, seq_len: int, batch_size: int,
+) -> int:
+    """Peak allocated GPU MB: weights + KV cache + CUDA context.
+
+    Decode attention is [B,H,COMBO_OFFSET,T] — linear, negligible.
+    """
+    from transformers import AutoConfig
+    cfg = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
+    n_layers = getattr(cfg, "num_hidden_layers", None)
+    n_kv = getattr(cfg, "num_key_value_heads", None) or getattr(
+        cfg, "num_attention_heads", None,
+    )
+    h_dim = getattr(cfg, "head_dim", None)
+    if h_dim is None and getattr(cfg, "hidden_size", None) and n_kv:
+        h_dim = cfg.hidden_size // getattr(cfg, "num_attention_heads", n_kv)
+    weights_mb = int(
+        _extract_param_billions(model_name)
+        * FP16_GB_PER_BILLION_PARAMS * MB_PER_GB
+    )
+    kv_mb = (
+        n_layers * KV_PAIR_FACTOR * n_kv * h_dim
+        * seq_len * batch_size * FP16_BYTES // BYTES_PER_MB
+        if all((n_layers, n_kv, h_dim))
+        else GPU_FRAMEWORK_OVERHEAD_GB * MB_PER_GB
+    )
+    return weights_mb + kv_mb + CUDA_CONTEXT_MB
+
+
 def estimate_model_memory_mb(model_name: str) -> int:
-    """Estimate per-worker GPU memory in MB for a model."""
-    params_b = _extract_param_billions(model_name)
-    memory_gb = params_b * FP16_GB_PER_BILLION_PARAMS + GPU_FRAMEWORK_OVERHEAD_GB
-    return int(memory_gb * MB_PER_GB)
+    """Per-worker worst-case estimate using max generation length."""
+    base = calculate_peak_gpu_mb(
+        model_name, seq_len=GENERATION_DEFAULT_MAX_NEW_TOKENS,
+        batch_size=GENERATION_BATCH_SIZE,
+    )
+    return int(base * GPU_FRAGMENTATION_OVERHEAD_FACTOR)
 
 
 def estimate_max_gpu_workers(model_name: str) -> int:
-    """Estimate max parallel workers fitting on the current GPU."""
+    """Max parallel workers fitting on the current GPU."""
     res = detect_system_resources()
     if not res.gpu_mem_mb:
         return COMBO_OFFSET
