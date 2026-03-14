@@ -1,5 +1,6 @@
 """Pipeline and objective function for steering optimization."""
 import argparse
+import gc
 import json
 import os
 import time
@@ -22,6 +23,7 @@ from wisent.core.utils.config_tools.constants import (
     GENERATION_DEFAULT_TEMPERATURE, GENERATION_DEFAULT_TOP_P,
     EVAL_F1_THRESHOLD, EVAL_GENERATION_EMBEDDING_WEIGHT,
     EVAL_GENERATION_NLI_WEIGHT, SPLIT_RATIO_TRAIN_DEFAULT,
+    METHODS_REQUIRING_QK_CAPTURE,
 )
 from wisent.core.control.steering_methods.configs.optimal import get_optimal, get_optimal_extraction_strategy
 
@@ -80,15 +82,18 @@ def run_pipeline(
         layer = getattr(config, 'layer', None) or getattr(config, 'sensor_layer', None)
         if layer is None:
             raise ValueError("Config must specify 'layer' or 'sensor_layer'")
-        from wisent.core.reading.modules.utilities.data.enriched_builder import (
-            build_enriched_from_hf, build_enriched_from_db,
-        )
-        cached = build_enriched_from_hf(
-            model, task, layer, config.extraction_strategy, work_dir,
-            train_pairs_file=train_pairs_file, limit=limit)
-        if not cached:
-            cached = build_enriched_from_db(
-                model, task, work_dir, config.extraction_strategy, limit=limit)
+        needs_qk = config.method in METHODS_REQUIRING_QK_CAPTURE
+        cached = None
+        if not needs_qk:
+            from wisent.core.reading.modules.utilities.data.enriched_builder import (
+                build_enriched_from_hf, build_enriched_from_db,
+            )
+            cached = build_enriched_from_hf(
+                model, task, layer, config.extraction_strategy, work_dir,
+                train_pairs_file=train_pairs_file, limit=limit)
+            if not cached:
+                cached = build_enriched_from_db(
+                    model, task, work_dir, config.extraction_strategy, limit=limit)
         if cached:
             activations_file = cached
         else:
@@ -180,6 +185,9 @@ def run_pipeline(
         f"eval={eval_elapsed:.1f}s)",
         flush=True,
     )
+    gc.collect()
+    from wisent.core.utils.infra_tools.infra import empty_device_cache
+    empty_device_cache()
     return OptimizationResult(config=config, score=score, details=scores_data)
 
 

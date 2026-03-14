@@ -9,6 +9,7 @@ Environment variables (all required):
     JOB_ID, TRIALS_MULTIPLIER, BACKEND, GCS_BUCKET
 """
 import concurrent.futures
+import gc
 import json
 import math
 import multiprocessing as mp
@@ -92,10 +93,16 @@ def _run_single_method(
             src = os.path.join(workspace, fname)
             if os.path.exists(src):
                 shutil.copy2(src, os.path.join(trial_dir, fname))
-        peak_mb = torch.cuda.max_memory_reserved() // MB_PER_GB // MB_PER_GB if has_gpu else None
-        meta = {"params": params, "score": score, "trial": trial_idx, "reserved_gpu_mb": peak_mb}
+        meta = {
+            "params": params, "score": score, "trial": trial_idx,
+            "reserved_gpu_mb": torch.cuda.max_memory_reserved() // MB_PER_GB // MB_PER_GB if has_gpu else None,
+            "allocated_gpu_mb": torch.cuda.max_memory_allocated() // MB_PER_GB // MB_PER_GB if has_gpu else None,
+        }
         with open(os.path.join(trial_dir, "trial_meta.json"), "w") as f:
             json.dump(meta, f, indent=JSON_INDENT, default=str)
+        if has_gpu:
+            torch.cuda.empty_cache()
+        gc.collect()
         return score
 
     method_start = time.time()
@@ -106,11 +113,13 @@ def _run_single_method(
         cfg=HPOConfig(backend=OPTUNA_BACKEND_NAME),
     )
     peak_mb = torch.cuda.max_memory_reserved() // MB_PER_GB // MB_PER_GB if has_gpu else None
+    alloc_mb = torch.cuda.max_memory_allocated() // MB_PER_GB // MB_PER_GB if has_gpu else None
     return {
         "method": method, "best_score": result.best_score,
         "best_params": result.best_params, "n_trials": result.n_trials,
         "backend": result.backend, "all_trials": result.all_trials,
-        "time_seconds": time.time() - method_start, "reserved_gpu_mb": peak_mb,
+        "time_seconds": time.time() - method_start,
+        "reserved_gpu_mb": peak_mb, "allocated_gpu_mb": alloc_mb,
     }
 
 
