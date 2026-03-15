@@ -37,6 +37,7 @@ from wisent.core.utils.infra_tools.infra.core.hardware import (
     estimate_max_gpu_workers,
     estimate_model_memory_mb,
 )
+from wisent.core.utils.services.benchmarks import validate_benchmark
 
 
 def _require_env(name: str) -> str:
@@ -200,6 +201,7 @@ def _save_and_upload(
 def main():
     model_name = _require_env("MODEL_NAME")
     benchmark = _require_env("BENCHMARK")
+    validate_benchmark(benchmark)
     method_str = _require_env("METHOD")
     job_id = _require_env("JOB_ID")
     trials_mult = int(_require_env("TRIALS_MULTIPLIER"))
@@ -289,6 +291,7 @@ def _run_baseline(model_name, benchmark, test_file):
     print("  Generating baseline (no cache found)...")
     acc, _, _ = baseline_cache.generate_and_upload_baseline(
         model_name, benchmark, test_file, None,
+        baseline_cache.build_default_hf_retry_config(),
     )
     return acc
 

@@ -81,6 +81,8 @@ def build_contrastive_pairs(
     """
     log = bind(_LOG, task=task_name or "unknown")
     log.info("Building contrastive pairs (unified)", extra={"limit": limit})
+    from wisent.core.utils.services.benchmarks import validate_benchmark
+    validate_benchmark(task_name)
     
     # Normalize limit
     max_items = None if (limit is None or limit <= 0) else int(limit)
