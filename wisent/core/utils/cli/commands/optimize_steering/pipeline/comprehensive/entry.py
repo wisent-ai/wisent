@@ -29,6 +29,9 @@ def execute_comprehensive_optimization(args) -> Dict[str, Any]:
     tasks = args.tasks
     if not tasks:
         raise ValueError("--tasks is required (no default task list)")
+    from wisent.core.utils.services.benchmarks import validate_benchmark
+    for t in tasks:
+        validate_benchmark(t)
 
     output_dir = args.output_dir
     os.makedirs(output_dir, exist_ok=True)

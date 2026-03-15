@@ -57,6 +57,7 @@
     "okapi/truthfulqa_multilingual",
     "simpleqa",
     "truthfulqa",
+    "truthfulqa_custom",
     "truthfulqa_generation"
   ],
   "instruction_following": [

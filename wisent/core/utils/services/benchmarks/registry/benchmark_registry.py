@@ -12,7 +12,7 @@ the codebase. It loads from the parameter files:
 import json
 import logging
 from pathlib import Path
-from typing import List, Tuple, Set
+from typing import Dict, List, Tuple, Set
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,8 @@ _benchmark_cache = {
     "lm_eval": None,
     "huggingface_only": None,
     "broken": None,
+    "working": None,
+    "working_categories": None,
 }
 
 
@@ -140,6 +142,66 @@ def is_huggingface_only_task(task_name: str) -> bool:
     return task_name.lower() in get_huggingface_only_tasks_set()
 
 
+def get_working_benchmarks() -> Set[str]:
+    """Get the set of all working benchmarks from working_benchmarks_categorized.json."""
+    if _benchmark_cache["working"] is not None:
+        return _benchmark_cache["working"]
+    params_dir = _get_params_dir()
+    path = params_dir / "working_benchmarks_categorized.json"
+    result = set()
+    if path.exists():
+        with open(path) as f:
+            data = json.load(f)
+        for tasks in data.values():
+            result.update(tasks)
+    _benchmark_cache["working"] = result
+    return result
+
+
+def get_working_benchmarks_with_categories() -> Dict[str, str]:
+    """Get {benchmark: category} mapping from working_benchmarks_categorized.json."""
+    if _benchmark_cache["working_categories"] is not None:
+        return _benchmark_cache["working_categories"]
+    params_dir = _get_params_dir()
+    path = params_dir / "working_benchmarks_categorized.json"
+    result = {}
+    if path.exists():
+        with open(path) as f:
+            data = json.load(f)
+        for category, tasks in data.items():
+            for task in tasks:
+                result[task] = category
+    _benchmark_cache["working_categories"] = result
+    return result
+
+
+def validate_benchmark(task_name: str) -> None:
+    """Validate that a benchmark is in the working benchmarks list.
+
+    Raises UnsupportedBenchmarkError if not found, with helpful context.
+    """
+    from wisent.core.utils.services.benchmarks.services.cache.download.managed_cached_benchmarks import (
+        UnsupportedBenchmarkError,
+    )
+    working = get_working_benchmarks()
+    if task_name in working:
+        return
+    lower_map = {t.lower(): t for t in working}
+    if task_name.lower() in lower_map:
+        return
+    broken = set(get_broken_tasks())
+    if task_name in broken:
+        raise UnsupportedBenchmarkError(
+            f"Benchmark '{task_name}' is known broken. "
+            f"See broken_in_lm_eval.json."
+        )
+    raise UnsupportedBenchmarkError(
+        f"Unknown benchmark '{task_name}'. "
+        f"Valid benchmarks: {len(working)} in "
+        f"working_benchmarks_categorized.json"
+    )
+
+
 def clear_cache():
     """Clear the benchmark cache (useful for testing)."""
     global _benchmark_cache
@@ -148,4 +210,6 @@ def clear_cache():
         "lm_eval": None,
         "huggingface_only": None,
         "broken": None,
+        "working": None,
+        "working_categories": None,
     }

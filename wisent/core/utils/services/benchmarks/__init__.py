@@ -21,8 +21,11 @@ from .benchmark_registry import (
     get_huggingface_only_tasks_set,
     get_broken_tasks,
     get_all_benchmarks,
+    get_working_benchmarks,
+    get_working_benchmarks_with_categories,
     load_all_benchmarks,
     is_huggingface_only_task,
+    validate_benchmark,
     clear_cache,
 )
 from .cache.download_full_benchmarks import (
@@ -52,8 +55,11 @@ __all__ = [
     'get_huggingface_only_tasks_set',
     'get_broken_tasks',
     'get_all_benchmarks',
+    'get_working_benchmarks',
+    'get_working_benchmarks_with_categories',
     'load_all_benchmarks',
     'is_huggingface_only_task',
+    'validate_benchmark',
     'clear_cache',
     'FullBenchmarkDownloader',
     'ManagedCachedBenchmarks',

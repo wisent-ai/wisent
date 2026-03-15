@@ -1,19 +1,11 @@
 """Find the best steering method for a given benchmark.
 
-Uses the BaseOptimizer with distribution-based search spaces
-to optimize each steering method independently and rank them.
-
-Generates ALL contrastive pairs once, splits into train/test,
-trains steering on train set, evaluates on held-out test set.
-
-Trials per method = dimensions * TRIALS_MULTIPLIER.
+Uses the BaseOptimizer with distribution-based search spaces to optimize
+each steering method independently and rank them. Generates ALL contrastive
+pairs once, splits into train/test, trains on train set, evaluates on test.
 
 Environment variables (all required):
-    MODEL_NAME: HuggingFace model ID
-    BENCHMARK: Benchmark task name
-    OUTPUT_DIR: Directory for results
-    TRIALS_MULTIPLIER: Trials per dimension
-    BACKEND: Optimizer backend ('hyperopt' or 'optuna')
+    MODEL_NAME, BENCHMARK, OUTPUT_DIR, TRIALS_MULTIPLIER, BACKEND
 """
 import json
 import math
@@ -47,6 +39,7 @@ from wisent.core.utils.services.optimization.core.atoms import (
     HPOConfig,
 )
 from wisent.core.utils.cli.optimize_steering.pipeline.comprehensive import baseline_cache
+from wisent.core.utils.services.benchmarks import validate_benchmark
 
 
 def _require_env(name: str) -> str:
@@ -60,6 +53,7 @@ def _require_env(name: str) -> str:
 def main():
     model_name = _require_env("MODEL_NAME")
     benchmark = _require_env("BENCHMARK")
+    validate_benchmark(benchmark)
     output_dir = _require_env("OUTPUT_DIR")
     trials_mult = int(_require_env("TRIALS_MULTIPLIER"))
     backend = _require_env("BACKEND")
