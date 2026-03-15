@@ -245,16 +245,11 @@ def profile_benchmark(
         v = metrics.get(key)
         if v is not None and isinstance(v, (int, float)):
             key_metrics[key] = float(v)
-    try:
-        from wisent.core.control.steering_method_score.scorer import top_method_names
-        rec_methods = top_method_names(key_metrics)
-    except Exception:
-        rec_methods = []
     return GeometryProfile(
         geometry_type=gt5.value,
         geometry_type_fine=gt8.value,
         activation_shape=SHAPE_MAP.get(gt8, "raw"),
-        recommended_methods=rec_methods,
+        recommended_methods=[],
         confidence=c5,
         confidence_fine=c8,
         metrics=key_metrics,

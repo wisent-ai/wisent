@@ -157,13 +157,11 @@ def select_intervention(
     zwiad_editability_threshold: float, zwiad_przelom_bonus_max: float,
 ) -> InterventionResult:
     """Step four: Select optimal intervention method."""
-    from wisent.core.control.steering_method_score import rank_methods, flatten_zwiad_results
-    flat = flatten_zwiad_results(signal, geometry, decomposition, editability)
-    ranked = rank_methods(flat)
-    method_scores = {name: score for name, score in ranked}
+    _method_names = ["CAA", "Ostrze", "MLP", "TECZA", "TETNO", "GROM", "Concept Flow", "PRZELOM"]
+    _all = {m: zwiad_score_tertiary for m in _method_names}
     _nosig_msg = f"No signal (p > {STAT_ALPHA})"
     if not signal.passed:
-        return InterventionResult("NONE", zwiad_score_tertiary, [_nosig_msg], method_scores)
+        return InterventionResult("NONE", zwiad_score_tertiary, [_nosig_msg], _all)
     reasoning = [
         f"geometry: {geometry.diagnosis}",
         f"n_concepts: {decomposition.n_concepts}, fragmented: {decomposition.is_fragmented}",
@@ -171,8 +169,7 @@ def select_intervention(
     ]
     if editability:
         reasoning.append(f"editability: {editability.composite_editability:.2f}")
-    (winner, confidence), *_ = ranked
-    return InterventionResult(winner, confidence, reasoning, method_scores)
+    return InterventionResult("PENDING", zwiad_score_tertiary, reasoning, _all)
 
 _GEO_FIELDS = ["linear_accuracy", "nonlinear_accuracy", "gap", "diagnosis", "confidence", "p_value",
     "gap_ci_lower", "gap_ci_upper", "n_diagnostics_passed", "n_diagnostics_total", "t_statistic",

@@ -1,1 +1,1 @@
-"""Steering control: methods, optimizer, synthetic, tasks, prompts, method scoring."""
+"""Steering control: methods, optimizer, synthetic, tasks, prompts."""
