@@ -49,6 +49,81 @@
       "szlak": {"mode": "transport"},
       "wicher": {"mode": "broyden"},
       "przelom": {"mode": "transport"}
+    },
+    "scorer_caa": {
+      "w_linear_probe": 0.35,
+      "w_signal": 0.25,
+      "w_cloud_separation": 0.20,
+      "w_curvature_penalty": 0.15,
+      "w_fragmentation_penalty": 0.05
+    },
+    "scorer_ostrze": {
+      "w_linear_probe": 0.30,
+      "w_cloud_separation": 0.25,
+      "w_fisher_gini": 0.20,
+      "w_curvature_penalty": 0.15,
+      "w_signal": 0.10
+    },
+    "scorer_mlp": {
+      "w_nonlinear_gap": 0.35,
+      "w_signal": 0.25,
+      "w_knn": 0.20,
+      "w_linearity_penalty": 0.20,
+      "linearity_ceiling": 0.85,
+      "ceiling_scale": 4.0
+    },
+    "scorer_tecza": {
+      "w_coherence": 0.30,
+      "w_icd_variance": 0.25,
+      "w_n_concepts": 0.25,
+      "w_single_concept_penalty": 0.20,
+      "concept_threshold": 1.5
+    },
+    "scorer_tetno": {
+      "w_signal": 0.30,
+      "w_moderate_variance": 0.25,
+      "w_low_coherence": 0.20,
+      "w_linearity_penalty": 0.25,
+      "moderate_center": 0.5,
+      "moderate_width": 0.35,
+      "linearity_ceiling": 0.85
+    },
+    "scorer_nurt": {
+      "w_coherence": 0.25,
+      "w_curvature_moderate": 0.25,
+      "w_signal": 0.25,
+      "w_extreme_curvature_penalty": 0.25,
+      "curvature_center": 0.4,
+      "curvature_width": 0.35,
+      "extreme_curvature_threshold": 0.75
+    },
+    "scorer_grom": {
+      "w_curvature": 0.30,
+      "w_knn": 0.25,
+      "w_nonlinear_gap": 0.25,
+      "w_linearity_penalty": 0.20,
+      "linearity_threshold": 0.80
+    },
+    "scorer_wicher": {
+      "w_signal": 0.30,
+      "w_complexity": 0.25,
+      "w_knn": 0.20,
+      "w_simplicity_penalty": 0.25,
+      "simplicity_threshold": 0.85
+    },
+    "scorer_szlak": {
+      "w_editability": 0.35,
+      "w_spectral_concentration": 0.25,
+      "w_signal": 0.20,
+      "w_degenerate_penalty": 0.20,
+      "degenerate_signal_threshold": 0.30
+    },
+    "scorer_przelom": {
+      "w_editability": 0.30,
+      "w_spectral_sharpness": 0.30,
+      "w_signal": 0.20,
+      "w_degenerate_penalty": 0.20,
+      "degenerate_signal_threshold": 0.30
     }
   },
   "ostrze": {
