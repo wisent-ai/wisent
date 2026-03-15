@@ -8,9 +8,13 @@ from wisent.core.utils.config_tools import constants as _C
 _APP_TITLE = "Wisent - World's Best AI through Representation Engineering"
 
 
+_FONT_HEAD = f'<link href="{_C.WISENT_FONT_CDN_URL}" rel="stylesheet">'
+
+
 def _build_theme():
     """Build Wisent theme with mint accents, supporting light and dark modes."""
     return gr.themes.Base(
+        font=[gr.themes.Font(_C.WISENT_FONT_PRIMARY)],
         primary_hue=gr.themes.Color(
             c50=_C.WISENT_COLOR_MINT_LIGHT,
             c100=_C.WISENT_COLOR_MINT_LIGHT,
@@ -122,7 +126,7 @@ _APP_CSS = (
 
 def create_app() -> gr.Blocks:
     """Create and return the Gradio Blocks application."""
-    with gr.Blocks(title=_APP_TITLE) as app:
+    with gr.Blocks(title=_APP_TITLE, head=_FONT_HEAD) as app:
         build_interface()
     return app
 

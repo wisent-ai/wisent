@@ -182,6 +182,10 @@ PRESET_CARD_ICON_COLOR = "#444444"
 PRESET_CARD_TITLE_COLOR = "#111111"
 PRESET_CARD_DESC_COLOR = "#999999"
 PRESET_CARD_TITLE_FONT_WEIGHT = 600
+WISENT_FONT_PRIMARY = "Hubot Sans"
+WISENT_FONT_CDN_URL = (
+    "https://cdn.jsdelivr.net/npm/@github/hubot-sans@1.0.0/HubotSans.min.css"
+)
 WISENT_LOGO_FILENAME = "wisent_logo.png"
 WISENT_LOGO_DISPLAY_WIDTH = 80
 GRADIO_MODEL_EXAMPLES = (
@@ -204,6 +208,9 @@ GPU_FRAMEWORK_OVERHEAD_GB = 8
 MB_PER_GB = 1024
 TRANSFORMER_PARAM_FACTOR = 12
 PARAMS_PER_BILLION = 1000000000
+# PyTorch CUDA allocator fragmentation + steering object overhead.
+# Accounts for memory not captured by weights+KV+context formula.
+GPU_FRAGMENTATION_OVERHEAD_FACTOR = 1.5
 # --- HF index consolidation ---
 MIN_COMBO_PATH_PARTS = 3
 # --- Degeneration detection (StoppingCriteria) ---
