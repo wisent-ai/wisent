@@ -22,9 +22,9 @@ def execute_per_concept_steering_viz(args):
     import random
     import pickle
     import numpy as np
-    from wisent.core.reading.modules.utilities.data.database_loaders import (
-        load_activations_from_database,
-        load_pair_texts_from_database,
+    from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import (
+        load_activations_from_hf,
+        load_pair_texts_from_hf,
     )
     from wisent.core.utils.visualization.steering.steering_visualizations import create_per_concept_steering_figure
     from wisent.core.primitives.model_interface.core.wisent import Wisent
@@ -72,8 +72,8 @@ def execute_per_concept_steering_viz(args):
         all_pair_texts = {int(k) if isinstance(k, str) else k: v for k, v in stored_pair_texts.items()}
         print(f"Loaded {len(all_pair_texts)} pair texts from zwiad results")
     else:
-        all_pair_texts = load_pair_texts_from_database(
-            task_name=args.task, limit=args.db_pair_loading_limit, database_url=args.database_url
+        all_pair_texts = load_pair_texts_from_hf(
+            task_name=args.task, limit=args.db_pair_loading_limit,
         )
         print(f"Loaded {len(all_pair_texts)} pair texts from database/cache")
         # Rebuild pair_assignments from cluster_labels if IDs don't match
@@ -155,12 +155,10 @@ def execute_per_concept_steering_viz(args):
                 pos_ref = torch.tensor([])
                 neg_ref = torch.tensor([])
         else:
-            pos_ref, neg_ref = load_activations_from_database(
+            pos_ref, neg_ref = load_activations_from_hf(
                 model_name=args.model, task_name=args.task, layer=optimal_layer,
-                component=args.extraction_component,
                 extraction_strategy=args.extraction_strategy,
-                prompt_format=args.prompt_format,
-                limit=args.db_activation_loading_limit, database_url=args.database_url, pair_ids=train_ids
+                limit=args.db_activation_loading_limit, pair_ids=train_ids,
             )
         print(f"  Loaded {len(pos_ref)} training reference pairs")
 
@@ -225,7 +223,9 @@ def execute_per_concept_steering_viz(args):
 
         # Train activation space classifier from training data
         # pos_ref = truthful (label 1), neg_ref = untruthful (label 0)
-        classifier_type = getattr(args, 'space_classifier', 'mlp')
+        classifier_type = getattr(args, 'space_classifier', None)
+        if classifier_type is None:
+            raise ValueError("Parameter 'space_classifier' is required for per-concept steering viz.")
         X_train = torch.cat([pos_ref, neg_ref], dim=0).cpu().numpy()
         y_train = np.concatenate([np.ones(len(pos_ref)), np.zeros(len(neg_ref))])
 

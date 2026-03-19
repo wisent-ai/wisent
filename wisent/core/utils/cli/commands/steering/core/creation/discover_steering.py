@@ -20,8 +20,8 @@ from wisent.core.primitives.models.config import get_generate_kwargs
 def execute_discover_steering(args):
     """Execute the discover-steering command - find optimal steering directions."""
     import torch
-    from wisent.core.reading.modules.utilities.data.database_loaders import (
-        load_activations_from_database, load_pair_texts_from_database,
+    from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import (
+        load_activations_from_hf, load_pair_texts_from_hf,
     )
     from wisent.core.reading.modules.modules.steering.analysis.steering_discovery import (
         discover_behavioral_direction, generate_candidate_directions,
@@ -38,8 +38,8 @@ def execute_discover_steering(args):
 
     # Load data
     print(f"\nLoading data...")
-    all_pair_texts = load_pair_texts_from_database(
-        task_name=args.task, limit=args.discover_task_limit, database_url=args.database_url
+    all_pair_texts = load_pair_texts_from_hf(
+        task_name=args.task, limit=args.discover_task_limit,
     )
     all_pair_ids = list(all_pair_texts.keys())
     random.seed(DEFAULT_RANDOM_SEED)
@@ -52,12 +52,10 @@ def execute_discover_steering(args):
     print(f"  Train: {len(train_ids)}, Test: {len(test_ids)}")
 
     # Load reference activations
-    pos_ref, neg_ref = load_activations_from_database(
+    pos_ref, neg_ref = load_activations_from_hf(
         model_name=args.model, task_name=args.task, layer=args.layer,
-        component=args.extraction_component,
         extraction_strategy=args.extraction_strategy,
-        prompt_format=args.prompt_format,
-        limit=args.discover_train_limit, database_url=args.database_url, pair_ids=train_ids
+        limit=args.discover_train_limit, pair_ids=train_ids,
     )
     pos_np = pos_ref.cpu().numpy()
     neg_np = neg_ref.cpu().numpy()

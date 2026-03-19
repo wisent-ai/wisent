@@ -51,7 +51,7 @@ def execute_steering_viz(args):
         pos_ref, neg_ref, base_activations, steered_activations,
         log_frequency=args.log_frequency,
         test_size=args.classifier_test_size,
-        classifier_type=getattr(args, 'space_classifier', 'mlp'),
+        classifier_type=args.space_classifier,
         mlp_hidden_dim=getattr(args, 'mlp_hidden_dim', None),
     )
 
@@ -104,18 +104,15 @@ def execute_steering_viz(args):
 
 def _load_or_generate_reference_activations(args):
     """Load activations from database if available, otherwise generate."""
-    from wisent.core.reading.modules.utilities.data.database_loaders import load_activations_from_database
+    from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import load_activations_from_hf
 
     try:
-        pos_ref, neg_ref = load_activations_from_database(
+        pos_ref, neg_ref = load_activations_from_hf(
             model_name=args.model, task_name=args.task, layer=args.layer,
-            component=args.extraction_component,
             extraction_strategy=args.extraction_strategy,
-            prompt_format=args.prompt_format,
             limit=None,
-            database_url=getattr(args, 'database_url', None),
         )
-        print(f"  Found activations in database")
+        print(f"  Found activations in HF")
         return pos_ref, neg_ref
     except Exception as e:
         print(f"  Not in database ({e}), generating...")
@@ -128,14 +125,13 @@ def _generate_reference_activations(args):
     import tempfile
     from pathlib import Path
     from wisent.core.utils.cli.analysis.geometry.get_activations import execute_get_activations
-    from wisent.core.reading.modules.utilities.data.database_loaders import load_pair_texts_from_database
+    from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import load_pair_texts_from_hf
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
         pairs_path = tmpdir / "pairs.json"
-        pair_texts = load_pair_texts_from_database(
+        pair_texts = load_pair_texts_from_hf(
             task_name=args.task, limit=None,
-            database_url=getattr(args, 'database_url', None)
         )
         pairs_list = [{"prompt": p.get("prompt", ""),
                        "positive_response": {"model_response": p.get("positive", "")},
@@ -175,7 +171,7 @@ def _generate_and_extract(args, steering_vector):
     from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
     from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, extract_activation
     from wisent.core.reading.evaluators.rotator import EvaluatorRotator
-    from wisent.core.reading.modules.utilities.data.database_loaders import load_pair_texts_from_database
+    from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import load_pair_texts_from_hf
 
     wisent = Wisent.for_text(args.model)
     adapter = wisent.adapter
@@ -195,9 +191,8 @@ def _generate_and_extract(args, steering_vector):
     steering_vectors = LayerActivations({layer_name: steering_vector})
     config = SteeringConfig(scale={layer_name: args.strength})
 
-    pair_texts = load_pair_texts_from_database(
+    pair_texts = load_pair_texts_from_hf(
         task_name=args.task, limit=None,
-        database_url=getattr(args, 'database_url', None)
     )
 
     base_data, steered_data = [], []

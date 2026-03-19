@@ -18,13 +18,12 @@ def create_steering_object_from_pairs(args, tmpdir: Path) -> str:
     """Create a steering object from contrastive pairs in database."""
     from wisent.core.utils.cli.get_activations import execute_get_activations
     from wisent.core.utils.cli.create_steering_object import execute_create_steering_object
-    from wisent.core.reading.modules.utilities.data.database_loaders import load_pair_texts_from_database
+    from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import load_pair_texts_from_hf
 
     print("  Creating steering object from contrastive pairs...")
     pairs_path = tmpdir / "pairs.json"
-    pair_texts = load_pair_texts_from_database(
-        task_name=args.task, limit=getattr(args, 'limit', 100),
-        database_url=getattr(args, 'database_url', None)
+    pair_texts = load_pair_texts_from_hf(
+        task_name=args.task, limit=args.limit,
     )
     pairs_list = [{"prompt": p.get("prompt", ""),
                    "positive_response": {"model_response": p.get("positive", "")},
@@ -70,14 +69,11 @@ def extract_activations_from_responses(base_data: dict, steered_data: dict) -> T
 
 def load_reference_activations(args) -> Tuple[torch.Tensor, torch.Tensor]:
     """Load reference activations from database for classifier training."""
-    from wisent.core.reading.modules.utilities.data.database_loaders import load_activations_from_database
-    return load_activations_from_database(
+    from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import load_activations_from_hf
+    return load_activations_from_hf(
         model_name=args.model, task_name=args.task, layer=args.layer,
-        component=args.extraction_component,
         extraction_strategy=args.extraction_strategy,
-        prompt_format=args.prompt_format,
         limit=None,
-        database_url=getattr(args, 'database_url', None),
     )
 
 

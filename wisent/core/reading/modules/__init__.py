@@ -212,11 +212,11 @@ from .geometry_search_space import (
     GeometrySearchConfig,
 )
 
-# Re-export database loaders for backward compatibility
-from .utilities.data.database_loaders import (
-    load_activations_from_database,
-    load_pair_texts_from_database,
-    load_available_layers_from_database,
+# Re-export HF loaders as primary data source
+from .utilities.data.sources.hf.hf_loaders import (
+    load_activations_from_hf,
+    load_pair_texts_from_hf,
+    load_available_layers_from_hf,
 )
 
 from .utilities.data.cache import get_cache_path, get_cached_layers

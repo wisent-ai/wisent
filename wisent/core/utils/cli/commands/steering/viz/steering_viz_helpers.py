@@ -155,19 +155,16 @@ def load_all_layer_activations(
     num_layers: int,
     train_ids: set,
     extraction_strategy: str,
-    component: str,
-    prompt_format: str,
     limit: int = VIZ_LIMIT,
-    database_url: str = None,
     layers: list = None,
 ) -> Tuple[dict, dict]:
     """
-    Load activations for all (or specified) layers from database.
+    Load activations for all (or specified) layers from HuggingFace Hub.
 
     Returns:
         (pos_by_layer, neg_by_layer) dicts mapping layer number -> numpy activations
     """
-    from wisent.core.reading.modules.utilities.data.database_loaders import load_activations_from_database
+    from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import load_activations_from_hf
 
     if layers is None:
         layers = list(range(num_layers))
@@ -175,11 +172,10 @@ def load_all_layer_activations(
     pos_by_layer, neg_by_layer = {}, {}
     for layer in layers:
         try:
-            pos, neg = load_activations_from_database(
+            pos, neg = load_activations_from_hf(
                 model_name=model_name, task_name=task_name, layer=layer,
-                component=component, extraction_strategy=extraction_strategy,
-                prompt_format=prompt_format,
-                limit=limit, database_url=database_url, pair_ids=train_ids
+                extraction_strategy=extraction_strategy,
+                limit=limit, pair_ids=train_ids,
             )
             pos_by_layer[layer] = pos.cpu().numpy()
             neg_by_layer[layer] = neg.cpu().numpy()

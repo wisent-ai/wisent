@@ -21,9 +21,9 @@ def execute_zwiad(args):
     # Import dependencies
     from wisent.core.reading.modules.modules.zwiad.zwiad_with_concepts import (
         run_zwiad_with_concept_naming,
-        load_activations_from_database,
-        load_pair_texts_from_database,
-        load_available_layers_from_database,
+        load_activations_from_hf,
+        load_pair_texts_from_hf,
+        load_available_layers_from_hf,
     )
     from wisent.core.reading.modules.utilities.data.cache import get_cached_layers
     import torch
@@ -105,12 +105,11 @@ def execute_zwiad(args):
 
         # Load pair_texts from database if --task is provided (needed for LLM concept naming)
         if args.task and pair_texts is None:
-            print(f"\nLoading pair texts from database for task: {args.task}")
+            print(f"\nLoading pair texts for task: {args.task}")
             try:
-                pair_texts = load_pair_texts_from_database(
+                pair_texts = load_pair_texts_from_hf(
                     task_name=args.task,
                     limit=None,
-                    database_url=args.database_url,
                 )
                 print(f"  Loaded {len(pair_texts)} pair texts")
             except Exception as e:
@@ -146,12 +145,11 @@ def execute_zwiad(args):
                 layers = cached_layers
             else:
                 # Fall back to database query
-                print(f"  Querying available layers from database...")
-                layers = load_available_layers_from_database(
+                print(f"  Querying available layers...")
+                layers = load_available_layers_from_hf(
                     model_name=args.model,
                     task_name=args.task,
-                    extraction_strategy=args.extraction_strategy, component=args.extraction_component,
-                    database_url=args.database_url,
+                    extraction_strategy=args.extraction_strategy,
                 )
                 print(f"  Found {len(layers)} layers: {layers[0]}-{layers[-1]}" if layers else "  No layers found")
 
@@ -159,14 +157,12 @@ def execute_zwiad(args):
         print(f"\nLoading activations for {len(layers)} layers...")
         for layer in layers:
             try:
-                pos, neg = load_activations_from_database(
+                pos, neg = load_activations_from_hf(
                     model_name=args.model,
                     task_name=args.task,
                     layer=layer,
-                    prompt_format=args.prompt_format,
-                    extraction_strategy=args.extraction_strategy, component=args.extraction_component,
+                    extraction_strategy=args.extraction_strategy,
                     limit=None,
-                    database_url=args.database_url,
                 )
                 if len(pos) > 0 and len(neg) > 0:
                     activations_by_layer[layer] = (pos, neg)
@@ -177,10 +173,9 @@ def execute_zwiad(args):
         # Load pair texts for concept naming
         print(f"\nLoading pair texts...")
         try:
-            pair_texts = load_pair_texts_from_database(
+            pair_texts = load_pair_texts_from_hf(
                 task_name=args.task,
                 limit=None,
-                database_url=args.database_url,
             )
             print(f"  Loaded {len(pair_texts)} pair texts")
         except Exception as e:

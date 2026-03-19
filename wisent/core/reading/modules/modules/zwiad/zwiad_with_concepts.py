@@ -11,7 +11,7 @@ from wisent.core.utils.config_tools.constants import (
 )
 from wisent.core.reading.modules.utilities.metrics.core.metrics_core import compute_geometry_metrics
 from wisent.core.reading.modules.utilities.concepts import decompose_and_name_concepts_with_labels, find_optimal_layer_per_concept
-from wisent.core.reading.modules.utilities.data.database_loaders import load_activations_from_database, load_pair_texts_from_database, load_available_layers_from_database
+from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import load_activations_from_hf, load_pair_texts_from_hf, load_available_layers_from_hf
 
 _GEO_KEYS = ["linear_accuracy", "nonlinear_accuracy", "gap", "diagnosis", "confidence",
     "p_value", "gap_ci_lower", "gap_ci_upper", "n_diagnostics_passed", "n_diagnostics_total",
@@ -46,8 +46,8 @@ def _load_checkpoint(output_path: Optional[str]) -> Dict:
 
 __all__ = [
     "run_zwiad_with_concept_naming", "extract_pair_texts_from_enriched_pairs",
-    "load_activations_from_database", "load_pair_texts_from_database",
-    "load_available_layers_from_database", "find_optimal_layer_per_concept",
+    "load_activations_from_hf", "load_pair_texts_from_hf",
+    "load_available_layers_from_hf", "find_optimal_layer_per_concept",
 ]
 
 
