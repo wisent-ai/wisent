@@ -102,6 +102,7 @@ def main():
             method_name, model_name, benchmark, num_layers,
             trials_mult, backend, method_results, output_dir,
             train_file, test_file, n_train, cached_model,
+            baseline_score, n_test,
         )
 
     _save_final_report(
@@ -151,6 +152,7 @@ def _run_method(
     method_idx, total, method_name, model_name, benchmark,
     num_layers, trials_mult, backend, method_results, output_dir,
     train_pairs_file, test_pairs_file, n_train, cached_model=None,
+    baseline_score=None, n_test=None,
 ):
     """Run optimization for a single method."""
     method_upper = method_name.upper()
@@ -207,17 +209,19 @@ def _run_method(
     }
     method_results[method_name] = entry
 
-    print(
-        f"\n   {method_upper}: "
-        f"score={result.best_score:.4f} "
-        f"in {method_time:.1f}s"
-    )
-
+    delta = result.best_score - baseline_score if baseline_score is not None else None
+    delta_str = f" delta={delta:+.4f}" if delta is not None else ""
+    print(f"\n   {method_upper}: score={result.best_score:.4f}{delta_str} in {method_time:.1f}s")
+    incremental = {
+        "benchmark": benchmark, "model": model_name,
+        "baseline_score": baseline_score, "n_train": n_train, "n_test": n_test,
+        "methods": method_results,
+    }
     incremental_path = os.path.join(
         output_dir, f"incremental_{benchmark}_{method_name}.json",
     )
     with open(incremental_path, "w") as f:
-        json.dump(method_results, f, indent=JSON_INDENT, default=str)
+        json.dump(incremental, f, indent=JSON_INDENT, default=str)
     print(f"   Saved: {incremental_path}")
 
 
