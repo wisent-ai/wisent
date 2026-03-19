@@ -64,6 +64,12 @@ def main():
     cfg = _AC.from_pretrained(model_name, trust_remote_code=True)
     num_layers = cfg.num_hidden_layers
 
+    # Load the model ONCE and reuse across all trials/methods
+    from wisent.core.primitives.models.model_interface import WisentModel
+    print(f"Loading model {model_name}...", flush=True)
+    cached_model = WisentModel(model_name, device=None)
+    print(f"   Model loaded", flush=True)
+
     all_methods = SteeringMethodRegistry.list_methods()
 
     # Generate all pairs once, split into train/test
@@ -105,7 +111,7 @@ def main():
             method_idx + COMBO_OFFSET, len(all_methods),
             method_name, model_name, benchmark, num_layers,
             trials_mult, backend, method_results, output_dir,
-            train_file, test_file, n_train,
+            train_file, test_file, n_train, cached_model,
         )
 
     _save_final_report(
@@ -152,7 +158,7 @@ def _generate_and_split_pairs(benchmark, output_dir):
 def _run_method(
     method_idx, total, method_name, model_name, benchmark,
     num_layers, trials_mult, backend, method_results, output_dir,
-    train_pairs_file, test_pairs_file, n_train,
+    train_pairs_file, test_pairs_file, n_train, cached_model=None,
 ):
     """Run optimization for a single method."""
     method_upper = method_name.upper()
@@ -174,6 +180,7 @@ def _run_method(
         work_dir=workspace,
         train_pairs_file=train_pairs_file,
         test_pairs_file=test_pairs_file,
+        cached_model=cached_model,
     )
 
     trial_counter = []
