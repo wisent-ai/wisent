@@ -108,6 +108,8 @@ Answer:"""
 class SciQExtractor(HuggingFaceBenchmarkExtractor):
     """Extract contrastive pairs from SciQ benchmark."""
 
+    evaluator_name = "log_likelihoods"
+
     def __init__(self):
         super().__init__()
         self.name = "sciq"
