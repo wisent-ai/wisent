@@ -46,7 +46,7 @@ def execute_find_best_method(args):
     cfg = _AC.from_pretrained(model_name, trust_remote_code=True)
     num_layers = cfg.num_hidden_layers
     all_methods = SteeringMethodRegistry.list_methods()
-    train_file, test_file, n_train, n_test = _generate_and_split_pairs(
+    train_file, test_file, n_train, n_test = _load_pairs_from_hf(
         benchmark, output_dir,
     )
     sep = "=" * SEPARATOR_WIDTH_WIDE
@@ -84,27 +84,31 @@ def execute_find_best_method(args):
     )
 
 
-def _generate_and_split_pairs(benchmark, output_dir):
-    """Load cached pairs from HF (matching stored activations), then split."""
+def _load_pairs_from_hf(benchmark, output_dir):
+    """Load pairs from HF. Train = cached activation pairs, test = extra pairs."""
     from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import (
         load_pair_texts_from_hf,
     )
     print(f"Loading cached pairs for {benchmark} from HF...", flush=True)
+    n_train = OPTIMIZATION_TRIAL_PAIRS_CAP
+    n_test = math.ceil(n_train / SPLIT_RATIO_TRAIN_DEFAULT) - n_train
+    total_needed = n_train + n_test
     hf_pairs = load_pair_texts_from_hf(
-        benchmark, limit=OPTIMIZATION_TRIAL_PAIRS_CAP,
+        benchmark, limit=total_needed,
     )
     if not hf_pairs:
         print(f"ERROR: No cached pairs on HF for {benchmark}")
         sys.exit(EXIT_CODE_ERROR)
     sorted_ids = sorted(hf_pairs.keys())
-    all_pairs = [
-        {"prompt": hf_pairs[pid]["prompt"],
-         "positive_response": {"model_response": hf_pairs[pid]["positive"]},
-         "negative_response": {"model_response": hf_pairs[pid]["negative"]}}
-        for pid in sorted_ids
-    ]
-    split_idx = math.floor(len(all_pairs) * SPLIT_RATIO_TRAIN_DEFAULT)
-    train_pairs, test_pairs = all_pairs[:split_idx], all_pairs[split_idx:]
+
+    def _to_pair(pid):
+        p = hf_pairs[pid]
+        return {"prompt": p["prompt"],
+                "positive_response": {"model_response": p["positive"]},
+                "negative_response": {"model_response": p["negative"]}}
+
+    train_pairs = [_to_pair(pid) for pid in sorted_ids[:n_train]]
+    test_pairs = [_to_pair(pid) for pid in sorted_ids[n_train:total_needed]]
 
     def _save(pair_list, path):
         with open(path, "w") as f:
@@ -115,8 +119,8 @@ def _generate_and_split_pairs(benchmark, output_dir):
     test_path = os.path.join(output_dir, f"test_pairs_{benchmark}.json")
     _save(train_pairs, train_path)
     _save(test_pairs, test_path)
-    print(f"   Total: {len(all_pairs)}, "
-          f"Train: {len(train_pairs)}, Test: {len(test_pairs)}")
+    print(f"   Train: {len(train_pairs)} (cached activations), "
+          f"Test: {len(test_pairs)}")
     return train_path, test_path, len(train_pairs), len(test_pairs)
 
 
