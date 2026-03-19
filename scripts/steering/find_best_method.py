@@ -1,11 +1,6 @@
 """Find the best steering method for a given benchmark.
 
-Uses the BaseOptimizer with distribution-based search spaces to optimize
-each steering method independently and rank them. Generates ALL contrastive
-pairs once, splits into train/test, trains on train set, evaluates on test.
-
-Environment variables (all required):
-    MODEL_NAME, BENCHMARK, OUTPUT_DIR, TRIALS_MULTIPLIER, BACKEND
+Env vars (all required): MODEL_NAME, BENCHMARK, OUTPUT_DIR, TRIALS_MULTIPLIER, BACKEND
 """
 import json
 import math
@@ -17,12 +12,8 @@ from datetime import datetime
 from pathlib import Path
 
 from wisent.core.utils.config_tools.constants import (
-    COMBO_OFFSET,
-    EXIT_CODE_ERROR,
-    JSON_INDENT,
-    SCORE_RANGE_MIN,
-    SEPARATOR_WIDTH_REPORT,
-    SEPARATOR_WIDTH_WIDE,
+    COMBO_OFFSET, EXIT_CODE_ERROR, JSON_INDENT, OPTIMIZATION_TRIAL_PAIRS_CAP,
+    SCORE_RANGE_MIN, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_WIDE,
     SPLIT_RATIO_TRAIN_DEFAULT,
 )
 from wisent.core.control.steering_methods.registry import (
@@ -83,7 +74,8 @@ def main():
     print(f"   Model:         {model_name}")
     print(f"   Layers:        {num_layers}")
     print(f"   Benchmark:     {benchmark}")
-    print(f"   Train pairs:   {n_train}")
+    trial_limit = min(n_train, OPTIMIZATION_TRIAL_PAIRS_CAP)
+    print(f"   Train pairs:   {n_train} (trial cap: {trial_limit})")
     print(f"   Test pairs:    {n_test}")
     print(f"   Methods:       {len(all_methods)}")
     print(f"   Trials/dim:    {trials_mult}x")
@@ -174,9 +166,10 @@ def _run_method(
     workspace = os.path.join(method_dir, "_workspace")
     os.makedirs(workspace, exist_ok=True)
 
+    trial_limit = min(n_train, OPTIMIZATION_TRIAL_PAIRS_CAP)
     objective = create_objective(
         method=method_upper, model=model_name, task=benchmark,
-        num_layers=num_layers, limit=n_train, device=None,
+        num_layers=num_layers, limit=trial_limit, device=None,
         work_dir=workspace,
         train_pairs_file=train_pairs_file,
         test_pairs_file=test_pairs_file,
