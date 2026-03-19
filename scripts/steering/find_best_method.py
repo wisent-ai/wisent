@@ -65,7 +65,7 @@ def main():
     num_layers = cfg.num_hidden_layers
 
     # Load the model ONCE and reuse across all trials/methods
-    from wisent.core.primitives.models.model_interface import WisentModel
+    from wisent.core.primitives.models.wisent_model import WisentModel
     print(f"Loading model {model_name}...", flush=True)
     cached_model = WisentModel(model_name, device=None)
     print(f"   Model loaded", flush=True)
