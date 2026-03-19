@@ -9,7 +9,7 @@ for _entry in sorted(os.listdir(_base)):
     if os.path.isdir(_path) and not _entry.startswith(('.', '_')):
         __path__.append(_path)
 
-__version__ = "0.10.20"
+__version__ = "0.10.21"
 
 from wisent.core.control.tasks.base.diversity_processors import (
     OpenerPenaltyProcessor,

@@ -23,8 +23,9 @@ from wisent.core.utils.config_tools.constants import (
     GENERATION_DEFAULT_TEMPERATURE, GENERATION_DEFAULT_TOP_P,
     EVAL_F1_THRESHOLD, EVAL_GENERATION_EMBEDDING_WEIGHT,
     EVAL_GENERATION_NLI_WEIGHT, SPLIT_RATIO_TRAIN_DEFAULT,
-    METHODS_REQUIRING_QK_CAPTURE,
+    METHODS_REQUIRING_QK_CAPTURE, SCORE_MIDPOINT_PCT,
 )
+from wisent.core.utils.infra_tools.infra.core.hardware import subprocess_timeout_s
 from wisent.core.control.steering_methods.configs.optimal import get_optimal, get_optimal_extraction_strategy
 
 
@@ -82,6 +83,18 @@ def run_pipeline(
         layer = getattr(config, 'layer', None) or getattr(config, 'sensor_layer', None)
         if layer is None:
             raise ValueError("Config must specify 'layer' or 'sensor_layer'")
+        # Cap train pairs file to limit if needed
+        effective_train = train_pairs_file
+        if limit:
+            with open(train_pairs_file) as f:
+                td = json.load(f)
+            all_pairs = td.get("pairs", [])
+            if len(all_pairs) > limit:
+                td["pairs"] = all_pairs[:limit]
+                td["num_pairs"] = limit
+                effective_train = os.path.join(work_dir, "train_capped.json")
+                with open(effective_train, "w") as f:
+                    json.dump(td, f)
         needs_qk = config.method in METHODS_REQUIRING_QK_CAPTURE
         cached = None
         if not needs_qk:
@@ -90,7 +103,7 @@ def run_pipeline(
             )
             cached = build_enriched_from_hf(
                 model, task, layer, config.extraction_strategy, work_dir,
-                train_pairs_file=train_pairs_file, limit=limit)
+                train_pairs_file=effective_train, limit=limit)
             if not cached:
                 cached = build_enriched_from_db(
                     model, task, work_dir, config.extraction_strategy, limit=limit)
@@ -98,12 +111,12 @@ def run_pipeline(
             activations_file = cached
         else:
             execute_get_activations(_make_args(
-                pairs_file=train_pairs_file, model=model, output=activations_file,
+                pairs_file=effective_train, model=model, output=activations_file,
                 layers=str(layer), extraction_strategy=config.extraction_strategy,
                 device=device, verbose=False, timing=False, raw=False,
                 cached_model=cached_model,
             ))
-        eval_pairs_file = test_pairs_file or train_pairs_file
+        eval_pairs_file = test_pairs_file or effective_train
         with open(eval_pairs_file) as f:
             eval_limit = len(json.load(f).get("pairs", []))
     else:
@@ -163,6 +176,9 @@ def run_pipeline(
         generation_embedding_weight=EVAL_GENERATION_EMBEDDING_WEIGHT,
         generation_nli_weight=EVAL_GENERATION_NLI_WEIGHT,
         train_ratio=SPLIT_RATIO_TRAIN_DEFAULT,
+        subprocess_timeout=subprocess_timeout_s(),
+        personalization_good_threshold=SCORE_MIDPOINT_PCT,
+        cached_model=cached_model,
     ))
     eval_elapsed = time.monotonic() - eval_t0
     print(f"[run_pipeline] {_ts()} evaluate done in {eval_elapsed:.1f}s", flush=True)
