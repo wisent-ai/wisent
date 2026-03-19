@@ -147,6 +147,20 @@ def setup_migrate_activations_parser(parser):
     )
     _add_hf_retry_args(vc_parser)
 
+    # cleanup - drop Supabase rows for combos already in HF
+    cleanup_parser = subparsers.add_parser(
+        "cleanup",
+        help="Drop Supabase Activation rows for combos present in HF",
+    )
+    cleanup_parser.add_argument(
+        "--database-url", type=str, default=None,
+        help="Database URL (defaults to DATABASE_URL env var)",
+    )
+    cleanup_parser.add_argument(
+        "--dry-run", action="store_true",
+        help="Only report what would be deleted without deleting",
+    )
+
     # verify - verify migration for a single layer
     verify_parser = subparsers.add_parser(
         "verify", help="Verify HF data matches Supabase"

@@ -29,7 +29,7 @@ def execute_migrate_activations(args):
     """Dispatch migrate-activations subcommands."""
     action = getattr(args, "action", None)
     if not action:
-        print("Error: specify an action (create-repo, all, single, pair-texts, raw, verify, verify-completeness, consolidate)")
+        print("Error: specify an action (create-repo, all, single, pair-texts, raw, verify, verify-completeness, consolidate, cleanup)")
         sys.exit(1)
 
     if action == "create-repo":
@@ -108,6 +108,15 @@ def execute_migrate_activations(args):
         else:
             print("\nVerification FAILED")
             sys.exit(1)
+
+    elif action == "cleanup":
+        from wisent.core.reading.modules.utilities.data.sources.hf.maintenance.cleanup import cleanup_migrated_activations
+        result = cleanup_migrated_activations(
+            database_url=args.database_url,
+            dry_run=args.dry_run,
+        )
+        print(f"\nCombos affected: {result['combos_affected']}")
+        print(f"Total rows {'would delete' if args.dry_run else 'deleted'}: {result['total_rows_deleted']}")
 
     else:
         print(f"Error: unknown action '{action}'")
