@@ -12,9 +12,9 @@ from datetime import datetime
 from pathlib import Path
 
 from wisent.core.utils.config_tools.constants import (
-    COMBO_OFFSET, EXIT_CODE_ERROR, JSON_INDENT, OPTIMIZATION_TRIAL_PAIRS_CAP,
-    SCORE_RANGE_MIN, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_WIDE,
-    SPLIT_RATIO_TRAIN_DEFAULT,
+    COMBO_OFFSET, EXIT_CODE_ERROR, JSON_INDENT,
+    OPTIMIZATION_TRIAL_PAIRS_CAP, SCORE_RANGE_MIN,
+    SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_WIDE, SPLIT_RATIO_TRAIN_DEFAULT,
 )
 from wisent.core.control.steering_methods.registry import (
     SteeringMethodRegistry,
@@ -74,8 +74,7 @@ def main():
     print(f"   Model:         {model_name}")
     print(f"   Layers:        {num_layers}")
     print(f"   Benchmark:     {benchmark}")
-    trial_limit = min(n_train, OPTIMIZATION_TRIAL_PAIRS_CAP)
-    print(f"   Train pairs:   {n_train} (trial cap: {trial_limit})")
+    print(f"   Train pairs:   {n_train}")
     print(f"   Test pairs:    {n_test}")
     print(f"   Methods:       {len(all_methods)}")
     print(f"   Trials/dim:    {trials_mult}x")
@@ -113,37 +112,35 @@ def main():
 
 
 def _generate_and_split_pairs(benchmark, output_dir):
-    """Generate all pairs for the benchmark and split into train/test."""
-    from wisent.extractors.lm_eval.lm_task_pairs_generation import (
-        build_contrastive_pairs,
+    """Load cached pairs from HF (matching stored activations), then split."""
+    from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import (
+        load_pair_texts_from_hf,
     )
-
-    print(f"Generating all contrastive pairs for {benchmark}...", flush=True)
-    pairs = build_contrastive_pairs(
-        task_name=benchmark, train_ratio=SPLIT_RATIO_TRAIN_DEFAULT,
-    )
-    if not pairs:
-        print(f"ERROR: No pairs generated for {benchmark}")
+    print(f"Loading cached pairs for {benchmark} from HF...", flush=True)
+    hf_pairs = load_pair_texts_from_hf(benchmark, limit=OPTIMIZATION_TRIAL_PAIRS_CAP)
+    if not hf_pairs:
+        print(f"ERROR: No cached pairs on HF for {benchmark}")
         sys.exit(EXIT_CODE_ERROR)
+    sorted_ids = sorted(hf_pairs.keys())
+    all_pairs = [
+        {"prompt": hf_pairs[pid]["prompt"],
+         "positive_response": {"model_response": hf_pairs[pid]["positive"]},
+         "negative_response": {"model_response": hf_pairs[pid]["negative"]}}
+        for pid in sorted_ids
+    ]
+    split_idx = math.floor(len(all_pairs) * SPLIT_RATIO_TRAIN_DEFAULT)
+    train_pairs, test_pairs = all_pairs[:split_idx], all_pairs[split_idx:]
 
-    split_idx = math.floor(len(pairs) * SPLIT_RATIO_TRAIN_DEFAULT)
-    train_pairs = pairs[:split_idx]
-    test_pairs = pairs[split_idx:]
-
-    def _save_pairs(pair_list, path, task_name):
-        data = {
-            "task_name": task_name,
-            "num_pairs": len(pair_list),
-            "pairs": [p.to_dict() for p in pair_list],
-        }
+    def _save(pair_list, path):
         with open(path, "w") as f:
-            json.dump(data, f, indent=JSON_INDENT)
+            json.dump({"task_name": benchmark, "num_pairs": len(pair_list),
+                        "pairs": pair_list}, f, indent=JSON_INDENT)
 
     train_path = os.path.join(output_dir, f"train_pairs_{benchmark}.json")
     test_path = os.path.join(output_dir, f"test_pairs_{benchmark}.json")
-    _save_pairs(train_pairs, train_path, benchmark)
-    _save_pairs(test_pairs, test_path, benchmark)
-    print(f"   Total: {len(pairs)}, Train: {len(train_pairs)}, Test: {len(test_pairs)}")
+    _save(train_pairs, train_path)
+    _save(test_pairs, test_path)
+    print(f"   Total: {len(all_pairs)}, Train: {len(train_pairs)}, Test: {len(test_pairs)}")
     return train_path, test_path, len(train_pairs), len(test_pairs)
 
 
@@ -166,10 +163,9 @@ def _run_method(
     workspace = os.path.join(method_dir, "_workspace")
     os.makedirs(workspace, exist_ok=True)
 
-    trial_limit = min(n_train, OPTIMIZATION_TRIAL_PAIRS_CAP)
     objective = create_objective(
         method=method_upper, model=model_name, task=benchmark,
-        num_layers=num_layers, limit=trial_limit, device=None,
+        num_layers=num_layers, limit=n_train, device=None,
         work_dir=workspace,
         train_pairs_file=train_pairs_file,
         test_pairs_file=test_pairs_file,
