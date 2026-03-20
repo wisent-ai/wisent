@@ -89,8 +89,11 @@ def run_pipeline(
             from wisent.core.reading.modules.utilities.data.enriched_builder import (
                 build_enriched_from_hf, build_enriched_from_db,
             )
+            ec = config._extra_args.get("extraction_component", "residual_stream")
+            hf_strat = (f"{config.extraction_strategy}/{ec}"
+                        if ec != "residual_stream" else config.extraction_strategy)
             cached = build_enriched_from_hf(
-                model, task, layer, config.extraction_strategy, work_dir,
+                model, task, layer, hf_strat, work_dir,
                 train_pairs_file=train_pairs_file, limit=limit)
             if not cached:
                 cached = build_enriched_from_db(
@@ -104,6 +107,10 @@ def run_pipeline(
                 device=device, verbose=False, timing=False, raw=False,
                 cached_model=cached_model,
             ))
+            from wisent.core.utils.cli.optimize_steering.pipeline.find_best.activation_cache import (
+                upload_extracted_activations,
+            )
+            upload_extracted_activations(activations_file, model, task)
         eval_pairs_file = test_pairs_file or train_pairs_file
         with open(eval_pairs_file) as f:
             eval_limit = len(json.load(f).get("pairs", []))
