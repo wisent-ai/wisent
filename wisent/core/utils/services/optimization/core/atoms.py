@@ -108,6 +108,9 @@ class BaseOptimizer:
         space: dict[str, Param],
         n_trials: int,
         cfg: HPOConfig | None = None,
+        model: str | None = None,
+        benchmark: str | None = None,
+        method: str | None = None,
     ) -> OptimizationRun:
         """Run optimization using a functional objective + Param space.
 
@@ -116,6 +119,9 @@ class BaseOptimizer:
             space: dict mapping param names to Param objects.
             n_trials: number of trials to run.
             cfg: optional HPOConfig for backend/sampler/pruner/storage settings.
+            model: model name for study persistence on HF.
+            benchmark: benchmark name for study persistence on HF.
+            method: method name for study persistence on HF.
         """
         if cfg is None:
             cfg = HPOConfig(n_trials=n_trials, direction=self.direction)
@@ -127,16 +133,18 @@ class BaseOptimizer:
         )
 
         if cfg.backend == HYPEROPT_BACKEND_NAME:
-            return run_hyperopt(objective_fn, space, n_trials, direction, cfg.seed)
-
+            return run_hyperopt(
+                objective_fn, space, n_trials, direction, cfg.seed,
+                model=model, benchmark=benchmark, method=method,
+            )
         if cfg.backend == OPTUNA_BACKEND_NAME:
             sampler = self._make_sampler(cfg)
             pruner = self._make_pruner(cfg)
             return run_optuna_functional(
                 objective_fn, space, n_trials, direction,
                 sampler, pruner, cfg.storage, cfg.study_name, cfg.load_if_exists,
+                model=model, benchmark=benchmark, method=method,
             )
-
         raise ValueError(f"Unknown backend: {cfg.backend}")
 
     def _objective(self, trial: optuna.Trial) -> float:

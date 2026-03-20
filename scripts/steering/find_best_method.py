@@ -196,7 +196,10 @@ def _run_method(
 
     optimizer = BaseOptimizer()
     optimizer.direction = "maximize"
-    result = optimizer.optimize_fn(persisted_objective, space, n_trials, cfg=HPOConfig(backend=backend))
+    result = optimizer.optimize_fn(
+        persisted_objective, space, n_trials, cfg=HPOConfig(backend=backend),
+        model=model_name, benchmark=benchmark, method=method_upper,
+    )
     method_time = time.time() - method_start
     entry = {
         "method": method_name,

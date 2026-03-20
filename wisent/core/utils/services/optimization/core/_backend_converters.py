@@ -26,6 +26,9 @@ def run_hyperopt(
     n_trials: int,
     direction: str,
     seed: int | None,
+    model: str | None = None,
+    benchmark: str | None = None,
+    method: str | None = None,
 ) -> OptimizationRun:
     """Run optimization using the Hyperopt backend."""
     from hyperopt import STATUS_OK, Trials, fmin, tpe
@@ -34,31 +37,33 @@ def run_hyperopt(
         name: _param_to_hyperopt(name, param)
         for name, param in space.items()
     }
-
     maximize = direction == "maximize"
     trials = Trials()
+    if model and benchmark and method:
+        from wisent.core.utils.services.optimization.core.study_persistence import (
+            download_hyperopt_trials, upload_hyperopt_trials,
+        )
+        cached = download_hyperopt_trials(model, benchmark, method)
+        if cached is not None:
+            trials = cached
+            print(f"  [study] Resuming from {len(trials.trials)} prior trials")
 
     def wrapped(params):
         score = objective_fn(params)
-        return {
-            "loss": -score if maximize else score,
-            "status": STATUS_OK,
-        }
+        return {"loss": -score if maximize else score, "status": STATUS_OK}
 
     rstate_kwargs = {}
     if seed is not None:
         import numpy as _np
         rstate_kwargs["rstate"] = _np.random.default_rng(seed)
-
+    prior_count = len(trials.trials)
     fmin(
-        fn=wrapped,
-        space=hp_space,
-        algo=tpe.suggest,
-        max_evals=n_trials,
-        trials=trials,
-        show_progressbar=True,
-        **rstate_kwargs,
+        fn=wrapped, space=hp_space, algo=tpe.suggest,
+        max_evals=prior_count + n_trials, trials=trials,
+        show_progressbar=True, **rstate_kwargs,
     )
+    if model and benchmark and method:
+        upload_hyperopt_trials(model, benchmark, method, trials)
 
     all_trials = []
     best_score = None
@@ -76,7 +81,6 @@ def run_hyperopt(
         ):
             best_score = score
             best_params = params
-
     if best_params is None:
         best_raw = {
             k: v[INDEX_FIRST]
@@ -85,12 +89,9 @@ def run_hyperopt(
         best_params = resolve_categorical_indices(best_raw, space)
         best_loss = trials.best_trial["result"]["loss"]
         best_score = -best_loss if maximize else best_loss
-
     return OptimizationRun(
-        best_params=best_params,
-        best_score=best_score,
-        all_trials=all_trials,
-        n_trials=n_trials,
+        best_params=best_params, best_score=best_score,
+        all_trials=all_trials, n_trials=len(trials.trials),
         backend=HYPEROPT_BACKEND_NAME,
     )
 
@@ -105,12 +106,26 @@ def run_optuna_functional(
     storage: str | None,
     study_name: str | None,
     load_if_exists: bool,
+    model: str | None = None,
+    benchmark: str | None = None,
+    method: str | None = None,
 ) -> OptimizationRun:
-    """Run optimization using Optuna with Param-based space.
-
-    Accepts pre-built sampler and pruner objects from the caller.
-    """
+    """Run optimization using Optuna with Param-based space."""
     import optuna
+    import tempfile, os
+
+    # Try to download existing study from HF
+    hf_db_path = None
+    if not storage and model and benchmark and method:
+        from wisent.core.utils.services.optimization.core.study_persistence import (
+            download_optuna_db, upload_optuna_db,
+        )
+        work = tempfile.mkdtemp(prefix="optuna_study_")
+        hf_db_path = download_optuna_db(model, benchmark, method, work)
+        db_path = hf_db_path or os.path.join(work, "study.db")
+        storage = f"sqlite:///{db_path}"
+        study_name = study_name or f"{benchmark}_{method.lower()}"
+        load_if_exists = True
 
     def objective(trial: optuna.Trial) -> float:
         params = {
@@ -120,28 +135,27 @@ def run_optuna_functional(
         return objective_fn(params)
 
     study = optuna.create_study(
-        direction=direction,
-        sampler=sampler,
-        pruner=pruner,
-        storage=storage,
-        study_name=study_name,
-        load_if_exists=bool(
-            storage and study_name and load_if_exists,
-        ),
+        direction=direction, sampler=sampler, pruner=pruner,
+        storage=storage, study_name=study_name,
+        load_if_exists=bool(storage and study_name and load_if_exists),
     )
+    prior_count = len(study.trials)
+    if prior_count:
+        print(f"  [study] Resuming from {prior_count} prior trials")
     study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
+
+    # Upload updated study to HF
+    if model and benchmark and method and storage and storage.startswith("sqlite:///"):
+        db_file = storage.replace("sqlite:///", "")
+        upload_optuna_db(model, benchmark, method, db_file)
 
     all_trials = [
         {"params": t.params, "score": t.value}
-        for t in study.trials
-        if t.value is not None
+        for t in study.trials if t.value is not None
     ]
-
     return OptimizationRun(
-        best_params=study.best_params,
-        best_score=study.best_value,
-        all_trials=all_trials,
-        n_trials=n_trials,
+        best_params=study.best_params, best_score=study.best_value,
+        all_trials=all_trials, n_trials=len(study.trials),
         backend=OPTUNA_BACKEND_NAME,
     )
 
