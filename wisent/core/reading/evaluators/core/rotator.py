@@ -166,15 +166,7 @@ class EvaluatorRotator(BaseRotator[BaseEvaluator]):
                 f"Please add 'evaluator_name' attribute to the extractor class."
             )
 
-        try:
-            cls = BaseEvaluator.get(evaluator_name)
-        except EvaluatorError:
-            logger.warning(
-                f"Evaluator '{evaluator_name}' not registered for task "
-                f"'{self._task_name}', falling back to 'generation'"
-            )
-            cls = BaseEvaluator.get("generation")
-            evaluator_name = "generation"
+        cls = BaseEvaluator.get(evaluator_name)
         logger.info(
             f"Auto-selected evaluator '{evaluator_name}' for task "
             f"'{self._task_name}' (from extractor)"
