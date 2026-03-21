@@ -49,25 +49,28 @@ def run_hyperopt(
             print(f"  [study] Resuming from {len(trials.trials)} prior trials")
 
     _should_upload = bool(model and benchmark and method)
+    prior_count = len(trials.trials)
 
-    def wrapped(params):
-        score = objective_fn(params)
+    if prior_count >= n_trials:
+        print(f"  [study] Already has {prior_count} trials (requested {n_trials}), skipping")
+    else:
+        def wrapped(params):
+            score = objective_fn(params)
+            if _should_upload:
+                upload_hyperopt_trials(model, benchmark, method, trials)
+            return {"loss": -score if maximize else score, "status": STATUS_OK}
+
+        rstate_kwargs = {}
+        if seed is not None:
+            import numpy as _np
+            rstate_kwargs["rstate"] = _np.random.default_rng(seed)
+        fmin(
+            fn=wrapped, space=hp_space, algo=tpe.suggest,
+            max_evals=prior_count + n_trials, trials=trials,
+            show_progressbar=True, **rstate_kwargs,
+        )
         if _should_upload:
             upload_hyperopt_trials(model, benchmark, method, trials)
-        return {"loss": -score if maximize else score, "status": STATUS_OK}
-
-    rstate_kwargs = {}
-    if seed is not None:
-        import numpy as _np
-        rstate_kwargs["rstate"] = _np.random.default_rng(seed)
-    prior_count = len(trials.trials)
-    fmin(
-        fn=wrapped, space=hp_space, algo=tpe.suggest,
-        max_evals=prior_count + n_trials, trials=trials,
-        show_progressbar=True, **rstate_kwargs,
-    )
-    if model and benchmark and method:
-        upload_hyperopt_trials(model, benchmark, method, trials)
 
     all_trials = []
     best_score = None
@@ -144,22 +147,24 @@ def run_optuna_functional(
         load_if_exists=bool(storage and study_name and load_if_exists),
     )
     prior_count = len(study.trials)
-    if prior_count:
-        print(f"  [study] Resuming from {prior_count} prior trials")
+    if prior_count >= n_trials:
+        print(f"  [study] Already has {prior_count} trials (requested {n_trials}), skipping")
+    else:
+        remaining = n_trials - prior_count
+        if prior_count:
+            print(f"  [study] Resuming from {prior_count} prior trials, running {remaining} more")
+        callbacks = []
+        if model and benchmark and method and storage and storage.startswith("sqlite:///"):
+            db_file = storage.replace("sqlite:///", "")
 
-    callbacks = []
-    if model and benchmark and method and storage and storage.startswith("sqlite:///"):
-        db_file = storage.replace("sqlite:///", "")
+            def _upload_cb(study, trial):
+                upload_optuna_db(model, benchmark, method, db_file)
 
-        def _upload_cb(study, trial):
-            upload_optuna_db(model, benchmark, method, db_file)
-
-        callbacks.append(_upload_cb)
-
-    study.optimize(
-        objective, n_trials=n_trials, show_progress_bar=True,
-        callbacks=callbacks,
-    )
+            callbacks.append(_upload_cb)
+        study.optimize(
+            objective, n_trials=remaining, show_progress_bar=True,
+            callbacks=callbacks,
+        )
 
     all_trials = [
         {"params": t.params, "score": t.value}
