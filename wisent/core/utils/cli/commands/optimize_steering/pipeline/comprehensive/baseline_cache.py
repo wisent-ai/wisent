@@ -15,6 +15,9 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from wisent.core.utils.config_tools.constants import (
     COMBO_OFFSET,
+    EVAL_F1_THRESHOLD,
+    EVAL_GENERATION_EMBEDDING_WEIGHT,
+    EVAL_GENERATION_NLI_WEIGHT,
     HF_RETRY_BACKOFF_MAX_EXPONENT,
     HF_RETRY_BASE_WAIT,
     HF_RETRY_JITTER_MAX,
@@ -109,6 +112,7 @@ def generate_and_upload_baseline(
     pairs_file: str,
     device: Optional[str],
     hf_retry_config: Dict[str, Any],
+    cached_model=None,
 ) -> Tuple[float, List[Dict[str, Any]], List[Dict[str, Any]]]:
     """Generate baseline responses, evaluate, upload to HF, return results.
 
@@ -133,9 +137,14 @@ def generate_and_upload_baseline(
     if not pairs_data:
         raise ValueError(f"No pairs found in {pairs_file}")
 
-    wisent_model = WisentModel(model, device=device)
+    wisent_model = cached_model if cached_model is not None else WisentModel(model, device=device)
     evaluator = EvaluatorRotator(
         evaluator=None, task_name=benchmark, autoload=False,
+        evaluator_kwargs={
+            "f1_threshold": EVAL_F1_THRESHOLD,
+            "generation_embedding_weight": EVAL_GENERATION_EMBEDDING_WEIGHT,
+            "generation_nli_weight": EVAL_GENERATION_NLI_WEIGHT,
+        },
     )
     gen_kwargs = get_generate_kwargs()
 
@@ -162,6 +171,7 @@ def generate_and_upload_baseline(
             "question": prompt,
             "choices": [neg_response, expected],
             "task_name": benchmark,
+            "model": wisent_model,
         }
         metadata = pair_dict.get("metadata", {})
         if metadata:
@@ -187,7 +197,8 @@ def generate_and_upload_baseline(
             "ground_truth": result.ground_truth,
         })
 
-    wisent_model.detach()
+    if cached_model is None:
+        wisent_model.detach()
 
     accuracy = correct / total if total > RECURSION_INITIAL_DEPTH else RECURSION_INITIAL_DEPTH
 

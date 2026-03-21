@@ -89,7 +89,7 @@ def main():
 
     # --- Baseline (unsteered) evaluation ---
     baseline_score = _run_baseline(
-        model_name, benchmark, test_file, output_dir,
+        model_name, benchmark, test_file, output_dir, cached_model,
     )
     print(f"   Baseline:      {baseline_score:.4f}")
 
@@ -228,16 +228,13 @@ def _run_method(
     print(f"   Saved: {incremental_path}")
 
 
-def _run_baseline(model_name, benchmark, test_file, output_dir):
-    """Evaluate unsteered model, using HF cache if available."""
-    if baseline_cache.check_baseline_exists(model_name, benchmark):
-        print("   Loading cached baseline from HuggingFace...")
-        _, scores, meta = baseline_cache.load_baseline_from_hf(model_name, benchmark)
-        return meta.get("accuracy", sum(s["correct"] for s in scores) / len(scores))
-    print("   Generating baseline (no cache found)...")
+def _run_baseline(model_name, benchmark, test_file, output_dir, cached_model=None):
+    """Generate baseline on the actual test pairs (never use HF cache)."""
+    print("   Generating baseline on test pairs...", flush=True)
     acc, _, _ = baseline_cache.generate_and_upload_baseline(
         model_name, benchmark, test_file, None,
         baseline_cache.build_default_hf_retry_config(),
+        cached_model=cached_model,
     )
     return acc
 
