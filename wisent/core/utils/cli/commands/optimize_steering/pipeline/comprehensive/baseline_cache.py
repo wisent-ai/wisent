@@ -168,6 +168,7 @@ def generate_baseline_with_cache(
             eval_kwargs = {
                 "response": response, "expected": expected, "question": prompt,
                 "choices": [neg_resp, expected], "task_name": benchmark, "model": wisent_model,
+                "correct_answers": [expected], "incorrect_answers": [neg_resp],
             }
             result = evaluator.evaluate(**eval_kwargs)
             cached_results[pair_hashes[idx]] = {
