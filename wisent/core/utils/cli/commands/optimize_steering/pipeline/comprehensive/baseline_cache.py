@@ -170,6 +170,10 @@ def generate_baseline_with_cache(
                 "choices": [neg_resp, expected], "task_name": benchmark, "model": wisent_model,
                 "correct_answers": [expected], "incorrect_answers": [neg_resp],
             }
+            metadata = pair_dict.get("metadata") or {}
+            for k, v in metadata.items():
+                if v is not None and k not in eval_kwargs:
+                    eval_kwargs[k] = v
             result = evaluator.evaluate(**eval_kwargs)
             cached_results[pair_hashes[idx]] = {
                 "prompt": prompt, "response": response, "expected": expected,
