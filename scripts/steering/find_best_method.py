@@ -128,9 +128,12 @@ def _load_pairs_from_hf(benchmark, output_dir):
 
     def _to_pair(pid):
         p = hf_pairs[pid]
-        return {"prompt": p["prompt"],
-                "positive_response": {"model_response": p["positive"]},
-                "negative_response": {"model_response": p["negative"]}}
+        d = {"prompt": p["prompt"],
+             "positive_response": {"model_response": p["positive"]},
+             "negative_response": {"model_response": p["negative"]}}
+        if p.get("metadata"):
+            d["metadata"] = p["metadata"]
+        return d
 
     train_pairs = [_to_pair(pid) for pid in sorted_ids[:n_train]]
     test_pairs = [_to_pair(pid) for pid in sorted_ids[n_train:total_needed]]

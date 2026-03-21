@@ -134,19 +134,17 @@ def upload_pairs_to_hf(
         from wisent.core.reading.modules.utilities.data.sources.hf.hf_writers import (
             upload_pair_texts,
         )
-        from wisent.core.utils.cli.optimize_steering.pipeline.comprehensive.baseline_cache import (
-            build_default_hf_retry_config,
-        )
         pair_texts = {}
         for i, p in enumerate(pairs):
-            pair_texts[i] = {
+            entry = {
                 "prompt": p.prompt,
                 "positive": p.positive_response.model_response,
                 "negative": p.negative_response.model_response,
             }
-        upload_pair_texts(
-            task_name, pair_texts, build_default_hf_retry_config(),
-        )
+            if p.metadata:
+                entry["metadata"] = p.metadata
+            pair_texts[i] = entry
+        upload_pair_texts(task_name, pair_texts)
         log.info(
             "Uploaded pairs to HuggingFace",
             extra={"count": len(pairs)},
