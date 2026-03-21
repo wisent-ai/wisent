@@ -6,6 +6,7 @@ under baselines/{safe_model}/{benchmark}/.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import tempfile
@@ -18,6 +19,7 @@ from wisent.core.utils.config_tools.constants import (
     EVAL_F1_THRESHOLD,
     EVAL_GENERATION_EMBEDDING_WEIGHT,
     EVAL_GENERATION_NLI_WEIGHT,
+    HASH_PREFIX_LEN,
     HF_RETRY_BACKOFF_MAX_EXPONENT,
     HF_RETRY_BASE_WAIT,
     HF_RETRY_JITTER_MAX,
@@ -40,6 +42,12 @@ from wisent.core.reading.modules.utilities.data.sources.hf.hf_config import (
 logger = logging.getLogger(__name__)
 
 
+def compute_pairs_hash(pairs_file: str) -> str:
+    """Compute a short hash of the test pairs file for cache keying."""
+    with open(pairs_file, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()[:HASH_PREFIX_LEN]
+
+
 def build_default_hf_retry_config() -> Dict[str, Any]:
     """Build HF retry config dict from infrastructure constants."""
     return {
@@ -52,20 +60,17 @@ def build_default_hf_retry_config() -> Dict[str, Any]:
     }
 
 
-def check_baseline_exists(model: str, benchmark: str) -> bool:
-    """Check if a cached baseline exists on HuggingFace for this model+benchmark."""
+def check_baseline_exists(model: str, benchmark: str, pairs_hash: str = "") -> bool:
+    """Check if a cached baseline exists on HF for this model+benchmark+pairs."""
     from huggingface_hub import hf_hub_download
     from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import (
         _get_hf_token,
     )
-
-    hf_path = baseline_responses_hf_path(model, benchmark)
+    hf_path = baseline_responses_hf_path(model, benchmark, pairs_hash)
     try:
         hf_hub_download(
-            repo_id=HF_REPO_ID,
-            filename=hf_path,
-            repo_type=HF_REPO_TYPE,
-            token=_get_hf_token(),
+            repo_id=HF_REPO_ID, filename=hf_path,
+            repo_type=HF_REPO_TYPE, token=_get_hf_token(),
         )
         return True
     except Exception:
@@ -73,32 +78,24 @@ def check_baseline_exists(model: str, benchmark: str) -> bool:
 
 
 def load_baseline_from_hf(
-    model: str, benchmark: str,
+    model: str, benchmark: str, pairs_hash: str = "",
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], Dict[str, Any]]:
-    """Load cached baseline responses, scores, and metadata from HuggingFace.
-
-    Returns:
-        Tuple of (responses_list, scores_list, metadata_dict).
-    """
+    """Load cached baseline responses, scores, and metadata from HF."""
     from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import (
         _hf_hub_download,
     )
-
-    responses_path = _hf_hub_download(baseline_responses_hf_path(model, benchmark))
+    responses_path = _hf_hub_download(baseline_responses_hf_path(model, benchmark, pairs_hash))
     with open(responses_path, "r") as f:
         responses_data = json.load(f)
-
-    scores_path = _hf_hub_download(baseline_scores_hf_path(model, benchmark))
+    scores_path = _hf_hub_download(baseline_scores_hf_path(model, benchmark, pairs_hash))
     with open(scores_path, "r") as f:
         scores_data = json.load(f)
-
     try:
-        meta_path = _hf_hub_download(baseline_metadata_hf_path(model, benchmark))
+        meta_path = _hf_hub_download(baseline_metadata_hf_path(model, benchmark, pairs_hash))
         with open(meta_path, "r") as f:
             metadata = json.load(f)
     except Exception:
         metadata = {}
-
     return (
         responses_data.get("responses", []),
         scores_data.get("scores", []),
@@ -202,9 +199,10 @@ def generate_and_upload_baseline(
 
     accuracy = correct / total if total > RECURSION_INITIAL_DEPTH else RECURSION_INITIAL_DEPTH
 
+    ph = compute_pairs_hash(pairs_file)
     _upload_baseline(
         model, benchmark, responses_list, scores_list,
-        accuracy, total, hf_retry_config,
+        accuracy, total, hf_retry_config, pairs_hash=ph,
     )
 
     return accuracy, responses_list, scores_list
@@ -218,6 +216,7 @@ def _upload_baseline(
     accuracy: float,
     total: int,
     hf_retry_config: Dict[str, Any],
+    pairs_hash: str = "",
 ) -> None:
     """Upload baseline responses, scores, and metadata to HuggingFace."""
     from wisent.core.reading.modules.utilities.data.sources.hf.hf_writers import (
@@ -226,24 +225,23 @@ def _upload_baseline(
     )
 
     safe = model_to_safe_name(model)
+    ph = pairs_hash
 
     files_to_upload = [
         (
-            baseline_responses_hf_path(model, benchmark),
+            baseline_responses_hf_path(model, benchmark, ph),
             {"model": model, "benchmark": benchmark, "responses": responses_list},
         ),
         (
-            baseline_scores_hf_path(model, benchmark),
+            baseline_scores_hf_path(model, benchmark, ph),
             {"model": model, "benchmark": benchmark, "scores": scores_list},
         ),
         (
-            baseline_metadata_hf_path(model, benchmark),
+            baseline_metadata_hf_path(model, benchmark, ph),
             {
-                "model": model,
-                "safe_model": safe,
-                "benchmark": benchmark,
-                "accuracy": accuracy,
-                "total_pairs": total,
+                "model": model, "safe_model": safe,
+                "benchmark": benchmark, "pairs_hash": ph,
+                "accuracy": accuracy, "total_pairs": total,
                 "timestamp": datetime.now().isoformat(),
             },
         ),

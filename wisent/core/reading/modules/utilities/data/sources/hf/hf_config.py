@@ -41,22 +41,25 @@ def pair_texts_hf_path(benchmark: str) -> str:
     return f"pair_texts/{benchmark}.json"
 
 
-def baseline_responses_hf_path(model: str, benchmark: str) -> str:
+def baseline_responses_hf_path(model: str, benchmark: str, pairs_hash: str = "") -> str:
     """Build HF repo path for baseline (unsteered) responses JSON."""
     safe = model_to_safe_name(model)
-    return f"baselines/{safe}/{benchmark}/responses.json"
+    sub = f"/{pairs_hash}" if pairs_hash else ""
+    return f"baselines/{safe}/{benchmark}{sub}/responses.json"
 
 
-def baseline_scores_hf_path(model: str, benchmark: str) -> str:
+def baseline_scores_hf_path(model: str, benchmark: str, pairs_hash: str = "") -> str:
     """Build HF repo path for baseline (unsteered) scores JSON."""
     safe = model_to_safe_name(model)
-    return f"baselines/{safe}/{benchmark}/scores.json"
+    sub = f"/{pairs_hash}" if pairs_hash else ""
+    return f"baselines/{safe}/{benchmark}{sub}/scores.json"
 
 
-def baseline_metadata_hf_path(model: str, benchmark: str) -> str:
+def baseline_metadata_hf_path(model: str, benchmark: str, pairs_hash: str = "") -> str:
     """Build HF repo path for baseline metadata JSON."""
     safe = model_to_safe_name(model)
-    return f"baselines/{safe}/{benchmark}/metadata.json"
+    sub = f"/{pairs_hash}" if pairs_hash else ""
+    return f"baselines/{safe}/{benchmark}{sub}/metadata.json"
 
 
 def personalization_baseline_hf_path(model: str) -> str:
