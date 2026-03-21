@@ -229,16 +229,9 @@ def _run_method(
 
 
 def _run_baseline(model_name, benchmark, test_file, output_dir, cached_model=None):
-    """Evaluate unsteered model on test pairs, with hash-keyed HF cache."""
-    ph = baseline_cache.compute_pairs_hash(test_file)
-    if baseline_cache.check_baseline_exists(model_name, benchmark, ph):
-        print(f"   Loading cached baseline (hash={ph})...", flush=True)
-        _, scores, meta = baseline_cache.load_baseline_from_hf(model_name, benchmark, ph)
-        return meta.get("accuracy", sum(s["correct"] for s in scores) / len(scores))
-    print("   Generating baseline on test pairs...", flush=True)
-    acc, _, _ = baseline_cache.generate_and_upload_baseline(
-        model_name, benchmark, test_file, None,
-        baseline_cache.build_default_hf_retry_config(), cached_model=cached_model,
+    """Evaluate unsteered model on test pairs, with per-pair HF cache."""
+    acc, _, _ = baseline_cache.generate_baseline_with_cache(
+        model_name, benchmark, test_file, None, cached_model=cached_model,
     )
     return acc
 
