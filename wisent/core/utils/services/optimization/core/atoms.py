@@ -8,6 +8,7 @@ import optuna
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
 from wisent.core.utils.config_tools.constants import (
     BASE_OPTIMIZER_NAME,
+    EXTRA_TRIALS_DEFAULT,
     HYPEROPT_BACKEND_NAME,
     OPTUNA_BACKEND_NAME,
 )
@@ -111,17 +112,20 @@ class BaseOptimizer:
         model: str | None = None,
         benchmark: str | None = None,
         method: str | None = None,
+        extra_trials: int = EXTRA_TRIALS_DEFAULT,
     ) -> OptimizationRun:
         """Run optimization using a functional objective + Param space.
 
         arguments:
             objective_fn: callable that takes a dict of param values and returns a score.
             space: dict mapping param names to Param objects.
-            n_trials: number of trials to run.
+            n_trials: target number of trials. Skipped if already met.
             cfg: optional HPOConfig for backend/sampler/pruner/storage settings.
             model: model name for study persistence on HF.
             benchmark: benchmark name for study persistence on HF.
             method: method name for study persistence on HF.
+            extra_trials: additional trials to run on top of n_trials even if
+                already met. Use to force extra exploration.
         """
         if cfg is None:
             cfg = HPOConfig(n_trials=n_trials, direction=self.direction)
@@ -136,6 +140,7 @@ class BaseOptimizer:
             return run_hyperopt(
                 objective_fn, space, n_trials, direction, cfg.seed,
                 model=model, benchmark=benchmark, method=method,
+                extra_trials=extra_trials,
             )
         if cfg.backend == OPTUNA_BACKEND_NAME:
             sampler = self._make_sampler(cfg)
@@ -144,6 +149,7 @@ class BaseOptimizer:
                 objective_fn, space, n_trials, direction,
                 sampler, pruner, cfg.storage, cfg.study_name, cfg.load_if_exists,
                 model=model, benchmark=benchmark, method=method,
+                extra_trials=extra_trials,
             )
         raise ValueError(f"Unknown backend: {cfg.backend}")
 
