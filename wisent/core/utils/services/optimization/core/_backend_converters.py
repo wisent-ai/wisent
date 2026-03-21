@@ -48,8 +48,12 @@ def run_hyperopt(
             trials = cached
             print(f"  [study] Resuming from {len(trials.trials)} prior trials")
 
+    _should_upload = bool(model and benchmark and method)
+
     def wrapped(params):
         score = objective_fn(params)
+        if _should_upload:
+            upload_hyperopt_trials(model, benchmark, method, trials)
         return {"loss": -score if maximize else score, "status": STATUS_OK}
 
     rstate_kwargs = {}
@@ -142,12 +146,20 @@ def run_optuna_functional(
     prior_count = len(study.trials)
     if prior_count:
         print(f"  [study] Resuming from {prior_count} prior trials")
-    study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
 
-    # Upload updated study to HF
+    callbacks = []
     if model and benchmark and method and storage and storage.startswith("sqlite:///"):
         db_file = storage.replace("sqlite:///", "")
-        upload_optuna_db(model, benchmark, method, db_file)
+
+        def _upload_cb(study, trial):
+            upload_optuna_db(model, benchmark, method, db_file)
+
+        callbacks.append(_upload_cb)
+
+    study.optimize(
+        objective, n_trials=n_trials, show_progress_bar=True,
+        callbacks=callbacks,
+    )
 
     all_trials = [
         {"params": t.params, "score": t.value}
