@@ -49,7 +49,7 @@ class LiveCodeBenchV6Extractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "code_generation"
+    evaluator_name = "coding"
 
     def __init__(self, version: Optional[str] = None, platform: str | None = None):
         """

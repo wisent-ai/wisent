@@ -39,7 +39,7 @@ class CNMOExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "math_olympiad"
+    evaluator_name = "math"
 
     def extract_contrastive_pairs(
         self,
@@ -143,7 +143,7 @@ class CurateExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "personalized_alignment"
+    evaluator_name = "generation"
 
     def __init__(self, http_timeout: int):
         """Initialize CURATe extractor.

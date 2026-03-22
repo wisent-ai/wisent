@@ -40,7 +40,7 @@ class SycophancyEvalExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "sycophancy_resistance"
+    evaluator_name = "generation"
 
     def __init__(self, task_type: str | None = None):
         """

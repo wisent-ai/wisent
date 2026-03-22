@@ -26,7 +26,7 @@ class BrowseCompExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "web_browsing_accuracy"
+    evaluator_name = "generation"
 
     def __init__(self, language: Optional[str] = None):
         """
@@ -145,7 +145,7 @@ class SealExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "search_augmented_qa"
+    evaluator_name = "generation"
 
     def __init__(self, flavor: Optional[str] = None):
         """

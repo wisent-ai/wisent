@@ -52,7 +52,7 @@ class MMLUReduxExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "multiple_choice"
+    evaluator_name = "log_likelihoods"
 
     def __init__(self, subject: str | None = None, only_valid: bool = True):
         """

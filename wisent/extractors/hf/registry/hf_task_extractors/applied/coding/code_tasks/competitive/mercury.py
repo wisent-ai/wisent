@@ -34,7 +34,7 @@ class MercuryExtractor(HuggingFaceBenchmarkExtractor):
     - Negative (incorrect) = Slowest solution
     """
 
-    evaluator_name = "code_efficiency"
+    evaluator_name = "coding"
 
     def extract_contrastive_pairs(
         self,

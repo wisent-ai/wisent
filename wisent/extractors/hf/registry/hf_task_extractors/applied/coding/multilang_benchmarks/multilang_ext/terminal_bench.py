@@ -24,7 +24,7 @@ class TerminalBenchExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "terminal_execution"
+    evaluator_name = "coding"
 
     def extract_contrastive_pairs(
         self,

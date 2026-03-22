@@ -27,7 +27,7 @@ class PolygloToxicityExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "multilingual_toxicity"
+    evaluator_name = "generation"
     
     # Supported languages in PTP
     SUPPORTED_LANGUAGES = [

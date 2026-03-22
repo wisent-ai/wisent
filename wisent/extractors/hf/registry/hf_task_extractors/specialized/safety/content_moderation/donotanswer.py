@@ -66,7 +66,7 @@ class DoNotAnswerExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "safety_refusal"
+    evaluator_name = "generation"
 
     def __init__(self, risk_area: str | None = None):
         """

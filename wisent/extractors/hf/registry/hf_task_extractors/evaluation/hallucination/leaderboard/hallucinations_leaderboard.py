@@ -48,7 +48,7 @@ class HallucinationsLeaderboardExtractor(HallucinationsLeaderboardHelperMixin, H
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "hallucination_detection"
+    evaluator_name = "generation"
 
     def __init__(self, task: str | None = None):
         """

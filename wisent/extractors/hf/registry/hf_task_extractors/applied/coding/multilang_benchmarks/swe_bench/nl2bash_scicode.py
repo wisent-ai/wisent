@@ -32,7 +32,7 @@ class NL2BashExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "bash_generation"
+    evaluator_name = "coding"
 
     def extract_contrastive_pairs(
         self,
@@ -144,7 +144,7 @@ class SciCodeExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "scientific_computing"
+    evaluator_name = "coding"
 
     def __init__(self, http_timeout: int, domain: str | None = None):
         """

@@ -47,7 +47,7 @@ class CodeforcesExtractor(CodeforcesHelperMixin, HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "code_generation"
+    evaluator_name = "coding"
 
     def __init__(
         self,

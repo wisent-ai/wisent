@@ -59,7 +59,7 @@ class FaithBenchExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "hallucination_detection"
+    evaluator_name = "generation"
 
     def __init__(self, http_timeout: int, include_benign: bool = False):
         """

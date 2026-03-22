@@ -27,7 +27,7 @@ class OkapiMMLUExtractor(HuggingFaceBenchmarkExtractor):
     Understanding) covering 57 tasks across 26 languages.
     """
 
-    evaluator_name = "multiple_choice"
+    evaluator_name = "log_likelihoods"
 
     def __init__(self, language: str | None = None):
         """
@@ -131,7 +131,7 @@ class OkapiHellaswagExtractor(HuggingFaceBenchmarkExtractor):
     across 26 languages.
     """
 
-    evaluator_name = "multiple_choice"
+    evaluator_name = "log_likelihoods"
 
     def __init__(self, language: str | None = None):
         """

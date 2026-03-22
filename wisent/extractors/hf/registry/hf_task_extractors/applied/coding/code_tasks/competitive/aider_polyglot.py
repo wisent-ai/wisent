@@ -38,7 +38,7 @@ class AiderPolyglotExtractor(HuggingFaceBenchmarkExtractor):
     - Negative (incorrect) = Buggy or incomplete solution
     """
 
-    evaluator_name = "code_editing"
+    evaluator_name = "coding"
 
     def __init__(self, http_timeout: int, language: Optional[str] = None):
         """

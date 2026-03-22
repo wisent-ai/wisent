@@ -51,7 +51,7 @@ class SorryBenchExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "safety_refusal"
+    evaluator_name = "generation"
 
     def extract_contrastive_pairs(
         self,

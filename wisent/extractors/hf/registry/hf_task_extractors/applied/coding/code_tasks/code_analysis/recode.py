@@ -40,7 +40,7 @@ class RecodeExtractor(HuggingFaceBenchmarkExtractor):
     - Negative (incorrect) = Buggy/incomplete solution
     """
 
-    evaluator_name = "code_generation"
+    evaluator_name = "coding"
 
     def __init__(self, http_timeout: int):
         """Initialize ReCode extractor.
