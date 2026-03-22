@@ -49,7 +49,7 @@ class AgentBenchExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "exact_match"
+    evaluator_name = "agent_task"
 
     def __init__(self, domain: str | None = None):
         """

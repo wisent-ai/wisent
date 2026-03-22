@@ -18,7 +18,7 @@ class DarijaBenchExtractor(HuggingFaceBenchmarkExtractor):
     sentiment analysis, NER, and QA.
     """
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "multiple_choice"
 
     def extract_contrastive_pairs(
         self,
@@ -119,7 +119,7 @@ class EusExamsExtractor(HuggingFaceBenchmarkExtractor):
     various domains from official exams.
     """
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "multiple_choice"
 
     def extract_contrastive_pairs(
         self,

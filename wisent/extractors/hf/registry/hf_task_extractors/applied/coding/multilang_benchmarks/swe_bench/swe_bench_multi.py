@@ -35,7 +35,7 @@ class MultiSWEBenchExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "coding"
+    evaluator_name = "software_engineering_multilingual"
 
     def __init__(self, language: str | None = None):
         """

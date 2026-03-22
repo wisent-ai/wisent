@@ -35,7 +35,7 @@ class SciCodeExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "coding"
+    evaluator_name = "code_generation"
 
     def extract_contrastive_pairs(
         self,

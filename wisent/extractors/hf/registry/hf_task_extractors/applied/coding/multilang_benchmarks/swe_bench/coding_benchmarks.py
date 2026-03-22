@@ -33,7 +33,7 @@ class OJBenchExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "coding"
+    evaluator_name = "competitive_programming"
 
     def __init__(self, difficulty: str | None = None, language: Optional[str] = None):
         """

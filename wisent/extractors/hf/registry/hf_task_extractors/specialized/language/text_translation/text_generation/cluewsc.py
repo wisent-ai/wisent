@@ -34,7 +34,7 @@ class CLUEWSCExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "coreference_resolution"
 
     def __init__(self, split: Optional[str] = None):
         """

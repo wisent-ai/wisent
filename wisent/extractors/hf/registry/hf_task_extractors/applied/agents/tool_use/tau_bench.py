@@ -49,7 +49,7 @@ class TauBenchExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "exact_match"
+    evaluator_name = "agent_task_completion"
 
     def __init__(self, http_timeout: int, domain: Optional[str] = None):
         """

@@ -59,7 +59,7 @@ class WildGuardExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "generation"
+    evaluator_name = "safety_classification"
 
     def __init__(self, config: Optional[str] = None, task: Optional[str] = None):
         """

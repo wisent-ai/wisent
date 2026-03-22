@@ -48,7 +48,7 @@ class ORBenchExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "generation"
+    evaluator_name = "over_refusal"
 
     def __init__(self, config: Optional[str] = None, include_toxic: bool = False):
         """

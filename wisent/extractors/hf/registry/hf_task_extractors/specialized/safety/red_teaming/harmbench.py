@@ -61,7 +61,7 @@ class HarmBenchExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "generation"
+    evaluator_name = "safety_refusal"
 
     def __init__(self, functional_category: str | None = None):
         """

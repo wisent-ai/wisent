@@ -31,7 +31,7 @@ class MMMUExtractor(HuggingFaceBenchmarkExtractor):
     is stored in metadata for reference.
     """
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "multiple_choice"
 
     def __init__(self, subject: str | None = None):
         """

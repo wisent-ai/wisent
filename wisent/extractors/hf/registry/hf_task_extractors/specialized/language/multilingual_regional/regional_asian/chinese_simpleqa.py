@@ -52,7 +52,7 @@ class ChineseSimpleQAExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "generation"
+    evaluator_name = "factuality"
 
     def __init__(self, category: str | None = None):
         """

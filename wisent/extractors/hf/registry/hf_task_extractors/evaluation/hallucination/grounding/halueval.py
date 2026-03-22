@@ -37,7 +37,7 @@ class HaluEvalExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "generation"
+    evaluator_name = "hallucination_detection"
 
     def __init__(self, source_filter: str | None = None):
         """

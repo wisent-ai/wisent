@@ -56,7 +56,7 @@ class AgentHarmExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "generation"
+    evaluator_name = "agent_safety"
 
     def __init__(self, config: Optional[str] = None, include_benign: bool = False):
         """

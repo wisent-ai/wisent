@@ -53,7 +53,7 @@ class ToolEmuExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "generation"
+    evaluator_name = "agent_safety"
 
     def __init__(self, http_timeout: int, risk_level: str | None = None):
         """

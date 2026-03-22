@@ -24,7 +24,7 @@ class FinSearchCompExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "generation"
+    evaluator_name = "financial_search"
 
     def __init__(self, region: str | None = None):
         """

@@ -62,7 +62,7 @@ class OlympiadBenchExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "math"
+    evaluator_name = "math_olympiad"
 
     def __init__(
         self,
