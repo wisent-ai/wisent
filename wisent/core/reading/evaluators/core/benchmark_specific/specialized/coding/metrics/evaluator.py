@@ -102,7 +102,7 @@ class CodingEvaluator(BaseEvaluator):
 
     def __init__(
         self,
-        cfg: EvaluatorConfig,
+        cfg: EvaluatorConfig | None = None,
         provider: Optional["Provider"] = None,
         model_fn: Optional[Callable[["CodingTask"], dict[str,str]]] = None,
         repair_fn: Optional[RepairFn] = None,
@@ -111,6 +111,15 @@ class CodingEvaluator(BaseEvaluator):
         self.provider = provider
         self.model_fn = model_fn
         self.repair_fn = repair_fn
+        if cfg is None:
+            from wisent.core.utils.config_tools.constants import (
+                FEEDBACK_MAX_CHARS, SAFE_DOCKER_FSIZE_MB, SAFE_DOCKER_NOFILE,
+            )
+            cfg = EvaluatorConfig(
+                feedback_max_chars=FEEDBACK_MAX_CHARS,
+                fsize_mb=SAFE_DOCKER_FSIZE_MB,
+                nofile=SAFE_DOCKER_NOFILE,
+            )
         self.cfg = cfg
         self.exec = DockerSandboxExecutor(image=self.cfg.image, runtime=self.cfg.runtime)
 
@@ -123,12 +132,10 @@ class CodingEvaluator(BaseEvaluator):
 
         logger.debug(f"CodingEvaluator.evaluate() called with test_code={'present (' + str(len(test_code)) + ' chars)' if test_code else 'MISSING'}, task_name={task_name}")
         if not test_code:
-            logger.warning(f"CodingEvaluator: No test_code provided. kwargs keys: {list(kwargs.keys())}")
-
-        if not test_code:
-            return EvalResult(
-                ground_truth="UNKNOWN", method_used=self.name,
-                confidence=0.0, details="No test code provided for code execution",
+            from wisent.core.reading.evaluators.core.atoms import EvaluatorError
+            raise EvaluatorError(
+                f"coding evaluator requires 'test_code' kwarg but it was not provided. "
+                f"kwargs keys: {list(kwargs.keys())}"
             )
 
         if 'ds1000' in task_name.lower() or 'ds_1000' in task_name.lower():

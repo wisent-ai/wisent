@@ -118,11 +118,9 @@ class APPSEvaluator(BaseEvaluator):
         test_code = kwargs.get("test_code")
 
         if not test_code:
-            return EvalResult(
-                ground_truth="UNKNOWN",
-                method_used=self.name,
-                confidence=0.0,
-                details="No test_code provided",
+            from wisent.core.reading.evaluators.core.atoms import EvaluatorError
+            raise EvaluatorError(
+                f"apps evaluator requires 'test_code' kwarg but it was not provided."
             )
 
         return self._coding_evaluator.evaluate(

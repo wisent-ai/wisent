@@ -101,10 +101,9 @@ class LiveMathBenchEvaluator(BaseEvaluator):
         from wisent.core.reading.evaluators.benchmark_specific.math_parsing.extract_boxed import extract_boxed_answer
         model = kwargs.get("judge_model")
         if model is None:
-            return EvalResult(
-                ground_truth="UNKNOWN", method_used=f"{self.name}_llm_judge",
-                confidence=0.0, details="No judge model provided",
-                meta={"expected": expected}
+            from wisent.core.reading.evaluators.core.atoms import EvaluatorError
+            raise EvaluatorError(
+                f"livemathbench LLM judge requires 'judge_model' kwarg."
             )
         question = kwargs.get("question", "")
         language = kwargs.get("language", "en")

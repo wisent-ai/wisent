@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any, List, Mapping
 
-from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult, EvaluatorError
 from wisent.core.utils.config_tools.constants import (
     EVAL_MIN_SIMILARITY_THRESHOLD_DEFAULT,
     ROUNDING_PRECISION_FINE,
@@ -92,21 +92,26 @@ class TruthfulQAGenEvaluator(BaseEvaluator):
             EvalResult with TRUTHFUL if response is semantically closer to correct answers,
             UNTRUTHFUL if closer to incorrect answers, UNKNOWN if undecidable.
         """
-        correct_answers = kwargs.get("correct_answers", [])
-        incorrect_answers = kwargs.get("incorrect_answers", [])
+        correct_answers = kwargs.get("correct_answers")
+        incorrect_answers = kwargs.get("incorrect_answers")
+
+        if correct_answers is None or incorrect_answers is None:
+            raise EvaluatorError(
+                f"truthfulqa_gen requires both 'correct_answers' and "
+                f"'incorrect_answers' kwargs. Got correct={correct_answers is not None}, "
+                f"incorrect={incorrect_answers is not None}."
+            )
 
         # Ensure expected is in correct_answers
         if isinstance(expected, str) and expected.strip():
             if expected not in correct_answers:
                 correct_answers = [expected] + list(correct_answers)
 
-        if not correct_answers and not incorrect_answers:
-            return EvalResult(
-                ground_truth="UNKNOWN",
-                method_used=self.name,
-                confidence=0.0,
-                details="No correct or incorrect answers provided for comparison",
-                meta={"error": "missing_answers"},
+        if not correct_answers or not incorrect_answers:
+            raise EvaluatorError(
+                f"truthfulqa_gen requires non-empty 'correct_answers' and "
+                f"'incorrect_answers'. Got {len(correct_answers)} correct, "
+                f"{len(incorrect_answers)} incorrect."
             )
 
         response_text = (response or "").strip()
