@@ -48,7 +48,7 @@ class ORBenchExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "over_refusal"
+    evaluator_name = "or_bench"
 
     def __init__(self, config: Optional[str] = None, include_toxic: bool = False):
         """
@@ -94,7 +94,7 @@ class ORBenchExtractor(HuggingFaceBenchmarkExtractor):
         try:
             docs = self.load_dataset(
                 dataset_name="bench-llm/or-bench",
-                config=self.config,
+                dataset_config=self.config,
                 split="train",
                 limit=max_items,
             )

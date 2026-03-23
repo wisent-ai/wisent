@@ -48,7 +48,7 @@ class RefusalBenchExtractor(HuggingFaceBenchmarkExtractor):
     - Negative (incorrect) = Confident answer despite flawed context
     """
 
-    evaluator_name = "selective_refusal"
+    evaluator_name = "refusalbench"
 
     def __init__(self, perturbation_type: str | None = None):
         """

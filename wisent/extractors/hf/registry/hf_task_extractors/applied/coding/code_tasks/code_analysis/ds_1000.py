@@ -14,6 +14,11 @@ log = setup_logger(__name__)
 class Ds1000Extractor(HuggingFaceBenchmarkExtractor):
     """
     Extractor for ds_1000 dataset.
+    """
+
+    evaluator_name = "coding"
+
+    """
 
     Schema (xlangai/DS-1000):
         - prompt: str (question/prompt)

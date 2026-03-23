@@ -56,7 +56,7 @@ class AgentHarmExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "agent_safety"
+    evaluator_name = "agentharm"
 
     def __init__(self, config: Optional[str] = None, include_benign: bool = False):
         """
@@ -95,7 +95,7 @@ class AgentHarmExtractor(HuggingFaceBenchmarkExtractor):
         try:
             docs = self.load_dataset(
                 dataset_name="ai-safety-institute/AgentHarm",
-                config=self.config,
+                dataset_config=self.config,
                 split="test_public",
                 limit=max_items,
             )

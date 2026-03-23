@@ -5,6 +5,7 @@ from typing import Any, TYPE_CHECKING
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.config_tools.constants import EVAL_SINGLE_CHAR_LENGTH
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
@@ -18,17 +19,24 @@ task_names = ("atis",)
 class AtisExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Atis benchmark - NER task."""
 
-
     evaluator_name = "generation"
+
     def extract_contrastive_pairs(
         self,
-        lm_eval_task_data: ConfigurableTask,
+        lm_eval_task_data: ConfigurableTask | None = None,
         limit: int | None = None,
         preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
-        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
+        log = bind(_LOG, task="atis")
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+
+        if lm_eval_task_data is not None:
+            docs = self.load_docs(
+                lm_eval_task_data, max_items,
+                preferred_doc=preferred_doc)
+        else:
+            docs = self._load_atis_from_hf(max_items)
+
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
@@ -40,40 +48,44 @@ class AtisExtractor(HuggingFaceBenchmarkExtractor):
                     break
 
         if not pairs:
-            task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid pairs extracted", extra={"task": task_name})
+            log.warning("No valid pairs extracted", extra={"task": "atis"})
 
         return pairs
 
+    def _load_atis_from_hf(self, max_items):
+        """Load ATIS dataset directly from HuggingFace."""
+        docs = self.load_dataset(
+            dataset_name="tuetschek/atis",
+            split="test",
+            limit=max_items,
+        )
+        return docs
+
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Extract contrastive pair from ATIS NER doc.
-        Schema: {'source': str (prompt), 'target': str (correct extraction), 'task_data': dict}
+        Extract contrastive pair from ATIS doc.
+
+        Supports two schemas:
+        - lm-eval: {'source': str, 'target': str}
+        - tuetschek/atis HF: {'text': str, 'intent': str, 'slots': str}
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            prompt = doc.get("source", "").strip()
-            correct = doc.get("target", "").strip()
+            prompt = (
+                doc.get("source", "")
+                or doc.get("text", "")
+            ).strip()
+            correct = (
+                doc.get("target", "")
+                or doc.get("slots", "")
+            ).strip()
 
             if not prompt or not correct:
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
+                log.debug("Skipping: missing fields")
                 return None
 
-            # Generate an incorrect response by corrupting the target
-            # Strategy: reverse the extraction order
-            parts = correct.split(", ")
-            if len(parts) > 1:
-                # Reverse the order of extractions
-                incorrect = ", ".join(reversed(parts))
-            else:
-                # If only one part, add "none" as incorrect
-                incorrect = "none"
-
-            # Ensure incorrect is actually different
-            if incorrect == correct:
-                incorrect = "none"
-
+            incorrect = self._corrupt_target(correct)
             metadata = {"label": "atis"}
 
             return self._build_pair(
@@ -84,6 +96,18 @@ class AtisExtractor(HuggingFaceBenchmarkExtractor):
             )
 
         except Exception as exc:
-            log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
+            log.error("Error extracting pair", exc_info=exc)
             return None
+
+    @staticmethod
+    def _corrupt_target(correct: str) -> str:
+        """Generate incorrect response by reversing parts."""
+        parts = correct.split(", ")
+        if len(parts) > EVAL_SINGLE_CHAR_LENGTH:
+            incorrect = ", ".join(reversed(parts))
+        else:
+            incorrect = "none"
+        if incorrect == correct:
+            incorrect = "none"
+        return incorrect
 

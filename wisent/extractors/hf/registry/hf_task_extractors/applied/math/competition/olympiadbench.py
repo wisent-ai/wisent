@@ -62,7 +62,7 @@ class OlympiadBenchExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "math_olympiad"
+    evaluator_name = "olympiadbench"
 
     def __init__(
         self,
@@ -106,7 +106,7 @@ class OlympiadBenchExtractor(HuggingFaceBenchmarkExtractor):
         try:
             docs = self.load_dataset(
                 dataset_name="Hothan/OlympiadBench",
-                config=self.config,
+                dataset_config=self.config,
                 split="train",
                 limit=max_items,
             )

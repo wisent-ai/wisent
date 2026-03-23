@@ -29,7 +29,7 @@ class PawsXExtractor(HuggingFaceBenchmarkExtractor):
     pairs of sentences with high lexical overlap. Available in 7 languages.
     """
 
-    evaluator_name = "paraphrase_detection"
+    evaluator_name = "log_likelihoods"
 
     def __init__(self, language: str | None = None):
         """
@@ -124,7 +124,7 @@ class MLQAExtractor(HuggingFaceBenchmarkExtractor):
     It contains QA instances in 7 languages.
     """
 
-    evaluator_name = "extractive_qa"
+    evaluator_name = "mlqa"
 
     def __init__(self, language: str | None = None):
         """

@@ -25,7 +25,7 @@ class PoliticalBiasExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "political_bias"
+    evaluator_name = "politicalbias"
 
     def extract_contrastive_pairs(
         self,

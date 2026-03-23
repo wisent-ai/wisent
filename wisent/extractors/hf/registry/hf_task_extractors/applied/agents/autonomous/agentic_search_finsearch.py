@@ -24,7 +24,7 @@ class FinSearchCompExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "financial_search"
+    evaluator_name = "finsearchcomp"
 
     def __init__(self, region: str | None = None):
         """
@@ -40,7 +40,7 @@ class FinSearchCompExtractor(HuggingFaceBenchmarkExtractor):
         self,
         limit: int | None = None,
         *,
-        oversampling_factor: float,
+        oversampling_factor: float | None = None,
     ) -> list[ContrastivePair]:
         """
         Build contrastive pairs from FinSearchComp dataset.
@@ -51,12 +51,14 @@ class FinSearchCompExtractor(HuggingFaceBenchmarkExtractor):
         Returns:
             A list of ContrastivePair objects.
         """
+        from wisent.core.utils.config_tools.constants import EXTRACTOR_DEFAULT_OVERSAMPLING_FACTOR
         max_items = self._normalize_limit(limit)
+        if oversampling_factor is None:
+            oversampling_factor = EXTRACTOR_DEFAULT_OVERSAMPLING_FACTOR
         pairs: list[ContrastivePair] = []
 
         try:
-            # Load more docs than needed since some have null response_reference
-            # Dataset has ~20% null values, so load 50% extra to be safe
+            # Load extra docs since some have null response_reference
             load_limit = int(max_items * oversampling_factor) if max_items else None
             docs = self.load_dataset(
                 dataset_name="ByteSeedXpert/FinSearchComp",

@@ -45,7 +45,7 @@ class PlanBenchExtractor(HuggingFaceBenchmarkExtractor):
     - Negative (incorrect) = Invalid or wrong plan
     """
 
-    evaluator_name = "planning_reasoning"
+    evaluator_name = "planbench"
 
     def __init__(self, config: Optional[str] = None):
         """

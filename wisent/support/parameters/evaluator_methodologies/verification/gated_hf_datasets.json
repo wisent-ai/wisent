@@ -1,0 +1,53 @@
+{
+  "description": "All HuggingFace datasets referenced by HF extractors that require gated access.",
+  "generated": "2026-03-23",
+  "datasets": [
+    {
+      "dataset": "sorry-bench/sorry-bench-202406",
+      "url": "https://huggingface.co/datasets/sorry-bench/sorry-bench-202406",
+      "gating": "auto",
+      "blocked_tasks": ["sorry_bench", "sorry-bench", "sorrybench"],
+      "access_status": "not_requested"
+    },
+    {
+      "dataset": "sorry-bench/sorry-bench-202503",
+      "url": "https://huggingface.co/datasets/sorry-bench/sorry-bench-202503",
+      "gating": "auto",
+      "blocked_tasks": ["sorry_bench", "sorry-bench", "sorrybench"],
+      "access_status": "not_requested"
+    },
+    {
+      "dataset": "Idavidrein/gpqa",
+      "url": "https://huggingface.co/datasets/Idavidrein/gpqa",
+      "gating": "auto",
+      "blocked_tasks": [
+        "supergpqa", "supergpqa_biology",
+        "supergpqa_chemistry", "supergpqa_physics",
+        "super_gpqa"
+      ],
+      "access_status": "not_requested"
+    },
+    {
+      "dataset": "opencompass/LiveMathBench",
+      "url": "https://huggingface.co/datasets/opencompass/LiveMathBench",
+      "gating": "auto",
+      "blocked_tasks": [
+        "livemathbench", "livemathbench_amc_cn",
+        "livemathbench_amc_en", "livemathbench_ccee_cn",
+        "livemathbench_ccee_en", "livemathbench_cnmo_cn",
+        "livemathbench_cnmo_en", "livemathbench_hard_cn",
+        "livemathbench_hard_en", "livemathbench_wlpmc_cn",
+        "livemathbench_wlpmc_en", "livemathbench_v202505_all_en",
+        "livemathbench_v202505_hard_en"
+      ],
+      "access_status": "granted"
+    }
+  ],
+  "previously_gated_now_bypassed": [
+    {
+      "dataset": "allenai/wildguardmix",
+      "bypass": "ToxicityPrompts/wildguard-train (ungated mirror)",
+      "tasks": ["wildguard", "wild_guard", "wildguardmix"]
+    }
+  ]
+}

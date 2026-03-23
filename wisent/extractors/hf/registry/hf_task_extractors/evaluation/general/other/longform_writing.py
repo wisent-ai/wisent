@@ -39,7 +39,7 @@ class LongformWritingExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "longform_writing_quality"
+    evaluator_name = "longform_writing"
 
     def __init__(self, category: str | None = None):
         """
@@ -55,7 +55,7 @@ class LongformWritingExtractor(HuggingFaceBenchmarkExtractor):
         self,
         limit: int | None = None,
         *,
-        min_text_length: int,
+        min_text_length: int | None = None,
     ) -> list[ContrastivePair]:
         """
         Build contrastive pairs from longform writing examples.
@@ -71,8 +71,9 @@ class LongformWritingExtractor(HuggingFaceBenchmarkExtractor):
         Returns:
             A list of ContrastivePair objects.
         """
+        from wisent.core.utils.config_tools.constants import C4_MIN_TEXT_LENGTH
         max_items = self._normalize_limit(limit)
-        self.min_length = min_text_length
+        self.min_length = min_text_length if min_text_length is not None else C4_MIN_TEXT_LENGTH
 
         # Try loading from various longform writing datasets
         docs = []

@@ -38,7 +38,7 @@ class FACTSGroundingExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "factuality_grounding"
+    evaluator_name = "facts_grounding"
 
     def __init__(self):
         """

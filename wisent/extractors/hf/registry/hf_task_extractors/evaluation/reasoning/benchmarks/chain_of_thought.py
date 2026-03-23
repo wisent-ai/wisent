@@ -16,7 +16,7 @@ class ChainOfThoughtExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Chain of Thought reasoning tasks."""
 
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

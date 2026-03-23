@@ -40,7 +40,7 @@ class SycophancyEvalExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "sycophancy_resistance"
+    evaluator_name = "sycophancy_eval"
 
     def __init__(self, task_type: str | None = None):
         """
@@ -71,15 +71,23 @@ class SycophancyEvalExtractor(HuggingFaceBenchmarkExtractor):
         """
         max_items = self._normalize_limit(limit)
 
-        try:
-            docs = self.load_dataset(
-                dataset_name="meg-tong/sycophancy-eval",
-                split="train",
-                limit=max_items * 2 if max_items else None,  # Load extra for filtering
-            )
-            log.info(f"Loaded {len(docs)} examples from sycophancy-eval")
-        except Exception as e:
-            log.error(f"Failed to load sycophancy-eval: {e}")
+        docs = None
+        for ds_name, ds_split in [
+            ("meg-tong/sycophancy-eval", "train"),
+            ("cfierro/sycophancy_eval_answer", "test"),
+        ]:
+            try:
+                from wisent.core.utils.config_tools.constants import EVAL_NUM_CONTRASTIVE_PAIR_SIZE as OVS
+                docs = self.load_dataset(
+                    dataset_name=ds_name,
+                    split=ds_split,
+                    limit=max_items * OVS if max_items else None,
+                )
+                log.info(f"Loaded {len(docs)} examples from {ds_name}")
+                break
+            except Exception as e:
+                log.warning(f"Failed to load {ds_name}: {e}")
+        if not docs:
             return []
 
         pairs: list[ContrastivePair] = []

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from typing import Any
 from wisent.core.utils.cli.cli_logger import setup_logger
 
@@ -19,7 +20,7 @@ class LambadaMultilingualExtractor(HuggingFaceBenchmarkExtractor):
     Multilingual variants available for multiple languages.
     """
 
-    evaluator_name = "word_prediction"
+    evaluator_name = "log_likelihoods"
 
     def __init__(self, language: str | None = None):
         """

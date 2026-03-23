@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from typing import Any
 from wisent.core.utils.cli.cli_logger import setup_logger
-from wisent.core.utils.config_tools.constants import LIVEMATHBENCH_DEFAULT_DATASET_CONFIG, LIVEMATHBENCH_DEFAULT_CONFIG_LABEL
+from wisent.core.utils.config_tools.constants import (
+    LIVEMATHBENCH_DEFAULT_DATASET_CONFIG, LIVEMATHBENCH_DEFAULT_CONFIG_LABEL,
+    INDEX_FIRST, SENSOR_LAST_OFFSET, WRONG_ANSWER_OFFSET_SMALL,
+    WRONG_ANSWER_GUARANTEED_OFFSET,
+)
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
@@ -54,7 +58,7 @@ class LiveMathBenchExtractor(HuggingFaceBenchmarkExtractor):
         - answer: str (final answer)
     """
 
-    evaluator_name = "exact_match"
+    evaluator_name = "math"
 
     # Set default dataset_config and config_label, to be overridden by subclass.
     dataset_config: str = LIVEMATHBENCH_DEFAULT_DATASET_CONFIG
@@ -144,24 +148,40 @@ class LiveMathBenchExtractor(HuggingFaceBenchmarkExtractor):
 
         # Try symbolic parsing first
         try:
+            from wisent.core.utils.config_tools.constants import (
+                WRONG_ANSWER_OFFSET_SMALL, INDEX_FIRST,
+            )
+            import sympy
             parsed_correct = latex2sympy(correct)
             transforms = [
-                parsed_correct * 2,
-                parsed_correct / 2,
-                parsed_correct - 1,
-                -parsed_correct,
+                parsed_correct + WRONG_ANSWER_OFFSET_SMALL,
+                parsed_correct * WRONG_ANSWER_OFFSET_SMALL,
             ]
-            wrong = random.choice(transforms)
-            return str(latex(wrong))
+            valid = [t for t in transforms
+                     if sympy.simplify(t - parsed_correct) != INDEX_FIRST]
+            if valid:
+                return str(latex(random.choice(valid)))
         except Exception:
             pass
 
         # Try simple integer
         try:
+            from wisent.core.utils.config_tools.constants import (
+                WRONG_ANSWER_OFFSET_SMALL, WRONG_ANSWER_OFFSET_LARGE,
+                WRONG_ANSWER_MULTIPLIER, WRONG_ANSWER_ADDEND,
+                WRONG_ANSWER_GUARANTEED_OFFSET,
+            )
             clean = correct.replace('$', '').replace(',', '').strip()
             num = int(clean)
-            wrong_vals = [num * 2, num // 2 if num > 1 else num * 3, num - 1, -num]
-            return str(random.choice(wrong_vals))
+            candidates = [
+                num + WRONG_ANSWER_OFFSET_SMALL,
+                num - WRONG_ANSWER_OFFSET_LARGE,
+                num * WRONG_ANSWER_MULTIPLIER + WRONG_ANSWER_ADDEND,
+            ]
+            wrong_vals = [v for v in candidates if v != num]
+            if wrong_vals:
+                return str(random.choice(wrong_vals))
+            return str(num + WRONG_ANSWER_GUARANTEED_OFFSET)
         except ValueError:
             pass
 
@@ -171,17 +191,23 @@ class LiveMathBenchExtractor(HuggingFaceBenchmarkExtractor):
             n, d = int(frac_match.group(1)), int(frac_match.group(2))
             return random.choice([f"\\frac{{{d}}}{{{n}}}", f"\\frac{{{n*2}}}{{{d}}}"])
 
-        # For interval notation like [-1/4,0)∪(0,2)
+        # For set notation with union/intersection
         if '\\cup' in correct or '\\cap' in correct:
-            # Modify one bound
-            return correct.replace('2)', '3)').replace('0)', '1)')
+            import re as _re
+            nums = _re.findall(r'-?\d+', correct)
+            if nums:
+                old = nums[INDEX_FIRST]
+                new = str(int(old) + WRONG_ANSWER_OFFSET_SMALL)
+                return correct.replace(old, new, SENSOR_LAST_OFFSET)
+            return str(WRONG_ANSWER_GUARANTEED_OFFSET)
 
         # For pi expressions
         if '\\pi' in correct:
             return correct.replace('\\pi', '2\\pi') if '2\\pi' not in correct else correct.replace('2\\pi', '\\pi')
 
-        # Fallback
-        return random.choice(['0', '1', '-1', '2'])
+        # Last resort: guaranteed different value
+        from wisent.core.utils.config_tools.constants import WRONG_ANSWER_GUARANTEED_OFFSET
+        return str(WRONG_ANSWER_GUARANTEED_OFFSET) + correct
 
 
 # ============================================================================

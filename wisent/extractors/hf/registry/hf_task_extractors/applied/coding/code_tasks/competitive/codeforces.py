@@ -47,7 +47,7 @@ class CodeforcesExtractor(CodeforcesHelperMixin, HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "code_generation"
+    evaluator_name = "codeforces"
 
     def __init__(
         self,
@@ -93,7 +93,7 @@ class CodeforcesExtractor(CodeforcesHelperMixin, HuggingFaceBenchmarkExtractor):
         try:
             docs = self.load_dataset(
                 dataset_name="open-r1/codeforces",
-                config=self.config,
+                dataset_config=self.config,
                 split="train",
                 limit=max_items * 2 if max_items else None,  # Load extra for filtering
             )

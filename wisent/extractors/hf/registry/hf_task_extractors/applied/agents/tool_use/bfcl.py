@@ -5,6 +5,7 @@ from wisent.core.utils.cli.cli_logger import setup_logger
 import json
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_MEDIUM, INDEX_FIRST
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 __all__ = ["BFCLExtractor"]
@@ -50,7 +51,7 @@ class BFCLExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "function_calling"
+    evaluator_name = "bfcl"
 
     def __init__(self, category: str | None = None):
         """
@@ -133,14 +134,18 @@ class BFCLExtractor(HuggingFaceBenchmarkExtractor):
         """
         try:
             doc_id = doc.get("id", "")
-            question_data = doc.get("question", [])
-            function_data = doc.get("function", [])
+            question_data = doc.get("question", doc.get("prompt", []))
+            function_data = doc.get("function", doc.get("functions", doc.get("tools", [])))
             split = doc.get("split", "")
+
+            if not question_data and not function_data:
+                log.debug(f"Skipping: doc keys={list(doc.keys())}")
+                return None
 
             # Extract the user question
             user_question = self._extract_question(question_data)
             if not user_question:
-                log.debug("Skipping: missing question")
+                log.debug(f"Skipping: could not extract question from {type(question_data)}")
                 return None
 
             # Extract function definitions
@@ -183,6 +188,9 @@ class BFCLExtractor(HuggingFaceBenchmarkExtractor):
         if isinstance(question_data, str):
             return question_data.strip()
         elif isinstance(question_data, list):
+            # Handle double-nested: [[{"role": "user", "content": "..."}]]
+            if question_data and isinstance(question_data[INDEX_FIRST], list):
+                question_data = question_data[INDEX_FIRST]
             # Format: [{"role": "user", "content": "..."}]
             for item in question_data:
                 if isinstance(item, dict):

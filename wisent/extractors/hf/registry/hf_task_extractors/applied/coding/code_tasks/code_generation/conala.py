@@ -24,7 +24,7 @@ class ConalaExtractor(HuggingFaceBenchmarkExtractor):
     Note: No test cases available. Uses generation evaluator (text similarity).
     """
 
-    evaluator_name = "generation"
+    evaluator_name = "conala"
 
     def extract_contrastive_pairs(
         self,
@@ -104,30 +104,19 @@ class ConalaExtractor(HuggingFaceBenchmarkExtractor):
             return None
 
     def _create_incorrect_answer(self, correct: str) -> str:
-        """Create an incorrect answer by shuffling letters in words."""
-        def shuffle_word(word: str) -> str:
-            """Shuffle all letters in a word."""
-            if len(word) <= 2:
-                return word
-            letters = list(word)
-            random.shuffle(letters)
-            # Make sure it's actually different
-            shuffled = ''.join(letters)
-            if shuffled == word:
-                return word[::-1]  # Reverse if shuffle didn't change
-            return shuffled
-
-        # Find words (alphanumeric sequences) and shuffle their letters
-        def replace_word(match: re.Match) -> str:
-            word = match.group(0)
-            return shuffle_word(word)
-
-        # Shuffle words with 3+ characters
-        result = re.sub(r'[A-Za-z]{3,}', replace_word, correct)
-
-        # If nothing changed (all short words), append something
-        if result == correct:
-            result = correct + "_corrupted"
-
-        return result
+        """Create an incorrect answer using a semantically different snippet."""
+        # Replace with a plausible but wrong code pattern
+        wrong_snippets = [
+            "print('hello world')",
+            "x = None",
+            "return []",
+            "pass",
+            "raise NotImplementedError()",
+        ]
+        # Pick one that differs most from correct
+        correct_lower = correct.lower()
+        for snippet in wrong_snippets:
+            if snippet not in correct_lower:
+                return snippet
+        return "import sys; sys.exit()"
 

@@ -18,7 +18,7 @@ class OkapiTruthfulQAExtractor(HuggingFaceBenchmarkExtractor):
     across 26 languages.
     """
 
-    evaluator_name = "truthfulness"
+    evaluator_name = "log_likelihoods"
 
     def __init__(self, language: str | None = None):
         """

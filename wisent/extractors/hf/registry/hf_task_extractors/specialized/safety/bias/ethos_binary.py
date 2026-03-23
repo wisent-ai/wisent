@@ -16,7 +16,7 @@ class EthosBinaryExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Ethos Binary - hate speech classification."""
 
 
-    evaluator_name = "exact_match"
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

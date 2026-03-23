@@ -18,6 +18,8 @@ class MeddialogExtractor(HuggingFaceBenchmarkExtractor):
     a patient-doctor dialogue.
     """
 
+    evaluator_name = "generation"
+
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

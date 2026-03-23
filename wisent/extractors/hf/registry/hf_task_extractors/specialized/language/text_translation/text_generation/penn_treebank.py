@@ -25,7 +25,7 @@ class PennTreebankExtractor(HuggingFaceBenchmarkExtractor):
         log = bind(_LOG, task="penn_treebank")
         max_items = self._normalize_limit(limit)
 
-        docs = self.load_dataset("FALcon6/ptb_text_only", split="test", limit=max_items)
+        docs = self.load_dataset("ilovefpga/ptb_text", split="test", limit=max_items)
 
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})

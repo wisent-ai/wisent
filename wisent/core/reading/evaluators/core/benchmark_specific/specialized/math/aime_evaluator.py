@@ -54,20 +54,10 @@ Solution:"""
             EvalResult with TRUTHFUL/UNTRUTHFUL/UNKNOWN
         """
 
-        # Try to extract answer from model response
+        # Try to extract answer — \boxed{} first, then raw response
         model_answer = extract_boxed_answer(response)
-
-        if model_answer is None:
-            return EvalResult(
-                ground_truth="UNKNOWN",
-                method_used=self.name,
-                confidence=0.0,
-                details="Could not extract answer from model response",
-                meta={
-                    "response_preview": response[:DISPLAY_TRUNCATION_MEDIUM] if response else None,
-                    "expected": expected,
-                }
-            )
+        if model_answer is None and response:
+            model_answer = response.strip()
 
         # AIME answers are integers 0-999, convert both to int for comparison
         try:

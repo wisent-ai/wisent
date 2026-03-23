@@ -4,6 +4,7 @@ from typing import Any, Optional
 from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.utils.config_tools.constants import INDEX_LAST
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 __all__ = ["CLUEWSCExtractor"]
@@ -34,7 +35,7 @@ class CLUEWSCExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "coreference_resolution"
+    evaluator_name = "log_likelihoods"
 
     def __init__(self, split: Optional[str] = None):
         """
@@ -68,7 +69,7 @@ class CLUEWSCExtractor(HuggingFaceBenchmarkExtractor):
         try:
             docs = self.load_dataset(
                 dataset_name="clue",
-                config="cluewsc2020",
+                dataset_config="cluewsc2020",
                 split=self.split,
                 limit=max_items,
             )
@@ -100,11 +101,14 @@ class CLUEWSCExtractor(HuggingFaceBenchmarkExtractor):
         try:
             idx = doc.get("idx", 0)
             text = doc.get("text", "").strip()
-            label = doc.get("label", -1)  # 0 = true (coreferent), 1 = false
-            span1_text = doc.get("span1_text", "")
-            span2_text = doc.get("span2_text", "")
-            span1_index = doc.get("span1_index", -1)
-            span2_index = doc.get("span2_index", -1)
+            label = doc.get("label", INDEX_LAST)
+            target = doc.get("target", {})
+            if not isinstance(target, dict):
+                target = {}
+            span1_text = target.get("span1_text", doc.get("span1_text", ""))
+            span2_text = target.get("span2_text", doc.get("span2_text", ""))
+            span1_index = target.get("span1_index", doc.get("span1_index", INDEX_LAST))
+            span2_index = target.get("span2_index", doc.get("span2_index", INDEX_LAST))
 
             if not text or not span1_text or not span2_text:
                 log.debug("Skipping: missing text or spans")

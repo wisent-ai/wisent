@@ -19,7 +19,7 @@ class XsumExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Xsum benchmark."""
 
 
-    evaluator_name = "exact_match"
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

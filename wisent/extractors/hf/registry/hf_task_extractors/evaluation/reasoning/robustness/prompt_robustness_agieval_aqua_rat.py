@@ -16,7 +16,7 @@ class PromptRobustnessAgievalAquaRatExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Prompt Robustness AGIEval AQUA-RAT - robustness testing."""
 
 
-    evaluator_name = "generation"
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

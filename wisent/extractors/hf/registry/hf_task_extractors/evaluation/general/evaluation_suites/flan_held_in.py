@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.utils.config_tools.constants import INDEX_SECOND
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
@@ -16,7 +17,7 @@ class FlanHeldInExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for FLAN Held-In - multiple choice tasks from FLAN collection."""
 
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
@@ -26,9 +27,13 @@ class FlanHeldInExtractor(HuggingFaceBenchmarkExtractor):
 
         from datasets import load_dataset
         try:
-            dataset = load_dataset("Muennighoff/flan", "held_in", split="test")
-            if max_items:
-                dataset = dataset.select(range(min(max_items, len(dataset))))
+            dataset = load_dataset("Muennighoff/flan", "default", split="train", streaming=True)
+            docs_list = []
+            for row in dataset:
+                docs_list.append(row)
+                if max_items and len(docs_list) >= max_items:
+                    break
+            dataset = docs_list
         except Exception as e:
             log.error(f"Failed to load flan_held_in dataset: {e}")
             return []
@@ -52,7 +57,7 @@ class FlanHeldInExtractor(HuggingFaceBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
+            question = doc.get("question", doc.get("query", doc.get("input", doc.get("inputs", doc.get("instruction", doc.get("prompt", "")))))).strip()
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
 
             # Handle option_a/b/c/d format
@@ -65,9 +70,19 @@ class FlanHeldInExtractor(HuggingFaceBenchmarkExtractor):
                 ]
                 choices = [c for c in choices if c]
 
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+            answer = doc.get("answer", doc.get("label", doc.get("target", doc.get("targets", None))))
 
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
+            # FLAN is generation: inputs -> targets, no MC choices
+            if not choices and answer and question:
+                from wisent.core.utils.config_tools.constants import WRONG_ANSWER_GUARANTEED_OFFSET
+                correct = str(answer).strip()
+                incorrect = str(WRONG_ANSWER_GUARANTEED_OFFSET) + correct
+                metadata = {"label": "flan_held_in"}
+                return self._build_pair(
+                    question=question, correct=correct,
+                    incorrect=incorrect, metadata=metadata)
+
+            if isinstance(answer, str) and len(answer) == INDEX_SECOND and answer.isalpha():
                 answer_idx = ord(answer.upper()) - ord('A')
             elif isinstance(answer, int):
                 answer_idx = answer

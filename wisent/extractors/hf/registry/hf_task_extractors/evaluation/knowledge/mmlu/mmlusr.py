@@ -16,6 +16,8 @@ _LOG = setup_logger(__name__)
 class MMLUSRExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for MMLU-SR (Stress-Testing) benchmarks."""
 
+    evaluator_name = "log_likelihoods"
+
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

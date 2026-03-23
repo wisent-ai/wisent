@@ -1,14 +1,22 @@
 from __future__ import annotations
 
+import json
+import requests
 from typing import Any
 from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.utils.infra_tools.infra.core.hardware import subprocess_timeout_s
 
 __all__ = ["AlpacaEvalExtractor"]
 
 log = setup_logger(__name__)
+
+_ALPACA_EVAL_JSON_URL = (
+    "https://huggingface.co/datasets/tatsu-lab/alpaca_eval"
+    "/resolve/main/alpaca_eval.json"
+)
 
 
 class AlpacaEvalExtractor(HuggingFaceBenchmarkExtractor):
@@ -45,23 +53,7 @@ class AlpacaEvalExtractor(HuggingFaceBenchmarkExtractor):
         """
         max_items = self._normalize_limit(limit)
 
-        # Load dataset from HuggingFace
-        # AlpacaEval has a custom loading script, so we use trust_remote_code
-        try:
-            docs = self.load_dataset(
-                dataset_name="tatsu-lab/alpaca_eval",
-                split="eval",
-                limit=max_items,
-                trust_remote_code=True,
-            )
-        except Exception as e:
-            log.warning(f"Failed to load with trust_remote_code, trying alternative: {e}")
-            # Try loading without the custom script
-            docs = self.load_dataset(
-                dataset_name="tatsu-lab/alpaca_eval",
-                split="eval",
-                limit=max_items,
-            )
+        docs = self._load_alpaca_eval_json(max_items)
 
         pairs: list[ContrastivePair] = []
 
@@ -78,6 +70,17 @@ class AlpacaEvalExtractor(HuggingFaceBenchmarkExtractor):
             log.warning("No valid AlpacaEval pairs extracted")
 
         return pairs
+
+    def _load_alpaca_eval_json(self, max_items):
+        """Load AlpacaEval data directly from the JSON file on HuggingFace."""
+        resp = requests.get(
+            _ALPACA_EVAL_JSON_URL, timeout=subprocess_timeout_s())
+        resp.raise_for_status()
+        data = json.loads(resp.text)
+        log.info(f"Loaded {len(data)} AlpacaEval examples from JSON")
+        if max_items is not None:
+            data = data[:max_items]
+        return data
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """

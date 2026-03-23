@@ -16,7 +16,7 @@ class UnfairTosExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Unfair ToS - unfair terms of service classification."""
 
 
-    evaluator_name = "generation"
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

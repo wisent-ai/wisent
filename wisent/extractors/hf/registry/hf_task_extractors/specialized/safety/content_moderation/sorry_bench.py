@@ -4,6 +4,7 @@ from typing import Any
 from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.utils.config_tools.constants import INDEX_FIRST
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 __all__ = ["SorryBenchExtractor"]
@@ -51,7 +52,7 @@ class SorryBenchExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "safety_refusal"
+    evaluator_name = "sorry_bench"
 
     def extract_contrastive_pairs(
         self,
@@ -73,24 +74,24 @@ class SorryBenchExtractor(HuggingFaceBenchmarkExtractor):
 
         # Load dataset from HuggingFace
         # Note: This dataset requires accepting terms of use
-        try:
-            docs = self.load_dataset(
-                dataset_name="sorry-bench/sorry-bench-202406",
-                split="train",
-                limit=max_items,
-            )
-        except Exception as e:
-            log.warning(f"Failed to load SORRY-Bench (may require access approval): {e}")
-            # Try the newer version
+        from datasets import load_dataset as _hf_load
+        from wisent.core.utils.config_tools.constants import (
+            SORRY_BENCH_DATASET_V1, SORRY_BENCH_DATASET_V2,
+            SORRY_BENCH_DATA_FILE,
+        )
+        docs = None
+        for ds_name in [SORRY_BENCH_DATASET_V1, SORRY_BENCH_DATASET_V2]:
             try:
-                docs = self.load_dataset(
-                    dataset_name="sorry-bench/sorry-bench-202503",
-                    split="train",
-                    limit=max_items,
-                )
-            except Exception as e2:
-                log.error(f"Failed to load any SORRY-Bench version: {e2}")
-                return []
+                raw = _hf_load("json", data_files={"train": f"hf://datasets/{ds_name}/{SORRY_BENCH_DATA_FILE}"}, split="train")
+                docs = [dict(row) for row in raw]
+                if max_items:
+                    docs = docs[:max_items]
+                log.info(f"Loaded {len(docs)} from {ds_name} type={type(docs[INDEX_FIRST]) if docs else 'empty'}")
+                break
+            except Exception as e:
+                log.warning(f"Failed to load {ds_name}: {e}")
+        if not docs:
+            return []
 
         pairs: list[ContrastivePair] = []
 
@@ -120,11 +121,17 @@ class SorryBenchExtractor(HuggingFaceBenchmarkExtractor):
         """
         try:
             # The field name might be 'instruction', 'question', 'prompt', or 'turns'
+            turns = doc.get("turns")
+            if isinstance(turns, list) and turns:
+                first_turn = turns[INDEX_FIRST]
+                turns_content = first_turn.get("content", "") if isinstance(first_turn, dict) else str(first_turn)
+            else:
+                turns_content = ""
             instruction = (
                 doc.get("instruction") or
                 doc.get("question") or
                 doc.get("prompt") or
-                doc.get("turns", [{}])[0].get("content", "") if isinstance(doc.get("turns"), list) else ""
+                turns_content
             )
 
             if isinstance(instruction, str):

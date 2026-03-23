@@ -42,7 +42,7 @@ class JailbreakBenchExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "safety_refusal"
+    evaluator_name = "jailbreakbench"
 
     def __init__(self, include_benign: bool = True):
         """
@@ -79,7 +79,7 @@ class JailbreakBenchExtractor(HuggingFaceBenchmarkExtractor):
         try:
             harmful_docs = self.load_dataset(
                 dataset_name="JailbreakBench/JBB-Behaviors",
-                config="behaviors",
+                dataset_config="behaviors",
                 split="harmful",
                 limit=max_items,
             )
@@ -101,7 +101,7 @@ class JailbreakBenchExtractor(HuggingFaceBenchmarkExtractor):
                 remaining = max_items - len(pairs) if max_items else None
                 benign_docs = self.load_dataset(
                     dataset_name="JailbreakBench/JBB-Behaviors",
-                    config="behaviors",
+                    dataset_config="behaviors",
                     split="benign",
                     limit=remaining,
                 )

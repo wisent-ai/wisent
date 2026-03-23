@@ -16,7 +16,7 @@ class Dbpedia14Extractor(HuggingFaceBenchmarkExtractor):
     """Extractor for DBpedia 14 - classification task."""
 
 
-    evaluator_name = "generation"
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

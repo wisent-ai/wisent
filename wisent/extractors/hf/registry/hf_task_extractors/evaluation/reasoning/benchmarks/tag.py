@@ -29,7 +29,7 @@ class TagExtractor(HuggingFaceBenchmarkExtractor):
     database domains.
     """
 
-    evaluator_name = "table_qa"
+    evaluator_name = "tag"
 
     def __init__(self, http_timeout: int):
         """Initialize TAG-Bench extractor.

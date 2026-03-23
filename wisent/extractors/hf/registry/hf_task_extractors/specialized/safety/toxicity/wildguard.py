@@ -4,6 +4,7 @@ from typing import Any, Optional
 from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.utils.config_tools.constants import EVAL_NUM_CONTRASTIVE_PAIR_SIZE as OVERSAMPLING
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 __all__ = ["WildGuardExtractor"]
@@ -59,7 +60,7 @@ class WildGuardExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "safety_classification"
+    evaluator_name = "wildguard"
 
     def __init__(self, config: Optional[str] = None, task: Optional[str] = None):
         """
@@ -93,16 +94,20 @@ class WildGuardExtractor(HuggingFaceBenchmarkExtractor):
         """
         max_items = self._normalize_limit(limit)
 
-        try:
-            docs = self.load_dataset(
-                dataset_name="allenai/wildguardmix",
-                config=self.config,
-                split="train",
-                limit=max_items * 2 if max_items else None,  # Load extra for filtering
-            )
-            log.info(f"Loaded {len(docs)} examples from WildGuard ({self.config})")
-        except Exception as e:
-            log.error(f"Failed to load WildGuard: {e}")
+        docs = None
+        for ds_name in ["allenai/wildguardmix", "ToxicityPrompts/wildguard-train"]:
+            try:
+                docs = self.load_dataset(
+                    dataset_name=ds_name,
+                    dataset_config=self.config if "wildguardmix" in ds_name else "wildguardtrain",
+                    split="train",
+                    limit=max_items * OVERSAMPLING if max_items else None,
+                )
+                log.info(f"Loaded {len(docs)} examples from {ds_name}")
+                break
+            except Exception as e:
+                log.warning(f"Failed to load {ds_name}: {e}")
+        if not docs:
             return []
 
         pairs: list[ContrastivePair] = []

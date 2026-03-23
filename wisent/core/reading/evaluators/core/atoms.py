@@ -60,6 +60,8 @@ class BaseEvaluator(ABC):
             human-friendly description of the evaluator.
         task_names:
             tuple of task names this evaluator can handle (empty means all tasks).
+        requires_judge:
+            True if this evaluator requires an LLM judge model to function.
     
     methods:
         evaluate:
@@ -79,6 +81,7 @@ class BaseEvaluator(ABC):
     name: str = BASE_CLASS_NAME
     description: str = "Abstract base evaluator"
     task_names: tuple[str, ...] = ()
+    requires_judge: bool = False
 
     _REGISTRY: dict[str, BaseEvaluator] = {}
 
@@ -89,7 +92,9 @@ class BaseEvaluator(ABC):
         if not getattr(cls, "name", None):
             raise TypeError("Evaluator subclasses must define a class attribute `name`.")
         if cls.name in BaseEvaluator._REGISTRY:
-            raise DuplicateNameError(name=cls.name, context="evaluator registry")
+            if BaseEvaluator._REGISTRY[cls.name] is cls:
+                return
+            raise DuplicateNameError(entity_type="evaluator", name=cls.name)
         BaseEvaluator._REGISTRY[cls.name] = cls  
 
     @abstractmethod

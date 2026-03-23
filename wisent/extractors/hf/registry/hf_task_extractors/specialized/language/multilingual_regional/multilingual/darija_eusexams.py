@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from typing import Any
 from wisent.core.utils.cli.cli_logger import setup_logger
 
@@ -18,7 +19,7 @@ class DarijaBenchExtractor(HuggingFaceBenchmarkExtractor):
     sentiment analysis, NER, and QA.
     """
 
-    evaluator_name = "multiple_choice"
+    evaluator_name = "darija_bench"
 
     def extract_contrastive_pairs(
         self,
@@ -119,7 +120,7 @@ class EusExamsExtractor(HuggingFaceBenchmarkExtractor):
     various domains from official exams.
     """
 
-    evaluator_name = "multiple_choice"
+    evaluator_name = "eus_exams"
 
     def extract_contrastive_pairs(
         self,

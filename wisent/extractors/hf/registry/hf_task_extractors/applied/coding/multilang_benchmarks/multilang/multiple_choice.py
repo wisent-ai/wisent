@@ -16,7 +16,7 @@ class MultipleChoiceExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Multiple Choice - generic multiple choice questions."""
 
 
-    evaluator_name = "exact_match"
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
@@ -26,7 +26,7 @@ class MultipleChoiceExtractor(HuggingFaceBenchmarkExtractor):
 
         from datasets import load_dataset
         try:
-            dataset = load_dataset("EleutherAI/bigbench", "multiple_choice", split="train")
+            dataset = load_dataset("EleutherAI/bigbench", "default", split="train")
             if max_items:
                 dataset = dataset.select(range(min(max_items, len(dataset))))
         except Exception as e:

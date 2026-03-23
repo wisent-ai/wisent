@@ -68,20 +68,11 @@ Solution:"""
         extract_from_expected = kwargs.get('extract_from_expected', True)
         verbose = kwargs.get('verbose', False)
 
-        # Extract answer from model response
+        # Extract answer from model response — try \boxed{} first,
+        # then use raw response (contrastive pairs store stripped answers)
         model_answer = extract_boxed_answer(response)
-
-        if model_answer is None:
-            return EvalResult(
-                ground_truth="UNKNOWN",
-                method_used=self.name,
-                confidence=0.0,
-                details="Could not extract \\boxed{} answer from model response",
-                meta={
-                    "response_preview": response[:DISPLAY_TRUNCATION_MEDIUM] if response else None,
-                    "expected": expected,
-                }
-            )
+        if model_answer is None and response:
+            model_answer = response.strip()
 
         # Get expected answer
         if extract_from_expected and isinstance(expected, str):

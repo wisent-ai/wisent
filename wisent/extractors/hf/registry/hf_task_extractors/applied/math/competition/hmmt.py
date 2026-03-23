@@ -26,7 +26,7 @@ class HMMTExtractor(HuggingFaceBenchmarkExtractor):
     """
 
 
-    evaluator_name = "generation"
+    evaluator_name = "math"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

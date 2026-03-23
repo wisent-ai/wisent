@@ -157,10 +157,6 @@ EXTRACTORS_SAFETY_MULTILINGUAL: dict[str, str] = {
     "swe_verified": f"{base_import}swe_bench:SWEBenchVerifiedExtractor",
     "swe_bench_verified": f"{base_import}swe_bench:SWEBenchVerifiedExtractor",
     "swebench_verified": f"{base_import}swe_bench:SWEBenchVerifiedExtractor",
-    "multi_swe_bench": f"{base_import}swe_bench:MultiSWEBenchExtractor",
-    "multiswebench": f"{base_import}swe_bench:MultiSWEBenchExtractor",
-    "swe_bench_multilingual": f"{base_import}swe_bench:MultiSWEBenchExtractor",
-
     # LiveCodeBench V6 (NOT lm-eval)
     "livecodebench_v6": f"{base_import}livecodebench_v6:LiveCodeBenchV6Extractor",
     "livecodebench_v5": f"{base_import}livecodebench_v6:LiveCodeBenchV6Extractor",

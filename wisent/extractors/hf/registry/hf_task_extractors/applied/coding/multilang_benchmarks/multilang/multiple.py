@@ -17,15 +17,22 @@ _LOG = setup_logger(__name__)
 class MultipleExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Multiple benchmark."""
 
+    evaluator_name = "coding"
+
     def extract_contrastive_pairs(
         self,
-        lm_eval_task_data: ConfigurableTask,
+        lm_eval_task_data: ConfigurableTask | None = None,
         limit: int | None = None,
         preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
-        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
+        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "multiple") if lm_eval_task_data else "multiple")
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+        if lm_eval_task_data is not None:
+            docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+        else:
+            docs = self.load_dataset(
+                dataset_name="openai_humaneval",
+                split="test", limit=max_items)
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 

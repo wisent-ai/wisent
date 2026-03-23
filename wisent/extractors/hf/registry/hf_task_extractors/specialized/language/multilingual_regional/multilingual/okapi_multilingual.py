@@ -6,6 +6,7 @@ from typing import Any
 
 from wisent.core.utils.cli.cli_logger import setup_logger
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.utils.config_tools.constants import INDEX_FIRST, SENSOR_LAST_OFFSET
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 __all__ = [
@@ -27,7 +28,7 @@ class OkapiMMLUExtractor(HuggingFaceBenchmarkExtractor):
     Understanding) covering 57 tasks across 26 languages.
     """
 
-    evaluator_name = "multiple_choice"
+    evaluator_name = "log_likelihoods"
 
     def __init__(self, language: str | None = None):
         """
@@ -47,18 +48,21 @@ class OkapiMMLUExtractor(HuggingFaceBenchmarkExtractor):
         max_items = self._normalize_limit(limit)
         pairs: list[ContrastivePair] = []
 
-        try:
-            # Load dataset - try different configs
-            config = self.language if self.language else "de"
-            docs = self.load_dataset(
-                dataset_name="jon-tow/okapi_mmlu",
-                dataset_config=config,
-                split="test",
-                limit=max_items,
-            )
-            log.info(f"Loaded {len(docs)} examples from Okapi MMLU ({config})")
-        except Exception as e:
-            log.error(f"Failed to load Okapi MMLU: {e}")
+        config = self.language if self.language else "de"
+        docs = None
+        for ds_name in ["jon-tow/okapi_mmlu", "lighteval/okapi_mmlu"]:
+            try:
+                docs = self.load_dataset(
+                    dataset_name=ds_name,
+                    dataset_config=config,
+                    split="test",
+                    limit=max_items,
+                )
+                log.info(f"Loaded {len(docs)} examples from {ds_name} ({config})")
+                break
+            except Exception as e:
+                log.warning(f"Failed to load {ds_name}: {e}")
+        if not docs:
             return []
 
         for doc in docs:
@@ -75,7 +79,13 @@ class OkapiMMLUExtractor(HuggingFaceBenchmarkExtractor):
         try:
             question = doc.get("question", "").strip()
             choices = doc.get("choices", [])
-            answer_idx = doc.get("answer", 0)
+            raw_answer = doc.get("answer", INDEX_FIRST)
+            if isinstance(raw_answer, str) and len(raw_answer) == SENSOR_LAST_OFFSET and raw_answer.isalpha():
+                answer_idx = ord(raw_answer.upper()) - ord('A')
+            elif str(raw_answer).isdigit():
+                answer_idx = int(raw_answer)
+            else:
+                answer_idx = INDEX_FIRST
 
             if not question or not choices:
                 return None
@@ -131,7 +141,7 @@ class OkapiHellaswagExtractor(HuggingFaceBenchmarkExtractor):
     across 26 languages.
     """
 
-    evaluator_name = "multiple_choice"
+    evaluator_name = "log_likelihoods"
 
     def __init__(self, language: str | None = None):
         """
@@ -178,7 +188,8 @@ class OkapiHellaswagExtractor(HuggingFaceBenchmarkExtractor):
         try:
             ctx = doc.get("ctx", doc.get("context", "")).strip()
             endings = doc.get("endings", [])
-            label = doc.get("label", 0)
+            raw_label = doc.get("label", INDEX_FIRST)
+            label = int(raw_label) if str(raw_label).isdigit() else INDEX_FIRST
 
             if not ctx or not endings:
                 return None

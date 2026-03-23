@@ -17,6 +17,8 @@ __all__ = ["GSM8KExtractor"]
 class GSM8KExtractor(HuggingFaceBenchmarkExtractor):
     """Extract contrastive pairs from GSM8K benchmark."""
 
+    evaluator_name = "math"
+
     def __init__(self):
         super().__init__()
         self.name = "gsm8k"

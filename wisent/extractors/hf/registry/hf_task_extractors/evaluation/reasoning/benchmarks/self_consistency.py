@@ -16,7 +16,7 @@ class SelfConsistencyExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Self-Consistency - multiple choice questions."""
 
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "math"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

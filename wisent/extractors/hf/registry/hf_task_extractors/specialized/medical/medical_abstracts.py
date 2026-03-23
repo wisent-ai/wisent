@@ -19,7 +19,7 @@ class MedicalAbstractsExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Medical Abstracts benchmark - medical topic classification."""
 
 
-    evaluator_name = "generation"
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

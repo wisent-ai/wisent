@@ -52,7 +52,7 @@ class MMLUReduxExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "multiple_choice"
+    evaluator_name = "log_likelihoods"
 
     def __init__(self, subject: str | None = None, only_valid: bool = True):
         """
@@ -89,7 +89,7 @@ class MMLUReduxExtractor(HuggingFaceBenchmarkExtractor):
                 # Load dataset for this subject
                 docs = self.load_dataset(
                     dataset_name="edinburgh-dawg/mmlu-redux",
-                    config=subject,
+                    dataset_config=subject,
                     split="test",
                     limit=max_items - len(pairs) if max_items else None,
                 )

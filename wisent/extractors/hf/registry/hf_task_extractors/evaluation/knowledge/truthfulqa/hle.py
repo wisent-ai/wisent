@@ -12,8 +12,11 @@ log = setup_logger(__name__)
 
 
 class HleExtractor(HuggingFaceBenchmarkExtractor):
+    """Extractor for Humanity's Last Exam dataset."""
+
+    evaluator_name = "generation"
+
     """
-    Extractor for hle dataset.
 
     Schema (jhu-clsp/HLE):
         - question: str (question/prompt)
@@ -37,7 +40,7 @@ class HleExtractor(HuggingFaceBenchmarkExtractor):
 
         # Load dataset
         docs = self.load_dataset(
-            dataset_name="jhu-clsp/HLE",
+            dataset_name="cais/hle",
             split="test",
             limit=max_items,
         )

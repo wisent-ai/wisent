@@ -1,4 +1,4 @@
-"""SQuAD v2 and DROP benchmark extractors."""
+"""SQuAD v2, DROP, and PubMedQA benchmark extractors."""
 from __future__ import annotations
 from typing import Any
 from wisent.core.utils.cli.cli_logger import setup_logger
@@ -8,15 +8,19 @@ from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 log = setup_logger(__name__)
 
-__all__ = ["SQuADv2Extractor", "DROPExtractor"]
+__all__ = ["SQuADv2Extractor", "DROPExtractor", "PubMedQAHFExtractor"]
 
 
 class SQuADv2Extractor(HuggingFaceBenchmarkExtractor):
     """Extract contrastive pairs from SQuAD v2 benchmark."""
+    evaluator_name = "generation"
 
-    def __init__(self, context_max_length: int):
+    def __init__(self, context_max_length: int | None = None):
         super().__init__()
         self.name = "squadv2"
+        if context_max_length is None:
+            from wisent.core.utils.config_tools.constants import EXTRACTOR_CONTEXT_MAX_LENGTH
+            context_max_length = EXTRACTOR_CONTEXT_MAX_LENGTH
         self._context_max_length = context_max_length
 
     def extract_contrastive_pairs(self, limit: int | None = None) -> list[ContrastivePair]:
@@ -85,10 +89,14 @@ Answer:"""
 
 class DROPExtractor(HuggingFaceBenchmarkExtractor):
     """Extract contrastive pairs from DROP benchmark."""
+    evaluator_name = "generation"
 
-    def __init__(self, context_max_length: int):
+    def __init__(self, context_max_length: int | None = None):
         super().__init__()
         self.name = "drop"
+        if context_max_length is None:
+            from wisent.core.utils.config_tools.constants import EXTRACTOR_CONTEXT_MAX_LENGTH
+            context_max_length = EXTRACTOR_CONTEXT_MAX_LENGTH
         self._context_max_length = context_max_length
 
     def extract_contrastive_pairs(self, limit: int | None = None) -> list[ContrastivePair]:
@@ -149,6 +157,60 @@ Answer:"""
                 metadata={"source": "ucinlp/drop"},
             )
 
+        except Exception as e:
+            log.debug(f"Failed to extract pair: {e}")
+            return None
+
+
+class PubMedQAHFExtractor(HuggingFaceBenchmarkExtractor):
+    """Extract contrastive pairs from PubMedQA via qiaojin/PubMedQA (no scripts)."""
+    evaluator_name = "log_likelihoods"
+
+    def __init__(self):
+        super().__init__()
+        self.name = "pubmedqa"
+
+    def extract_contrastive_pairs(self, limit: int | None = None) -> list[ContrastivePair]:
+        pairs: list[ContrastivePair] = []
+        try:
+            docs = self.load_dataset(
+                dataset_name="qiaojin/PubMedQA",
+                dataset_config="pqa_labeled",
+                split="train",
+                limit=limit,
+            )
+            log.info(f"Loaded {len(docs)} examples from PubMedQA")
+        except Exception as e:
+            log.error(f"Failed to load PubMedQA: {e}")
+            return []
+
+        for doc in docs:
+            pair = self._extract_pair_from_doc(doc)
+            if pair:
+                pairs.append(pair)
+        return pairs
+
+    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+        try:
+            context_obj = doc.get("context", {})
+            contexts = context_obj.get("contexts", []) if isinstance(context_obj, dict) else []
+            question = str(doc.get("question", "")).strip()
+            final_decision = str(doc.get("final_decision", "")).strip()
+            if not contexts or not question or not final_decision:
+                return None
+            formatted = " ".join(s.strip() for s in contexts if isinstance(s, str) and s.strip())
+            prompt = f"Abstract: {formatted}\nQuestion: {question}"
+            correct = final_decision
+            incorrect = "yes" if correct == "no" else "no"
+            positive_response = PositiveResponse(model_response=correct)
+            negative_response = NegativeResponse(model_response=incorrect)
+            return ContrastivePair(
+                prompt=prompt,
+                positive_response=positive_response,
+                negative_response=negative_response,
+                label="pubmedqa",
+                metadata={"source": "qiaojin/PubMedQA"},
+            )
         except Exception as e:
             log.debug(f"Failed to extract pair: {e}")
             return None

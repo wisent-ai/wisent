@@ -5,7 +5,7 @@ import random
 from typing import Any
 
 from wisent.core.utils.cli.cli_logger import setup_logger
-from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_MINI
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_MINI, MIN_CHOICES_VALIDATION
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
@@ -31,7 +31,7 @@ class MMMUExtractor(HuggingFaceBenchmarkExtractor):
     is stored in metadata for reference.
     """
 
-    evaluator_name = "multiple_choice"
+    evaluator_name = "mmmu"
 
     def __init__(self, subject: str | None = None):
         """
@@ -98,13 +98,19 @@ class MMMUExtractor(HuggingFaceBenchmarkExtractor):
             if not question:
                 return None
 
-            # Handle options - they might be stored as list or individual fields
+            # Handle options - might be list, string repr, or individual fields
+            if isinstance(options, str):
+                import json
+                try:
+                    options = json.loads(options)
+                except (json.JSONDecodeError, ValueError):
+                    options = [o.strip() for o in options.split(",") if o.strip()]
             if not options:
-                # Try to get options from individual fields
                 option_keys = ["option_a", "option_b", "option_c", "option_d", "option_e"]
                 options = [doc.get(k, "") for k in option_keys if doc.get(k)]
 
-            if not options or len(options) < 2:
+            options = options[:DISPLAY_TOP_N_MINI]
+            if not options or len(options) < MIN_CHOICES_VALIDATION:
                 # If no options, this might be a free-form question
                 task_prompt = f"""Question: {question}
 
@@ -113,7 +119,7 @@ Answer:"""
                 incorrect = "I don't know"
             else:
                 # Multiple choice format
-                choice_letters = ['A', 'B', 'C', 'D', 'E']
+                choice_letters = ['A', 'B', 'C', 'D', 'E'][:len(options)]
                 choices_text = "\n".join(
                     f"{choice_letters[i]}. {opt}" for i, opt in enumerate(options[:DISPLAY_TOP_N_MINI])
                 )
@@ -125,7 +131,7 @@ Answer:"""
 Answer:"""
 
                 # Parse answer
-                if isinstance(answer, int) and answer < len(options):
+                if isinstance(answer, int) and answer < len(choice_letters):
                     correct = choice_letters[answer]
                 elif isinstance(answer, str):
                     answer_upper = answer.upper().strip()

@@ -62,7 +62,7 @@ class SWEBenchVerifiedExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "software_engineering"
+    evaluator_name = "swe_bench"
 
     def __init__(self, difficulty: str | None = None):
         """

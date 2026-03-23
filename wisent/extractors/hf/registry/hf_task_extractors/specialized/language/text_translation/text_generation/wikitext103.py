@@ -5,6 +5,7 @@ from wisent.core.utils.cli.cli_logger import setup_logger
 from typing import Any
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.utils.config_tools.constants import EVAL_NUM_CONTRASTIVE_PAIR_SIZE
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 
@@ -23,13 +24,15 @@ class Wikitext103Extractor(HuggingFaceBenchmarkExtractor):
         self,
         limit: int | None = None,
     ) -> list[ContrastivePair]:
+        from wisent.core.utils.config_tools.constants import EXTRACTOR_DEFAULT_OVERSAMPLING_FACTOR
         max_items = self._normalize_limit(limit)
+        load_limit = int(max_items * EXTRACTOR_DEFAULT_OVERSAMPLING_FACTOR ** EVAL_NUM_CONTRASTIVE_PAIR_SIZE) if max_items else None
 
         docs = self.load_dataset(
             dataset_name="Salesforce/wikitext",
             dataset_config="wikitext-103-v1",
             split="test",
-            limit=max_items,
+            limit=load_limit,
         )
 
         pairs: list[ContrastivePair] = []

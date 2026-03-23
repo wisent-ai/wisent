@@ -4,6 +4,7 @@ from typing import Any
 from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.utils.config_tools.constants import SENSOR_LAST_OFFSET
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 __all__ = ["AIME2025Extractor"]
@@ -47,14 +48,14 @@ class AIME2025Extractor(HuggingFaceBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         try:
-            question = doc.get("question", "").strip()
-            correct = doc.get("answer", "")
+            question = str(doc.get("problem", doc.get("question", ""))).strip()
+            correct = str(doc.get("answer", doc.get("Answer", ""))).strip()
 
             if not question or not correct:
                 log.debug("Skipping: missing problem or answer")
                 return None
 
-            incorrect = str(int(correct) + 1)
+            incorrect = str(int(correct) + SENSOR_LAST_OFFSET)
 
             question = f"Question: {question}\n\nWhat is the answer?"
 

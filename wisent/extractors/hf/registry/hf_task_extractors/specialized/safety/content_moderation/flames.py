@@ -46,7 +46,7 @@ class FlamesExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "value_alignment"
+    evaluator_name = "flames"
 
     def __init__(self, http_timeout: int, dimension: str | None = None):
         """

@@ -16,7 +16,7 @@ class BabilongExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for the Babilong benchmark."""
 
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "generation"
 
     # Load from multiple qa configs to get more samples (each config has 100 samples)
     QA_CONFIGS = ["qa1", "qa2", "qa3", "qa4", "qa5"]

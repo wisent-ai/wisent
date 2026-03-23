@@ -4,6 +4,7 @@ from typing import Any
 from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.utils.config_tools.constants import SENSOR_LAST_OFFSET
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 __all__ = ["AIME2024Extractor"]
@@ -48,22 +49,22 @@ class AIME2024Extractor(HuggingFaceBenchmarkExtractor):
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         try:
             # Fields are capitalized in Maxwell-Jia/AIME_2024: Problem, Answer, Solution
-            problem = doc.get("problem", "").strip()
-            correct = doc.get("answer", "").strip()
+            problem = str(doc.get("Problem", doc.get("problem", ""))).strip()
+            correct = str(doc.get("Answer", doc.get("answer", ""))).strip()
 
-            if not problem or not answer:
+            if not problem or not correct:
                 log.debug("Skipping: missing problem or answer")
                 return None
 
-            incorrect = str(int(correct) + 1)
+            incorrect = str(int(correct) + SENSOR_LAST_OFFSET)
 
-            question = f"Question: {question}\n\nWhat is the answer?"
+            prompt = f"Question: {problem}\n\nWhat is the answer?"
 
             metadata = {"label": "aime2024"}
 
             return self._build_pair(
-                question=question,
-                correct=correct_answer,
+                question=prompt,
+                correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,
             )

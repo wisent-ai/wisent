@@ -20,6 +20,8 @@ class SuperGpqaExtractor(HuggingFaceBenchmarkExtractor):
         - Answer: str (answer/solution)
     """
 
+    evaluator_name = "log_likelihoods"
+
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
@@ -37,7 +39,7 @@ class SuperGpqaExtractor(HuggingFaceBenchmarkExtractor):
 
         # Load dataset
         docs = self.load_dataset(
-            dataset_name="Idavidrein/gpqa",
+            dataset_name="m-a-p/SuperGPQA",
             split="train",
             limit=max_items,
         )
@@ -66,7 +68,7 @@ class SuperGpqaExtractor(HuggingFaceBenchmarkExtractor):
         """
         try:
             question = doc.get("question", "").strip()
-            answer = doc.get("Answer", "")
+            answer = doc.get("answer", doc.get("Answer", ""))
 
             if not question or not answer:
                 log.debug("Skipping: missing question or answer")

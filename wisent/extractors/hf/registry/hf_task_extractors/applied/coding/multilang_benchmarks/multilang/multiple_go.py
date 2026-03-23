@@ -19,7 +19,7 @@ class MultipleGoExtractor(HuggingFaceBenchmarkExtractor):
     MultiPL-E doesn't include solutions, so we map problems to original HumanEval.
     """
 
-    evaluator_name = "generation"
+    evaluator_name = "coding"
 
     def __init__(self):
         super().__init__()

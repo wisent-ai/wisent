@@ -61,7 +61,7 @@ class HarmBenchExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "safety_refusal"
+    evaluator_name = "harmbench"
 
     def __init__(self, functional_category: str | None = None):
         """
@@ -104,7 +104,8 @@ class HarmBenchExtractor(HuggingFaceBenchmarkExtractor):
             try:
                 docs = self.load_dataset(
                     dataset_name=dataset_name,
-                    split="train",
+                    dataset_config="DirectRequest",
+                    split="test",
                     limit=max_items,
                 )
                 dataset_source = dataset_name

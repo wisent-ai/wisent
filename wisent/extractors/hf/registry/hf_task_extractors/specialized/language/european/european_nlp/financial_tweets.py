@@ -23,7 +23,7 @@ class FinancialTweetsExtractor(HuggingFaceBenchmarkExtractor):
     """
 
 
-    evaluator_name = "generation"
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
