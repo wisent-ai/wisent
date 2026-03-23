@@ -43,6 +43,7 @@ from wisent.app.core.groups import get_command_groups
 from wisent.app.ui.command_tab import build_command_tab, build_subparser_tab
 from wisent.app.ui.wiring.navigation import wire_wizard_navigation
 from wisent.app.ui.wizard import build_wizard_tab
+from wisent.app.ui.tabs.benchmark_debug import build_benchmark_debug_tab
 
 _SUBPARSER_COMMANDS = frozenset({"optimize-steering", "inference-config"})
 
@@ -267,6 +268,8 @@ def build_interface():
     with outer_tabs:
         with gr.Tab(label="Wizard", id="wizard"):
             wizard_components = build_wizard_tab()
+        with gr.Tab(label="Benchmark Debug", id="benchmark-debug"):
+            build_benchmark_debug_tab()
         for group in groups:
             with gr.Tab(label=group.label, id=group.label):
                 gr.Markdown(f"*{group.description}*")
