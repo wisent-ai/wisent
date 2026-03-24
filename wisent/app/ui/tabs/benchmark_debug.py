@@ -1,10 +1,10 @@
 """Benchmark Debugging tab for the Wisent Gradio interface.
 
 Lets users select a benchmark, run the extractor + evaluator test,
-and see detailed results.
+and see detailed results. For group tasks, runs each subtask and
+reports per-subtask results.
 """
 
-import inspect
 import time
 
 import gradio as gr
@@ -12,41 +12,45 @@ import gradio as gr
 from wisent.core.utils.config_tools.constants import (
     INDEX_FIRST,
     TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT,
-    TEST_EXTRACTOR_EVALUATOR_HTTP_TIMEOUT,
 )
 
 
 def _get_all_benchmark_names() -> list[str]:
-    """Return sorted list of all registered benchmark task names (HF + lm-eval)."""
+    """Return sorted list of all registered benchmark task names."""
     from wisent.extractors.lm_eval.lm_extractor_registry import _REGISTRY
     return sorted(_REGISTRY.keys())
 
 
-def _run_benchmark_test(task_name: str, limit: int) -> str:
-    """Run the extractor + evaluator test and return formatted results."""
-    lines = []
-    lines.append(f"=== Testing: {task_name} ===\n")
+def _find_subtasks(task_name: str, all_names: list[str]) -> list[str]:
+    """Find subtasks for a group task by prefix matching."""
+    prefix = task_name + "_"
+    subtasks = [n for n in all_names if n.startswith(prefix)]
+    return subtasks
 
-    # A. Look up extractor (combined HF + lm-eval registry)
+
+def _test_single_task(task_name: str, limit: int) -> dict:
+    """Test one task. Returns dict with status and details."""
     from wisent.extractors.lm_eval.lm_extractor_registry import (
-        get_extractor, UnsupportedLMEvalBenchmarkError,
+        get_extractor,
     )
+    result = {"task": task_name, "status": "UNKNOWN", "details": ""}
+
     try:
         extractor = get_extractor(task_name)
-    except TypeError as exc:
-        return f"FAIL: extractor constructor error: {exc}"
-    except (UnsupportedLMEvalBenchmarkError, Exception) as exc:
-        return f"FAIL: {exc}"
+    except Exception as exc:
+        result["status"] = "FAIL"
+        result["details"] = f"extractor: {exc}"
+        return result
 
     evaluator_name = getattr(extractor, "evaluator_name", None)
-    lines.append(f"Extractor: {type(extractor).__name__}")
-    lines.append(f"Evaluator: {evaluator_name}")
+    result["extractor"] = type(extractor).__name__
+    result["evaluator"] = evaluator_name
 
     if not evaluator_name:
-        return "\n".join(lines) + "\n\nFAIL: no evaluator_name"
+        result["status"] = "FAIL"
+        result["details"] = "no evaluator_name"
+        return result
 
-    # B. Extract pairs
-    start = time.time()
     try:
         pairs = extractor.extract_contrastive_pairs(limit=int(limit))
     except TypeError:
@@ -54,17 +58,20 @@ def _run_benchmark_test(task_name: str, limit: int) -> str:
             pairs = extractor.extract_contrastive_pairs(
                 lm_eval_task_data=None, limit=int(limit))
         except Exception as exc:
-            return "\n".join(lines) + f"\n\nFAIL: {type(exc).__name__}: {exc}"
+            result["status"] = "FAIL"
+            result["details"] = f"extraction: {exc}"
+            return result
     except Exception as exc:
-        return "\n".join(lines) + f"\n\nFAIL: {type(exc).__name__}: {exc}"
+        result["status"] = "FAIL"
+        result["details"] = f"extraction: {exc}"
+        return result
 
-    elapsed = time.time() - start
-    lines.append(f"Pairs extracted: {len(pairs)} in {elapsed:.1f}s")
-
+    result["pairs"] = len(pairs)
     if not pairs:
-        return "\n".join(lines) + "\n\nFAIL: zero pairs"
+        result["status"] = "FAIL"
+        result["details"] = "zero pairs"
+        return result
 
-    # C. Resolve evaluator
     from wisent.core.reading.evaluators.core.atoms import (
         BaseEvaluator, EvaluatorError,
     )
@@ -73,15 +80,17 @@ def _run_benchmark_test(task_name: str, limit: int) -> str:
     try:
         evaluator_cls = BaseEvaluator.get(evaluator_name)
     except EvaluatorError as exc:
-        registered = sorted(BaseEvaluator.list_registered().keys())
-        return "\n".join(lines) + f"\n\nFAIL: {exc}\nRegistered: {registered}"
+        result["status"] = "FAIL"
+        result["details"] = f"evaluator not found: {exc}"
+        return result
 
     try:
         evaluator = evaluator_cls()
     except TypeError:
-        return "\n".join(lines) + "\n\nPASS (resolution OK, needs constructor args)"
+        result["status"] = "PASS"
+        result["details"] = "resolution OK, needs constructor args"
+        return result
 
-    # D. Check if evaluator needs external infra
     is_infra = getattr(evaluator, "requires_judge", False)
     if not is_infra:
         pair = pairs[INDEX_FIRST]
@@ -98,8 +107,8 @@ def _run_benchmark_test(task_name: str, limit: int) -> str:
                     is_infra = True
                     break
 
-    # E. Evaluate pairs
-    correct_ok, incorrect_ok, errors = [], [], []
+    n_correct = n_incorrect = t_correct = t_incorrect = INDEX_FIRST
+    errors = []
 
     for i, pair in enumerate(pairs):
         correct_resp = pair.positive_response.model_response
@@ -107,64 +116,98 @@ def _run_benchmark_test(task_name: str, limit: int) -> str:
         expected = correct_resp
 
         if is_infra:
-            correct_ok.append(correct_resp.strip() == expected.strip())
-            incorrect_ok.append(
-                incorrect_resp.strip() != expected.strip())
+            t_correct += INDEX_FIRST + INDEX_FIRST
+            t_incorrect += INDEX_FIRST + INDEX_FIRST
+            if correct_resp.strip() == expected.strip():
+                n_correct += INDEX_FIRST + INDEX_FIRST
+            if incorrect_resp.strip() != expected.strip():
+                n_incorrect += INDEX_FIRST + INDEX_FIRST
             continue
 
         try:
             rc = evaluator.evaluate(
                 response=correct_resp, expected=expected,
                 question=pair.prompt, task_name=task_name)
-            correct_ok.append(rc.ground_truth == "TRUTHFUL")
+            t_correct += INDEX_FIRST + INDEX_FIRST
+            if rc.ground_truth == "TRUTHFUL":
+                n_correct += INDEX_FIRST + INDEX_FIRST
         except Exception as exc:
-            errors.append(f"Pair {i} correct: {exc}")
+            errors.append(f"Pair {i}: {exc}")
             continue
 
         try:
             ri = evaluator.evaluate(
                 response=incorrect_resp, expected=expected,
                 question=pair.prompt, task_name=task_name)
-            is_wrong = ri.ground_truth == "UNTRUTHFUL"
-            incorrect_ok.append(is_wrong)
-            if not is_wrong:
-                errors.append(
-                    f"Pair {i}: incorrect not detected "
-                    f"(gt={ri.ground_truth})")
+            t_incorrect += INDEX_FIRST + INDEX_FIRST
+            if ri.ground_truth == "UNTRUTHFUL":
+                n_incorrect += INDEX_FIRST + INDEX_FIRST
         except Exception as exc:
-            errors.append(f"Pair {i} incorrect: {exc}")
+            errors.append(f"Pair {i}: {exc}")
 
-    # F. Report
-    n_c, n_i = sum(correct_ok), sum(incorrect_ok)
-    t_c, t_i = len(correct_ok), len(incorrect_ok)
+    result["correct"] = f"{n_correct}/{t_correct}"
+    result["incorrect"] = f"{n_incorrect}/{t_incorrect}"
+    result["mode"] = "string" if is_infra else "evaluator"
+    result["errors"] = errors
 
-    mode = "string comparison" if is_infra else "evaluator"
-    lines.append(f"\nMode: {mode}")
-    lines.append(f"Correct -> TRUTHFUL:    {n_c}/{t_c}")
-    lines.append(f"Incorrect -> UNTRUTHFUL: {n_i}/{t_i}")
-
-    if errors:
-        lines.append(f"\nErrors ({len(errors)}):")
-        for e in errors:
-            lines.append(f"  - {e}")
-
-    if t_c and t_i and n_c == t_c and n_i == t_i:
-        lines.append("\nPASS")
-    elif t_c and t_i:
-        lines.append("\nFAIL")
-    elif errors:
-        lines.append(f"\nFAIL ({len(errors)} errors)")
+    if t_correct and t_incorrect and n_correct == t_correct and n_incorrect == t_incorrect:
+        result["status"] = "PASS"
+    elif errors and not t_correct:
+        result["status"] = "FAIL"
     else:
-        lines.append("\nPASS (resolution OK)")
+        result["status"] = "FAIL"
 
+    return result
+
+
+def _format_result(r: dict) -> str:
+    """Format a single task result as a line."""
+    status = r["status"]
+    task = r["task"]
+    if status == "PASS":
+        pairs = r.get("pairs", "?")
+        return f"  PASS  {task} ({pairs} pairs, {r.get('mode', '?')})"
+    details = r.get("details", "")
+    if r.get("correct"):
+        details = f"correct={r['correct']} incorrect={r['incorrect']}"
+    return f"  FAIL  {task}: {details}"
+
+
+def _run_benchmark_test(task_name: str, limit: int) -> str:
+    """Run the test. If group task, run each subtask."""
+    all_names = _get_all_benchmark_names()
+    subtasks = _find_subtasks(task_name, all_names)
+
+    if subtasks:
+        tasks_to_run = subtasks
+    else:
+        tasks_to_run = [task_name]
+
+    lines = [f"=== {task_name} ({len(tasks_to_run)} tasks) ===\n"]
+    pass_count = INDEX_FIRST
+    fail_count = INDEX_FIRST
+    start = time.time()
+
+    for t in tasks_to_run:
+        r = _test_single_task(t, limit)
+        lines.append(_format_result(r))
+        if r["status"] == "PASS":
+            pass_count += INDEX_FIRST + INDEX_FIRST
+        else:
+            fail_count += INDEX_FIRST + INDEX_FIRST
+
+    elapsed = time.time() - start
+    lines.append(f"\n--- Summary ---")
+    lines.append(f"PASS: {pass_count}  FAIL: {fail_count}  "
+                 f"Time: {elapsed:.1f}s")
     return "\n".join(lines)
 
 
 def build_benchmark_debug_tab():
     """Build the Benchmark Debugging tab."""
     gr.Markdown(
-        "**Benchmark Debugging** — test that an extractor "
-        "and evaluator work end-to-end for a given benchmark."
+        "**Benchmark Debugging** — test extractor + evaluator "
+        "end-to-end. For group tasks, tests each subtask."
     )
 
     with gr.Row():
@@ -176,7 +219,7 @@ def build_benchmark_debug_tab():
             interactive=True,
         )
         limit_slider = gr.Slider(
-            label="Pairs to extract",
+            label="Pairs per subtask",
             minimum=INDEX_FIRST + INDEX_FIRST,
             maximum=TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT
             * TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT,
