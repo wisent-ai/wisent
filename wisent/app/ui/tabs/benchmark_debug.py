@@ -221,15 +221,27 @@ def _get_benchmark_info(task_name: str) -> str:
     if " (" in task_name and task_name.endswith(")"):
         task_name = task_name.split(" (")[INDEX_FIRST]
     from wisent.extractors.lm_eval.lm_extractor_registry import get_extractor, _REGISTRY
+    from wisent.core.utils.services.benchmarks.registry.benchmark_registry import get_working_benchmarks_with_categories
     all_names = sorted(_REGISTRY.keys())
     subtasks = _find_subtasks(task_name, all_names)
-    lines = [f"**{task_name}**"]
+    categories = get_working_benchmarks_with_categories()
+    cat = categories.get(task_name, "uncategorized")
+    lines = [f"**{task_name}** — `{cat}`"]
     try:
         ext = get_extractor(task_name)
-        lines.append(f"- Extractor: `{type(ext).__name__}`")
-        lines.append(f"- Evaluator: `{getattr(ext, 'evaluator_name', None)}`")
+        lines.append(f"- Extractor: `{type(ext).__name__}` (`{type(ext).__module__}`)")
+        ev = getattr(ext, "evaluator_name", None)
+        lines.append(f"- Evaluator: `{ev}`")
+        judge = getattr(ext, "requires_judge", False) if ev else False
+        lines.append(f"- Requires judge model: {judge}")
     except Exception as exc:
         lines.append(f"- Extractor: error ({exc})")
+    # Aliases
+    if task_name in _REGISTRY:
+        ref = _REGISTRY[task_name]
+        aliases = [n for n in all_names if _REGISTRY.get(n) == ref and n != task_name]
+        if aliases:
+            lines.append(f"- Aliases: {', '.join(aliases)}")
     if subtasks:
         lines.append(f"- Subtasks: {len(subtasks)}")
         preview = subtasks[:TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT]
