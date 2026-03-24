@@ -10,21 +10,35 @@ from wisent.core.utils.config_tools.constants import (
 )
 
 
-def _get_all_benchmark_names() -> list[str]:
-    """Return sorted list with group tasks labeled by subtask count."""
+def _get_categories() -> list[str]:
+    """Return sorted list of benchmark categories."""
+    from wisent.core.utils.services.benchmarks.registry.benchmark_registry import get_working_benchmarks_with_categories
+    cats = sorted(set(get_working_benchmarks_with_categories().values()))
+    return ["all"] + cats
+
+
+def _get_benchmarks_for_category(category: str) -> list[str]:
+    """Return benchmark names for a category, with group labels."""
     from wisent.extractors.lm_eval.lm_extractor_registry import _REGISTRY
+    from wisent.core.utils.services.benchmarks.registry.benchmark_registry import get_working_benchmarks_with_categories
     all_names = sorted(_REGISTRY.keys())
-    # Find which names are group parents (have subtasks)
+    cat_map = get_working_benchmarks_with_categories()
+    if category and category != "all":
+        all_names = [n for n in all_names if cat_map.get(n) == category]
     subtask_counts = {}
     for name in all_names:
         prefix = name + "_"
         count = sum(n.startswith(prefix) for n in all_names)
         if count:
             subtask_counts[name] = count
-    # Build labeled list: parents first, then individual tasks
     groups = [f"{n} ({subtask_counts[n]} subtasks)" for n in sorted(subtask_counts)]
     individuals = [n for n in all_names if n not in subtask_counts]
     return groups + individuals
+
+
+def _get_all_benchmark_names() -> list[str]:
+    """Return all benchmarks (no category filter)."""
+    return _get_benchmarks_for_category("all")
 
 
 def _find_subtasks(task_name: str, all_names: list[str]) -> list[str]:
@@ -222,10 +236,18 @@ def _get_benchmark_info(task_name: str) -> str:
     return format_full_info(task_name)
 
 
+def _update_benchmark_choices(category: str):
+    """Return updated choices for benchmark dropdown based on category."""
+    return gr.update(choices=_get_benchmarks_for_category(category), value=None)
+
+
 def build_benchmark_debug_tab():
     """Build the Benchmark Debugging tab."""
     gr.Markdown("**Benchmark Debugging** — test extractor + evaluator end-to-end")
     with gr.Row():
+        cat_dropdown = gr.Dropdown(
+            label="Category", choices=_get_categories(),
+            value="all", interactive=True)
         task_dropdown = gr.Dropdown(
             label="Benchmark", choices=_get_all_benchmark_names(),
             value=None, allow_custom_value=True, interactive=True,
@@ -233,8 +255,11 @@ def build_benchmark_debug_tab():
         limit_input = gr.Number(
             label="Pairs per task", value=TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT,
             precision=INDEX_FIRST, info="Empty = all pairs")
+    cat_dropdown.change(
+        fn=_update_benchmark_choices, inputs=[cat_dropdown], outputs=[task_dropdown])
     info_display = gr.Markdown(value="")
-    task_dropdown.change(fn=_get_benchmark_info, inputs=[task_dropdown], outputs=[info_display])
+    task_dropdown.change(
+        fn=_get_benchmark_info, inputs=[task_dropdown], outputs=[info_display])
     run_btn = gr.Button("Test Benchmark", variant="primary")
     output = gr.Textbox(
         label="Results", interactive=False,
@@ -242,4 +267,5 @@ def build_benchmark_debug_tab():
         * TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT
         // TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT,
         elem_classes=["output-box"])
-    run_btn.click(fn=_run_benchmark_test, inputs=[task_dropdown, limit_input], outputs=[output])
+    run_btn.click(
+        fn=_run_benchmark_test, inputs=[task_dropdown, limit_input], outputs=[output])
