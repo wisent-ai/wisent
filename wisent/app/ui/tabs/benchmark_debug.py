@@ -16,9 +16,20 @@ from wisent.core.utils.config_tools.constants import (
 
 
 def _get_all_benchmark_names() -> list[str]:
-    """Return sorted list of all registered benchmark task names."""
+    """Return sorted list with group tasks labeled by subtask count."""
     from wisent.extractors.lm_eval.lm_extractor_registry import _REGISTRY
-    return sorted(_REGISTRY.keys())
+    all_names = sorted(_REGISTRY.keys())
+    # Find which names are group parents (have subtasks)
+    subtask_counts = {}
+    for name in all_names:
+        prefix = name + "_"
+        count = sum(n.startswith(prefix) for n in all_names)
+        if count:
+            subtask_counts[name] = count
+    # Build labeled list: parents first, then individual tasks
+    groups = [f"{n} ({subtask_counts[n]} subtasks)" for n in sorted(subtask_counts)]
+    individuals = [n for n in all_names if n not in subtask_counts]
+    return groups + individuals
 
 
 def _find_subtasks(task_name: str, all_names: list[str]) -> list[str]:
@@ -175,7 +186,11 @@ def _format_result(r: dict) -> str:
 
 def _run_benchmark_test(task_name: str, limit: int) -> str:
     """Run the test. If group task, run each subtask."""
-    all_names = _get_all_benchmark_names()
+    # Strip label suffix like " (N subtasks)"
+    if " (" in task_name and task_name.endswith(")"):
+        task_name = task_name.split(" (")[INDEX_FIRST]
+    from wisent.extractors.lm_eval.lm_extractor_registry import _REGISTRY
+    all_names = sorted(_REGISTRY.keys())
     subtasks = _find_subtasks(task_name, all_names)
 
     if subtasks:
