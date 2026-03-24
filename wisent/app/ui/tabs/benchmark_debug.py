@@ -1,9 +1,4 @@
-"""Benchmark Debugging tab for the Wisent Gradio interface.
-
-Lets users select a benchmark, run the extractor + evaluator test,
-and see detailed results. For group tasks, runs each subtask and
-reports per-subtask results.
-"""
+"""Benchmark Debugging tab — test extractor + evaluator end-to-end."""
 
 import time
 
@@ -219,41 +214,52 @@ def _run_benchmark_test(task_name: str, limit: float | None) -> str:
     return "\n".join(lines)
 
 
+def _get_benchmark_info(task_name: str) -> str:
+    """Return metadata about a benchmark when selected."""
+    if not task_name:
+        return ""
+    if " (" in task_name and task_name.endswith(")"):
+        task_name = task_name.split(" (")[INDEX_FIRST]
+    from wisent.extractors.lm_eval.lm_extractor_registry import get_extractor, _REGISTRY
+    all_names = sorted(_REGISTRY.keys())
+    subtasks = _find_subtasks(task_name, all_names)
+    lines = [f"**{task_name}**"]
+    try:
+        ext = get_extractor(task_name)
+        lines.append(f"- Extractor: `{type(ext).__name__}`")
+        lines.append(f"- Evaluator: `{getattr(ext, 'evaluator_name', None)}`")
+    except Exception as exc:
+        lines.append(f"- Extractor: error ({exc})")
+    if subtasks:
+        lines.append(f"- Subtasks: {len(subtasks)}")
+        preview = subtasks[:TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT]
+        rest = len(subtasks) - len(preview)
+        lines.append(f"- Preview: {', '.join(preview)}")
+        if rest:
+            lines.append(f"  ... and {rest} more")
+    else:
+        lines.append("- Type: individual task")
+    return "\n".join(lines)
+
+
 def build_benchmark_debug_tab():
     """Build the Benchmark Debugging tab."""
-    gr.Markdown(
-        "**Benchmark Debugging** — test extractor + evaluator "
-        "end-to-end. For group tasks, tests each subtask."
-    )
-
+    gr.Markdown("**Benchmark Debugging** — test extractor + evaluator end-to-end")
     with gr.Row():
         task_dropdown = gr.Dropdown(
-            label="Benchmark",
-            choices=_get_all_benchmark_names(),
-            value=None,
-            allow_custom_value=True,
-            interactive=True,
-            info="Select a benchmark or type to search",
-        )
+            label="Benchmark", choices=_get_all_benchmark_names(),
+            value=None, allow_custom_value=True, interactive=True,
+            info="Select a benchmark or type to search")
         limit_input = gr.Number(
-            label="Pairs per task",
-            value=TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT,
-            precision=INDEX_FIRST,
-            info="Leave empty to extract all available pairs",
-        )
-
+            label="Pairs per task", value=TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT,
+            precision=INDEX_FIRST, info="Empty = all pairs")
+    info_display = gr.Markdown(value="")
+    task_dropdown.change(fn=_get_benchmark_info, inputs=[task_dropdown], outputs=[info_display])
     run_btn = gr.Button("Test Benchmark", variant="primary")
     output = gr.Textbox(
-        label="Results",
-        interactive=False,
+        label="Results", interactive=False,
         lines=TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT
         * TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT
         // TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT,
-        elem_classes=["output-box"],
-    )
-
-    run_btn.click(
-        fn=_run_benchmark_test,
-        inputs=[task_dropdown, limit_input],
-        outputs=[output],
-    )
+        elem_classes=["output-box"])
+    run_btn.click(fn=_run_benchmark_test, inputs=[task_dropdown, limit_input], outputs=[output])
