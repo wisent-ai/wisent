@@ -12,9 +12,21 @@ from wisent.core.utils.config_tools.constants import (
 
 def _get_categories() -> list[str]:
     """Return sorted list of benchmark categories."""
-    from wisent.core.utils.services.benchmarks.registry.benchmark_registry import get_working_benchmarks_with_categories
-    cats = sorted(set(get_working_benchmarks_with_categories().values()))
-    return ["all"] + cats
+    try:
+        from wisent.core.utils.services.benchmarks.registry.benchmark_registry import get_working_benchmarks_with_categories
+        cat_map = get_working_benchmarks_with_categories()
+        cats = sorted(set(cat_map.values()))
+        if cats:
+            return ["all"] + cats
+    except Exception:
+        pass
+    # Hardcoded categories as last resort
+    return ["all", "coding", "commonsense", "ethics_values",
+            "hallucination_factuality", "instruction_following",
+            "knowledge_qa", "language_understanding", "math",
+            "multilingual", "reading_comprehension", "reasoning_logic",
+            "safety_bias", "science_medical", "tool_use_agents",
+            "translation"]
 
 
 def _get_benchmarks_for_category(category: str) -> list[str]:
