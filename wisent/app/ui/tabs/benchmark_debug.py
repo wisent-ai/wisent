@@ -215,43 +215,11 @@ def _run_benchmark_test(task_name: str, limit: float | None) -> str:
 
 
 def _get_benchmark_info(task_name: str) -> str:
-    """Return metadata about a benchmark when selected."""
+    """Return full metadata about a benchmark when selected."""
     if not task_name:
         return ""
-    if " (" in task_name and task_name.endswith(")"):
-        task_name = task_name.split(" (")[INDEX_FIRST]
-    from wisent.extractors.lm_eval.lm_extractor_registry import get_extractor, _REGISTRY
-    from wisent.core.utils.services.benchmarks.registry.benchmark_registry import get_working_benchmarks_with_categories
-    all_names = sorted(_REGISTRY.keys())
-    subtasks = _find_subtasks(task_name, all_names)
-    categories = get_working_benchmarks_with_categories()
-    cat = categories.get(task_name, "uncategorized")
-    lines = [f"**{task_name}** — `{cat}`"]
-    try:
-        ext = get_extractor(task_name)
-        lines.append(f"- Extractor: `{type(ext).__name__}` (`{type(ext).__module__}`)")
-        ev = getattr(ext, "evaluator_name", None)
-        lines.append(f"- Evaluator: `{ev}`")
-        judge = getattr(ext, "requires_judge", False) if ev else False
-        lines.append(f"- Requires judge model: {judge}")
-    except Exception as exc:
-        lines.append(f"- Extractor: error ({exc})")
-    # Aliases
-    if task_name in _REGISTRY:
-        ref = _REGISTRY[task_name]
-        aliases = [n for n in all_names if _REGISTRY.get(n) == ref and n != task_name]
-        if aliases:
-            lines.append(f"- Aliases: {', '.join(aliases)}")
-    if subtasks:
-        lines.append(f"- Subtasks: {len(subtasks)}")
-        preview = subtasks[:TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT]
-        rest = len(subtasks) - len(preview)
-        lines.append(f"- Preview: {', '.join(preview)}")
-        if rest:
-            lines.append(f"  ... and {rest} more")
-    else:
-        lines.append("- Type: individual task")
-    return "\n".join(lines)
+    from wisent.app.ui.tabs.benchmark_info import format_full_info
+    return format_full_info(task_name)
 
 
 def build_benchmark_debug_tab():
