@@ -39,7 +39,7 @@ def _find_subtasks(task_name: str, all_names: list[str]) -> list[str]:
     return subtasks
 
 
-def _test_single_task(task_name: str, limit: int) -> dict:
+def _test_single_task(task_name: str, limit: float | None) -> dict:
     """Test one task. Returns dict with status and details."""
     from wisent.extractors.lm_eval.lm_extractor_registry import (
         get_extractor,
@@ -62,12 +62,13 @@ def _test_single_task(task_name: str, limit: int) -> dict:
         result["details"] = "no evaluator_name"
         return result
 
+    parsed_limit = int(limit) if limit else None
     try:
-        pairs = extractor.extract_contrastive_pairs(limit=int(limit))
+        pairs = extractor.extract_contrastive_pairs(limit=parsed_limit)
     except TypeError:
         try:
             pairs = extractor.extract_contrastive_pairs(
-                lm_eval_task_data=None, limit=int(limit))
+                lm_eval_task_data=None, limit=parsed_limit)
         except Exception as exc:
             result["status"] = "FAIL"
             result["details"] = f"extraction: {exc}"
@@ -184,7 +185,7 @@ def _format_result(r: dict) -> str:
     return f"  FAIL  {task}: {details}"
 
 
-def _run_benchmark_test(task_name: str, limit: int) -> str:
+def _run_benchmark_test(task_name: str, limit: float | None) -> str:
     """Run the test. If group task, run each subtask."""
     # Strip label suffix like " (N subtasks)"
     if " (" in task_name and task_name.endswith(")"):
@@ -232,14 +233,13 @@ def build_benchmark_debug_tab():
             value=None,
             allow_custom_value=True,
             interactive=True,
+            info="Select a benchmark or type to search",
         )
-        limit_slider = gr.Slider(
-            label="Pairs per subtask",
-            minimum=INDEX_FIRST + INDEX_FIRST,
-            maximum=TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT
-            * TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT,
+        limit_input = gr.Number(
+            label="Pairs per task",
             value=TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT,
-            step=INDEX_FIRST + INDEX_FIRST,
+            precision=INDEX_FIRST,
+            info="Leave empty to extract all available pairs",
         )
 
     run_btn = gr.Button("Test Benchmark", variant="primary")
@@ -254,6 +254,6 @@ def build_benchmark_debug_tab():
 
     run_btn.click(
         fn=_run_benchmark_test,
-        inputs=[task_dropdown, limit_slider],
+        inputs=[task_dropdown, limit_input],
         outputs=[output],
     )
