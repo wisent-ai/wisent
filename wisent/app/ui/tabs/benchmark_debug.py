@@ -17,8 +17,8 @@ from wisent.core.utils.config_tools.constants import (
 
 
 def _get_all_benchmark_names() -> list[str]:
-    """Return sorted list of all registered HF benchmark task names."""
-    from wisent.extractors.hf.registry.hf_extractor_registry import _REGISTRY
+    """Return sorted list of all registered benchmark task names (HF + lm-eval)."""
+    from wisent.extractors.lm_eval.lm_extractor_registry import _REGISTRY
     return sorted(_REGISTRY.keys())
 
 
@@ -27,19 +27,15 @@ def _run_benchmark_test(task_name: str, limit: int) -> str:
     lines = []
     lines.append(f"=== Testing: {task_name} ===\n")
 
-    # A. Look up extractor
-    from wisent.extractors.hf.hf_extractor_registry import (
-        get_extractor, UnsupportedHuggingFaceBenchmarkError,
+    # A. Look up extractor (combined HF + lm-eval registry)
+    from wisent.extractors.lm_eval.lm_extractor_registry import (
+        get_extractor, UnsupportedLMEvalBenchmarkError,
     )
     try:
-        extractor = get_extractor(
-            task_name, http_timeout=TEST_EXTRACTOR_EVALUATOR_HTTP_TIMEOUT)
-    except TypeError:
-        try:
-            extractor = get_extractor(task_name)
-        except TypeError as exc:
-            return f"FAIL: extractor constructor error: {exc}"
-    except UnsupportedHuggingFaceBenchmarkError as exc:
+        extractor = get_extractor(task_name)
+    except TypeError as exc:
+        return f"FAIL: extractor constructor error: {exc}"
+    except (UnsupportedLMEvalBenchmarkError, Exception) as exc:
         return f"FAIL: {exc}"
 
     evaluator_name = getattr(extractor, "evaluator_name", None)
