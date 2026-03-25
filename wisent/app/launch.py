@@ -143,7 +143,7 @@ _APP_CSS = (
 
 def create_app() -> gr.Blocks:
     """Create and return the Gradio Blocks application."""
-    with gr.Blocks(title=_APP_TITLE, head=_FONT_HEAD) as app:
+    with gr.Blocks(title=_APP_TITLE) as app:
         build_interface()
     return app
 
@@ -161,7 +161,8 @@ def launch(**kwargs):
     }
     defaults.update(kwargs)
     app.launch(
-        theme=_build_theme(), css=_APP_CSS, ssr_mode=False, **defaults,
+        theme=_build_theme(), css=_APP_CSS, head=_FONT_HEAD,
+        ssr_mode=False, **defaults,
     )
 
 
