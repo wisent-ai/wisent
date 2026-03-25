@@ -258,7 +258,7 @@ def build_interface():
             allow_custom_value=True,
             interactive=True,
             elem_id="global-model",
-            placeholder="Type your model's HuggingFace ID or select from dropdown",
+            info="Type your model's HuggingFace ID or select from dropdown",
         )
         _build_resource_monitor()
 
