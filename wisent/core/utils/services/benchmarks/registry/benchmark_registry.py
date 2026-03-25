@@ -29,7 +29,10 @@ _benchmark_cache = {
 
 def _get_params_dir() -> Path:
     """Get the path to the lm_eval parameters directory."""
-    return Path(__file__).parent.parent / "parameters" / "lm_eval"
+    # Navigate from this file: registry/ -> benchmarks/ -> services/ -> utils/ -> core/ -> wisent/
+    this_dir = Path(__file__).resolve().parent
+    wisent_root = this_dir.parent.parent.parent.parent.parent
+    return wisent_root / "support" / "parameters" / "lm_eval"
 
 
 def get_lm_eval_tasks() -> List[str]:
