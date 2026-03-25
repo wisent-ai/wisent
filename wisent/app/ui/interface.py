@@ -252,14 +252,11 @@ def build_interface():
 
     with gr.Row():
         gr.Dropdown(
-            label="Model",
-            choices=list(GRADIO_MODEL_EXAMPLES),
-            value=None,
-            allow_custom_value=True,
-            interactive=True,
-            elem_id="global-model",
-        )
+            label="Model", choices=list(GRADIO_MODEL_EXAMPLES),
+            value=None, allow_custom_value=True, interactive=True,
+            elem_id="global-model")
         _build_resource_monitor()
+    gr.HTML('<script>new MutationObserver(function(m,o){var e=document.querySelector("#global-model input[type=text]");if(e&&!e.placeholder){e.placeholder="Type your model HuggingFace ID or select from dropdown";o.disconnect()}}).observe(document.body,{childList:true,subtree:true})</script>', visible=False)
 
     groups = get_command_groups()
 

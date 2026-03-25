@@ -8,24 +8,7 @@ from wisent.core.utils.config_tools import constants as _C
 _APP_TITLE = "Wisent - World's Best AI through Representation Engineering"
 
 
-_PLACEHOLDER_JS = (
-    '<script>'
-    'document.addEventListener("DOMContentLoaded", function() {'
-    '  var observer = new MutationObserver(function() {'
-    '    var el = document.querySelector("#global-model input[type=text]");'
-    '    if (el && !el.placeholder) {'
-    '      el.placeholder = "Type your model HuggingFace ID or select from dropdown";'
-    '    }'
-    '  });'
-    '  observer.observe(document.body, {childList: true, subtree: true});'
-    '});'
-    '</script>'
-)
-
-_FONT_HEAD = (
-    f'<link href="{_C.WISENT_FONT_CDN_URL}" rel="stylesheet">'
-    f'{_PLACEHOLDER_JS}'
-)
+_FONT_HEAD = f'<link href="{_C.WISENT_FONT_CDN_URL}" rel="stylesheet">'
 
 
 def _build_theme():
