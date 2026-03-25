@@ -12,8 +12,15 @@ from wisent.core.utils.config_tools.constants import (
 
 def _get_categories() -> list[str]:
     """Return sorted list of benchmark categories."""
-    from wisent.core.utils.services.benchmarks.registry.benchmark_registry import get_working_benchmarks_with_categories
+    from wisent.core.utils.services.benchmarks.registry.benchmark_registry import (
+        get_working_benchmarks_with_categories, _get_params_dir,
+    )
+    import logging
+    _log = logging.getLogger(__name__)
+    params_dir = _get_params_dir()
+    _log.warning(f"params_dir={params_dir} exists={params_dir.exists()}")
     cat_map = get_working_benchmarks_with_categories()
+    _log.warning(f"cat_map has {len(cat_map)} entries")
     cats = sorted(set(cat_map.values()))
     return ["all"] + cats
 
