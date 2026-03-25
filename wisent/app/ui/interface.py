@@ -252,7 +252,7 @@ def build_interface():
 
     with gr.Row():
         gr.Dropdown(
-            label="Model — type HuggingFace ID or select",
+            label="Model",
             choices=list(GRADIO_MODEL_EXAMPLES),
             value=None,
             allow_custom_value=True,
