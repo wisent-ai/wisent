@@ -252,13 +252,12 @@ def build_interface():
 
     with gr.Row():
         gr.Dropdown(
-            label="Model",
+            label="Model — type HuggingFace ID or select",
             choices=list(GRADIO_MODEL_EXAMPLES),
             value=None,
             allow_custom_value=True,
             interactive=True,
             elem_id="global-model",
-            info="Type your model's HuggingFace ID or select from dropdown",
         )
         _build_resource_monitor()
 
