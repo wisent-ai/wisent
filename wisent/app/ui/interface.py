@@ -256,7 +256,7 @@ def build_interface():
             value=None, allow_custom_value=True, interactive=True,
             elem_id="global-model")
         _build_resource_monitor()
-    gr.HTML('<script>new MutationObserver(function(m,o){var e=document.querySelector("#global-model input[type=text]");if(e&&!e.placeholder){e.placeholder="Type your model HuggingFace ID or select from dropdown";o.disconnect();console.log("WISENT: placeholder set")}}).observe(document.body,{childList:true,subtree:true});console.log("WISENT: observer started")</script>', visible=False)
+    gr.HTML('<script>new MutationObserver(function(m,o){var e=document.querySelector("#global-model input[type=text]");if(e&&!e.placeholder){e.placeholder="Type your model HuggingFace ID or select from dropdown";o.disconnect();console.log("WISENT: placeholder set")}}).observe(document.body,{childList:true,subtree:true});console.log("WISENT: observer started")</script>')
 
     groups = get_command_groups()
 
