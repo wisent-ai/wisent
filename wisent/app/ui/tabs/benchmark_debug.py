@@ -268,12 +268,12 @@ def build_benchmark_debug_tab():
     info_display = gr.Markdown(value="")
     task_dropdown.change(
         fn=_get_benchmark_info, inputs=[task_dropdown], outputs=[info_display])
-    run_btn = gr.Button("Test Benchmark", variant="primary")
-    output = gr.Textbox(
-        label="Results", interactive=False,
-        lines=TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT
-        * TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT
-        // TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT,
-        elem_classes=["output-box"])
+    with gr.Row():
+        run_btn = gr.Button("Test Benchmark", variant="primary")
+        run_all_btn = gr.Button("Run All in Category", variant="secondary")
+    output = gr.Markdown(value="")
     run_btn.click(
         fn=_run_benchmark_test, inputs=[task_dropdown, limit_input], outputs=[output])
+    from wisent.app.ui.tabs.benchmark_runner import run_all_benchmarks
+    run_all_btn.click(
+        fn=run_all_benchmarks, inputs=[cat_dropdown, limit_input], outputs=[output])
