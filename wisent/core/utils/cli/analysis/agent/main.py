@@ -90,7 +90,7 @@ def execute_synthetic_pairs_classifier_steering_strategy(args):
         verbose=args.verbose,
         classifier_epochs=args.classifier_epochs,
         classifier_lr=args.classifier_lr,
-        token_aggregation=getattr(args, 'token_aggregation', 'average'),
+        token_aggregation=args.token_aggregation,
         prompt_strategy=getattr(args, 'prompt_strategy', get_optimal("prompt_strategy")),
         normalize_layers=getattr(args, 'normalize_layers', False),
         return_full_sequence=getattr(args, 'return_full_sequence', False),
@@ -107,7 +107,7 @@ def execute_synthetic_pairs_classifier_steering_strategy(args):
         collector=collector,
         layer_key=layer_key,
         quality_threshold=args.quality_threshold,
-        token_aggregation=getattr(args, 'token_aggregation', 'average'),
+        token_aggregation=args.token_aggregation,
         prompt_strategy=getattr(args, 'prompt_strategy', get_optimal("prompt_strategy")),
         normalize_layers=getattr(args, 'normalize_layers', False),
         return_full_sequence=getattr(args, 'return_full_sequence', False)
@@ -134,7 +134,7 @@ def execute_synthetic_pairs_classifier_steering_strategy(args):
         steering_strength=getattr(args, 'steering_strength', None),
         steering_normalize=getattr(args, 'normalize_mode', True),
         verbose=args.verbose,
-        token_aggregation=getattr(args, 'token_aggregation', 'average'),
+        token_aggregation=args.token_aggregation,
         prompt_strategy=getattr(args, 'prompt_strategy', get_optimal("prompt_strategy")),
         normalize_layers=getattr(args, 'normalize_layers', False),
         return_full_sequence=getattr(args, 'return_full_sequence', False)

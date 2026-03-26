@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "healthbench",
+    "class": "HealthBenchExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "HealthBench: Evaluating Large Language Models Towards Improved Human Health",
+    "paper_url": "https://arxiv.org/abs/2505.08775",
+    "evaluation_method": "Rubric-based evaluation with LLM grader. HealthBench contains 5,000 multi-turn conversations with 48,562 unique rubric criteria created by 262 physicians. Each evaluation example includes a conversation and conversation-specific rubric criteria describing attributes that should be rewarded or penalized. Model responses are evaluated by a GPT-4.1 model-based grader to assess whether each rubric criterion is met. The overall score is the total score of criteria met divided by the maximum possible score. Criteria span seven themes and multiple axes (accuracy, communication, context seeking).",
+    "metric": "rubric score (fraction of criteria met vs maximum possible)"
+}

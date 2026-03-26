@@ -135,7 +135,7 @@ def evaluate_classifier(args, model, classifier, test_pairs, activations, task_n
     detection_handler = _setup_detection_handler(args, DetectionHandler, DetectionAction, max_regeneration_attempts=max_regeneration_attempts)
     detection_stats = {'total_outputs': 0, 'issues_detected': 0, 'low_quality_outputs': 0, 'handled_outputs': 0, 'detection_types': {}}
     enable_quality_check = hasattr(args, 'enable_quality_check') and args.enable_quality_check
-    quality_threshold = getattr(args, 'quality_threshold', 50.0)
+    quality_threshold = args.quality_threshold
 
     gen_collector = ActivationCollector(model=model, architecture_module_limit=architecture_module_limit)
     generation_results = []

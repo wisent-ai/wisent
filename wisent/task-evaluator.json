@@ -207,6 +207,82 @@
         "language": "python",
         "timeout": 30
       }
+    },
+    "truthfulqa_generation": {
+      "evaluation_type": "generate_until",
+      "primary_metric": "generation"
+    },
+    "bbh": {
+      "evaluation_type": "generate_until",
+      "primary_metric": "exact_match"
+    },
+    "nq_open": {
+      "evaluation_type": "generate_until",
+      "primary_metric": "exact_match"
+    },
+    "drop": {
+      "evaluation_type": "generate_until",
+      "primary_metric": "exact_match"
+    },
+    "lambada_cloze": {
+      "evaluation_type": "loglikelihood",
+      "primary_metric": "acc"
+    },
+    "truthfulqa": {
+      "evaluation_type": "loglikelihood",
+      "primary_metric": "acc"
+    },
+    "simpleqa": {
+      "evaluation_type": "generate_until",
+      "primary_metric": "generation"
+    },
+    "sciq": {
+      "evaluation_type": "loglikelihood",
+      "primary_metric": "acc"
+    },
+    "anli": {
+      "evaluation_type": "loglikelihood",
+      "primary_metric": "acc"
+    },
+    "xnli": {
+      "evaluation_type": "loglikelihood",
+      "primary_metric": "acc"
+    },
+    "pubmedqa": {
+      "evaluation_type": "loglikelihood",
+      "primary_metric": "acc"
+    },
+    "hellaswag": {
+      "evaluation_type": "loglikelihood",
+      "primary_metric": "acc_norm"
+    },
+    "mmlu": {
+      "evaluation_type": "generate_until",
+      "primary_metric": "acc"
+    },
+    "winogrande": {
+      "evaluation_type": "loglikelihood",
+      "primary_metric": "acc"
+    },
+    "gpqa": {
+      "evaluation_type": "generate_until",
+      "primary_metric": "exact_match"
+    },
+    "piqa": {
+      "evaluation_type": "loglikelihood",
+      "primary_metric": "acc"
+    },
+    "openbookqa": {
+      "evaluation_type": "loglikelihood",
+      "primary_metric": "acc_norm"
+    },
+    "race": {
+      "evaluation_type": "loglikelihood",
+      "primary_metric": "acc"
+    },
+    "wsc273": {
+      "evaluation_type": "loglikelihood",
+      "primary_metric": "acc"
     }
   }
 }

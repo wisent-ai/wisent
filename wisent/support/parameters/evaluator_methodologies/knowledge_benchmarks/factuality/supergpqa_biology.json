@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "supergpqa_biology",
+    "class": "SuperGpqaExtractor",
+    "evaluator_name": "multiple_choice",
+    "paper_title": "SuperGPQA: Scaling LLM Evaluation across 285 Graduate Disciplines",
+    "paper_url": "https://arxiv.org/abs/2502.14739",
+    "evaluation_method": "Multiple-choice accuracy. SuperGPQA contains graduate-level questions across 285 disciplines with an average of 9.67 answer options per question (significantly more than the conventional 4-option format). A Human-LLM collaborative filtering mechanism eliminates trivial or ambiguous questions. Models select from multiple choices, and accuracy is computed at sample-wise, subfield-wise, field-wise, and discipline-wise levels to ensure fair assessment despite imbalanced question distributions. 42.33% of questions require mathematical calculation or formal reasoning.",
+    "metric": "accuracy (multiple-choice, multi-level aggregation)"
+}

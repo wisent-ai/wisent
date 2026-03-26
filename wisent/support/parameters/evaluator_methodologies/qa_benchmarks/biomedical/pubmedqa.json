@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "pubmedqa",
+    "class": "PubMedQAHFExtractor",
+    "evaluator_name": "classification",
+    "paper_title": "PubMedQA: A Dataset for Biomedical Research Question Answering",
+    "paper_url": "https://arxiv.org/abs/1909.06146",
+    "evaluation_method": "PubMedQA is a biomedical QA dataset with 1k expert-annotated, 61.2k unlabeled, and 211.3k artificially generated QA instances. The task is to answer research questions with yes/no/maybe given the corresponding PubMed abstract as context. The reasoning-required setting uses only the question and abstract (no long answer). Evaluation uses accuracy (proportion of correctly classified answers) as the primary metric. Because the label distribution is imbalanced (majority baseline 55.2%), macro-F1 (macro-precision, macro-recall, macro-F1) is also reported as a more reliable metric.",
+    "metric": "accuracy, macro-F1"
+}

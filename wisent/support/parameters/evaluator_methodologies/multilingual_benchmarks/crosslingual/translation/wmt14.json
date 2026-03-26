@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "wmt14_en_fr",
+    "class": "WMT14Extractor",
+    "evaluator_name": "generation",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_url": "https://arxiv.org/abs/2005.14165",
+    "evaluation_method": "Machine translation evaluation on the WMT'14 English-French and French-English datasets from the Conference on Machine Translation (WMT) 2014 shared task. Models generate translations of source-language sentences into the target language. Evaluation uses BLEU score computed with multi-bleu.perl using XLM's tokenization, as specified in the GPT-3 paper for comparison with prior unsupervised NMT work. The benchmark tests zero-shot, one-shot, and few-shot translation capabilities.",
+    "metric": "BLEU"
+}

@@ -47,7 +47,9 @@ def _train_multi_direction_method(
         
         # Get config from args
         num_directions = args.num_directions
-        combination_strategy = getattr(args, 'combination_strategy', 'learned')
+        combination_strategy = getattr(args, 'combination_strategy', None)
+        if combination_strategy is None:
+            raise ValueError("Parameter 'combination_strategy' is required.")
         optimization_steps = args.multi_optimization_steps
         if optimization_steps is None:
             raise ValueError("--multi-optimization-steps is required for multi-direction training")

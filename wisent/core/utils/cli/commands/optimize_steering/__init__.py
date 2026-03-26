@@ -180,10 +180,10 @@ def execute_optimize_steering(args):
         return execute_continual_learning(args)
 
     # Default: Unified optimizer (Hyperopt or Optuna backend)
-    method = getattr(args, 'method', 'CAA')
+    method = args.method
     enriched_pairs_file = getattr(args, 'enriched_pairs_file', None)
-    task = getattr(args, 'task', None) or "custom"
-    backend = getattr(args, 'backend', 'hyperopt')
+    task = args.task
+    backend = args.backend
     device = getattr(args, 'device', None)
 
     print(f"\n{'=' * SEPARATOR_WIDTH_REPORT}")

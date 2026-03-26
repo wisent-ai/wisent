@@ -87,7 +87,9 @@ def execute_grom_mode(args, model, tokenizer, wisent_model, pairs):
         print("Training GROM for full dynamic steering...")
 
     grom_result = train_grom_for_task(args, wisent_model, pairs)
-    grom_mode = getattr(args, 'grom_mode', 'hybrid')
+    grom_mode = getattr(args, 'grom_mode', None)
+    if grom_mode is None:
+        raise ValueError("Parameter 'grom_mode' is required for GROM export.")
 
     if args.verbose:
         print(f"\nExporting GROM model (mode={grom_mode})...")
@@ -99,9 +101,7 @@ def execute_grom_mode(args, model, tokenizer, wisent_model, pairs):
     )
 
     if args.verbose:
-        print(f"\nGROM model exported to {args.output_dir}")
-        print(f"  Mode: {grom_mode}")
-        print(f"  Layers: {len(grom_result.layer_order)}")
+        print(f"\nGROM model exported to {args.output_dir}\n  Mode: {grom_mode}\n  Layers: {len(grom_result.layer_order)}")
 
 
 def execute_tetno_mode(args, model, tokenizer, wisent_model, pairs):
@@ -113,7 +113,9 @@ def execute_tetno_mode(args, model, tokenizer, wisent_model, pairs):
         print("Training TETNO for conditional steering...")
 
     tetno_result = train_tetno_for_task(args, wisent_model, pairs)
-    tetno_mode = getattr(args, 'grom_mode', 'hybrid')
+    tetno_mode = getattr(args, 'tetno_mode', None)
+    if tetno_mode is None:
+        raise ValueError("Parameter 'tetno_mode' is required for TETNO export.")
     hsf = getattr(args, 'tetno_hybrid_strength_factor', None)
     if hsf is None:
         raise ValueError("--tetno-hybrid-strength-factor is required for TETNO weight export")
@@ -127,9 +129,7 @@ def execute_tetno_mode(args, model, tokenizer, wisent_model, pairs):
     )
 
     if args.verbose:
-        print(f"\nTETNO model exported to {args.output_dir}")
-        print(f"  Layers: {len(tetno_result.behavior_vectors)}")
-        print(f"  Threshold: {tetno_result.optimal_threshold:.3f}")
+        print(f"\nTETNO model exported to {args.output_dir}\n  Layers: {len(tetno_result.behavior_vectors)}\n  Threshold: {tetno_result.optimal_threshold:.3f}")
 
 
 def execute_tecza_mode(args, model, tokenizer, wisent_model, pairs):
@@ -141,7 +141,9 @@ def execute_tecza_mode(args, model, tokenizer, wisent_model, pairs):
         print("Training TECZA for multi-directional steering...")
 
     tecza_result = train_tecza_for_task(args, wisent_model, pairs)
-    tecza_mode = getattr(args, 'tecza_mode', 'weighted')
+    tecza_mode = getattr(args, 'tecza_mode', None)
+    if tecza_mode is None:
+        raise ValueError("Parameter 'tecza_mode' is required for TECZA export.")
 
     if args.verbose:
         print(f"\nExporting TECZA model (mode={tecza_mode})...")
@@ -158,7 +160,6 @@ def execute_tecza_mode(args, model, tokenizer, wisent_model, pairs):
         print(f"\nTECZA model exported to {args.output_dir}")
         print(f"  Layers: {len(tecza_result.directions)}")
         print(f"  Directions per layer: {num_dirs}")
-
 
 
 def execute_guided_modification(args, wisent_model, model, tokenizer, *, guided_max_degradation: float):

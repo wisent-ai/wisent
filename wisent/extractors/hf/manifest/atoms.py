@@ -4,7 +4,10 @@ from collections.abc import Iterable, Mapping
 from typing import Any, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
+from wisent.core.utils.cli.cli_logger import setup_logger
 from wisent.core.utils.infra_tools.errors import FileLoadError, DatasetLoadError
+
+_log = setup_logger(__name__)
 
 if TYPE_CHECKING:
     from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
@@ -113,6 +116,7 @@ class HuggingFaceBenchmarkExtractor(ABC):
         split: str,
         dataset_config: str | None = None,
         limit: int | None = None,
+        trust_remote_code: bool = False,
     ) -> list[dict[str, Any]]:
         """
         Load a HuggingFace dataset and convert to list of dicts.
@@ -126,6 +130,8 @@ class HuggingFaceBenchmarkExtractor(ABC):
                 Optional dataset configuration/subset name.
             limit:
                 Optional maximum number of examples to return.
+            trust_remote_code:
+                Whether to trust and run remote code from the dataset.
 
         returns:
             A list of document dictionaries.
@@ -144,33 +150,45 @@ class HuggingFaceBenchmarkExtractor(ABC):
                 cause=exc
             )
 
+        load_kwargs = {
+            "split": split,
+            "trust_remote_code": trust_remote_code,
+        }
+        config_arg = dataset_config if dataset_config else None
+
         try:
             dataset = load_dataset(
-                dataset_name,
-                dataset_config if dataset_config else None,
-                split=split,
-            )
+                dataset_name, config_arg, **load_kwargs)
         except ValueError as exc:
-            # Handle deprecated 'List' feature type by patching features dict
             if "Feature type 'List' not found" in str(exc) or "Type mismatch" in str(exc):
                 import datasets.features.features as features_module
-                # Temporarily register 'List' as alias for 'LargeList'
                 orig_feature_types = features_module._FEATURE_TYPES.copy()
                 features_module._FEATURE_TYPES['List'] = features_module._FEATURE_TYPES['LargeList']
                 try:
-                    # Force download_mode to redownload to avoid cached metadata issues
                     dataset = load_dataset(
-                        dataset_name,
-                        dataset_config if dataset_config else None,
-                        split=split,
+                        dataset_name, config_arg,
                         download_mode='force_redownload',
-                    )
+                        **load_kwargs)
                 finally:
-                    # Restore original feature types
                     features_module._FEATURE_TYPES = orig_feature_types
             else:
+                _log.error(f"load_dataset ValueError for {dataset_name}: {exc}")
+                raise DatasetLoadError(task_name=dataset_name)
+        except RuntimeError as exc:
+            if "Dataset scripts are no longer supported" in str(exc):
+                _log.info(f"Retrying {dataset_name} with trust_remote_code=True")
+                load_kwargs["trust_remote_code"] = True
+                try:
+                    dataset = load_dataset(
+                        dataset_name, config_arg, **load_kwargs)
+                except Exception as inner:
+                    _log.error(f"Retry failed for {dataset_name}: {inner}")
+                    raise DatasetLoadError(task_name=dataset_name)
+            else:
+                _log.error(f"load_dataset failed for {dataset_name}: {exc}")
                 raise DatasetLoadError(task_name=dataset_name)
         except Exception as exc:
+            _log.error(f"load_dataset failed for {dataset_name}: {type(exc).__name__}: {exc}")
             raise DatasetLoadError(task_name=dataset_name)
 
         return cls._coerce_docs_to_dicts(dataset, max_items)

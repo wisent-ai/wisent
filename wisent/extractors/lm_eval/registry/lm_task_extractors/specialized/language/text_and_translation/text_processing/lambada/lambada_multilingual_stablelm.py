@@ -30,7 +30,7 @@ class LambadaMultilingualStablelmExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Lambada Multilingual Stablelm benchmark."""
 
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "lambada_multilingual"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

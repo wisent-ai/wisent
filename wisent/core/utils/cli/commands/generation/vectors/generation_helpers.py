@@ -110,15 +110,7 @@ def generate_batched(pairs, model, gen_kwargs, args, steering_object, steering_s
                     print(f"   Q{idx}: {text[:DISPLAY_TRUNCATION_COMPACT]}...")
                 results.append(_build_result_entry(idx, pair, text))
         except Exception as batch_err:
-            print(f"   Batch failed ({batch_err}), falling back to sequential")
-            for i, pair in enumerate(batch_pairs):
-                idx = batch_start + i + COMBO_OFFSET
-                try:
-                    text = _generate_one(pair, model, gen_kwargs, args, steering_object, steering_strategy)
-                    results.append(_build_result_entry(idx, pair, text))
-                except Exception as e:
-                    print(f"   Error generating response for question {idx}: {e}")
-                    results.append(_build_error_entry(idx, pair, e))
+            raise RuntimeError(f"Batch generation failed: {batch_err}") from batch_err
     total_elapsed = time.monotonic() - gen_start
     print(
         f"[generate_batched] {datetime.now(timezone.utc).isoformat()} "

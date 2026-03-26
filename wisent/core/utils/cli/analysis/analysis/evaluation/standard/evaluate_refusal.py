@@ -18,10 +18,10 @@ def execute_evaluate_refusal(args):
 
     if isinstance(input_data, list):
         responses = input_data
-        task_name = getattr(args, 'task', 'unknown')
+        task_name = args.task
     else:
         responses = input_data.get('responses', input_data.get('evaluations', []))
-        task_name = input_data.get('task', getattr(args, 'task', 'unknown'))
+        task_name = input_data.get('task', args.task)
 
     evaluation_results = []
     task_results = []

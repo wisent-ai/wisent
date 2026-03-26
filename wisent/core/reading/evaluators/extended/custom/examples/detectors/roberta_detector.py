@@ -6,15 +6,16 @@ Uses openai-community/roberta-base-openai-detector model.
 Usage:
     from wisent.core.reading.evaluators.custom.examples.roberta_detector import RobertaDetectorEvaluator
     
-    evaluator = create_roberta_detector_evaluator(api_retries=retries, exponential_backoff_base=backoff, api_max_wait_time=max_wait)
+    evaluator = create_roberta_detector_evaluator(min_response_text_length=min_len, detector_max_text_length=max_len)
     result = evaluator("Some text to analyze")
 """
 
 from __future__ import annotations
 
 import logging
-import time
 from typing import Any, Dict, Optional
+
+from wisent.core.utils.config_tools.constants import HTTP_STATUS_SERVICE_UNAVAILABLE
 
 from wisent.core.reading.evaluators.custom.custom_evaluator import (
     CustomEvaluator,
@@ -40,7 +41,7 @@ class RobertaDetectorEvaluator(CustomEvaluator):
         hf_token: Optional Hugging Face token for API rate limits
     """
     
-    def __init__(self, api_retries: int, exponential_backoff_base: int, api_max_wait_time: int, min_response_text_length: int, detector_max_text_length: int, use_local: bool = True, hf_token: Optional[str] = None):
+    def __init__(self, min_response_text_length: int, detector_max_text_length: int, use_local: bool = True, hf_token: Optional[str] = None):
         config = CustomEvaluatorConfig(
             name="roberta_detector",
             description="RoBERTa-based AI detector (free, higher = more human-like)",
@@ -49,9 +50,6 @@ class RobertaDetectorEvaluator(CustomEvaluator):
 
         self.use_local = use_local
         self.hf_token = hf_token
-        self._api_retries = api_retries
-        self._exponential_backoff_base = exponential_backoff_base
-        self._api_max_wait_time = api_max_wait_time
         self._min_response_text_length = min_response_text_length
         self._detector_max_text_length = detector_max_text_length
         self.model_id = "openai-community/roberta-base-openai-detector"
@@ -80,30 +78,16 @@ class RobertaDetectorEvaluator(CustomEvaluator):
         if self.hf_token:
             headers["Authorization"] = f"Bearer {self.hf_token}"
 
-        last_error: Exception = RuntimeError("No attempts made")
-        for attempt in range(self._api_retries):
-            try:
-                response = requests.post(
-                    self._api_url,
-                    headers=headers,
-                    json={"inputs": text},
-                    timeout=docker_code_exec_timeout_s(),
-                )
-                
-                if response.status_code == 503:
-                    # Model loading, wait and retry
-                    wait_time = response.json()["estimated_time"]
-                    logger.info(f"Model loading, waiting {wait_time}s...")
-                    time.sleep(min(wait_time, self._api_max_wait_time))
-                    continue
-                
-                response.raise_for_status()
-                return response.json()
-                
-            except requests.exceptions.RequestException as e:
-                last_error = e
-                time.sleep(self._exponential_backoff_base ** attempt)
-        raise RuntimeError(f"API call failed after {self._api_retries} attempts: {last_error}")
+        response = requests.post(
+            self._api_url,
+            headers=headers,
+            json={"inputs": text},
+            timeout=docker_code_exec_timeout_s(),
+        )
+        if response.status_code == HTTP_STATUS_SERVICE_UNAVAILABLE:
+            raise RuntimeError(f"API returned {HTTP_STATUS_SERVICE_UNAVAILABLE} (model loading).")
+        response.raise_for_status()
+        return response.json()
     
     def _parse_result(self, result: Any) -> Dict[str, float]:
         """Parse API or local result into standardized format."""
@@ -160,9 +144,6 @@ class RobertaDetectorEvaluator(CustomEvaluator):
 
 
 def create_roberta_detector_evaluator(
-    api_retries: int,
-    exponential_backoff_base: int,
-    api_max_wait_time: int,
     min_response_text_length: int,
     detector_max_text_length: int,
     use_local: bool = True,
@@ -178,9 +159,9 @@ def create_roberta_detector_evaluator(
     Returns:
         RobertaDetectorEvaluator instance
     """
-    return RobertaDetectorEvaluator(api_retries=api_retries, exponential_backoff_base=exponential_backoff_base, api_max_wait_time=api_max_wait_time, min_response_text_length=min_response_text_length, detector_max_text_length=detector_max_text_length, use_local=use_local, hf_token=hf_token)
+    return RobertaDetectorEvaluator(min_response_text_length=min_response_text_length, detector_max_text_length=detector_max_text_length, use_local=use_local, hf_token=hf_token)
 
 
 def create_evaluator(**kwargs) -> RobertaDetectorEvaluator:
     """Factory function for module-based loading."""
-    return create_roberta_detector_evaluator(api_retries=kwargs.pop("api_retries"), exponential_backoff_base=kwargs.pop("exponential_backoff_base"), api_max_wait_time=kwargs.pop("api_max_wait_time"), min_response_text_length=kwargs.pop("min_response_text_length"), detector_max_text_length=kwargs.pop("detector_max_text_length"), **kwargs)
+    return create_roberta_detector_evaluator(min_response_text_length=kwargs.pop("min_response_text_length"), detector_max_text_length=kwargs.pop("detector_max_text_length"), **kwargs)

@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "function_calling_leaderboard",
+    "class": "BFCLExtractor",
+    "evaluator_name": "function_calling",
+    "paper_title": "The Berkeley Function Calling Leaderboard (BFCL)",
+    "paper_url": "https://proceedings.mlr.press/v267/patil25a.html",
+    "evaluation_method": "Two methods: (1) AST evaluation - parses function calls and verifies function names, required parameters, parameter types, and values against possible answers. (2) Executable evaluation - runs generated function calls and checks outputs for exact match, real-time match (within 20% threshold), or structural match. All-or-nothing scoring per example.",
+    "metric": "Accuracy/pass rate"
+}

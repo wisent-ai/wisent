@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "super_glue_lm_eval_v1_seq2seq",
+    "class": "SuperGlueLmEvalV1Seq2seqExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "SuperGLUE: A Stickier Benchmark for General-Purpose Language Understanding Systems",
+    "paper_url": "https://arxiv.org/abs/1905.00537",
+    "evaluation_method": "SuperGLUE benchmark evaluated via text generation (seq2seq) in the lm-evaluation-harness, following the T5 approach from Raffel et al. (2020). All tasks are reformulated as text-to-text problems where the model generates the answer as text. The generated text is compared against valid class labels. Contains the same eight NLU tasks as SuperGLUE (BoolQ, CB, COPA, MultiRC, ReCoRD, RTE, WiC, WSC) but evaluation is done by generating answers rather than scoring log-likelihoods.",
+    "metric": "task-dependent (accuracy, F1, exact match); overall is average across tasks"
+}

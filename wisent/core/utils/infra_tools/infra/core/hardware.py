@@ -18,6 +18,7 @@ from wisent.core.utils.config_tools.constants import (
     PARAMS_PER_BILLION,
     GENERATION_BATCH_SIZE,
     GENERATION_DEFAULT_MAX_NEW_TOKENS,
+    GPU_FRAGMENTATION_OVERHEAD_FACTOR,
 )
 from wisent.core.utils.config_tools.constants.validated._validated import BYTES_PER_MB
 
@@ -255,10 +256,11 @@ def calculate_peak_gpu_mb(
 
 def estimate_model_memory_mb(model_name: str) -> int:
     """Per-worker worst-case estimate using max generation length."""
-    return calculate_peak_gpu_mb(
+    base = calculate_peak_gpu_mb(
         model_name, seq_len=GENERATION_DEFAULT_MAX_NEW_TOKENS,
         batch_size=GENERATION_BATCH_SIZE,
     )
+    return int(base * GPU_FRAGMENTATION_OVERHEAD_FACTOR)
 
 
 def estimate_max_gpu_workers(model_name: str) -> int:

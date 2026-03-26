@@ -119,6 +119,15 @@ def _test_single_task(task_name: str, limit: float | None) -> dict:
         result["status"] = "PASS"
         result["details"] = "resolution OK, needs constructor args"
         return result
+    except Exception as exc:
+        exc_name = type(exc).__name__
+        if "Docker" in exc_name or "Docker" in str(exc):
+            result["status"] = "PASS"
+            result["details"] = "resolution OK, needs Docker runtime"
+            return result
+        result["status"] = "FAIL"
+        result["details"] = f"evaluator init: {exc}"
+        return result
 
     is_infra = getattr(evaluator, "requires_judge", False)
     if not is_infra:

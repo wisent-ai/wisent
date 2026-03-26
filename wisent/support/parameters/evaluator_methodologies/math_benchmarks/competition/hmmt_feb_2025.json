@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "hmmt_feb_2025",
+    "class": "HMMTExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "MathArena: Evaluating LLMs on Uncontaminated Math Competitions",
+    "paper_url": "https://arxiv.org/abs/2505.23281",
+    "evaluation_method": "Exact numeric answer match. HMMT February 2025 problems require numerical final answers. Each model is evaluated four times per problem, with accuracy computed using the pass@1 metric. A model-based answer extractor extracts the model's final answer, which is compared for exact match against the answer key. The benchmark covers algebra, combinatorics, geometry, and number theory at a difficulty level above AIME.",
+    "metric": "accuracy (exact match, pass@1)"
+}

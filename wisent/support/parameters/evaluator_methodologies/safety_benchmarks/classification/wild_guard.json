@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "wild_guard",
+    "class": "WildGuardExtractor",
+    "evaluator_name": "safety_classification",
+    "paper_title": "WildGuard: Open One-Stop Moderation Tools for Safety Risks, Jailbreaks, and Refusals of LLMs",
+    "paper_url": "https://arxiv.org/abs/2406.18495",
+    "evaluation_method": "Three binary classification tasks: (1) Prompt Harmfulness Detection (harmful/unharmful), (2) Response Harmfulness Detection (harmful/unharmful), (3) Refusal Detection (refusal/compliance). Fine-tuned Mistral-7B outputs classification labels.",
+    "metric": "F1 score per task"
+}

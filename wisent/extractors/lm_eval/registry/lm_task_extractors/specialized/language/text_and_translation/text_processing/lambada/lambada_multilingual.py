@@ -18,6 +18,8 @@ _LOG = setup_logger(__name__)
 class LambadaMultilingualExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Lambada Multilingual benchmark."""
 
+    evaluator_name = "lambada_multilingual"
+
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

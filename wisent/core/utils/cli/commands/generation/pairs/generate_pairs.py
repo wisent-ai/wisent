@@ -185,7 +185,7 @@ def execute_generate_pairs(args):
 
                 metadata = {
                     'source': 'generate_pairs_cli',
-                    'model': getattr(args, 'model', 'unknown'),
+                    'model': args.model,
                     'requested': report.requested,
                     'kept_after_dedupe': report.kept_after_dedupe,
                 }

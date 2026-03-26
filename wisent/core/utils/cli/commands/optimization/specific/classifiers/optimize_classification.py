@@ -29,7 +29,9 @@ def execute_optimize_classification(args):
     print(f"{'='*80}")
     print(f"   Model: {args.model}")
     print(f"   Device: {args.device or 'auto'}")
-    evaluator_type = getattr(args, 'evaluator', 'task')
+    evaluator_type = getattr(args, 'evaluator', None)
+    if evaluator_type is None:
+        raise ValueError("Parameter 'evaluator' is required for classification optimization.")
     trait = getattr(args, 'trait', None)
     if evaluator_type != 'task':
         print(f"   Evaluator: {evaluator_type}")

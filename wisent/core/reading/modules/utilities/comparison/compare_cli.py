@@ -107,7 +107,9 @@ def execute_compare_steering(args):
     object_paths = args.objects
     layers = _parse_layers(getattr(args, 'layers', None))
     output_path = getattr(args, 'output', None)
-    output_format = getattr(args, 'format', 'both')
+    output_format = getattr(args, 'format', None)
+    if output_format is None:
+        raise ValueError("Parameter 'format' is required for compare.")
 
     if len(object_paths) < 2:
         print("Need at least 2 steering objects to compare.")

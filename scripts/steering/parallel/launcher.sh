@@ -11,6 +11,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 RUN_ON_GCP="$REPO_DIR/run_on_gcp.sh"
+source "$REPO_DIR/wisent/core/utils/config_tools/constants/gpu_memory.sh"
 
 MODEL_NAME="${1:?Usage: $0 <model_name> <benchmark> [trials_multiplier] [backend] [methods]}"
 BENCHMARK="${2:?Usage: $0 <model_name> <benchmark> [trials_multiplier] [backend] [methods]}"
@@ -33,10 +34,10 @@ else
 fi
 
 # Auto-compute instance count using same GPU selection as run_on_gcp.sh
-if [[ "$INSTANCE_COUNT" == "auto" || "$INSTANCE_COUNT" == "1" ]]; then
+if [[ "$INSTANCE_COUNT" == "auto" ]]; then
     PARAM_B=$(echo "$MODEL_NAME" | grep -oE "[0-9]+\.?[0-9]*[Bb]" | head -n1 | tr -d "Bb")
     if [[ -n "$PARAM_B" ]]; then
-        MEM_SINGLE=$((PARAM_B * 2 + 4))
+        MEM_SINGLE=$((PARAM_B * WEIGHT_PLUS_KV_PER_BILLION + CUDA_CONTEXT_GB))
         # Mirror run_on_gcp.sh select_instance_type: mem -> GPU VRAM per card x card count
         if   (( MEM_SINGLE <= 24 ));  then PER_GPU=24;  NUM_GPUS=1
         elif (( MEM_SINGLE <= 40 ));  then PER_GPU=40;  NUM_GPUS=1
@@ -71,9 +72,9 @@ echo "  Job ID:      $JOB_ID"
 echo "  GCS base:    $GCS_BASE"
 echo "=========================================="
 
-# Upload worker script to GCS
+# Upload worker script to GCS (non-fatal: file may already exist from a prior upload)
 echo "Uploading worker script to GCS..."
-gcloud storage cp "$SCRIPT_DIR/worker.py" "gs://$GCS_BUCKET/scripts/steering/worker.py"
+gcloud storage cp "$SCRIPT_DIR/worker.py" "gs://$GCS_BUCKET/scripts/steering/worker.py" || echo "WARNING: worker.py upload failed (may already exist in GCS)"
 
 # Group methods across instances
 TOTAL=${#METHODS[@]}

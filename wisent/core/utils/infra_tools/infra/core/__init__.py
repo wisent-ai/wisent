@@ -40,6 +40,9 @@ from .hardware import (
     ds1000_cpu_limit_s,
     ds1000_wall_timeout_s,
     ds1000_nproc,
+    calculate_peak_gpu_mb,
+    estimate_model_memory_mb,
+    estimate_max_gpu_workers,
 )
 
 __all__ = [
@@ -82,4 +85,7 @@ __all__ = [
     'ds1000_cpu_limit_s',
     'ds1000_wall_timeout_s',
     'ds1000_nproc',
+    'calculate_peak_gpu_mb',
+    'estimate_model_memory_mb',
+    'estimate_max_gpu_workers',
 ]

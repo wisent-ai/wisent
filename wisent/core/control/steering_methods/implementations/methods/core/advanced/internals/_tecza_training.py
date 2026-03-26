@@ -43,7 +43,7 @@ class TECZATrainingMixin:
             num_dirs = self.config.num_directions
             auto_details = None
 
-        num_dirs = max(COMBO_OFFSET, num_dirs)
+        num_dirs = max(COMBO_OFFSET, min(num_dirs, self.config.max_directions))
 
         # Initialize directions (ensure same device as input)
         device = pos_tensor.device

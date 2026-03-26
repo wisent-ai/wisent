@@ -40,7 +40,7 @@ def train_grom_for_task(args, model: "WisentModel", pairs: List["ContrastivePair
         print("\nTraining GROM steering method...")
 
     pair_set = ContrastivePairSet(
-        name=getattr(args, 'trait_label', 'steering'),
+        name=args.trait_label,
         pairs=pairs,
         task_type=args.task if hasattr(args, 'task') else None,
     )

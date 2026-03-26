@@ -158,21 +158,10 @@ class APIEvaluator(CustomEvaluator):
         if self.cache_responses and cache_key in self._cache:
             return self._cache[cache_key]
 
-        last_error = None
-        for attempt in range(self.max_retries):
-            try:
-                result = self._call_api(response, **kwargs)
-                if self.cache_responses:
-                    self._cache[cache_key] = result
-                return result
-            except Exception as e:
-                last_error = e
-                if attempt < self.max_retries - 1:
-                    delay = self.retry_delay * (2 ** attempt)
-                    logger.warning(f"API call failed (attempt {attempt + 1}), retrying in {delay}s: {e}")
-                    time.sleep(delay)
-
-        raise RuntimeError(f"API call failed after {self.max_retries} attempts: {last_error}")
+        result = self._call_api(response, **kwargs)
+        if self.cache_responses:
+            self._cache[cache_key] = result
+        return result
 
     def evaluate_batch(self, responses: List[str], **kwargs) -> List[Dict[str, Any]]:
         """Evaluate batch with optional batched API call."""

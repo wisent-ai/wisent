@@ -25,10 +25,10 @@ class OkapiMMLUExtractor(HuggingFaceBenchmarkExtractor):
     Dataset: jon-tow/okapi_mmlu on HuggingFace
 
     Multilingual translation of MMLU (Measuring Massive Multitask Language
-    Understanding) covering 57 tasks across 26 languages.
+    Understanding) covering many tasks across many languages.
     """
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "okapi_mmlu"
 
     def __init__(self, language: str | None = None):
         """
@@ -138,10 +138,10 @@ class OkapiHellaswagExtractor(HuggingFaceBenchmarkExtractor):
     Dataset: jon-tow/okapi_hellaswag on HuggingFace
 
     Multilingual translation of HellaSwag commonsense inference benchmark
-    across 26 languages.
+    across many languages.
     """
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "okapi_hellaswag"
 
     def __init__(self, language: str | None = None):
         """

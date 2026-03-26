@@ -14,6 +14,7 @@ BYTES_PER_KB = 1024  # IEC binary kibibyte
 BYTES_PER_MB = 1024 * 1024  # IEC binary mebibyte
 BYTES_PER_GB = 1024 ** 3  # IEC binary gibibyte
 HTTP_STATUS_OK = 200  # RFC 7231 section 6.3.1
+HTTP_STATUS_SERVICE_UNAVAILABLE = 503  # RFC 7231 section 6.6.4
 
 # --- Correlation / probability range boundaries ---
 VIZ_CORRELATION_VMIN = -1  # Pearson r lower bound

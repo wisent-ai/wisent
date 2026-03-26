@@ -57,7 +57,9 @@ class BaseDataLoader(ABC):
         if not getattr(cls, "name", None):
             raise TypeError("DataLoader subclasses must define a class attribute `name`.")
         if cls.name in BaseDataLoader._REGISTRY:
-            raise DuplicateNameError(name=cls.name, context="data loader registry")
+            if BaseDataLoader._REGISTRY[cls.name] is cls:
+                return
+            raise DuplicateNameError(entity_type="data_loader", name=cls.name)
         BaseDataLoader._REGISTRY[cls.name] = cls
 
     def __init__(self, **kwargs: Any) -> None:

@@ -39,7 +39,7 @@ class CNMOExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "livemathbench"
+    evaluator_name = "cnmo"
 
     def extract_contrastive_pairs(
         self,

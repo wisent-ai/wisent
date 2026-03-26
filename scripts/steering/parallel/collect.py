@@ -14,6 +14,7 @@ from datetime import datetime
 
 from wisent.core.utils.config_tools.constants import (
     EXIT_CODE_ERROR,
+    INDEX_FIRST,
     JSON_INDENT,
     SCORE_RANGE_MIN,
     SEPARATOR_WIDTH_REPORT,
@@ -60,40 +61,64 @@ def main():
     gcs_bucket = os.environ.get("GCS_BUCKET", "wisent-gcp-bucket")
     gcs_base = f"gs://{gcs_bucket}/find_best_method/{job_id}"
 
-    # Check which methods have completed
-    methods_gcs = _gcs_ls(f"{gcs_base}/methods/")
-    if not methods_gcs:
-        print(f"No method results found at {gcs_base}/methods/")
-        print("Workers may still be running.")
+    # Check for multi-benchmark structure (methods/{benchmark}/{method}/)
+    top_entries = _gcs_ls(f"{gcs_base}/methods/")
+    if not top_entries:
+        print(f"No results at {gcs_base}/methods/")
         sys.exit(EXIT_CODE_ERROR)
 
-    completed = _extract_method_names(methods_gcs)
-    print(f"Found results for {len(completed)} methods: {completed}")
-
-    # Download all results
     os.makedirs(output_dir, exist_ok=True)
-    for method in completed:
+    benchmarks = _extract_method_names(top_entries)
+    # Detect: if first entry has sub-directories, it's multi-benchmark
+    sub = _gcs_ls(f"{gcs_base}/methods/{benchmarks[INDEX_FIRST]}/")
+    is_multi = bool(sub and any(
+        "/" in s.rstrip("/").split("/methods/")[-EXIT_CODE_ERROR]
+        for s in sub
+    ))
+
+    if is_multi:
+        _collect_multi_benchmark(benchmarks, gcs_base, output_dir, job_id)
+    else:
+        _collect_single_benchmark(benchmarks, gcs_base, output_dir, job_id)
+
+
+def _collect_single_benchmark(methods, gcs_base, output_dir, job_id):
+    """Collect results for a single benchmark (legacy structure)."""
+    print(f"Found results for {len(methods)} methods: {methods}")
+    for method in methods:
         local_method = os.path.join(output_dir, method)
         print(f"  Downloading {method}...")
-        _gcs_download_dir(
-            f"{gcs_base}/methods/{method}/", local_method,
-        )
-
-    # Load method results and build ranking
-    method_results, baseline_score = _load_results(
-        output_dir, completed,
-    )
-
+        _gcs_download_dir(f"{gcs_base}/methods/{method}/", local_method)
+    method_results, baseline_score = _load_results(output_dir, methods)
     if not method_results:
         print("ERROR: No method results loaded")
         sys.exit(EXIT_CODE_ERROR)
-
     benchmark = _get_benchmark_from_pairs(output_dir, gcs_base)
+    _print_ranking(method_results, baseline_score, benchmark, output_dir, job_id)
 
-    _print_ranking(
-        method_results, baseline_score, benchmark,
-        output_dir, job_id,
-    )
+
+def _collect_multi_benchmark(benchmarks, gcs_base, output_dir, job_id):
+    """Collect results for multiple benchmarks."""
+    print(f"Multi-benchmark job: {len(benchmarks)} benchmarks")
+    all_results = {}
+    for bm in benchmarks:
+        bm_dir = os.path.join(output_dir, bm)
+        method_entries = _gcs_ls(f"{gcs_base}/methods/{bm}/")
+        methods = _extract_method_names(method_entries)
+        print(f"\n  {bm}: {len(methods)} methods ({', '.join(methods)})")
+        for method in methods:
+            local = os.path.join(bm_dir, method)
+            _gcs_download_dir(f"{gcs_base}/methods/{bm}/{method}/", local)
+        method_results, baseline_score = _load_results(bm_dir, methods)
+        if method_results:
+            all_results[bm] = {
+                "methods": method_results, "baseline": baseline_score,
+            }
+            _print_ranking(method_results, baseline_score, bm, bm_dir, job_id)
+    summary_path = os.path.join(output_dir, "multi_benchmark_summary.json")
+    with open(summary_path, "w") as f:
+        json.dump(all_results, f, indent=JSON_INDENT, default=str)
+    print(f"\nSummary saved to {summary_path}")
 
 
 def _extract_method_names(gcs_paths):

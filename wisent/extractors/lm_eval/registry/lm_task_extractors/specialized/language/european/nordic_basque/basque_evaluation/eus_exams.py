@@ -90,7 +90,7 @@ class EusExamsExtractor(LMEvalBenchmarkExtractor):
     """
 
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "eus_exams"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

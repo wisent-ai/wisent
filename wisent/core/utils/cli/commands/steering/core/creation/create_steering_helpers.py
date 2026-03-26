@@ -154,7 +154,8 @@ def _create_tetno_steering_object(
         pos_sim = (pos_norm * c_norm).sum(dim=1)
         neg_sim = (neg_norm * c_norm).sum(dim=1)
         
-        loss = torch.relu(_C.STEERING_LOSS_MARGIN - pos_sim).mean() + torch.relu(neg_sim + _C.STEERING_LOSS_MARGIN).mean()
+        margin = _require_arg(args, 'tetno_condition_margin')
+        loss = torch.relu(margin - pos_sim).mean() + torch.relu(neg_sim + margin).mean()
         loss.backward()
         optimizer.step()
     

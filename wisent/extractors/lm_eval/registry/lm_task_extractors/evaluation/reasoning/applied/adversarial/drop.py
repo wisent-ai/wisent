@@ -18,6 +18,7 @@ _LOG = setup_logger(__name__)
 
 class DropExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the DROP benchmark."""
+    evaluator_name = "exact_match"
 
     def extract_contrastive_pairs(
         self,

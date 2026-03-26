@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "code_exercises",
+    "class": "AiderPolyglotExtractor",
+    "evaluator_name": "code_editing",
+    "paper_title": "No formal paper. Aider documentation.",
+    "paper_url": "https://aider.chat/2024/12/21/polyglot.html",
+    "evaluation_method": "225 Exercism problems across 6 languages. Two attempts; on failure, model sees unit test results. Metric = % of exercises where ALL unit tests pass.",
+    "metric": "Pass rate (pass_rate_1, pass_rate_2)"
+}

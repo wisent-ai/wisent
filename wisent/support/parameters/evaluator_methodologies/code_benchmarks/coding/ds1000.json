@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "ds1000",
+    "class": "Ds1000Extractor",
+    "evaluator_name": "coding",
+    "paper_title": "DS-1000: A Natural and Reliable Benchmark for Data Science Code Generation",
+    "paper_url": "https://arxiv.org/abs/2211.11501",
+    "evaluation_method": "Generated code is evaluated using multi-criteria metrics. Functional correctness is checked by executing the generated code against test cases (comparing outputs to expected outputs on test inputs). Surface-form constraints additionally restrict API usages or keywords to ensure the solution uses the intended approach (e.g., vectorized operations rather than for-loops). A solution passes only if it satisfies both functional correctness and surface-form constraints. The primary metric is pass@1 (whether a single generated solution passes all criteria).",
+    "metric": "pass@1"
+}

@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "flores",
+    "class": "FloresExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "The FLORES-101 Evaluation Benchmark for Low-Resource and Multilingual Machine Translation",
+    "paper_url": "https://arxiv.org/abs/2106.03193",
+    "evaluation_method": "Multilingual machine translation benchmark consisting of 3,001 sentences extracted from English Wikipedia covering diverse topics. Sentences professionally translated into 101 languages. Evaluation uses BLEU based on SentencePiece tokenization (spBLEU) to enable unified evaluation across all languages. The shared SPM model (256K pieces) and spm_bleu metric in sacrebleu are used. Suitable for many-to-many evaluation of 10,100 language pairs.",
+    "metric": "spBLEU (SentencePiece BLEU)"
+}

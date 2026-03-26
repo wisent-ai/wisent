@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "bhtc_v2",
+    "class": "BhtcV2Extractor",
+    "evaluator_name": "log_likelihoods",
+    "paper_title": "BasqueGLUE: A Natural Language Understanding Benchmark for Basque",
+    "paper_url": "https://aclanthology.org/2022.lrec-1.172/",
+    "evaluation_method": "Topic classification of Basque news headlines into 12 categories. The task requires classifying news headline extracts into one of 12 predefined topic categories. This is a sequence classification task. Evaluation uses micro-average F1-score as specified in the BasqueGLUE benchmark.",
+    "metric": "micro-average F1"
+}

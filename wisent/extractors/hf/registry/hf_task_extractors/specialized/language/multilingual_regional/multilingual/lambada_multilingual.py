@@ -20,7 +20,7 @@ class LambadaMultilingualExtractor(HuggingFaceBenchmarkExtractor):
     Multilingual variants available for multiple languages.
     """
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "lambada_multilingual"
 
     def __init__(self, language: str | None = None):
         """

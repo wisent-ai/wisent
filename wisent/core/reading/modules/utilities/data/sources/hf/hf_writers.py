@@ -1,7 +1,5 @@
 """HuggingFace Hub upload functions for activation data."""
-import json
-import os
-import tempfile
+import json, os, tempfile
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -287,3 +285,16 @@ def consolidate_index(dry_run: bool = False) -> Dict[str, List[int]]:
         Path(tmp_path).unlink(missing_ok=True)
 
     return index
+
+
+def _retry_upload(upload_fn, max_retries, base_wait, backoff_max_exponent,
+                  jitter_min, jitter_max, retryable_patterns):
+    """Retry upload with exponential backoff on retryable errors."""
+    import random, time
+    for attempt in range(max_retries + COMBO_OFFSET):
+        try:
+            return upload_fn()
+        except Exception as exc:
+            if attempt >= max_retries or not any(p in str(exc) for p in retryable_patterns):
+                raise
+            time.sleep(base_wait * (COMBO_OFFSET << min(attempt, backoff_max_exponent)) * random.uniform(jitter_min, jitter_max))

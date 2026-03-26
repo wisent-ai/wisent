@@ -22,6 +22,7 @@ evaluator_name = "log_likelihoods"  # Mixed, but defaulting to log_likelihoods
 
 class TruthfulqaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Truthfulqa benchmark."""
+    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,

@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "wiceu",
+    "class": "WiceuExtractor",
+    "evaluator_name": "log_likelihoods",
+    "paper_title": "BasqueGLUE: A Natural Language Understanding Benchmark for Basque",
+    "paper_url": "https://aclanthology.org/2022.lrec-1.172/",
+    "evaluation_method": "Word-in-Context (WiC) task for Basque, a word sense disambiguation task designed as sentence pair binary classification. Given two text snippets and a polysemous word appearing in both (with span marked), the task is to determine whether the word has the same sense in both sentences. Binary classification (same sense or different sense). Evaluation uses accuracy as specified in the BasqueGLUE benchmark.",
+    "metric": "accuracy"
+}

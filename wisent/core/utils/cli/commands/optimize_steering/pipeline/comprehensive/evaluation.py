@@ -41,6 +41,5 @@ def compute_baseline_score(
         logger.info("Generating baseline (no HF cache found)...")
     accuracy, _, _ = baseline_cache.generate_and_upload_baseline(
         model, task_name, pairs_file, device,
-        baseline_cache.build_default_hf_retry_config(),
     )
     return accuracy

@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "Tag",
+    "class": "TagExtractor",
+    "evaluator_name": "table_qa",
+    "paper_title": "Text2SQL is Not Enough: Unifying AI and Databases with TAG",
+    "paper_url": "https://arxiv.org/abs/2408.14717",
+    "evaluation_method": "80 queries across 4 types. Exact match accuracy: percentage of exact matches compared to labeled correct answer.",
+    "metric": "Exact match accuracy"
+}

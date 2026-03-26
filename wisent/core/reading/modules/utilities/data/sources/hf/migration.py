@@ -48,7 +48,6 @@ def _bytes_to_array(data: bytes) -> np.ndarray:
 
 def migrate_activation_table(
     model_name: str, task_name: str, strategy: str,
-    hf_retry_config: Dict,
     database_url: Optional[str] = None, dry_run: bool = False,
     shared_conn=None,
 ) -> List[int]:
@@ -124,7 +123,6 @@ def migrate_activation_table(
             upload_activation_shard(
                 model_name, task_name, strategy, layer,
                 pos_tensor, neg_tensor, pair_ids,
-                hf_retry_config=hf_retry_config,
                 dry_run=dry_run, staging_dir=staging,
             )
             del pos_tensor, neg_tensor
@@ -132,8 +130,8 @@ def migrate_activation_table(
 
         if migrated_layers and not dry_run:
             print(f"  Flushing {len(migrated_layers)} layers as single commit...")
-            flush_staging_dir(staging, hf_retry_config=hf_retry_config)
-            write_marker(model_name, task_name, strategy, migrated_layers, hf_retry_config=hf_retry_config)
+            flush_staging_dir(staging)
+            write_marker(model_name, task_name, strategy, migrated_layers)
 
         return migrated_layers
     finally:
@@ -145,7 +143,6 @@ def migrate_activation_table(
 
 def migrate_pair_texts(
     task_name: str,
-    hf_retry_config: Dict,
     database_url: Optional[str] = None,
     dry_run: bool = False,
     staging_dir: Optional[str] = None,
@@ -196,7 +193,6 @@ def migrate_pair_texts(
         str_pairs = {str(k): v for k, v in pairs.items()}
         upload_pair_texts(
             task_name, str_pairs,
-            hf_retry_config=hf_retry_config,
             dry_run=dry_run, staging_dir=staging_dir,
         )
         return len(pairs)
@@ -209,7 +205,6 @@ def migrate_raw_activation_table(
     model_name: str,
     task_name: str,
     prompt_format: str,
-    hf_retry_config: Dict,
     chunk_size: int,
     database_url: Optional[str] = None,
     dry_run: bool = False,
@@ -277,13 +272,12 @@ def migrate_raw_activation_table(
                 upload_raw_activation_shard(
                     model_name, task_name, prompt_format, layer,
                     ci // chunk_size, pos_t, neg_t, pids,
-                    hf_retry_config=hf_retry_config,
                     dry_run=dry_run, staging_dir=staging,
                 )
                 total_chunks += 1
 
         if total_chunks > 0 and not dry_run:
-            flush_staging_dir(staging, hf_retry_config=hf_retry_config)
+            flush_staging_dir(staging)
 
         return total_chunks
     finally:

@@ -19,7 +19,7 @@ class PawsXExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Paws X benchmark."""
 
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "paws_x"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

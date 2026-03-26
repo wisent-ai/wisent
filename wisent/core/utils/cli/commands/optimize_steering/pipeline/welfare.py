@@ -29,7 +29,9 @@ def _execute_welfare_optimization(args):
     from wisent.data.contrastive_pairs import load_welfare_pairs, WELFARE_TRAIT_DIRS
 
     trait = args.trait
-    direction = getattr(args, 'direction', 'positive')
+    direction = getattr(args, 'direction', None)
+    if direction is None:
+        raise ValueError("Parameter 'direction' is required for welfare optimization.")
     model = args.model
     device = getattr(args, 'device', None)
     output_dir = getattr(args, 'output_dir', './welfare_optimization')
@@ -96,7 +98,9 @@ def _execute_welfare_optimization(args):
     print(f"   Strengths to search: {[f'{s:.2f}' for s in strengths]}")
 
     # Create optimization study
-    search_strategy = getattr(args, 'search_strategy', 'grid')
+    search_strategy = getattr(args, 'search_strategy', None)
+    if search_strategy is None:
+        raise ValueError("Parameter 'search_strategy' is required for welfare optimization.")
 
     if search_strategy == 'optuna':
         # Optuna-based optimization

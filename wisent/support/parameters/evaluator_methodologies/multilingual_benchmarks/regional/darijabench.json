@@ -1,0 +1,8 @@
+{
+    "class": "DarijaBenchExtractor",
+    "evaluator_name": "multilingual_nlu",
+    "paper_title": "Atlas-Chat: Adapting Large Language Models for Low-Resource Moroccan Arabic Dialect",
+    "paper_url": "https://arxiv.org/abs/2409.17912",
+    "evaluation_method": "Multi-task evaluation across Translation, Sentiment Analysis, and Summarization for Moroccan Darija. Accuracy for sentiment classification. BLEU and chrF for translation (character-level n-grams suited for morphologically rich Darija). ROUGE-1/L and BERTScore for summarization. Zero-shot evaluation. Dataset: MBZUAI-Paris/DarijaBench on HuggingFace.",
+    "metric": "Accuracy (sentiment), BLEU/chrF (translation), ROUGE (summarization)"
+}

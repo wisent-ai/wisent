@@ -60,7 +60,9 @@ class BaseClassifier(ClassifierTrainingMixin, ClassifierInferenceMixin, Classifi
         if not getattr(cls, "name", None):
             raise TypeError("Classifier subclasses must define class attribute `name`.")
         if cls.name in BaseClassifier._REGISTRY:
-            raise DuplicateNameError(name=cls.name, context="classifier registry")
+            if BaseClassifier._REGISTRY[cls.name] is cls:
+                return
+            raise DuplicateNameError(entity_type="classifier", name=cls.name)
         BaseClassifier._REGISTRY[cls.name] = cls
 
     def __init__(

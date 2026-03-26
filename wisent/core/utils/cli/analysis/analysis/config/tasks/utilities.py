@@ -19,17 +19,17 @@ def execute_list_tasks(args, LMEvalDataLoader):
         print(f"\n📋 Tasks matching skills: {', '.join(args.skills)}")
         tasks = selector.find_tasks_by_tags(
             skills=args.skills,
-            min_quality_score=getattr(args, 'min_quality_score', 2)
+            min_quality_score=args.min_quality_score
         )
     elif hasattr(args, 'risks') and args.risks:
         print(f"\n📋 Tasks matching risks: {', '.join(args.risks)}")
         tasks = selector.find_tasks_by_tags(
             risks=args.risks,
-            min_quality_score=getattr(args, 'min_quality_score', 2)
+            min_quality_score=args.min_quality_score
         )
     else:
         print(f"\n📋 All available tasks:")
-        tasks = selector.find_tasks_by_tags(min_quality_score=getattr(args, 'min_quality_score', 2))
+        tasks = selector.find_tasks_by_tags(min_quality_score=args.min_quality_score)
 
     print(f"\n   Found {len(tasks)} tasks:\n")
     for i, task in enumerate(sorted(tasks), 1):
@@ -85,7 +85,7 @@ def select_tasks_by_criteria(args):
         skills=getattr(args, 'skills', None),
         risks=getattr(args, 'risks', None),
         num_tasks=getattr(args, 'num_tasks', None),
-        min_quality_score=getattr(args, 'min_quality_score', 2),
+        min_quality_score=args.min_quality_score,
         seed=getattr(args, 'task_seed', None)
     )
 

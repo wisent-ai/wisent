@@ -3,6 +3,7 @@
 Loads pairs, runs optimization, uploads results to GCS.
 Env vars: MODEL_NAME, BENCHMARK, METHOD, JOB_ID, TRIALS_MULTIPLIER, BACKEND, GCS_BUCKET
 """
+import datasets.config; datasets.config.HF_DATASETS_TRUST_REMOTE_CODE = True  # noqa: E702
 import concurrent.futures
 import gc
 import json
@@ -37,7 +38,6 @@ from wisent.core.utils.infra_tools.infra.core.hardware import (
     estimate_max_gpu_workers,
     estimate_model_memory_mb,
 )
-from wisent.core.utils.services.benchmarks import validate_benchmark
 
 
 def _require_env(name: str) -> str:
@@ -174,7 +174,7 @@ def _dispatch_parallel(
                       f"score={result_dict['best_score']:.4f}")
                 _save_and_upload(
                     os.path.join(output_dir, method), method,
-                    result_dict, baseline_score, gcs_base,
+                    result_dict, baseline_score, gcs_base, benchmark,
                 )
                 completed.append(method)
             except Exception as exc:
@@ -184,16 +184,17 @@ def _dispatch_parallel(
 
 
 def _save_and_upload(
-    output_dir, method, result_dict, baseline_score, gcs_base,
+    output_dir, method, result_dict, baseline_score, gcs_base, benchmark="",
 ):
     """Save method result summary and upload to GCS."""
     summary = dict(result_dict, baseline_score=baseline_score,
-                   delta=result_dict["best_score"] - baseline_score)
+                   benchmark=benchmark, delta=result_dict["best_score"] - baseline_score)
     with open(os.path.join(output_dir, "method_result.json"), "w") as f:
         json.dump(summary, f, indent=JSON_INDENT, default=str)
     print(f"\n  {method.upper()}: score={result_dict['best_score']:.4f} "
           f"delta={summary['delta']:+.4f} reserved_gpu_mb={result_dict.get('reserved_gpu_mb')}")
-    gcs_method = f"{gcs_base}/methods/{method}/"
+    bm = f"{benchmark}/" if benchmark else ""
+    gcs_method = f"{gcs_base}/methods/{bm}{method}/"
     _gcs_upload(output_dir, gcs_method)
     print(f"  Uploaded to {gcs_method}")
 
@@ -201,7 +202,6 @@ def _save_and_upload(
 def main():
     model_name = _require_env("MODEL_NAME")
     benchmark = _require_env("BENCHMARK")
-    validate_benchmark(benchmark)
     method_str = _require_env("METHOD")
     job_id = _require_env("JOB_ID")
     trials_mult = int(_require_env("TRIALS_MULTIPLIER"))
@@ -232,7 +232,7 @@ def main():
             trials_mult, backend, method_dir,
         )
         _save_and_upload(
-            method_dir, method, result_dict, baseline_score, gcs_base,
+            method_dir, method, result_dict, baseline_score, gcs_base, benchmark,
         )
     else:
         print(f"Worker: {len(methods)} methods (parallel mode)")

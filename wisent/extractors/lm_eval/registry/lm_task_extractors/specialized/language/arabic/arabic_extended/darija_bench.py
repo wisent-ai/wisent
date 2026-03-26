@@ -41,7 +41,7 @@ class DarijaBenchExtractor(LMEvalBenchmarkExtractor):
         "darija_transliteration",
         "darija_transliteration_tasks",
     )
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "darija_bench"
 
     def extract_contrastive_pairs(
         self,

@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "mmlusr_question_only",
+    "class": "MMLUSRExtractor",
+    "evaluator_name": "log_likelihoods",
+    "paper_title": "MMLU-SR: A Benchmark for Stress-Testing Reasoning Capability of Large Language Models",
+    "paper_url": "https://arxiv.org/abs/2406.15468",
+    "evaluation_method": "MMLU-SR modifies standard MMLU multiple-choice questions by replacing key terms with dummy/random words paired with their definitions, to test whether models truly reason rather than rely on memorized terms. Three variants exist: Question Only (terms in questions replaced), Answer Only (terms in answer choices replaced), and Question and Answer (both replaced). Models respond in 'Answer: Letter of Choice' format. Evaluation uses accuracy on the multiple-choice questions in 5-shot setting. For GPT/Gemini models, temperature is set to 0 for deterministic responses. For Llama3, log-likelihood is used via lm-evaluation-harness to determine model responses.",
+    "metric": "accuracy"
+}

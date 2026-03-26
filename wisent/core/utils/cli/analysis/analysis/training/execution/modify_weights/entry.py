@@ -30,7 +30,8 @@ def execute_modify_weights(args):
         args.task = expand_task_if_skill_or_risk(args.task)
     log = bind(_LOG)
     start_time = time.time()
-    if args.method == "auto" or getattr(args, 'steering_method', 'auto') == "auto":
+    steering_method = getattr(args, 'steering_method', None)
+    if args.method == "auto" or steering_method is None or steering_method == "auto":
         raise ValueError("Auto method selection has been removed. Specify --method and --steering-method explicitly.")
     # Auto-select weight-modification components from extraction component
     extraction_component = getattr(args, 'extraction_component', get_optimal("extraction_component"))
@@ -62,7 +63,7 @@ def execute_modify_weights(args):
             sys.exit(1)
 
     if args.method == "grom":
-        steering_method = getattr(args, 'steering_method', 'caa')
+        steering_method = args.steering_method
         if steering_method != "grom":
             args.method = "directional"
         else:
@@ -71,7 +72,7 @@ def execute_modify_weights(args):
             return
 
     if args.method == "tetno":
-        steering_method = getattr(args, 'steering_method', 'caa')
+        steering_method = args.steering_method
         if steering_method != "tetno":
             args.method = "directional"
         else:
@@ -80,7 +81,7 @@ def execute_modify_weights(args):
             return
 
     if args.method == "tecza":
-        steering_method = getattr(args, 'steering_method', 'caa')
+        steering_method = args.steering_method
         if steering_method != "tecza":
             args.method = "directional"
         else:
@@ -89,7 +90,7 @@ def execute_modify_weights(args):
             return
 
     if args.method == "nurt":
-        steering_method = getattr(args, 'steering_method', 'caa')
+        steering_method = args.steering_method
         if steering_method == "nurt":
             from .method_training import train_nurt_for_task
             from wisent.core.weight_modification.export import export_nurt_model
@@ -107,7 +108,7 @@ def execute_modify_weights(args):
             args.method = "directional"
 
     if args.method == "szlak":
-        steering_method = getattr(args, 'steering_method', 'caa')
+        steering_method = args.steering_method
         if steering_method == "szlak":
             execute_szlak_mode(args, model, tokenizer, wisent_model, pairs)
             _print_timing(args, start_time)
@@ -116,7 +117,7 @@ def execute_modify_weights(args):
             args.method = "directional"
 
     if args.method == "wicher":
-        steering_method = getattr(args, 'steering_method', 'caa')
+        steering_method = args.steering_method
         if steering_method == "wicher":
             execute_wicher_mode(args, model, tokenizer, wisent_model, pairs)
             _print_timing(args, start_time)
@@ -173,7 +174,10 @@ def _load_model(args):
     from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
     if args.verbose:
         print(f"Loading model '{args.model}'...")
-    enable_bias = (args.method == "additive" and getattr(args, 'additive_method', 'bias') == 'bias')
+    additive_method = getattr(args, 'additive_method', None)
+    if args.method == "additive" and additive_method is None:
+        raise ValueError("Parameter 'additive_method' is required when method is 'additive'.")
+    enable_bias = (args.method == "additive" and additive_method == 'bias')
     if enable_bias:
         config = AutoConfig.from_pretrained(args.model, trust_remote_code=True)
         if hasattr(config, 'attention_bias'):

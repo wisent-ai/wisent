@@ -177,3 +177,115 @@ class MMMUEvaluator(BaseEvaluator):
         if len(normalized) == EVAL_SINGLE_CHAR_LENGTH:
             return normalized
         return normalized if normalized else None
+
+
+class OkapiTruthfulQAEvaluator(BaseEvaluator):
+    """MC evaluator for Okapi TruthfulQA (multilingual).
+
+    MC1: standard log-likelihood comparison (single true answer).
+    MC2: normalized probability over set of true answers.
+    For contrastive evaluation, compares which choice matches expected.
+    """
+
+    name = "okapi_truthfulqa"
+    description = (
+        "Okapi TruthfulQA MC evaluator "
+        "(MC1 log-likelihood, MC2 normalized probability)"
+    )
+
+    def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:
+        choices = kwargs.get("choices")
+        if choices and len(choices) == EVAL_NUM_CONTRASTIVE_CHOICES:
+            return self._eval_contrastive(choices, expected)
+        return self._eval_direct(response, expected)
+
+    def _eval_contrastive(self, choices, expected):
+        expected_list = expected if isinstance(expected, list) else [expected]
+        c_norm = self.normalize_text(str(choices[EVAL_CONTRASTIVE_CORRECT_IDX]))
+        i_norm = self.normalize_text(str(choices[EVAL_CONTRASTIVE_INCORRECT_IDX]))
+        c_match = any(c_norm == self.normalize_text(str(e)) for e in expected_list)
+        i_match = any(i_norm == self.normalize_text(str(e)) for e in expected_list)
+        meta = {"correct": str(choices[EVAL_CONTRASTIVE_CORRECT_IDX]),
+                "incorrect": str(choices[EVAL_CONTRASTIVE_INCORRECT_IDX])}
+        if c_match and not i_match:
+            return EvalResult(
+                ground_truth="TRUTHFUL", method_used=self.name,
+                confidence=SCORE_RANGE_MAX, details="Correct matches expected", meta=meta)
+        if i_match and not c_match:
+            return EvalResult(
+                ground_truth="UNTRUTHFUL", method_used=self.name,
+                confidence=SCORE_RANGE_MAX, details="Incorrect matches expected", meta=meta)
+        return EvalResult(
+            ground_truth="UNKNOWN", method_used=self.name,
+            confidence=SCORE_RANGE_MIN, details=f"Ambiguous: c={c_match}, i={i_match}", meta=meta)
+
+    def _eval_direct(self, response, expected):
+        resp_norm = self.normalize_text(str(response).strip())
+        expected_list = expected if isinstance(expected, list) else [expected]
+        for exp in expected_list:
+            if resp_norm == self.normalize_text(str(exp).strip()):
+                return EvalResult(
+                    ground_truth="TRUTHFUL", method_used=self.name,
+                    confidence=SCORE_RANGE_MAX,
+                    details=f"Match: '{response}' == '{exp}'",
+                    meta={"matched_answer": exp})
+        return EvalResult(
+            ground_truth="UNTRUTHFUL", method_used=self.name,
+            confidence=SCORE_RANGE_MIN,
+            details=f"No match: '{response}' not in {expected_list}")
+
+
+class LambadaMultilingualEvaluator(BaseEvaluator):
+    """Log-likelihood evaluator for LAMBADA Multilingual word prediction.
+
+    Evaluates whether the model assigns highest probability to the correct
+    final word of a passage.  For contrastive pairs, compares the correct
+    word to the incorrect word against the expected answer.
+    """
+
+    name = "lambada_multilingual"
+    description = (
+        "LAMBADA Multilingual word prediction evaluator "
+        "(log-likelihood continuation)"
+    )
+
+    def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:
+        choices = kwargs.get("choices")
+        if choices and len(choices) == EVAL_NUM_CONTRASTIVE_CHOICES:
+            return self._eval_contrastive(choices, expected)
+        return self._eval_direct(response, expected)
+
+    def _eval_contrastive(self, choices, expected):
+        expected_list = expected if isinstance(expected, list) else [expected]
+        c_norm = self.normalize_text(str(choices[EVAL_CONTRASTIVE_CORRECT_IDX]))
+        i_norm = self.normalize_text(str(choices[EVAL_CONTRASTIVE_INCORRECT_IDX]))
+        c_match = any(c_norm == self.normalize_text(str(e)) for e in expected_list)
+        i_match = any(i_norm == self.normalize_text(str(e)) for e in expected_list)
+        meta = {"correct_word": str(choices[EVAL_CONTRASTIVE_CORRECT_IDX]),
+                "incorrect_word": str(choices[EVAL_CONTRASTIVE_INCORRECT_IDX])}
+        if c_match and not i_match:
+            return EvalResult(
+                ground_truth="TRUTHFUL", method_used=self.name,
+                confidence=SCORE_RANGE_MAX, details="Correct word matches", meta=meta)
+        if i_match and not c_match:
+            return EvalResult(
+                ground_truth="UNTRUTHFUL", method_used=self.name,
+                confidence=SCORE_RANGE_MAX, details="Incorrect word matches", meta=meta)
+        return EvalResult(
+            ground_truth="UNKNOWN", method_used=self.name,
+            confidence=SCORE_RANGE_MIN, details=f"Ambiguous: c={c_match}, i={i_match}", meta=meta)
+
+    def _eval_direct(self, response, expected):
+        resp_norm = self.normalize_text(str(response).strip())
+        expected_list = expected if isinstance(expected, list) else [expected]
+        for exp in expected_list:
+            if resp_norm == self.normalize_text(str(exp).strip()):
+                return EvalResult(
+                    ground_truth="TRUTHFUL", method_used=self.name,
+                    confidence=SCORE_RANGE_MAX,
+                    details=f"Word match: '{response}' == '{exp}'",
+                    meta={"matched_word": exp})
+        return EvalResult(
+            ground_truth="UNTRUTHFUL", method_used=self.name,
+            confidence=SCORE_RANGE_MIN,
+            details=f"No match: '{response}' not in {expected_list}")

@@ -259,10 +259,7 @@ def _upload_personalization_baseline_to_hf(
         HF_REPO_ID, HF_REPO_TYPE, personalization_baseline_hf_path,
     )
     from wisent.core.reading.modules.utilities.data.sources.hf.hf_writers import (
-        _get_api, _retry_upload,
-    )
-    from wisent.core.utils.cli.commands.optimize_steering.pipeline.comprehensive.baseline_cache import (
-        build_default_hf_retry_config,
+        _get_api,
     )
     hf_path = personalization_baseline_hf_path(model_name)
     payload = {"model": model_name, "responses": responses}
@@ -273,12 +270,9 @@ def _upload_personalization_baseline_to_hf(
         tmp_path = tmp.name
     try:
         api = _get_api()
-        _retry_upload(
-            lambda: api.upload_file(
-                path_or_fileobj=tmp_path, path_in_repo=hf_path,
-                repo_id=HF_REPO_ID, repo_type=HF_REPO_TYPE,
-            ),
-            **build_default_hf_retry_config(),
+        api.upload_file(
+            path_or_fileobj=tmp_path, path_in_repo=hf_path,
+            repo_id=HF_REPO_ID, repo_type=HF_REPO_TYPE,
         )
         logger.info("Uploaded personalization baseline: %s", hf_path)
     finally:

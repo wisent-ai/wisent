@@ -1,0 +1,8 @@
+{
+    "class": "MedConceptsQAExtractor",
+    "evaluator_name": "medical_qa",
+    "paper_title": "MedConceptsQA: Open Source Medical Concepts QA Benchmark",
+    "paper_url": "https://arxiv.org/abs/2405.07348",
+    "evaluation_method": "Multiple-choice QA across medical vocabularies (ICD-10, ICD-9 diagnoses, ICD-9-PROC, ICD-10-PROC procedures, ATC drug codes). 800K+ questions at 3 difficulty levels (easy, medium, hard). Balanced datasets so accuracy is the appropriate metric. Zero-shot and 4-shot evaluation. Each test limited to 250 randomly sampled Q&As, repeated 3 times with 95% confidence intervals.",
+    "metric": "Accuracy"
+}

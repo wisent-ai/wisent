@@ -32,7 +32,7 @@ class InverseScalingExtractor(HuggingFaceBenchmarkExtractor):
     - And more
     """
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "inverse_scaling"
 
     def __init__(self, task: str | None = None):
         """

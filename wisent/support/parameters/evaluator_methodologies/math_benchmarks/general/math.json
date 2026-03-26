@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "math",
+    "class": "MATHExtractor",
+    "evaluator_name": "math",
+    "paper_title": "Measuring Mathematical Problem Solving With the MATH Dataset",
+    "paper_url": "https://arxiv.org/abs/2103.03874",
+    "evaluation_method": "Exact match on boxed answer with LaTeX equivalence checking. The MATH dataset contains 12,500 competition-level math problems. Each problem has a step-by-step solution with the final answer enclosed in LaTeX \\boxed{} tags. The model's boxed answer is extracted and compared against the reference answer. The original evaluation uses strict LaTeX format matching. The Minerva variant uses sympy-based mathematical equivalence checking to handle different but equivalent representations.",
+    "metric": "accuracy (exact match on \\boxed{} answer)"
+}

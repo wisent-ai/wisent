@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "boolq_seq2seq",
+    "class": "BoolqSeq2seqExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "BoolQ: Exploring the Surprising Difficulty of Natural Yes/No Questions",
+    "paper_url": "https://arxiv.org/abs/1905.10044",
+    "evaluation_method": "BoolQ is a dataset of 15,942 naturally occurring yes/no questions paired with a Wikipedia passage. The original paper evaluates by accuracy: given a question and passage, the model must predict yes or no, and the prediction is compared to the gold boolean label. The seq2seq variant treats this as a generative task: the model generates a text response (e.g., 'yes' or 'no') given the question and passage as input, and the generated text is compared to the expected answer via exact string match (after normalization). This differs from the log-likelihood approach where yes/no probabilities are compared directly.",
+    "metric": "accuracy (exact match of generated yes/no)"
+}

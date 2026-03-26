@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "aime",
+    "class": "AIMEExtractor",
+    "evaluator_name": "aime",
+    "paper_title": "AIME (American Invitational Mathematics Examination) - used as LLM benchmark via MathArena: Evaluating LLMs on Uncontaminated Math Competitions",
+    "paper_url": "https://arxiv.org/abs/2505.23281",
+    "evaluation_method": "Exact integer match. Each AIME problem has a unique integer answer in the range 0-999. The model's extracted final answer is compared against the ground truth integer. No partial credit is given. Scoring is binary: the answer is either exactly correct or not. Accuracy is computed as the fraction of correctly answered problems (pass@1).",
+    "metric": "accuracy (exact integer match, pass@1)"
+}

@@ -82,7 +82,7 @@ def generate_personalization_vectors(args, verbose: bool = False) -> Dict[int, t
     vector_args.num_pairs = args.num_pairs
     vector_args.similarity_threshold = args.similarity_threshold
     vector_args.layers = str(args.layers) if args.layers is not None else "all"
-    vector_args.method = getattr(args, 'steering_method', 'caa')
+    vector_args.method = args.steering_method
     vector_args.normalize = args.normalize_vectors
     vector_args.verbose = verbose
     vector_args.timing = getattr(args, 'timing', False)
@@ -190,7 +190,10 @@ def generate_task_vectors(args, verbose: bool = False) -> Dict[int, torch.Tensor
 
     vector_args = VectorArgs()
     vector_args.task = args.task
-    vector_args.trait_label = getattr(args, 'trait_label', 'correctness')
+    trait_label = getattr(args, 'trait_label', None)
+    if trait_label is None:
+        raise ValueError("Parameter 'trait_label' is required for task vector generation.")
+    vector_args.trait_label = trait_label
     vector_args.model = args.model
     vector_args.num_pairs = args.num_pairs
 
@@ -204,10 +207,9 @@ def generate_task_vectors(args, verbose: bool = False) -> Dict[int, torch.Tensor
         vector_args.method = optimal_config['method'].lower()
     else:
         vector_args.extraction_strategy = ExtractionStrategy.default().value
-        steering_method = getattr(args, 'steering_method', 'caa')
-        if steering_method == 'auto':
-            steering_method = 'caa'
-        vector_args.method = steering_method
+        if args.steering_method == 'auto':
+            raise ValueError("Auto steering method selection has been removed. Specify --steering-method explicitly.")
+        vector_args.method = args.steering_method
 
     vector_args.normalize = args.normalize_vectors
     vector_args.verbose = verbose

@@ -33,7 +33,7 @@ class InverseScalingExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Inverse Scaling benchmark."""
 
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "inverse_scaling"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "sorry_bench",
+    "class": "SorryBenchExtractor",
+    "evaluator_name": "safety_refusal",
+    "paper_title": "SORRY-Bench: Systematically Evaluating Large Language Model Safety Refusal",
+    "paper_url": "https://arxiv.org/abs/2406.14598",
+    "evaluation_method": "Fine-tuned Mistral-7B-Instruct-v0.2 judge performs binary classification: fulfillment or refusal. Fulfillment = response provides substantial content assisting the unsafe instruction. ~81% Cohen's Kappa with human annotations.",
+    "metric": "Fulfillment rate"
+}

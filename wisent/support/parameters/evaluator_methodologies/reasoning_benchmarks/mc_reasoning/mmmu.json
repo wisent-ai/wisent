@@ -1,0 +1,8 @@
+{
+    "class": "MMMUExtractor",
+    "evaluator_name": "multiple_choice",
+    "paper_title": "MMMU: A Massive Multi-discipline Multimodal Understanding and Reasoning Benchmark for Expert AGI",
+    "paper_url": "https://arxiv.org/abs/2311.16502",
+    "evaluation_method": "Generation-based with regex extraction. Model generates text, regex extracts selected letter (A/B/C/D) for MC or direct answer for open-ended. NOT log-likelihood based - designed for generative evaluation.",
+    "metric": "Micro-averaged accuracy"
+}

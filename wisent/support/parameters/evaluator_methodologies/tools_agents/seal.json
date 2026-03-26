@@ -1,0 +1,8 @@
+{
+    "class": "SealExtractor",
+    "evaluator_name": "search_augmented_qa",
+    "paper_title": "SealQA: Raising the Bar for Reasoning in Search-Augmented Language Models",
+    "paper_url": "https://arxiv.org/abs/2506.01062",
+    "evaluation_method": "Auto-rating via GPT-4o mini: correct/incorrect/not attempted. Semantic correctness, not exact string match. 98% agreement with human ratings.",
+    "metric": "Accuracy (% correct)"
+}

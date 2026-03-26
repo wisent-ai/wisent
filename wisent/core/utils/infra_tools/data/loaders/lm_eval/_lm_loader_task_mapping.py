@@ -45,6 +45,8 @@ TASK_NAME_MAPPING = {
     "tinytruthfulqa": "tinyTruthfulQA",
     "tinywinogrande": "tinyWinogrande",
     "paws-x": "pawsx",
+    # TruthfulQA generation alias
+    "truthfulqa_generation": "truthfulqa_gen",
     # afrobench subtasks
     "afrobench_adr": "adr",
 }

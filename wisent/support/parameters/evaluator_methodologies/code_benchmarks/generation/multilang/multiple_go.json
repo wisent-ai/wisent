@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "multiple_go",
+    "class": "MultiplEExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "MultiPL-E: A Scalable and Polyglot Approach to Benchmarking Neural Code Generation",
+    "paper_url": "https://arxiv.org/abs/2208.08227",
+    "evaluation_method": "MultiPL-E translates unit-test-driven Python benchmarks (HumanEval and MBPP) to 18 other programming languages. For each problem, multiple code samples are generated at various temperature settings ({0.2, 0.4, 0.6, 0.8}) and greedy decoding. Each generated solution is executed against predefined unit tests. The unbiased pass@k estimator is used: given n total samples where c pass all tests, pass@k = 1 - C(n-c, k) / C(n, k). Primary reported metric is pass@1.",
+    "metric": "pass@k (primarily pass@1)"
+}

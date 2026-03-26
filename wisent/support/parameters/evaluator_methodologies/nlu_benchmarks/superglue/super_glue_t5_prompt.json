@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "super_glue_t5_prompt",
+    "class": "SuperGlueT5PromptExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer",
+    "paper_url": "https://arxiv.org/abs/1910.10683",
+    "evaluation_method": "SuperGLUE benchmark evaluated using T5-style text-to-text prompts as introduced by Raffel et al. (2020). Each SuperGLUE task is reformulated as a generative task with task-specific prefix prompts. The model generates text output, which is compared to expected class labels. This follows the T5 methodology where all NLP tasks are cast into a unified text-to-text format, and evaluation checks whether generated text matches any valid class label.",
+    "metric": "task-dependent (accuracy, F1, exact match); overall is average across tasks"
+}

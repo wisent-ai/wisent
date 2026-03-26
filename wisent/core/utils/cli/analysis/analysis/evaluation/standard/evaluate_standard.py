@@ -7,6 +7,7 @@ def evaluate_standard(
     args, input_data, responses, task_name,
     evaluation_results, task_results, evaluator, task_docs,
     evaluation_type="generate_until",
+    model=None,
 ):
     """Run standard evaluation loop for benchmark responses."""
     for idx, response_data in enumerate(responses, 1):
@@ -38,11 +39,15 @@ def evaluate_standard(
                     print(f"Question {idx}: Using positive_reference as expected answer")
 
                 # Evaluate using selected evaluator
+                choices = (correct_answers or []) + (incorrect_answers or [])
                 result = evaluator.evaluate(
                     generated_response,
                     positive_reference,
                     correct_answers=correct_answers,
-                    incorrect_answers=incorrect_answers
+                    incorrect_answers=incorrect_answers,
+                    model=model,
+                    question=prompt,
+                    choices=choices if choices else None,
                 )
 
                 is_correct = (result.ground_truth == "TRUTHFUL")

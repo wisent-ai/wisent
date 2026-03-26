@@ -26,10 +26,10 @@ class PawsXExtractor(HuggingFaceBenchmarkExtractor):
     Dataset: google-research-datasets/paws-x on HuggingFace
 
     PAWS-X is a challenging paraphrase identification dataset that contains
-    pairs of sentences with high lexical overlap. Available in 7 languages.
+    pairs of sentences with high lexical overlap. Available in multiple languages.
     """
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "paws_x"
 
     def __init__(self, language: str | None = None):
         """

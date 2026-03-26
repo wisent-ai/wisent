@@ -49,7 +49,7 @@ def train_nurt_for_task(args, wisent_model: "WisentModel", pairs: List["Contrast
 
     meta = SteeringObjectMetadata(
         method="nurt", model_name=args.model,
-        benchmark=getattr(args, 'task', 'unknown'), category="steering",
+        benchmark=args.task, category="steering",
         extraction_strategy=get_optimal_extraction_strategy(), num_pairs=len(pairs),
         layers=[int(l) for l in layers], hidden_dim=0,
     )
@@ -87,7 +87,7 @@ def train_szlak_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
 
     meta = SteeringObjectMetadata(
         method="szlak", model_name=args.model,
-        benchmark=getattr(args, 'task', 'unknown'), category="steering",
+        benchmark=args.task, category="steering",
         extraction_strategy=get_optimal_extraction_strategy(), num_pairs=len(pairs),
         layers=[int(l) for l in layers], hidden_dim=0,
     )
@@ -125,7 +125,7 @@ def train_wicher_for_task(args, wisent_model: "WisentModel", pairs: List["Contra
 
     meta = SteeringObjectMetadata(
         method="wicher", model_name=args.model,
-        benchmark=getattr(args, 'task', 'unknown'), category="steering",
+        benchmark=args.task, category="steering",
         extraction_strategy=get_optimal_extraction_strategy(), num_pairs=len(pairs),
         layers=[int(l) for l in layers], hidden_dim=0,
     )

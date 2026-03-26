@@ -17,6 +17,7 @@ _LOG = setup_logger(__name__)
 
 class LambadaClozeExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Lambada Cloze benchmark."""
+    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,

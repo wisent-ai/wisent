@@ -144,6 +144,7 @@ def wicher_halley_step(
             alpha_t = alpha_t * alpha_decay
 
         h_new = h + concept_basis.T @ (z - z_0)
+        h_new = torch.nan_to_num(h_new)
         results.append(h_new.to(dtype))
 
     out = torch.stack(results, dim=INDEX_FIRST)

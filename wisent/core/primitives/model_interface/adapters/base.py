@@ -105,7 +105,9 @@ class BaseAdapter(SteeringHookMixin, ABC, Generic[InputT, OutputT]):
         if not getattr(cls, "name", None):
             raise TypeError("BaseAdapter subclasses must define `name`.")
         if cls.name in BaseAdapter._REGISTRY:
-            raise DuplicateNameError(name=cls.name, context="adapter registry")
+            if BaseAdapter._REGISTRY[cls.name] is cls:
+                return
+            raise DuplicateNameError(entity_type="adapter", name=cls.name)
         BaseAdapter._REGISTRY[cls.name] = cls
 
     def __init__(

@@ -19,6 +19,7 @@ from wisent.core.utils.cli.analysis.evaluation.evaluate_docker import evaluate_d
 from wisent.core.utils.cli.analysis.evaluation.evaluate_personalization import evaluate_personalization
 from wisent.core.utils.cli.analysis.evaluation.evaluate_refusal import evaluate_refusal
 from wisent.core.utils.cli.analysis.evaluation.evaluate_standard import evaluate_standard
+from wisent.core.utils.cli.analysis.evaluation.eval_config_resolver import derive_eval_config_from_extractor
 
 
 def execute_evaluate_responses(args):
@@ -94,14 +95,16 @@ def execute_evaluate_responses(args):
 
         # Get task evaluation type
         task_config = task_evaluator_map['tasks'].get(task_name)
-        if not task_config:
-            raise TaskNotFoundError(task_name=task_name)
-
-        evaluation_type = task_config['evaluation_type']
-        primary_metric = task_config['primary_metric']
-
-        print(f"   ✓ Task evaluation type: {evaluation_type}")
-        print(f"   ✓ Primary metric: {primary_metric}\n")
+        if task_config:
+            evaluation_type = task_config['evaluation_type']
+            primary_metric = task_config['primary_metric']
+            print(f"   ✓ Task evaluation type: {evaluation_type}")
+            print(f"   ✓ Primary metric: {primary_metric}\n")
+        else:
+            # Derive evaluation routing from extractor's evaluator_name
+            evaluation_type, primary_metric = derive_eval_config_from_extractor(task_name)
+            print(f"   ✓ Task evaluation type: {evaluation_type} (derived from extractor)")
+            print(f"   ✓ Primary metric: {primary_metric} (derived from extractor)\n")
     except Exception as e:
         print(f"   ❌ Could not load task config: {e}")
         raise
@@ -231,6 +234,7 @@ def execute_evaluate_responses(args):
         args, input_data, responses, task_name,
         evaluation_results, task_results, evaluator, task_docs,
         evaluation_type=evaluation_type,
+        model=getattr(args, 'cached_model', None),
     )
 
     # Aggregate results

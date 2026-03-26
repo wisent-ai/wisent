@@ -284,7 +284,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                             negative_examples.append(pair["negative_response"]["model_response"])
 
         # If using multi-direction method (grom/tecza/tetno), train on pairs with activations
-        method = getattr(args, 'method', 'directional')
+        method = args.method
         if method in ('grom', 'tecza', 'tetno'):
             vectors = _train_multi_direction_method(
                 args, vectors, intermediate_dir, method
