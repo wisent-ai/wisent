@@ -21,7 +21,9 @@ def wire_wizard_navigation(groups, wizard_components, outer_tabs, inner):
 
     inner_list = list(inner.items())
 
-    def navigate(cmd_name):
+    def navigate(cmd_name=None):
+        if not cmd_name:
+            return [gr.update()] * (len(inner_list) + COMBO_OFFSET)
         group_label = cmd_to_group.get(cmd_name)
         if not group_label:
             return [gr.update()] * (len(inner_list) + COMBO_OFFSET)
