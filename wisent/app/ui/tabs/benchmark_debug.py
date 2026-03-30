@@ -7,6 +7,7 @@ import gradio as gr
 from wisent.core.utils.config_tools.constants import (
     INDEX_FIRST,
     TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT,
+    SPLIT_RATIO_HALF,
 )
 
 
@@ -84,8 +85,13 @@ def _test_single_task(task_name: str, limit: float | None) -> dict:
         pairs = extractor.extract_contrastive_pairs(limit=parsed_limit)
     except TypeError:
         try:
+            from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import (
+                LMEvalLoader,
+            )
+            task_obj = LMEvalLoader.load_lm_eval_task(task_name)
             pairs = extractor.extract_contrastive_pairs(
-                lm_eval_task_data=None, limit=parsed_limit)
+                lm_eval_task_data=task_obj, limit=parsed_limit,
+                train_ratio=SPLIT_RATIO_HALF)
         except Exception as exc:
             result["status"] = "FAIL"
             result["details"] = f"extraction: {exc}"
