@@ -86,9 +86,9 @@ def _test_single_task(task_name: str, limit: float | None) -> dict:
     except TypeError:
         try:
             from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import (
-                LMEvalLoader,
+                LMEvalDataLoader,
             )
-            task_obj = LMEvalLoader.load_lm_eval_task(task_name)
+            task_obj = LMEvalDataLoader.load_lm_eval_task(task_name)
             pairs = extractor.extract_contrastive_pairs(
                 lm_eval_task_data=task_obj, limit=parsed_limit,
                 train_ratio=SPLIT_RATIO_HALF)
