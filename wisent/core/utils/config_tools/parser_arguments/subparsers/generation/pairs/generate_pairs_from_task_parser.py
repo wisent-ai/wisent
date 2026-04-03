@@ -22,6 +22,19 @@ def setup_generate_pairs_from_task_parser(parser):
         help="Random seed for reproducibility (default: 42)"
     )
     parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Maximum number of contrastive pairs to generate (default: all)"
+    )
+    parser.add_argument(
+        "--train-ratio",
+        type=float,
+        default=0.5,
+        dest="train_ratio",
+        help="Train/test split ratio (default: 0.5)"
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable verbose logging"

@@ -29,7 +29,7 @@ def execute_generate_pairs_from_task(args):
         # Use unified loader - handles HF, lm-eval, and group tasks automatically
         pairs = build_contrastive_pairs(
             task_name=args.task_name,
-            limit=None,
+            limit=getattr(args, 'limit', None),
             train_ratio=args.train_ratio,
         )
         pairs_task_name = args.task_name

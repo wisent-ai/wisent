@@ -92,10 +92,11 @@ class BaseEvaluator(ABC):
         if not getattr(cls, "name", None):
             raise TypeError("Evaluator subclasses must define a class attribute `name`.")
         if cls.name in BaseEvaluator._REGISTRY:
-            if BaseEvaluator._REGISTRY[cls.name] is cls:
+            existing = BaseEvaluator._REGISTRY[cls.name]
+            if existing is cls or existing.__qualname__ == cls.__qualname__:
                 return
             raise DuplicateNameError(entity_type="evaluator", name=cls.name)
-        BaseEvaluator._REGISTRY[cls.name] = cls  
+        BaseEvaluator._REGISTRY[cls.name] = cls
 
     @abstractmethod
     def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:
