@@ -74,7 +74,15 @@ def test_evaluator(task_name: str, responses: list[dict], timeout: int = 300) ->
         with open(output_file) as f:
             data = json.load(f)
 
-        result["status"] = "PASS"
         result["evaluation"] = data
+
+        num_evaluated = data.get("num_evaluated", 0)
+        num_total = data.get("num_total", 0)
+        if num_evaluated == 0:
+            result["status"] = "FAIL"
+            result["detail"] = f"0/{num_total} responses evaluated"
+            return result
+
+        result["status"] = "PASS"
 
     return result
