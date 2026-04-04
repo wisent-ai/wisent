@@ -8,7 +8,18 @@ from wisent.core.utils.config_tools import constants as _C
 _APP_TITLE = "Wisent - World's Best AI through Representation Engineering"
 
 
-_FONT_HEAD = f'<link href="{_C.WISENT_FONT_CDN_URL}" rel="stylesheet">'
+_FONT_HEAD = (
+    f'<link href="{_C.WISENT_FONT_CDN_URL}" rel="stylesheet" '
+    f'onload="console.log(\'WISENT: font loaded from {_C.WISENT_FONT_CDN_URL}\')" '
+    f'onerror="console.error(\'WISENT: font FAILED to load from {_C.WISENT_FONT_CDN_URL}\')">'
+    '<script>'
+    'document.fonts.ready.then(function(){'
+    'var has=document.fonts.check("16px Hubot Sans");'
+    'console.log("WISENT: document.fonts.ready — Hubot Sans available:",has);'
+    'if(!has)console.warn("WISENT: Hubot Sans not available, browser will use default font")'
+    '});'
+    '</script>'
+)
 
 
 def _build_theme():
