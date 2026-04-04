@@ -35,6 +35,12 @@ def setup_generate_pairs_from_task_parser(parser):
         help="Train/test split ratio (default: 0.5)"
     )
     parser.add_argument(
+        "--allow-subtasks",
+        action="store_true",
+        dest="allow_subtasks",
+        help="Accept subtasks whose parent is a working benchmark"
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable verbose logging"

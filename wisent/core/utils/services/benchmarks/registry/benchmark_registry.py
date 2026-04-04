@@ -178,8 +178,13 @@ def get_working_benchmarks_with_categories() -> Dict[str, str]:
     return result
 
 
-def validate_benchmark(task_name: str) -> None:
+def validate_benchmark(task_name: str, allow_subtasks: bool = False) -> None:
     """Validate that a benchmark is in the working benchmarks list.
+
+    Args:
+        task_name: Benchmark or subtask name.
+        allow_subtasks: If True, accept subtasks whose parent is a working benchmark
+            (e.g. "aclue_ancient_chinese_culture" is valid if "aclue" is working).
 
     Raises UnsupportedBenchmarkError if not found, with helpful context.
     """
@@ -192,6 +197,12 @@ def validate_benchmark(task_name: str) -> None:
     lower_map = {t.lower(): t for t in working}
     if task_name.lower() in lower_map:
         return
+
+    if allow_subtasks:
+        for parent in working:
+            if task_name.startswith(parent + "_") or task_name.lower().startswith(parent.lower() + "_"):
+                return
+
     broken = set(get_broken_tasks())
     if task_name in broken:
         raise UnsupportedBenchmarkError(

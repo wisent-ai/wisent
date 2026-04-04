@@ -26,6 +26,7 @@ def test_extractor(task_name: str, output_file: str, limit: int = 5, timeout: in
             "generate-pairs-from-task", task_name,
             "--output", output_file,
             "--limit", str(limit),
+            "--allow-subtasks",
             "--verbose",
         ],
         capture_output=True,
