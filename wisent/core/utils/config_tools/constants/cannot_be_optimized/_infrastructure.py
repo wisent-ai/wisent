@@ -189,7 +189,7 @@ PRESET_CARD_DESC_COLOR = "#999999"
 PRESET_CARD_TITLE_FONT_WEIGHT = 600
 WISENT_FONT_PRIMARY = "Hubot Sans"
 WISENT_FONT_CDN_URL = (
-    "https://cdn.jsdelivr.net/npm/@github/hubot-sans@1.0.0/HubotSans.min.css"
+    "https://cdn.jsdelivr.net/npm/@fontsource/hubot-sans/index.css"
 )
 WISENT_LOGO_FILENAME = "wisent_logo.png"
 WISENT_LOGO_DISPLAY_WIDTH = 80
