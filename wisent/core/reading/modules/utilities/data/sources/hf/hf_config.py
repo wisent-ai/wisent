@@ -62,6 +62,11 @@ def baseline_metadata_hf_path(model: str, benchmark: str, pairs_hash: str = "") 
     return f"baselines/{safe}/{benchmark}{sub}/metadata.json"
 
 
+def test_results_hf_path(benchmark: str) -> str:
+    """Build HF repo path for benchmark test results JSON."""
+    return f"test_results/{benchmark}.json"
+
+
 def personalization_baseline_hf_path(model: str) -> str:
     """Build HF repo path for personalization baseline responses JSON."""
     safe = model_to_safe_name(model)

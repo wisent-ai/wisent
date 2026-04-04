@@ -18,6 +18,7 @@ from .hf_config import (
     model_to_safe_name,
     pair_texts_hf_path,
     raw_activation_hf_path,
+    test_results_hf_path,
 )
 
 
@@ -298,3 +299,20 @@ def _retry_upload(upload_fn, max_retries, base_wait, backoff_max_exponent,
             if attempt >= max_retries or not any(p in str(exc) for p in retryable_patterns):
                 raise
             time.sleep(base_wait * (COMBO_OFFSET << min(attempt, backoff_max_exponent)) * random.uniform(jitter_min, jitter_max))
+
+
+def upload_test_results(benchmark: str, results: dict) -> str:
+    """Upload benchmark test results as JSON."""
+    hf_path = test_results_hf_path(benchmark)
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
+        json.dump(results, tmp, indent=JSON_INDENT)
+        tmp_path = tmp.name
+    try:
+        api = _get_api()
+        api.upload_file(
+            path_or_fileobj=tmp_path, path_in_repo=hf_path,
+            repo_id=HF_REPO_ID, repo_type=HF_REPO_TYPE,
+        )
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+    return hf_path

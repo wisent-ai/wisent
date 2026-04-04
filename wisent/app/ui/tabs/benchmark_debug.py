@@ -7,7 +7,6 @@ import gradio as gr
 from wisent.core.utils.config_tools.constants import (
     INDEX_FIRST,
     TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT,
-    SPLIT_RATIO_HALF,
 )
 
 
@@ -50,205 +49,57 @@ def _get_all_benchmark_names() -> list[str]:
     return _get_benchmarks_for_category("all")
 
 
-def _find_subtasks(task_name: str, all_names: list[str]) -> list[str]:
-    """Find subtasks for a group task by prefix matching."""
-    prefix = task_name + "_"
-    subtasks = [n for n in all_names if n.startswith(prefix)]
-    return subtasks
+def _format_result(result: dict) -> str:
+    """Format test_benchmark result dict as markdown."""
+    task = result["task"]
+    ext = result.get("extraction", {})
+    evl = result.get("evaluator", {})
 
+    lines = [f"### {task}\n"]
 
-def _test_single_task(task_name: str, limit: float | None) -> dict:
-    """Test one task. Returns dict with status and details."""
-    from wisent.extractors.lm_eval.lm_extractor_registry import (
-        get_extractor,
-    )
-    result = {"task": task_name, "status": "UNKNOWN", "details": ""}
+    # Extraction
+    ext_status = ext.get("status", "SKIP")
+    ext_pairs = ext.get("pair_count", 0)
+    lines.append(f"**Extraction:** {ext_status} ({ext_pairs} pairs)")
+    if ext.get("detail"):
+        lines.append(f"  - {ext['detail'][:200]}")
 
-    try:
-        extractor = get_extractor(task_name)
-    except Exception as exc:
-        result["status"] = "FAIL"
-        result["details"] = f"extractor: {exc}"
-        return result
+    # Evaluator
+    evl_status = evl.get("status", "SKIP")
+    lines.append(f"**Evaluator:** {evl_status}")
+    if evl.get("detail"):
+        lines.append(f"  - {evl['detail'][:200]}")
+    evaluation = evl.get("evaluation", {})
+    if evaluation:
+        num_eval = evaluation.get("num_evaluated", 0)
+        num_total = evaluation.get("num_total", 0)
+        evaluator_used = evaluation.get("evaluator_used", "?")
+        lines.append(f"  - Evaluator: {evaluator_used}, {num_eval}/{num_total} evaluated")
+        metrics = evaluation.get("aggregated_metrics", {})
+        for k, v in metrics.items():
+            lines.append(f"  - {k}: {v:.4f}" if isinstance(v, float) else f"  - {k}: {v}")
 
-    evaluator_name = getattr(extractor, "evaluator_name", None)
-    result["extractor"] = type(extractor).__name__
-    result["evaluator"] = evaluator_name
-
-    if not evaluator_name:
-        result["status"] = "FAIL"
-        result["details"] = "no evaluator_name"
-        return result
-
-    parsed_limit = int(limit) if limit else None
-    try:
-        pairs = extractor.extract_contrastive_pairs(limit=parsed_limit)
-    except TypeError:
-        try:
-            from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import (
-                LMEvalDataLoader,
-            )
-            task_obj = LMEvalDataLoader.load_lm_eval_task(task_name)
-            pairs = extractor.extract_contrastive_pairs(
-                lm_eval_task_data=task_obj, limit=parsed_limit,
-                train_ratio=SPLIT_RATIO_HALF)
-        except Exception as exc:
-            result["status"] = "FAIL"
-            result["details"] = f"extraction: {exc}"
-            return result
-    except Exception as exc:
-        result["status"] = "FAIL"
-        result["details"] = f"extraction: {exc}"
-        return result
-
-    result["pairs"] = len(pairs)
-    if not pairs:
-        result["status"] = "FAIL"
-        result["details"] = "zero pairs"
-        return result
-
-    from wisent.core.reading.evaluators.core.atoms import (
-        BaseEvaluator, EvaluatorError,
-    )
-    import wisent.core.reading.evaluators.core.benchmark_specific  # noqa: F401
-
-    try:
-        evaluator_cls = BaseEvaluator.get(evaluator_name)
-    except EvaluatorError as exc:
-        result["status"] = "FAIL"
-        result["details"] = f"evaluator not found: {exc}"
-        return result
-
-    try:
-        evaluator = evaluator_cls()
-    except TypeError:
-        result["status"] = "PASS"
-        result["details"] = "resolution OK, needs constructor args"
-        return result
-    except Exception as exc:
-        exc_name = type(exc).__name__
-        if "Docker" in exc_name or "Docker" in str(exc):
-            result["status"] = "PASS"
-            result["details"] = "resolution OK, needs Docker runtime"
-            return result
-        result["status"] = "FAIL"
-        result["details"] = f"evaluator init: {exc}"
-        return result
-
-    is_infra = getattr(evaluator, "requires_judge", False)
-    if not is_infra:
-        pair = pairs[INDEX_FIRST]
-        try:
-            evaluator.evaluate(
-                response=pair.positive_response.model_response,
-                expected=pair.positive_response.model_response,
-                question=pair.prompt, task_name=task_name)
-        except Exception as exc:
-            msg = str(exc)
-            for marker in ("judge_model", "test_code",
-                           "requires a model", "ModelNotProvidedError"):
-                if marker in msg or marker in type(exc).__name__:
-                    is_infra = True
-                    break
-
-    n_correct = n_incorrect = t_correct = t_incorrect = INDEX_FIRST
-    errors = []
-
-    for i, pair in enumerate(pairs):
-        correct_resp = pair.positive_response.model_response
-        incorrect_resp = pair.negative_response.model_response
-        expected = correct_resp
-
-        if is_infra:
-            t_correct += INDEX_FIRST + INDEX_FIRST
-            t_incorrect += INDEX_FIRST + INDEX_FIRST
-            if correct_resp.strip() == expected.strip():
-                n_correct += INDEX_FIRST + INDEX_FIRST
-            if incorrect_resp.strip() != expected.strip():
-                n_incorrect += INDEX_FIRST + INDEX_FIRST
-            continue
-
-        try:
-            rc = evaluator.evaluate(
-                response=correct_resp, expected=expected,
-                question=pair.prompt, task_name=task_name)
-            t_correct += INDEX_FIRST + INDEX_FIRST
-            if rc.ground_truth == "TRUTHFUL":
-                n_correct += INDEX_FIRST + INDEX_FIRST
-        except Exception as exc:
-            errors.append(f"Pair {i}: {exc}")
-            continue
-
-        try:
-            ri = evaluator.evaluate(
-                response=incorrect_resp, expected=expected,
-                question=pair.prompt, task_name=task_name)
-            t_incorrect += INDEX_FIRST + INDEX_FIRST
-            if ri.ground_truth == "UNTRUTHFUL":
-                n_incorrect += INDEX_FIRST + INDEX_FIRST
-        except Exception as exc:
-            errors.append(f"Pair {i}: {exc}")
-
-    result["correct"] = f"{n_correct}/{t_correct}"
-    result["incorrect"] = f"{n_incorrect}/{t_incorrect}"
-    result["mode"] = "string" if is_infra else "evaluator"
-    result["errors"] = errors
-
-    if t_correct and t_incorrect and n_correct == t_correct and n_incorrect == t_incorrect:
-        result["status"] = "PASS"
-    elif errors and not t_correct:
-        result["status"] = "FAIL"
-    else:
-        result["status"] = "FAIL"
-
-    return result
-
-
-def _format_result(r: dict) -> str:
-    """Format a single task result as a line."""
-    status = r["status"]
-    task = r["task"]
-    if status == "PASS":
-        pairs = r.get("pairs", "?")
-        return f"  PASS  {task} ({pairs} pairs, {r.get('mode', '?')})"
-    details = r.get("details", "")
-    if r.get("correct"):
-        details = f"correct={r['correct']} incorrect={r['incorrect']}"
-    return f"  FAIL  {task}: {details}"
+    return "\n".join(lines)
 
 
 def _run_benchmark_test(task_name: str, limit: float | None) -> str:
-    """Run the test. If group task, run each subtask."""
+    """Run test_benchmark from test_single_benchmark. Returns markdown."""
+    if not task_name:
+        return "No benchmark selected."
+
     # Strip label suffix like " (N subtasks)"
     if " (" in task_name and task_name.endswith(")"):
         task_name = task_name.split(" (")[INDEX_FIRST]
-    from wisent.extractors.lm_eval.lm_extractor_registry import _REGISTRY
-    all_names = sorted(_REGISTRY.keys())
-    subtasks = _find_subtasks(task_name, all_names)
 
-    if subtasks:
-        tasks_to_run = subtasks
-    else:
-        tasks_to_run = [task_name]
+    from wisent.support.examples.scripts.discovery.validation.test_single_benchmark import test_benchmark
 
-    lines = [f"=== {task_name} ({len(tasks_to_run)} tasks) ===\n"]
-    pass_count = INDEX_FIRST
-    fail_count = INDEX_FIRST
     start = time.time()
-
-    for t in tasks_to_run:
-        r = _test_single_task(t, limit)
-        lines.append(_format_result(r))
-        if r["status"] == "PASS":
-            pass_count += INDEX_FIRST + INDEX_FIRST
-        else:
-            fail_count += INDEX_FIRST + INDEX_FIRST
-
+    result = test_benchmark(task_name)
     elapsed = time.time() - start
-    lines.append(f"\n--- Summary ---")
-    lines.append(f"PASS: {pass_count}  FAIL: {fail_count}  "
-                 f"Time: {elapsed:.1f}s")
-    return "\n".join(lines)
+
+    output = _format_result(result)
+    output += f"\n\n*Time: {elapsed:.1f}s*"
+    return output
 
 
 def _get_benchmark_info(task_name: str) -> str:

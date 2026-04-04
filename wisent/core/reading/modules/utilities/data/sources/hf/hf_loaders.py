@@ -12,6 +12,7 @@ from .hf_config import (
     activation_hf_path,
     model_to_safe_name,
     pair_texts_hf_path,
+    test_results_hf_path,
 )
 
 
@@ -193,3 +194,22 @@ def load_pair_texts_from_hf(
         pairs = {pid: pairs[pid] for pid in sorted_ids}
 
     return pairs
+
+
+def load_test_results_from_hf(benchmark: str) -> dict | None:
+    """Load benchmark test results from HuggingFace Hub.
+
+    Args:
+        benchmark: Benchmark/task name.
+
+    Returns:
+        Results dict if found, None otherwise.
+    """
+    hf_path = test_results_hf_path(benchmark)
+    try:
+        local_path = _hf_hub_download(hf_path)
+    except Exception:
+        return None
+
+    with open(local_path, "r") as f:
+        return json.load(f)

@@ -44,15 +44,46 @@ def pairs_to_responses(pairs: list[dict]) -> list[dict]:
     return responses
 
 
-def test_benchmark(task_name: str) -> dict:
+def _load_cached(task_name: str) -> dict | None:
+    """Try loading cached test results from HuggingFace."""
+    try:
+        from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import (
+            load_test_results_from_hf,
+        )
+        return load_test_results_from_hf(task_name)
+    except Exception:
+        return None
+
+
+def _upload_results(task_name: str, result: dict) -> None:
+    """Upload test results to HuggingFace (best-effort)."""
+    try:
+        from wisent.core.reading.modules.utilities.data.sources.hf.hf_writers import (
+            upload_test_results,
+        )
+        upload_test_results(task_name, result)
+    except Exception:
+        pass
+
+
+def test_benchmark(task_name: str, skip_cache: bool = False) -> dict:
     """Run extractor and evaluator tests for a single benchmark.
+
+    Checks HuggingFace cache first. After running, uploads results to HF.
 
     Args:
         task_name: Benchmark task name.
+        skip_cache: If True, ignore cached results and re-run.
 
     Returns:
         Dict with extraction and evaluator results.
     """
+    if not skip_cache:
+        cached = _load_cached(task_name)
+        if cached:
+            print(f"\n[cached] {task_name}: extraction={cached.get('extraction', {}).get('status')} evaluator={cached.get('evaluator', {}).get('status')}")
+            return cached
+
     result = {"task": task_name, "extraction": None, "evaluator": None}
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -66,6 +97,7 @@ def test_benchmark(task_name: str) -> dict:
 
         if extraction_result["status"] != "PASS":
             result["evaluator"] = {"status": "SKIP", "detail": "extraction failed"}
+            _upload_results(task_name, result)
             return result
 
         # --- Evaluator ---
@@ -81,6 +113,7 @@ def test_benchmark(task_name: str) -> dict:
         if evaluator_result.get("detail"):
             print(f"  {evaluator_result['detail']}")
 
+    _upload_results(task_name, result)
     return result
 
 
@@ -88,9 +121,10 @@ def main():
     parser = argparse.ArgumentParser(description="Test a single benchmark.")
     parser.add_argument("task", help="Benchmark task name")
     parser.add_argument("--output", type=str, default=None, help="Save results JSON to this path")
+    parser.add_argument("--skip-cache", action="store_true", help="Ignore cached results and re-run")
     args = parser.parse_args()
 
-    result = test_benchmark(args.task)
+    result = test_benchmark(args.task, skip_cache=args.skip_cache)
 
     ext = result["extraction"]["status"]
     evl = result["evaluator"]["status"]

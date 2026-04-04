@@ -2,20 +2,14 @@
 
 import time
 
-from wisent.core.utils.config_tools.constants import (
-    INDEX_FIRST,
-    TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT,
-)
+from wisent.core.utils.config_tools.constants import INDEX_FIRST
 
 
 def run_all_benchmarks(category: str, limit: float | None) -> str:
     """Run tests for all benchmarks in a category. Returns markdown."""
-    from wisent.app.ui.tabs.benchmark_debug import (
-        _get_benchmarks_for_category, _find_subtasks, _test_single_task,
-    )
-    from wisent.extractors.lm_eval.lm_extractor_registry import _REGISTRY
+    from wisent.app.ui.tabs.benchmark_debug import _get_benchmarks_for_category
+    from wisent.support.examples.scripts.discovery.validation.test_single_benchmark import test_benchmark
 
-    all_reg = sorted(_REGISTRY.keys())
     benchmarks = _get_benchmarks_for_category(category or "all")
 
     # Strip labels
@@ -26,33 +20,27 @@ def run_all_benchmarks(category: str, limit: float | None) -> str:
         else:
             clean.append(b)
 
-    lines = ["| Benchmark | Status | Pairs | Details |",
-             "|-----------|--------|-------|---------|"]
+    lines = ["| Benchmark | Extraction | Evaluator | Details |",
+             "|-----------|------------|-----------|---------|"]
 
     pass_count = INDEX_FIRST
     fail_count = INDEX_FIRST
     start = time.time()
 
     for task_name in clean:
-        subtasks = _find_subtasks(task_name, all_reg)
-        tasks = subtasks if subtasks else [task_name]
+        r = test_benchmark(task_name)
+        ext = r.get("extraction", {}).get("status", "SKIP")
+        evl = r.get("evaluator", {}).get("status", "SKIP")
+        pairs = r.get("extraction", {}).get("pair_count", "-")
+        detail = r.get("evaluator", {}).get("detail", "")[:100]
 
-        for t in tasks:
-            r = _test_single_task(t, limit)
-            status = r["status"]
-            pairs = r.get("pairs", "-")
-            details = r.get("details", "")
-            if r.get("correct"):
-                details = f"correct={r['correct']} incorrect={r['incorrect']}"
+        overall = "PASS" if ext != "FAIL" and evl != "FAIL" else "FAIL"
+        if overall == "PASS":
+            pass_count += 1
+        else:
+            fail_count += 1
 
-            if status == "PASS":
-                pass_count += INDEX_FIRST + INDEX_FIRST
-                lines.append(f"| {t} | PASS | {pairs} | {details} |")
-            else:
-                fail_count += INDEX_FIRST + INDEX_FIRST
-                short = details[:TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT
-                                * TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT]
-                lines.append(f"| {t} | FAIL | {pairs} | {short} |")
+        lines.append(f"| {task_name} | {ext} ({pairs}) | {evl} | {detail} |")
 
     elapsed = time.time() - start
     summary = (f"\n**Summary:** {pass_count} PASS, {fail_count} FAIL, "
