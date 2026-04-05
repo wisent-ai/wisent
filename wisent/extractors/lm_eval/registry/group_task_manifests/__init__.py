@@ -9,14 +9,14 @@ for _root, _dirs, _files in _os.walk(_base):
     if _root != _base:
         __path__.append(_root)
 
-from wisent.extractors.lm_eval.group_task_manifests._group_tasks_a_to_i import (
+from wisent.extractors.lm_eval.registry.group_task_manifests.evaluation.general.other._group_tasks_a_to_i import (
     get_a_to_i_mappings,
 )
-from wisent.extractors.lm_eval.group_task_manifests._group_tasks_a_to_i import *  # noqa: F401,F403
-from wisent.extractors.lm_eval.group_task_manifests._group_tasks_j_to_z import (
+from wisent.extractors.lm_eval.registry.group_task_manifests.evaluation.general.other._group_tasks_a_to_i import *  # noqa: F401,F403
+from wisent.extractors.lm_eval.registry.group_task_manifests.evaluation.general.other._group_tasks_j_to_z import (
     get_j_to_z_mappings,
 )
-from wisent.extractors.lm_eval.group_task_manifests._group_tasks_j_to_z import *  # noqa: F401,F403
+from wisent.extractors.lm_eval.registry.group_task_manifests.evaluation.general.other._group_tasks_j_to_z import *  # noqa: F401,F403
 
 
 def get_all_group_task_mappings() -> dict[str, str]:

@@ -104,7 +104,7 @@ def get_extractor(task_name: str) -> LMEvalBenchmarkExtractor:
         "afrimgsm_": "afrimgsm",
         "afrimmlu_": "afrimmlu",
         "afrobench_": "afrobench",
-        "afridiacritics_": "afrobench",
+        "afridiacritics_": "afridiacritics",
         "mmlu_": "mmlu",
         "bigbench_": "bigbench",
     }

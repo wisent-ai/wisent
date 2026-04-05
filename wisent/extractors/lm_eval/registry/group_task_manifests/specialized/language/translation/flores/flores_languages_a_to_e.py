@@ -5,10 +5,10 @@ from __future__ import annotations
 BASE_IMPORT = "wisent.extractors.lm_eval.lm_task_extractors."
 
 FLORES_TASKS_A_TO_E = {
-    "african_flores": f"{BASE_IMPORT}flores:FloresExtractor",
-    "african_flores_tasks": f"{BASE_IMPORT}flores:FloresExtractor",
-    "darija_translation_flores": f"{BASE_IMPORT}flores:FloresExtractor",
-    "darija_translation_tasks_flores": f"{BASE_IMPORT}flores:FloresExtractor",
+    "african_flores": f"{BASE_IMPORT}african_flores:AfricanFloresExtractor",
+    "african_flores_tasks": f"{BASE_IMPORT}african_flores:AfricanFloresExtractor",
+    "darija_translation_flores": f"{BASE_IMPORT}darija_bench:DarijaBenchExtractor",
+    "darija_translation_tasks_flores": f"{BASE_IMPORT}darija_bench:DarijaBenchExtractor",
     "flores": f"{BASE_IMPORT}flores:FloresExtractor",
     "flores_ace_Arab-eng_Latn_prompt_1": f"{BASE_IMPORT}flores:FloresExtractor",
     "flores_ace_Arab-eng_Latn_prompt_2": f"{BASE_IMPORT}flores:FloresExtractor",

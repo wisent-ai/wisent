@@ -6,7 +6,7 @@ BASE_IMPORT = "wisent.extractors.lm_eval.lm_task_extractors."
 
 UNITXT_TASKS = {
     "20_newsgroups": f"{BASE_IMPORT}unitxt:UnitxtExtractor",
-    "ag_news": f"{BASE_IMPORT}unitxt:UnitxtExtractor",
+    "ag_news": f"{BASE_IMPORT}ag:AgExtractor",
     "argument_topic": f"{BASE_IMPORT}unitxt:UnitxtExtractor",
     "banking77": f"{BASE_IMPORT}unitxt:UnitxtExtractor",
     "claim_stance_topic": f"{BASE_IMPORT}unitxt:UnitxtExtractor",

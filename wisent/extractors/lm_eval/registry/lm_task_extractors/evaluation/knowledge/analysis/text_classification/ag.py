@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, TYPE_CHECKING
+import json
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
@@ -20,7 +21,7 @@ class AgExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Ag benchmark - text classification task."""
 
 
-    evaluator_name = "exact_match"
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
@@ -52,7 +53,6 @@ class AgExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # AG News is a generation task with source/target format
             source = doc.get("source", "").strip()
             target = doc.get("target", "").strip()
 
@@ -60,21 +60,30 @@ class AgExtractor(LMEvalBenchmarkExtractor):
                 log.debug("Skipping doc due to missing source or target", extra={"doc": doc})
                 return None
 
-            # Extract available categories from the source prompt
-            categories = self._extract_categories_from_source(source)
-            if not categories:
-                log.debug("Could not extract categories from source", extra={"source": source})
+            # Try to extract classes from task_data (Unitxt format)
+            classes = self._extract_classes_from_task_data(doc)
+
+            # If no classes found, try to extract from source text
+            if not classes:
+                classes = self._extract_categories_from_source(source)
+
+            if not classes:
+                log.debug("Could not extract classes from task_data or source", extra={"source": source})
                 return None
 
-            # Verify target is in categories
-            if target not in categories:
-                log.debug("Target not found in categories", extra={"target": target, "categories": categories})
+            # Verify target is in classes (case-insensitive, since Unitxt postprocessors
+            # may lowercase the target while classes retain their original casing)
+            target_lower = target.lower()
+            matched_target = next((cls for cls in classes if cls.lower() == target_lower), None)
+            if matched_target is None:
+                log.debug("Target not found in classes", extra={"target": target, "classes": classes})
                 return None
+            target = matched_target
 
-            # Select incorrect answer (any category that's not the target)
-            incorrect = next((cat for cat in categories if cat != target), None)
+            # Select incorrect answer (any class that's not the target)
+            incorrect = next((cls for cls in classes if cls != target), None)
             if not incorrect:
-                log.debug("Could not find incorrect category", extra={"target": target, "categories": categories})
+                log.debug("Could not find incorrect class", extra={"target": target, "classes": classes})
                 return None
 
             metadata = {"label": "ag_news"}
@@ -89,6 +98,23 @@ class AgExtractor(LMEvalBenchmarkExtractor):
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
             return None
+
+    @staticmethod
+    def _extract_classes_from_task_data(doc: dict[str, Any]) -> list[str]:
+        """
+        Extract classes from task_data field (Unitxt format).
+        """
+        try:
+            task_data_str = doc.get("task_data", "{}")
+            if isinstance(task_data_str, str):
+                task_data = json.loads(task_data_str)
+            else:
+                task_data = task_data_str
+
+            classes = task_data.get("classes", [])
+            return classes if isinstance(classes, list) else []
+        except Exception:
+            return []
 
     @staticmethod
     def _extract_categories_from_source(source: str) -> list[str]:

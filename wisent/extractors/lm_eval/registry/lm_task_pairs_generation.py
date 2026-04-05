@@ -82,22 +82,34 @@ def _load_subtask_from_parent(task_name: str, loader, log):
         GROUP_TASK_EXPANSIONS,
     )
 
-    task_name_lower = task_name.lower()
-
     def _normalize_name(name: str) -> str:
         """Normalize name for comparison by converting dashes to underscores."""
         return name.replace("-", "_").lower()
 
     def _match(leaf_name: str) -> bool:
-        """Case-insensitive match between a leaf task name and the requested task name."""
+        """Case-insensitive match between a leaf task name and the requested task name.
+
+        Requires an underscore word-boundary before any suffix match so that a
+        short single-word leaf like "flores" does not falsely match
+        "african_flores".  Additionally, single-word (no underscore) leaf names
+        are only accepted on exact match to prevent spurious hits.
+        """
         clean_leaf = leaf_name.split("/")[-1] if "/" in leaf_name else leaf_name
         clean_leaf_normalized = _normalize_name(clean_leaf)
         task_normalized = _normalize_name(task_name)
-        return (
-            clean_leaf_normalized == task_normalized
-            or clean_leaf_normalized.endswith(task_normalized)
-            or task_normalized.endswith(clean_leaf_normalized)
-        )
+        if clean_leaf_normalized == task_normalized:
+            return True
+        # Single-word leaf names only match exactly (handled above).
+        if "_" not in clean_leaf_normalized:
+            return False
+        # leaf ends with task_name (task is a suffix of leaf): require underscore boundary
+        if clean_leaf_normalized.endswith(f"_{task_normalized}"):
+            return True
+        # task_name ends with leaf (leaf is a suffix of task): require underscore boundary
+        # Only apply if the leaf itself is multi-word to avoid short-name false positives.
+        if task_normalized.endswith(f"_{clean_leaf_normalized}"):
+            return True
+        return False
 
     def _try_parent(parent_name: str):
         """Load parent group and search for task_name among its leaf tasks.
@@ -116,8 +128,39 @@ def _load_subtask_from_parent(task_name: str, loader, log):
                 return leaf_task, parent_name
         return None, None
 
-    # Strategy 0: Check GROUP_TASK_EXPANSIONS for direct parent mapping
     task_normalized = _normalize_name(task_name)
+
+    # Strategy 0a: task_name is itself a GROUP key in GROUP_TASK_EXPANSIONS.
+    # This handles cases where lm-eval registers the group under a different name
+    # (e.g. 'afrimgsm-irokobench' instead of 'afrimgsm'), so direct loading of the
+    # group fails.  Fall back to loading each known expansion subtask individually
+    # and returning a synthetic dict so the caller can iterate over all subtasks.
+    for group_key, expansion_subtasks in GROUP_TASK_EXPANSIONS.items():
+        if _normalize_name(group_key) == task_normalized:
+            log.info(
+                f"'{task_name}' is a GROUP_TASK_EXPANSIONS key — "
+                f"attempting to load {len(expansion_subtasks)} expansion subtasks individually"
+            )
+            synthetic_dict: dict = {}
+            for subtask_name in expansion_subtasks:
+                try:
+                    subtask_obj = loader.load_lm_eval_task(subtask_name)
+                    if isinstance(subtask_obj, ConfigurableTask):
+                        synthetic_dict[subtask_name] = subtask_obj
+                    elif isinstance(subtask_obj, dict):
+                        synthetic_dict.update(subtask_obj)
+                except Exception:
+                    pass
+            if synthetic_dict:
+                log.info(
+                    f"Built synthetic group dict with {len(synthetic_dict)} subtasks "
+                    f"for '{task_name}'"
+                )
+                return synthetic_dict, group_key
+            break  # found the group key but couldn't load any subtask
+
+    # Strategy 0b: task_name is a subtask listed in GROUP_TASK_EXPANSIONS values.
+    # Try loading its parent group and finding the subtask within.
     for parent_name, subtasks in GROUP_TASK_EXPANSIONS.items():
         # Check case-insensitively with dash/underscore normalization
         if any(_normalize_name(s) == task_normalized for s in subtasks):

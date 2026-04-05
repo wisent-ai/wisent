@@ -85,6 +85,8 @@
     "webqs"
   ],
   "language_understanding": [
+    "ag",
+    "ag_news",
     "blimp",
     "lambada",
     "lambada_cloze",
@@ -95,6 +97,7 @@
     "wikitext"
   ],
   "math": [
+    "afrimgsm",
     "afrimgsm_direct_amh",
     "aime",
     "arithmetic",
@@ -176,6 +179,7 @@
   ],
   "reasoning_logic": [
     "acp_bench",
+    "acpbench",
     "babi",
     "babilong",
     "bbh",

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
@@ -14,17 +15,40 @@ if TYPE_CHECKING:
 __all__ = ["AcpBenchExtractor"]
 _LOG = setup_logger(__name__)
 
+# Regex to extract yes/no from end of chain-of-thought answer strings.
+# Matches patterns like "**Final Answer**: No." or a bare "Yes"/"No".
+_YESNO_PATTERN = re.compile(
+    r"\*\*Final Answer\*\*:\s*(yes|no)"
+    r"|(?:the answer is|The answer is|The answer:)\s*(yes|no)"
+    r"|\b(yes|no)\b",
+    re.IGNORECASE,
+)
+
+# Regex to extract the final MCQ letter (A/B/C/D) from a chain-of-thought answer.
+_MCQ_LETTER_PATTERN = re.compile(
+    r"\*\*Final Answer\*\*:\s*([A-D])"
+    r"|(?:the answer is|The answer is|answer is)\s*([A-D])"
+    r"|\b([A-D])\b",
+    re.IGNORECASE,
+)
+
+# Regex to parse MCQ choices embedded in the question field.
+# Handles formats like "A. text  B. text" or "A) text  B) text"
+_MCQ_CHOICE_PATTERN = re.compile(
+    r"(?:^|[ \t])([A-D])[.)]\s*(.+?)(?=\s+[A-D][.)]|$)",
+    re.DOTALL,
+)
+
 task_names = (
     "acp_bench",
     "acp_bench_hard",
-    "acp_bench_hard_with_pddl",
     # Bool variants
     "acp_prog_bool", "acp_reach_bool", "acp_app_bool", "acp_just_bool",
     "acp_land_bool", "acp_areach_bool", "acp_val_bool",
     # MCQ variants
     "acp_prog_mcq", "acp_reach_mcq", "acp_app_mcq", "acp_just_mcq",
     "acp_land_mcq", "acp_areach_mcq", "acp_val_mcq",
-    # Gen variants (acp_bench_hard subtasks)
+    # Gen variants (acp_bench_hard subtasks) - handled by AcpBenchHardExtractor
     "acp_prog_gen", "acp_reach_gen", "acp_app_gen", "acp_just_gen",
     "acp_land_gen", "acp_nexta_gen", "acp_areach_gen", "acp_val_gen",
 )
@@ -75,6 +99,55 @@ class AcpBenchExtractor(LMEvalBenchmarkExtractor):
 
         return pairs
 
+    @staticmethod
+    def _extract_yesno(answer_raw: str) -> str | None:
+        """Extract 'yes' or 'no' from a chain-of-thought answer string.
+
+        The acp_bench bool tasks store a full CoT reasoning string as the answer,
+        e.g. "Let's think step by step. ... **Final Answer**: No."
+        This helper extracts the final yes/no decision from such strings.
+        """
+        match = _YESNO_PATTERN.search(answer_raw)
+        if not match:
+            return None
+        for group in match.groups():
+            if group is not None:
+                return group.lower()
+        return None
+
+    @staticmethod
+    def _extract_mcq_letter(answer_raw: str) -> str | None:
+        """Extract the final MCQ letter (A-D) from a chain-of-thought answer string.
+
+        The acp_bench mcq tasks store a full CoT reasoning string as the answer,
+        e.g. "Let's think step by step. ... **Final Answer**: D."
+        This helper extracts the letter from such strings, preferring the
+        **Final Answer** marker over any incidental letter mentions.
+        """
+        best = None
+        for match in _MCQ_LETTER_PATTERN.finditer(answer_raw):
+            for group in match.groups():
+                if group is not None:
+                    best = group.upper()
+                    break
+        return best
+
+    @staticmethod
+    def _extract_mcq_choices(question_text: str) -> dict[str, str]:
+        """Parse MCQ choices embedded in the question field.
+
+        ACP Bench MCQ questions embed choices in the question text, e.g.:
+        "Which facts hold? **Possible Answers**: A. Fact X  B. Fact Y  C. Fact Z  D. None."
+        Returns a dict mapping letter to choice text.
+        """
+        choices: dict[str, str] = {}
+        for match in _MCQ_CHOICE_PATTERN.finditer(question_text):
+            letter = match.group(1).upper()
+            text = match.group(2).strip().rstrip(".")
+            if text:
+                choices[letter] = text
+        return choices
+
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
         Convert a single Acp Bench doc into a ContrastivePair, if possible.
@@ -83,12 +156,7 @@ class AcpBenchExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
-
-            # Format 1: question + choices + answer
+            # Format 1: question + choices + answer (structured MCQ with separate choices field)
             if "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})
@@ -96,14 +164,27 @@ class AcpBenchExtractor(LMEvalBenchmarkExtractor):
                     choices = choices_data.get("text", [])
                 elif isinstance(choices_data, list):
                     choices = choices_data
+                else:
+                    choices = []
                 answer = doc.get("answer", doc.get("answerKey", ""))
                 if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
                     answer_idx = ord(answer.upper()) - ord('A')
                 else:
                     answer_idx = int(answer) if answer else 0
+                if not question or not choices or not (0 <= answer_idx < len(choices)):
+                    log.debug("Skipping doc (Format 1): missing/invalid fields", extra={"doc": doc})
+                    return None
+                correct = str(choices[answer_idx]).strip()
+                incorrect = str(choices[(answer_idx + 1) % len(choices)]).strip()
+                return self._build_pair(
+                    question=question,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata={"label": "acp_bench"},
+                )
 
             # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
+            if "instruction" in doc and "option_a" in doc:
                 question = str(doc.get("instruction", "")).strip()
                 choices = [
                     str(doc.get("option_a", "")).strip(),
@@ -114,82 +195,88 @@ class AcpBenchExtractor(LMEvalBenchmarkExtractor):
                 choices = [c for c in choices if c]
                 answer = doc.get("answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
+                if not question or not choices or not (0 <= answer_idx < len(choices)):
+                    log.debug("Skipping doc (Format 2): missing/invalid fields", extra={"doc": doc})
+                    return None
+                correct = choices[answer_idx]
+                incorrect = choices[(answer_idx + 1) % len(choices)]
+                return self._build_pair(
+                    question=question,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata={"label": "acp_bench"},
+                )
 
-            # Format 3: context + question + answer (yes/no format for acp_bench)
-            elif "context" in doc and "question" in doc and "answer" in doc:
+            # Format 3: context + question + answer/output (primary ACP Bench format)
+            # Used by bool tasks (yes/no CoT answer), MCQ tasks (letter CoT answer), and gen tasks.
+            if "context" in doc and "question" in doc and ("answer" in doc or "output" in doc):
                 context = str(doc.get("context", "")).strip()
-                question = str(doc.get("question", "")).strip()
-                answer_raw = doc.get("answer", "")
+                question_text = str(doc.get("question", "")).strip()
+                answer_raw = doc.get("answer", doc.get("output", ""))
+                full_prompt = f"Context: {context}\n\nQuestion: {question_text}"
 
-                # Create full prompt with context
-                full_prompt = f"Context: {context}\n\nQuestion: {question}"
+                if not isinstance(answer_raw, str):
+                    log.debug("Skipping doc (Format 3): non-string answer", extra={"doc": doc})
+                    return None
 
-                # Format 3a: Yes/no format
-                if isinstance(answer_raw, str):
-                    answer = answer_raw.strip().lower()
-                    if answer in ["yes", "no"]:
-                        correct = answer
-                        incorrect = "yes" if answer == "no" else "no"
-                        metadata = {"label": "acp_bench"}
-                        return self._build_pair(
-                            question=full_prompt,
-                            correct=correct,
-                            incorrect=incorrect,
-                            metadata=metadata,
-                        )
-
-                # Format 3b: Structured dict format (acp_bench_hard _gen tasks)
-                elif isinstance(answer_raw, dict) and "neg" in answer_raw and "pos" in answer_raw:
-                    # For structured generation tasks, use the dict as-is
-                    correct_answer = str(answer_raw)
-                    # Create incorrect by swapping pos/neg
-                    incorrect_answer = str({"neg": answer_raw.get("pos", []), "pos": answer_raw.get("neg", [])})
-                    metadata = {"label": "acp_bench_hard"}
+                # Format 3a: Boolean (yes/no) task — extract yes/no from CoT answer.
+                # Bool task answers are stored as full chain-of-thought strings ending in
+                # "**Final Answer**: Yes." or "**Final Answer**: No."
+                yesno = self._extract_yesno(answer_raw)
+                if yesno is not None:
+                    correct = yesno
+                    incorrect = "yes" if yesno == "no" else "no"
                     return self._build_pair(
                         question=full_prompt,
-                        correct=correct_answer,
-                        incorrect=incorrect_answer,
-                        metadata=metadata,
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata={"label": "acp_bench"},
                     )
 
+                # Format 3b: MCQ task — extract letter from CoT answer, choices from question text.
+                # MCQ task answers are stored as full CoT strings ending in "**Final Answer**: D."
+                # Choices are embedded in the question field as "A. text  B. text  C. text  D. text".
+                mcq_letter = self._extract_mcq_letter(answer_raw)
+                if mcq_letter is not None:
+                    choices = self._extract_mcq_choices(question_text)
+                    correct_text = choices.get(mcq_letter)
+                    if correct_text:
+                        other_letters = [l for l in ("A", "B", "C", "D") if l != mcq_letter and l in choices]
+                        incorrect_text = choices[other_letters[0]] if other_letters else f"Not {mcq_letter}"
+                        return self._build_pair(
+                            question=full_prompt,
+                            correct=correct_text,
+                            incorrect=incorrect_text,
+                            metadata={"label": "acp_bench"},
+                        )
+                    # Choices could not be parsed from question; use raw letter as answer text
+                    other_letters = [l for l in ("A", "B", "C", "D") if l != mcq_letter]
+                    incorrect_letter = other_letters[0] if other_letters else "A"
+                    return self._build_pair(
+                        question=full_prompt,
+                        correct=mcq_letter,
+                        incorrect=incorrect_letter,
+                        metadata={"label": "acp_bench"},
+                    )
+
+                log.debug("Skipping doc (Format 3): could not extract answer", extra={"doc": doc})
                 return None
 
             # Format 4: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
+            if "query" in doc or "prompt" in doc:
                 question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
                 correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
                 if correct_answer:
-                    metadata = {"label": "acp_bench"}
                     return self._build_pair(
                         question=f"Question: {question}",
                         correct=correct_answer,
                         incorrect="incorrect answer",
-                        metadata=metadata,
+                        metadata={"label": "acp_bench"},
                     )
                 return None
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
-                )
-                return None
-
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
-
-            metadata = {
-                "label": "acp_bench",
-            }
-
-            return self._build_pair(
-                question=question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
+            log.debug("Skipping doc: no recognized field schema", extra={"doc": doc})
+            return None
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})

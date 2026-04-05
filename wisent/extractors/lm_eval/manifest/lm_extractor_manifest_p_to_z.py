@@ -175,9 +175,9 @@ LM_EXTRACTORS_P_TO_Z: dict[str, str] = {
     "livemathbench_cnmo_zh": f"{base_import}livemathbench:LivemathbenchExtractor",
     "self": f"{base_import}self:SelfExtractor",
     "twenty_newsgroups": f"{base_import}twenty_newsgroups:TwentyNewsgroupsExtractor",
-    "20_newsgroups": f"{base_import}unitxt:UnitxtExtractor",
+    "20_newsgroups": f"{base_import}twenty_newsgroups:TwentyNewsgroupsExtractor",
     "ag": f"{base_import}ag:AgExtractor",
-    "ag_news": f"{base_import}unitxt:UnitxtExtractor",
+    "ag_news": f"{base_import}ag:AgExtractor",
     "anagrams1": f"{base_import}anagrams1:Anagrams1Extractor",
     "anagrams2": f"{base_import}anagrams2:Anagrams2Extractor",
     "argument": f"{base_import}argument:ArgumentExtractor",
@@ -232,7 +232,8 @@ LM_EXTRACTORS_P_TO_Z: dict[str, str] = {
     "yahoo_answers_topics": f"{base_import}unitxt:UnitxtExtractor",
     "humaneval_instruct": f"{base_import}instructhumaneval:InstructhumanevalExtractor",
     "humaneval_64_instruct": f"{base_import}instructhumaneval:InstructhumanevalExtractor",
-    "apps": f"{base_import}apps:AppsExtractor",
+    # Note: "apps" is a HuggingFace-only task registered in the HF manifest.
+    # It is NOT an lm-eval task and must not be listed here.
     "recode": f"{base_import}recode:RecodeExtractor",
     "conala": f"{base_import}conala:ConalaExtractor",
     "concode": f"{base_import}concode:ConcodeExtractor",

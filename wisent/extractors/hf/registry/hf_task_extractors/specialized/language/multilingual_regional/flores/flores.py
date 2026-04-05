@@ -55,8 +55,7 @@ class FloresExtractor(HuggingFaceBenchmarkExtractor):
                     break
 
         if not pairs:
-            task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid pairs extracted", extra={"task": task_name})
+            log.warning("No valid pairs extracted", extra={"task": "flores"})
 
         return pairs
 

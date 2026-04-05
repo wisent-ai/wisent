@@ -35,5 +35,4 @@ ACPBENCH_TASKS = {
     "acp_prog_gen_with_pddl": f"{BASE_IMPORT}acp_bench_hard:AcpBenchHardExtractor",
     "acp_reach_gen_with_pddl": f"{BASE_IMPORT}acp_bench_hard:AcpBenchHardExtractor",
     "acp_val_gen_with_pddl": f"{BASE_IMPORT}acp_bench_hard:AcpBenchHardExtractor",
-    "acpbench": f"{BASE_IMPORT}acp_bench:AcpBenchExtractor",
 }

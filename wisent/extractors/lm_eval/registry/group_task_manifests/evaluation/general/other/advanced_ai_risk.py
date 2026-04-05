@@ -7,7 +7,7 @@ from wisent.core.utils.config_tools.constants import LM_EVAL_EXTRACTOR_BASE_IMPO
 BASE_IMPORT = LM_EVAL_EXTRACTOR_BASE_IMPORT
 
 # All 50 Advanced AI Risk tasks
-# Note: fewshot and human variants are part of model_written_evals benchmark and use ModelWrittenEvalsExtractor
+# Note: fewshot, human, and lm variants are part of model_written_evals benchmark and use ModelWrittenEvalsExtractor
 ADVANCED_AI_RISK_TASKS = {
     "advanced_ai_risk": f"{BASE_IMPORT}advanced:AdvancedExtractor",
     "advanced_ai_risk_fewshot-coordinate-itself": f"{BASE_IMPORT}model_written_evals:ModelWrittenEvalsExtractor",

@@ -1,11 +1,41 @@
 """LM-Eval benchmark extractors."""
 
 import os as _os
+import sys as _sys
 _base = _os.path.dirname(__file__)
 for _root, _dirs, _files in _os.walk(_base):
     _dirs[:] = sorted(d for d in _dirs if not d.startswith((".", "_")))
     if _root != _base:
         __path__.append(_root)
+
+from wisent.extractors.lm_eval.lm_task_extractors.specialized.safety.content_safety.model_written_evals import ModelWrittenEvalsExtractor
+
+# Create module alias for model_written_evals extractor
+import types as _types
+_model_written_evals_mod = _types.ModuleType("model_written_evals")
+_model_written_evals_mod.ModelWrittenEvalsExtractor = ModelWrittenEvalsExtractor
+_sys.modules["wisent.extractors.lm_eval.lm_task_extractors.model_written_evals"] = _model_written_evals_mod
+
+from wisent.extractors.lm_eval.lm_task_extractors.specialized.language.asian_african.african.afrimgsm import AfrimgsmExtractor
+
+# Create module alias for afrimgsm extractor
+_afrimgsm_mod = _types.ModuleType("afrimgsm")
+_afrimgsm_mod.AfrimgsmExtractor = AfrimgsmExtractor
+_sys.modules["wisent.extractors.lm_eval.lm_task_extractors.afrimgsm"] = _afrimgsm_mod
+
+from wisent.extractors.lm_eval.lm_task_extractors.evaluation.reasoning.applied.multi_step.agieval import AgievalExtractor
+
+# Create module alias for agieval extractor
+_agieval_mod = _types.ModuleType("agieval")
+_agieval_mod.AgievalExtractor = AgievalExtractor
+_sys.modules["wisent.extractors.lm_eval.lm_task_extractors.agieval"] = _agieval_mod
+
+from wisent.extractors.lm_eval.lm_task_extractors.evaluation.knowledge.analysis.text_classification.twenty_newsgroups import TwentyNewsgroupsExtractor
+
+# Create module alias for twenty_newsgroups extractor
+_twenty_newsgroups_mod = _types.ModuleType("twenty_newsgroups")
+_twenty_newsgroups_mod.TwentyNewsgroupsExtractor = TwentyNewsgroupsExtractor
+_sys.modules["wisent.extractors.lm_eval.lm_task_extractors.twenty_newsgroups"] = _twenty_newsgroups_mod
 
 from wisent.extractors.lm_eval.lm_task_extractors.ai2_arc import AI2ARCExtractor
 from wisent.extractors.lm_eval.lm_task_extractors.anli import ANLIExtractor
@@ -68,6 +98,9 @@ from wisent.extractors.lm_eval.lm_task_extractors.xstorycloze import XStoryCloze
 from wisent.extractors.lm_eval.lm_task_extractors.xwinograd import XWinogradExtractor
 
 __all__ = [
+    "AfrimgsmExtractor",
+    "AgievalExtractor",
+    "ModelWrittenEvalsExtractor",
     "AI2ARCExtractor",
     "ANLIExtractor",
     "ArcChallengeExtractor",
@@ -120,6 +153,7 @@ __all__ = [
     "TriviaQAExtractor",
     "TruthfulQAMC1Extractor",
     "TruthfulQAMC2Extractor",
+    "TwentyNewsgroupsExtractor",
     "WebQSExtractor",
     "WiCExtractor",
     "WikitextExtractor",

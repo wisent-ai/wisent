@@ -14,13 +14,26 @@ if TYPE_CHECKING:
 __all__ = ["AfroBenchCotExtractor"]
 _LOG = setup_logger(__name__)
 
-# This extractor handles all afrobench CoT subtasks dynamically
-task_names = ()  # Intentionally empty - will match any afrobench CoT task
-class AfroBenchCotExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for AfroBench CoT (chain-of-thought) benchmarks."""
+# This extractor handles all afrobench generation/CoT subtasks dynamically
+task_names = ()  # Intentionally empty - will match any afrobench generation task
 
+
+class AfroBenchCotExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for AfroBench generation (generate_until) benchmarks.
+
+    Handles multiple document schemas used across afrobench generation subtasks:
+
+    - adr (afridiacritics):  text (input) + target (restored text)
+    - afriqa:                 question_lang + answer_pivot
+    - masakhaner:             tokens list + ner_tags (NER)
+    - masakhapos:             tokens list + pos_tags (POS)
+    - translation tasks
+      (ntrex, mafand):        source + target
+      (salt, flores, xlsum):  source_sentence/sentence/article + target/summary/translation
+    """
 
     evaluator_name = "generation"
+
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
@@ -54,37 +67,159 @@ class AfroBenchCotExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            question = doc.get("question", "").strip()
-            
-            # Try different answer/target field names
+            # Schema 0: flores-format sentence_* fields — e.g. sentence_eng_Latn, sentence_fra_Latn
+            sentence_fields = [k for k in doc if k.startswith("sentence_")]
+            if len(sentence_fields) >= 2:
+                source_field = sentence_fields[0]
+                target_field = sentence_fields[1]
+                source_text = str(doc.get(source_field, "")).strip()
+                target_text = str(doc.get(target_field, "")).strip()
+                if source_text and target_text:
+                    incorrect = _make_wrong_answer(target_text)
+                    return ContrastivePair(
+                        prompt=f"Input: {source_text}\nOutput:",
+                        positive_response=PositiveResponse(model_response=target_text),
+                        negative_response=NegativeResponse(model_response=incorrect),
+                        label="afrobench_cot",
+                    )
+
+            # Schema 1: afriqa — question_lang + answer_pivot
+            if "question_lang" in doc and "answer_pivot" in doc:
+                return _extract_afriqa(doc, log)
+
+            # Schema 2: adr (afridiacritics) — text + target
+            # Skip if source exists (to avoid matching translation schema with source + target)
+            if "text" in doc and "target" in doc and "source" not in doc:
+                return _extract_text_target(doc, "text", "target", log)
+
+            # Schema 2b: translation — source + target (ntrex, mafand, etc.)
+            if "source" in doc and "target" in doc:
+                return _extract_text_target(doc, "source", "target", log)
+
+            # Schema 3: translation — source_sentence + target_sentence
+            if "source_sentence" in doc and "target_sentence" in doc:
+                return _extract_text_target(doc, "source_sentence", "target_sentence", log)
+
+            # Schema 4: translation variants — sentence/article + translation/summary
+            if "sentence" in doc and "translation" in doc:
+                return _extract_text_target(doc, "sentence", "translation", log)
+
+            if "article" in doc and "summary" in doc:
+                return _extract_text_target(doc, "article", "summary", log)
+
+            # Schema 5: NER — tokens list + ner_tags
+            if "tokens" in doc and "ner_tags" in doc:
+                return _extract_sequence_labeling(doc, "tokens", "ner_tags", log)
+
+            # Schema 6: POS — tokens list + pos_tags
+            if "tokens" in doc and "pos_tags" in doc:
+                return _extract_sequence_labeling(doc, "tokens", "pos_tags", log)
+
+            # Schema 7: generic question + answer/target field
+            question = str(
+                doc.get("question") or doc.get("question_lang") or doc.get("input") or ""
+            ).strip()
             answer = doc.get("answer") or doc.get("target") or doc.get("answerKey")
-
-            if not question or not answer:
-                log.debug("Skipping doc due to missing fields", extra={"doc": doc})
-                return None
-
-            correct = str(answer).strip()
-
-            # Generate incorrect answer (different letter or corrupted version)
-            if correct in ["A", "B", "C", "D", "E"]:
-                options = ["A", "B", "C", "D", "E"]
-                options.remove(correct)
-                incorrect = options[0]
-            else:
-                incorrect = "wrong answer"
-
-            formatted_question = f"Question: {question}\nAnswer:"
-
-            positive_response = PositiveResponse(model_response=correct)
-            negative_response = NegativeResponse(model_response=incorrect)
-
-            return ContrastivePair(
-                prompt=formatted_question,
-                positive_response=positive_response,
-                negative_response=negative_response,
-                label="afrobench_cot",
-            )
+            if question and answer:
+                correct = str(answer).strip()
+                if correct:
+                    incorrect = _make_wrong_answer(correct)
+                    return ContrastivePair(
+                        prompt=f"Question: {question}\nAnswer:",
+                        positive_response=PositiveResponse(model_response=correct),
+                        negative_response=NegativeResponse(model_response=incorrect),
+                        label="afrobench_cot",
+                    )
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
-            return None
+
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Module-level helpers
+# ---------------------------------------------------------------------------
+
+def _make_wrong_answer(correct: str) -> str:
+    """Return a plausible incorrect answer for a generation task."""
+    if correct.upper() in ("A", "B", "C", "D", "E"):
+        options = [l for l in ("A", "B", "C", "D", "E") if l != correct.upper()]
+        return options[0]
+    # For free-text answers: reverse the text as a clearly wrong answer
+    words = correct.split()
+    if len(words) > 1:
+        return " ".join(reversed(words))
+    return correct + " [incorrect]"
+
+
+def _extract_afriqa(doc: dict[str, Any], log: Any) -> ContrastivePair | None:
+    """afriqa schema: question_lang (question) + answer_pivot (correct answer)."""
+    question = str(doc.get("question_lang", "")).strip()
+    answer = str(doc.get("answer_pivot", "")).strip()
+    if not question or not answer:
+        log.debug("afriqa: missing question_lang or answer_pivot")
+        return None
+    incorrect = _make_wrong_answer(answer)
+    return ContrastivePair(
+        prompt=f"Question: {question}\nAnswer:",
+        positive_response=PositiveResponse(model_response=answer),
+        negative_response=NegativeResponse(model_response=incorrect),
+        label="afrobench_cot",
+    )
+
+
+def _extract_text_target(
+    doc: dict[str, Any],
+    source_field: str,
+    target_field: str,
+    log: Any,
+) -> ContrastivePair | None:
+    """Generic source→target schema (adr, translation tasks)."""
+    source = str(doc.get(source_field, "")).strip()
+    target = str(doc.get(target_field, "")).strip()
+    if not source or not target:
+        log.debug("text_target: missing source or target", extra={"src": source_field, "tgt": target_field})
+        return None
+    incorrect = _make_wrong_answer(target)
+    return ContrastivePair(
+        prompt=f"Input: {source}\nOutput:",
+        positive_response=PositiveResponse(model_response=target),
+        negative_response=NegativeResponse(model_response=incorrect),
+        label="afrobench_cot",
+    )
+
+
+def _extract_sequence_labeling(
+    doc: dict[str, Any],
+    tokens_field: str,
+    tags_field: str,
+    log: Any,
+) -> ContrastivePair | None:
+    """NER/POS schema: tokens list + integer tag list."""
+    tokens = doc.get(tokens_field)
+    tags = doc.get(tags_field)
+    if not tokens or not tags:
+        log.debug("seq_labeling: missing tokens or tags")
+        return None
+    if not isinstance(tokens, (list, tuple)):
+        log.debug("seq_labeling: tokens is not a list")
+        return None
+
+    sentence = " ".join(str(t) for t in tokens)
+    correct_tags = " ".join(str(t) for t in tags)
+
+    # Incorrect: shift each tag by 1 (mod over the tag range)
+    try:
+        tag_ints = [int(t) for t in tags]
+        max_tag = max(tag_ints) + 1
+        incorrect_tags = " ".join(str((t + 1) % max_tag) for t in tag_ints)
+    except (TypeError, ValueError):
+        incorrect_tags = correct_tags + " [shifted]"
+
+    return ContrastivePair(
+        prompt=f"Sentence: {sentence}\nLabels:",
+        positive_response=PositiveResponse(model_response=correct_tags),
+        negative_response=NegativeResponse(model_response=incorrect_tags),
+        label="afrobench_cot",
+    )

@@ -1,22 +1,14 @@
 from __future__ import annotations
 
-import json
-import requests
 from typing import Any
 from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.utils.infra_tools.infra.core.hardware import subprocess_timeout_s
 
 __all__ = ["AlpacaEvalExtractor"]
 
 log = setup_logger(__name__)
-
-_ALPACA_EVAL_JSON_URL = (
-    "https://huggingface.co/datasets/tatsu-lab/alpaca_eval"
-    "/resolve/main/alpaca_eval.json"
-)
 
 
 class AlpacaEvalExtractor(HuggingFaceBenchmarkExtractor):
@@ -28,10 +20,10 @@ class AlpacaEvalExtractor(HuggingFaceBenchmarkExtractor):
 
     The benchmark contains 805 instructions from 5 distinct test sets.
 
-    Schema (tatsu-lab/alpaca_eval):
+    Schema (tatsu-lab/alpaca_eval, split="eval"):
         - instruction: str (the instruction/prompt)
-        - output: str (model's response)
-        - generator: str (model that generated the output)
+        - output: str (reference model's response)
+        - generator: str (model that generated the reference output)
         - dataset: str (original source test set)
     """
 
@@ -53,7 +45,7 @@ class AlpacaEvalExtractor(HuggingFaceBenchmarkExtractor):
         """
         max_items = self._normalize_limit(limit)
 
-        docs = self._load_alpaca_eval_json(max_items)
+        docs = self._load_alpaca_eval_docs(max_items)
 
         pairs: list[ContrastivePair] = []
 
@@ -71,16 +63,13 @@ class AlpacaEvalExtractor(HuggingFaceBenchmarkExtractor):
 
         return pairs
 
-    def _load_alpaca_eval_json(self, max_items):
-        """Load AlpacaEval data directly from the JSON file on HuggingFace."""
-        resp = requests.get(
-            _ALPACA_EVAL_JSON_URL, timeout=subprocess_timeout_s())
-        resp.raise_for_status()
-        data = json.loads(resp.text)
-        log.info(f"Loaded {len(data)} AlpacaEval examples from JSON")
-        if max_items is not None:
-            data = data[:max_items]
-        return data
+    def _load_alpaca_eval_docs(self, max_items: int | None) -> list[dict]:
+        """Load AlpacaEval examples from the HuggingFace dataset."""
+        return self.load_dataset(
+            dataset_name="tatsu-lab/alpaca_eval",
+            split="eval",
+            limit=max_items,
+        )
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
@@ -105,9 +94,6 @@ class AlpacaEvalExtractor(HuggingFaceBenchmarkExtractor):
             # Create an incorrect answer (a poor quality response)
             incorrect_answer = self._create_incorrect_answer(instruction)
 
-            # Format the prompt
-            formatted_question = f"{instruction}"
-
             metadata = {
                 "label": "alpaca_eval",
                 "source": "tatsu-lab/alpaca_eval",
@@ -116,7 +102,7 @@ class AlpacaEvalExtractor(HuggingFaceBenchmarkExtractor):
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=instruction,
                 correct=correct_answer,
                 incorrect=incorrect_answer,
                 metadata=metadata,
@@ -153,4 +139,3 @@ class AlpacaEvalExtractor(HuggingFaceBenchmarkExtractor):
             return "Here are some items:\n1. Item\n2. Another item\n3. More items"
         else:
             return low_quality_patterns[0]
-

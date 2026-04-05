@@ -5,9 +5,9 @@ from .aclue import ACLUE_TASKS
 from .acp import ACP_TASKS
 from .advanced_ai_risk import ADVANCED_AI_RISK_TASKS
 from .acpbench import ACPBENCH_TASKS
-from .aexams import AEXAMS_TASKS
+from wisent.extractors.lm_eval.registry.group_task_manifests.specialized.language.crosslingual_multilingual.multilingual_mmlu.aexams import AEXAMS_TASKS
 from .afrimgsm import AFRIMGSM_TASKS
-from .afrimmlu import AFRIMMLU_TASKS
+from wisent.extractors.lm_eval.registry.group_task_manifests.specialized.language.african.african_extended.afrimmlu import AFRIMMLU_TASKS
 from .inverse import INVERSE_TASKS
 from .afrixnli import AFRIXNLI_TASKS
 from .afrobench import AFROBENCH_TASKS

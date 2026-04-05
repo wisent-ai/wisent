@@ -7,7 +7,6 @@ BASE_IMPORT = "wisent.extractors.lm_eval.lm_task_extractors."
 ACP_TASKS = {
     "acp_bench": f"{BASE_IMPORT}acp_bench:AcpBenchExtractor",
     "acp_bench_hard": f"{BASE_IMPORT}acp_bench_hard:AcpBenchHardExtractor",
-    "acp_bench_hard_with_pddl": f"{BASE_IMPORT}acp_bench_hard:AcpBenchHardExtractor",
     "acp_prog_bool": f"{BASE_IMPORT}acp_bench:AcpBenchExtractor",
     "acp_reach_bool": f"{BASE_IMPORT}acp_bench:AcpBenchExtractor",
     "acp_app_bool": f"{BASE_IMPORT}acp_bench:AcpBenchExtractor",
@@ -30,4 +29,13 @@ ACP_TASKS = {
     "acp_nexta_gen": f"{BASE_IMPORT}acp_bench_hard:AcpBenchHardExtractor",
     "acp_areach_gen": f"{BASE_IMPORT}acp_bench_hard:AcpBenchHardExtractor",
     "acp_val_gen": f"{BASE_IMPORT}acp_bench_hard:AcpBenchHardExtractor",
+    # Gen with PDDL variants
+    "acp_prog_gen_with_pddl": f"{BASE_IMPORT}acp_bench_hard:AcpBenchHardExtractor",
+    "acp_reach_gen_with_pddl": f"{BASE_IMPORT}acp_bench_hard:AcpBenchHardExtractor",
+    "acp_app_gen_with_pddl": f"{BASE_IMPORT}acp_bench_hard:AcpBenchHardExtractor",
+    "acp_just_gen_with_pddl": f"{BASE_IMPORT}acp_bench_hard:AcpBenchHardExtractor",
+    "acp_land_gen_with_pddl": f"{BASE_IMPORT}acp_bench_hard:AcpBenchHardExtractor",
+    "acp_nexta_gen_with_pddl": f"{BASE_IMPORT}acp_bench_hard:AcpBenchHardExtractor",
+    "acp_areach_gen_with_pddl": f"{BASE_IMPORT}acp_bench_hard:AcpBenchHardExtractor",
+    "acp_val_gen_with_pddl": f"{BASE_IMPORT}acp_bench_hard:AcpBenchHardExtractor",
 }

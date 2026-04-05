@@ -115,20 +115,58 @@ class ArabicLeaderboardLightExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
 
-            # Format 3: query/prompt + answer
+            # Format 3: query/prompt + choices/options + gold (ACVA tasks: process_docs converts question -> query)
             elif "query" in doc or "prompt" in doc:
                 question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "arabic_leaderboard_light"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
+                # Try multiple field names for choices (dict with 'text'/'options' key, or direct list)
+                choices_data = doc.get("choices", doc.get("options"))
+                if choices_data is not None:
+                    # Multiple-choice with query + choices + gold index
+                    if isinstance(choices_data, dict):
+                        # Try multiple possible keys in dict for choice text
+                        choices = (
+                            choices_data.get("text") or
+                            choices_data.get("options") or
+                            choices_data.get("choices") or
+                            list(choices_data.values())
+                        )
+                        if not isinstance(choices, list):
+                            choices = list(choices) if choices else []
+                    elif isinstance(choices_data, list):
+                        choices = choices_data
+                    else:
+                        choices = []
+
+                    # Get answer index from gold field or answer field
+                    if "gold" in doc:
+                        try:
+                            answer_idx = int(doc.get("gold"))
+                        except (ValueError, TypeError):
+                            answer_idx = None
+                    else:
+                        answer = doc.get("answer", doc.get("answerKey", ""))
+                        if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
+                            answer_idx = ord(answer.upper()) - ord('A')
+                        else:
+                            try:
+                                answer_idx = int(answer) if answer else 0
+                            except (ValueError, TypeError):
+                                if isinstance(choices, list) and answer in choices:
+                                    answer_idx = choices.index(answer)
+                                else:
+                                    answer_idx = 0
+                else:
+                    # Open-ended question: use target as correct answer
+                    correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
+                    if correct_answer:
+                        metadata = {"label": "arabic_leaderboard_light"}
+                        return self._build_pair(
+                            question=f"Question: {question}",
+                            correct=correct_answer,
+                            incorrect="incorrect answer",
+                            metadata=metadata,
+                        )
+                    return None
 
             if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
                 log.debug(

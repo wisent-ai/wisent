@@ -17,7 +17,7 @@ __all__ = ["UnitxtExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = (
-    "20_newsgroups", "ag_news", "argument_topic", "banking77", "claim_stance_topic",
+    "20_newsgroups", "argument_topic", "banking77", "claim_stance_topic",
     "cnn_dailymail", "dbpedia_14", "ethos_binary",
     "financial_tweets", "law_stack_exchange", "ledgar", "medical_abstracts",
     "unfair_tos", "xsum", "yahoo_answers_topics",

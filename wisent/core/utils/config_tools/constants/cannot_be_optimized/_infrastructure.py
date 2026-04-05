@@ -79,7 +79,7 @@ EVALUATOR_NAME_TRUTHFULQA_GEN = "generation"
 EVALUATOR_NAME_LOG_LIKELIHOODS = "log_likelihoods"
 # Extractor manifest base imports
 HF_EXTRACTOR_BASE_IMPORT = "wisent.extractors.hf.hf_task_extractors."
-LM_EVAL_EXTRACTOR_BASE_IMPORT = "wisent.extractors.lm_eval.lm_task_extractors."
+LM_EVAL_EXTRACTOR_BASE_IMPORT = "wisent.extractors.lm_eval.registry.lm_task_extractors."
 # Base class / registry identity names
 BASE_CLASS_NAME = "base"
 CLEAN_STEP_DEFAULT_NAME = "step"

@@ -69,37 +69,47 @@ class ModelWrittenEvalsExtractor(LMEvalBenchmarkExtractor):
         Returns None when required fields are missing or malformed.
 
         Model Written Evals format (advanced_ai_risk, persona, sycophancy, etc.):
-        - question: the question text
+        - question: the question text (tries alternative field names if missing)
         - answer_matching_behavior: the correct answer (target is always 0)
         - answer_not_matching_behavior: the incorrect answer
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Model Written Evals format
-            if "question" in doc and "answer_matching_behavior" in doc and "answer_not_matching_behavior" in doc:
-                question = str(doc.get("question", "")).strip()
-                correct = str(doc.get("answer_matching_behavior", "")).strip()
-                incorrect = str(doc.get("answer_not_matching_behavior", "")).strip()
+            # Check if we have the required behavior fields
+            if "answer_matching_behavior" not in doc or "answer_not_matching_behavior" not in doc:
+                log.debug("Skipping doc without required behavior fields", extra={"doc": doc})
+                return None
 
-                if not question or not correct or not incorrect:
-                    log.debug("Skipping doc with missing fields", extra={"doc": doc})
-                    return None
+            # Try multiple field names for the question
+            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", doc.get("text", ""))))))
+            question = str(question).strip()
 
-                # Format prompt as lm-eval does: "Human: {question}\n\nAssistant:"
-                prompt = f"Human: {question}\n\nAssistant:"
+            correct = str(doc.get("answer_matching_behavior", "")).strip()
+            incorrect = str(doc.get("answer_not_matching_behavior", "")).strip()
 
-                metadata = {"label": "model_written_evals"}
+            if not correct or not incorrect:
+                log.debug("Skipping doc with missing/empty answer fields", extra={"doc": doc})
+                return None
 
-                return self._build_pair(
-                    question=prompt,
-                    correct=correct,
-                    incorrect=incorrect,
-                    metadata=metadata,
-                )
+            # If question is empty, try to use id or generate placeholder
+            if not question:
+                question = doc.get("id", "")
+                if not question:
+                    # Generate a unique placeholder
+                    question = f"model_written_evals_question_{id(doc)}"
 
-            log.debug("Skipping doc without required fields", extra={"doc": doc})
-            return None
+            # Format prompt as lm-eval does: "Human: {question}\n\nAssistant:"
+            prompt = f"Human: {question}\n\nAssistant:"
+
+            metadata = {"label": "model_written_evals"}
+
+            return self._build_pair(
+                question=prompt,
+                correct=correct,
+                incorrect=incorrect,
+                metadata=metadata,
+            )
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})

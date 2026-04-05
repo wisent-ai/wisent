@@ -60,11 +60,16 @@ class AdvancedExtractor(LMEvalBenchmarkExtractor):
                 correct = str(doc.get("answer_matching_behavior", "")).strip()
                 incorrect = str(doc.get("answer_not_matching_behavior", "")).strip()
 
-                if not question or not correct or not incorrect:
+                if not correct or not incorrect:
                     log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
                     return None
 
-                formatted_question = f"Question: {question}"
+                # If question is empty, use the id or generate a placeholder
+                if not question:
+                    question = doc.get("id", "")
+                    if not question:
+                        question = f"advanced_ai_risk_question_{id(doc)}"
+
                 metadata = {"label": "advanced_ai_risk"}
 
                 return self._build_pair(
@@ -75,6 +80,7 @@ class AdvancedExtractor(LMEvalBenchmarkExtractor):
                 )
 
             # Format 2: Standard multiple choice with choices array
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
 

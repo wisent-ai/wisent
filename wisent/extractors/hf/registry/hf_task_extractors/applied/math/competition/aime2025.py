@@ -55,7 +55,9 @@ class AIME2025Extractor(HuggingFaceBenchmarkExtractor):
                 log.debug("Skipping: missing problem or answer")
                 return None
 
-            incorrect = str(int(correct) + SENSOR_LAST_OFFSET)
+            correct_int = int(float(correct))
+            correct = str(correct_int)
+            incorrect = str(correct_int + SENSOR_LAST_OFFSET)
 
             question = f"Question: {question}\n\nWhat is the answer?"
 
