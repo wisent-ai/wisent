@@ -1,4 +1,12 @@
 [
+  "afrobench_afriqa",
+  "afrobench_flores",
+  "afrobench_masakhaner",
+  "afrobench_masakhanews",
+  "afrobench_masakhapos",
+  "afrobench_nollysenti",
+  "afrobench_salt",
+  "afrobench_xlsum",
   "agieval",
   "aradice",
   "argument_topic",

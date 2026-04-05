@@ -204,6 +204,12 @@ def execute_evaluate_responses(args):
     print(f"\n💾 Saving evaluation results...")
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
 
+    # Count model_required skips
+    num_model_required = sum(
+        1 for er in evaluation_results
+        if er.get("evaluation", {}).get("error") == "model_required"
+    )
+
     output_data = {
         "input_file": args.input,
         "task": task_name if isinstance(input_data, list) else input_data.get('task'),
@@ -212,6 +218,7 @@ def execute_evaluate_responses(args):
         "aggregated_metrics": aggregated_metrics,
         "num_evaluated": len(task_results),
         "num_total": len(responses),
+        "num_model_required": num_model_required,
         "evaluations": evaluation_results
     }
 

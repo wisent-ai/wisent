@@ -80,6 +80,13 @@ def test_evaluator(task_name: str, responses: list[dict], timeout: int = 300, mo
 
         num_evaluated = data.get("num_evaluated", 0)
         num_total = data.get("num_total", 0)
+        num_model_required = data.get("num_model_required", 0)
+
+        if num_evaluated == 0 and num_model_required > 0:
+            result["status"] = "SKIP_NO_MODEL"
+            result["detail"] = f"evaluator requires model (0/{num_total} evaluated, {num_model_required} need model)"
+            return result
+
         if num_evaluated == 0:
             result["status"] = "FAIL"
             result["detail"] = f"0/{num_total} responses evaluated"

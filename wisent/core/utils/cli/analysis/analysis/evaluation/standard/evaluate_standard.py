@@ -1,6 +1,7 @@
 """Standard benchmark evaluation loop for evaluate-responses command."""
 
 from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_EVAL
+from wisent.core.utils.infra_tools.errors.error_handler import ModelNotProvidedError
 
 
 def evaluate_standard(
@@ -232,6 +233,16 @@ def evaluate_standard(
                     }
                 })
 
+        except ModelNotProvidedError as e:
+            if args.verbose:
+                print(f"Question {idx}: Skipped (evaluator requires model)")
+            evaluation_results.append({
+                **response_data,
+                "evaluation": {
+                    "error": "model_required",
+                    "detail": str(e),
+                }
+            })
         except Exception as e:
             print(f"   ❌ Error evaluating question {idx}: {e}")
             import traceback
