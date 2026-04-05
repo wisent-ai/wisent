@@ -49,6 +49,12 @@ TASK_NAME_MAPPING = {
     "truthfulqa_generation": "truthfulqa_gen",
     # afrobench subtasks
     "afrobench_adr": "adr",
+    # aexams subtasks: lm-eval uses camelCase names but callers may pass lowercase
+    "aexams_biology": "aexams_Biology",
+    "aexams_islamicstudies": "aexams_IslamicStudies",
+    "aexams_physics": "aexams_Physics",
+    "aexams_science": "aexams_Science",
+    "aexams_social": "aexams_Social",
 }
 
 # Tasks that require case-sensitive names (don't lowercase these)
@@ -106,4 +112,5 @@ GROUP_TASK_EXPANSIONS = {
     # African language benchmarks
     "afrimgsm": ["afrimgsm_amh_prompt_1", "afrimgsm_eng_prompt_1", "afrimgsm_fra_prompt_1", "afrimgsm_hau_prompt_1", "afrimgsm_ibo_prompt_1", "afrimgsm_kin_prompt_1", "afrimgsm_swa_prompt_1", "afrimgsm_yor_prompt_1"],
     "afrimmlu": ["afrimmlu_direct_amh_prompt_1", "afrimmlu_direct_eng_prompt_1", "afrimmlu_direct_fra_prompt_1", "afrimmlu_direct_hau_prompt_1", "afrimmlu_direct_ibo_prompt_1", "afrimmlu_direct_kin_prompt_1", "afrimmlu_direct_swa_prompt_1", "afrimmlu_direct_yor_prompt_1"],
+    "advanced": ["advanced_ai_risk_fewshot-coordinate-itself", "advanced_ai_risk_fewshot-coordinate-other-ais", "advanced_ai_risk_fewshot-coordinate-other-versions", "advanced_ai_risk_fewshot-corrigible-less-HHH", "advanced_ai_risk_fewshot-corrigible-more-HHH", "advanced_ai_risk_fewshot-corrigible-neutral-HHH", "advanced_ai_risk_fewshot-myopic-reward", "advanced_ai_risk_fewshot-one-box-tendency", "advanced_ai_risk_fewshot-power-seeking-inclination", "advanced_ai_risk_fewshot-self-awareness-general-ai", "advanced_ai_risk_fewshot-self-awareness-good-text-model", "advanced_ai_risk_fewshot-self-awareness-text-model", "advanced_ai_risk_fewshot-self-awareness-training-architecture", "advanced_ai_risk_fewshot-self-awareness-training-web-gpt", "advanced_ai_risk_fewshot-survival-instinct", "advanced_ai_risk_fewshot-wealth-seeking-inclination", "advanced_ai_risk_human-coordinate-itself", "advanced_ai_risk_human-coordinate-other-ais", "advanced_ai_risk_human-coordinate-other-versions", "advanced_ai_risk_human-corrigible-less-HHH", "advanced_ai_risk_human-corrigible-more-HHH", "advanced_ai_risk_human-corrigible-neutral-HHH", "advanced_ai_risk_human-myopic-reward", "advanced_ai_risk_human-one-box-tendency", "advanced_ai_risk_human-power-seeking-inclination", "advanced_ai_risk_human-self-awareness-general-ai", "advanced_ai_risk_human-self-awareness-good-text-model", "advanced_ai_risk_human-self-awareness-text-model", "advanced_ai_risk_human-self-awareness-training-architecture", "advanced_ai_risk_human-self-awareness-web-gpt", "advanced_ai_risk_human-survival-instinct", "advanced_ai_risk_human-wealth-seeking-inclination", "advanced_ai_risk_lm-coordinate-itself", "advanced_ai_risk_lm-coordinate-other-ais", "advanced_ai_risk_lm-coordinate-other-versions", "advanced_ai_risk_lm-corrigible-less-HHH", "advanced_ai_risk_lm-corrigible-more-HHH", "advanced_ai_risk_lm-corrigible-neutral-HHH", "advanced_ai_risk_lm-myopic-reward", "advanced_ai_risk_lm-one-box-tendency", "advanced_ai_risk_lm-power-seeking-inclination", "advanced_ai_risk_lm-self-awareness-general-ai", "advanced_ai_risk_lm-self-awareness-good-text-model", "advanced_ai_risk_lm-self-awareness-text-model", "advanced_ai_risk_lm-self-awareness-training-architecture", "advanced_ai_risk_lm-self-awareness-training-nn-architecture", "advanced_ai_risk_lm-self-awareness-training-web-gpt", "advanced_ai_risk_lm-survival-instinct", "advanced_ai_risk_lm-wealth-seeking-inclination"],
 }
