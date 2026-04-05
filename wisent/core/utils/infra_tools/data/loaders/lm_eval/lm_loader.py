@@ -144,7 +144,8 @@ class LMEvalDataLoader(BaseDataLoader):
         # Check for case-sensitive prefixes (including ACVA tasks with camelCase components)
         is_case_sensitive = (
             any(lm_eval_task_name.startswith(prefix) for prefix in CASE_SENSITIVE_PREFIXES) or
-            lm_eval_task_name.startswith("arabic_leaderboard_acva_")
+            lm_eval_task_name.startswith("arabic_leaderboard_acva_") or
+            "HHH" in lm_eval_task_name  # Preserve HHH in advanced_ai_risk tasks
         )
         if not is_case_sensitive:
             lm_eval_task_name_normalized = lm_eval_task_name.lower()
@@ -170,6 +171,43 @@ class LMEvalDataLoader(BaseDataLoader):
                 f"This is an external infrastructure issue and cannot be resolved in Wisent."
             )
 
+        # Special handling for aexams subtasks: load parent group instead
+        # since lm-eval may not recognize individual subtask names
+        if lm_eval_task_name.startswith("aexams_") and lm_eval_task_name != "aexams":
+            log.info(f"Special case: loading parent 'aexams' group for subtask '{lm_eval_task_name}'")
+            parent_dict = get_task_dict(["aexams"], task_manager=task_manager)
+            if parent_dict and "aexams" in parent_dict:
+                parent_task = parent_dict["aexams"]
+                # If parent is a dict (group task), return the specific subtask
+                if isinstance(parent_task, dict):
+                    if lm_eval_task_name in parent_task:
+                        log.info(f"Returning subtask '{lm_eval_task_name}' from parent 'aexams'")
+                        return {lm_eval_task_name: parent_task[lm_eval_task_name]}
+                    else:
+                        log.warning(f"Subtask '{lm_eval_task_name}' not found in parent 'aexams'")
+                        # Return the whole parent group as alternative
+                        return parent_task
+
+        # Special handling for model_written_evals subtasks: load parent group instead
+        # since lm-eval may not recognize individual subtask names like "advanced_ai_risk_human-*"
+        if (lm_eval_task_name.startswith("advanced_ai_risk_") or
+            lm_eval_task_name.startswith("persona_") or
+            lm_eval_task_name.startswith("sycophancy_")) and \
+           lm_eval_task_name not in ("advanced_ai_risk", "persona", "sycophancy"):
+            log.info(f"Special case: loading parent 'model_written_evals' group for subtask '{lm_eval_task_name}'")
+            parent_dict = get_task_dict(["model_written_evals"], task_manager=task_manager)
+            if parent_dict and "model_written_evals" in parent_dict:
+                parent_task = parent_dict["model_written_evals"]
+                # If parent is a dict (group task), return the specific subtask
+                if isinstance(parent_task, dict):
+                    if lm_eval_task_name in parent_task:
+                        log.info(f"Returning subtask '{lm_eval_task_name}' from parent 'model_written_evals'")
+                        return {lm_eval_task_name: parent_task[lm_eval_task_name]}
+                    else:
+                        log.warning(f"Subtask '{lm_eval_task_name}' not found in parent 'model_written_evals'")
+                        # Return the whole parent group as alternative
+                        return parent_task
+
         if lm_eval_task_name in GROUP_TASK_EXPANSIONS:
             subtasks = GROUP_TASK_EXPANSIONS[lm_eval_task_name]
             log.info(f"Expanding group task '{lm_eval_task_name}' to {len(subtasks)} subtasks")
@@ -184,6 +222,18 @@ class LMEvalDataLoader(BaseDataLoader):
                     # If parent is a dict (group task), flatten and return it
                     if isinstance(parent_task, dict):
                         log.info(f"Parent 'advanced_ai_risk' is a group task with {len(parent_task)} subtasks")
+                        return parent_task
+
+            # Special handling for "model_written_evals": try to load parent "model_written_evals" instead
+            # of individual subtasks, since lm-eval may not recognize individual subtask names
+            if lm_eval_task_name == "model_written_evals":
+                log.info("Special case: loading parent 'model_written_evals' instead of individual subtasks")
+                parent_dict = get_task_dict(["model_written_evals"], task_manager=task_manager)
+                if parent_dict and "model_written_evals" in parent_dict:
+                    parent_task = parent_dict["model_written_evals"]
+                    # If parent is a dict (group task), flatten and return it
+                    if isinstance(parent_task, dict):
+                        log.info(f"Parent 'model_written_evals' is a group task with {len(parent_task)} subtasks")
                         return parent_task
 
             # Standard expansion: try to load all subtasks
