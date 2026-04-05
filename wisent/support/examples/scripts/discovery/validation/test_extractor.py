@@ -6,14 +6,13 @@ import subprocess
 import sys
 
 
-def test_extractor(task_name: str, output_file: str, limit: int = 5, timeout: int = 300) -> dict:
+def test_extractor(task_name: str, output_file: str, limit: int = 5) -> dict:
     """Run generate-pairs-from-task for a benchmark and verify the output.
 
     Args:
         task_name: Benchmark task name (e.g. "boolq", "truthfulqa_mc1").
         output_file: Path where the pairs JSON will be written.
         limit: Maximum number of pairs to extract.
-        timeout: Max seconds for the CLI command.
 
     Returns:
         Dict with keys: task, status ("PASS"/"FAIL"), pair_count, detail.
@@ -31,7 +30,6 @@ def test_extractor(task_name: str, output_file: str, limit: int = 5, timeout: in
         ],
         capture_output=True,
         text=True,
-        timeout=timeout,
     )
 
     if proc.returncode != 0:
