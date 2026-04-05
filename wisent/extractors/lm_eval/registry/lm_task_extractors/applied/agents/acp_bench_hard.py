@@ -124,15 +124,41 @@ class AcpBenchHardExtractor(LMEvalBenchmarkExtractor):
                 else:
                     full_prompt = f"Context: {context}\n\nQuestion: {question}"
 
-                # Structured dict or list format: {"neg": [...], "pos": [...]} or any dict/list
-                if isinstance(answer_raw, (dict, list)):
-                    if isinstance(answer_raw, dict) and "neg" in answer_raw and "pos" in answer_raw:
+                # Format 3a: Array/List of answers (for generative tasks like acp_reach_gen)
+                if isinstance(answer_raw, list) and len(answer_raw) > 0:
+                    # Convert list to string representation for pair extraction
+                    correct_answer = str(answer_raw).strip()
+                    if correct_answer:
+                        # Create incorrect answer by negating the answer or using alternatives
+                        if len(answer_raw) > 1:
+                            # If there are multiple answers, use a subset as incorrect
+                            incorrect_answer = str(answer_raw[1:]).strip()
+                        else:
+                            # Single answer - create negation
+                            first_answer = str(answer_raw[0]).strip()
+                            if first_answer.lower() in ["yes", "true"]:
+                                incorrect_answer = "no"
+                            elif first_answer.lower() in ["no", "false"]:
+                                incorrect_answer = "yes"
+                            else:
+                                incorrect_answer = f"not {first_answer}"
+                        metadata = {"label": "acp_bench_hard"}
+                        return self._build_pair(
+                            question=full_prompt,
+                            correct=correct_answer,
+                            incorrect=incorrect_answer,
+                            metadata=metadata,
+                        )
+
+                # Format 3b: Dict format: {"neg": [...], "pos": [...]} or any other dict
+                elif isinstance(answer_raw, dict):
+                    if "neg" in answer_raw and "pos" in answer_raw:
                         # For structured generation tasks with explicit neg/pos, use them
                         correct_answer = str(answer_raw)
                         # Create incorrect by swapping pos/neg
                         incorrect_answer = str({"neg": answer_raw.get("pos", []), "pos": answer_raw.get("neg", [])})
                     else:
-                        # For any other dict/list format, use it as-is and create a negated version
+                        # For any other dict format, use it as-is and create a negated version
                         correct_answer = str(answer_raw)
                         incorrect_answer = "null"  # Negation: expected answer is not the given structure
                     metadata = {"label": "acp_bench_hard"}
@@ -143,8 +169,8 @@ class AcpBenchHardExtractor(LMEvalBenchmarkExtractor):
                         metadata=metadata,
                     )
 
-                # Format 3a: Yes/no format
-                if isinstance(answer_raw, str):
+                # Format 3d: String answers (yes/no or free-form)
+                elif isinstance(answer_raw, str):
                     answer = answer_raw.strip().lower()
                     if answer in ["yes", "no"]:
                         correct = answer
@@ -156,7 +182,7 @@ class AcpBenchHardExtractor(LMEvalBenchmarkExtractor):
                             incorrect=incorrect,
                             metadata=metadata,
                         )
-                    # Format 3b: Free-form string answer
+                    # Free-form string answer
                     elif answer:
                         correct_answer = answer_raw.strip()
                         # Create incorrect by negating or providing placeholder
