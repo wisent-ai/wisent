@@ -16,7 +16,6 @@ _LOG = setup_logger(__name__)
 
 task_names = (
     "acp_bench_hard",
-    "acp_bench_hard_with_pddl",
     # Gen variants (acp_bench_hard subtasks)
     "acp_prog_gen", "acp_reach_gen", "acp_app_gen", "acp_just_gen",
     "acp_land_gen", "acp_nexta_gen", "acp_areach_gen", "acp_val_gen",
@@ -125,12 +124,17 @@ class AcpBenchHardExtractor(LMEvalBenchmarkExtractor):
                 else:
                     full_prompt = f"Context: {context}\n\nQuestion: {question}"
 
-                # Structured dict format: {"neg": [...], "pos": [...]}
-                if isinstance(answer_raw, dict) and "neg" in answer_raw and "pos" in answer_raw:
-                    # For structured generation tasks, use the dict as-is
-                    correct_answer = str(answer_raw)
-                    # Create incorrect by swapping pos/neg
-                    incorrect_answer = str({"neg": answer_raw.get("pos", []), "pos": answer_raw.get("neg", [])})
+                # Structured dict or list format: {"neg": [...], "pos": [...]} or any dict/list
+                if isinstance(answer_raw, (dict, list)):
+                    if isinstance(answer_raw, dict) and "neg" in answer_raw and "pos" in answer_raw:
+                        # For structured generation tasks with explicit neg/pos, use them
+                        correct_answer = str(answer_raw)
+                        # Create incorrect by swapping pos/neg
+                        incorrect_answer = str({"neg": answer_raw.get("pos", []), "pos": answer_raw.get("neg", [])})
+                    else:
+                        # For any other dict/list format, use it as-is and create a negated version
+                        correct_answer = str(answer_raw)
+                        incorrect_answer = "null"  # Negation: expected answer is not the given structure
                     metadata = {"label": "acp_bench_hard"}
                     return self._build_pair(
                         question=full_prompt,
