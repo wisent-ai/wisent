@@ -265,8 +265,105 @@ def build_contrastive_pairs(
     # lm-eval extractor - need to load task
     log.info("lm-eval task - loading via LMEvalDataLoader")
     from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
+    from wisent.core.utils.infra_tools.data.loaders.lm_eval._lm_loader_task_mapping import (
+        GROUP_TASK_EXPANSIONS,
+    )
 
     loader = LMEvalDataLoader()
+
+    # Check if task is a known GROUP with subtasks listed in GROUP_TASK_EXPANSIONS.
+    # For such tasks, load subtasks LAZILY (one at a time) rather than all at once to
+    # avoid the long initialisation time of get_task_dict with 50+ task names.
+    def _normalize(name: str) -> str:
+        return name.strip().lower().replace("-", "_")
+
+    task_normalized = _normalize(task_name)
+    lazy_subtask_names: list[str] | None = None
+    for group_key, expansion_subtasks in GROUP_TASK_EXPANSIONS.items():
+        if _normalize(group_key) == task_normalized:
+            # Filter out the group key itself (e.g. "advanced_ai_risk" is in its own expansion)
+            lazy_subtask_names = [s for s in expansion_subtasks if _normalize(s) != task_normalized]
+            log.info(
+                f"Known GROUP task '{task_name}' with {len(lazy_subtask_names)} expansion subtasks "
+                f"— will load lazily"
+            )
+            break
+
+    from lm_eval.api.task import ConfigurableTask
+
+    def _to_lm_eval_subtask_name(name: str) -> str:
+        """Convert a GROUP_TASK_EXPANSIONS underscore subtask name to its lm-eval dash form.
+
+        For advanced_ai_risk subtasks, lm-eval uses dashes after the variant prefix:
+          advanced_ai_risk_fewshot_coordinate_itself  ->  advanced_ai_risk_fewshot-coordinate-itself
+          advanced_ai_risk_human_corrigible_less_HHH  ->  advanced_ai_risk_human-corrigible-less-HHH
+          advanced_ai_risk_lm_self_awareness_training_nn_architecture
+              -> advanced_ai_risk_lm-self-awareness-training-nn-architecture
+
+        Other task names are returned unchanged.
+        """
+        import re
+        # Pattern: advanced_ai_risk_(fewshot|human|lm)_(rest)
+        m = re.match(r'^(advanced_ai_risk_(?:fewshot|human|lm))_(.+)$', name)
+        if m:
+            prefix, rest = m.group(1), m.group(2)
+            # Replace underscores with dashes in the suffix, but preserve uppercase HHH
+            dash_rest = rest.replace("_", "-")
+            return f"{prefix}-{dash_rest}"
+        return name
+
+    if lazy_subtask_names is not None:
+        # Lazy group loading: load subtasks one-by-one and stop once we have enough pairs.
+        # Convert underscore names (from GROUP_TASK_EXPANSIONS) to lm-eval dash names so
+        # each subtask loads in ~5 s directly without triggering a full parent-group reload.
+        lm_eval_subtask_names = [_to_lm_eval_subtask_name(s) for s in lazy_subtask_names]
+        random.shuffle(lm_eval_subtask_names)
+        pairs_per_task = max(1, max_items // len(lm_eval_subtask_names)) if max_items else None
+
+        all_pairs: list["ContrastivePair"] = []
+        for subtask_name in lm_eval_subtask_names:
+            if max_items is not None and len(all_pairs) >= max_items:
+                break
+            try:
+                subtask_obj = loader.load_lm_eval_task(subtask_name)
+            except Exception as _e:
+                log.warning(f"Could not load subtask '{subtask_name}': {_e}")
+                continue
+
+            # subtask_obj may itself be a ConfigurableTask or a dict
+            if isinstance(subtask_obj, ConfigurableTask):
+                leaf_pairs_list = [(subtask_name, subtask_obj)]
+            elif isinstance(subtask_obj, dict):
+                leaf_pairs_list = _flatten_task_dict(subtask_obj)
+            else:
+                log.warning(f"Unexpected subtask type for '{subtask_name}': {type(subtask_obj)}")
+                continue
+
+            for leaf_name_full, leaf_task in leaf_pairs_list:
+                if max_items is not None and len(all_pairs) >= max_items:
+                    break
+                leaf_name = leaf_name_full.split("/")[-1] if "/" in leaf_name_full else leaf_name_full
+                try:
+                    leaf_extractor = get_extractor(leaf_name)
+                except Exception:
+                    leaf_extractor = extractor
+                leaf_evaluator = getattr(leaf_extractor, 'evaluator_name', evaluator_name)
+                try:
+                    leaf_pairs = leaf_extractor.extract_contrastive_pairs(
+                        leaf_task, limit=pairs_per_task, train_ratio=train_ratio
+                    )
+                    leaf_pairs = _add_evaluator_to_pairs(leaf_pairs, leaf_evaluator, leaf_name_full)
+                    all_pairs.extend(leaf_pairs)
+                except Exception as e:
+                    log.warning(f"Failed to extract from subtask '{leaf_name_full}': {e}")
+
+        random.shuffle(all_pairs)
+        if max_items is not None:
+            all_pairs = all_pairs[:max_items]
+        log.info(f"Extracted {len(all_pairs)} pairs from lazy group task")
+        upload_pairs_to_hf(task_name, all_pairs)
+        return all_pairs
+
     try:
         task_obj = loader.load_lm_eval_task(task_name)
     except Exception:
@@ -276,7 +373,6 @@ def build_contrastive_pairs(
             raise
 
     # Single task (ConfigurableTask)
-    from lm_eval.api.task import ConfigurableTask
     if isinstance(task_obj, ConfigurableTask):
         log.info("Single task")
         pairs = extractor.extract_contrastive_pairs(task_obj, limit=max_items, train_ratio=train_ratio)
@@ -287,56 +383,56 @@ def build_contrastive_pairs(
     if isinstance(task_obj, dict):
         leaf_tasks = _flatten_task_dict(task_obj)
         log.info(f"Group task with {len(leaf_tasks)} leaf subtasks")
-        
+
         if not leaf_tasks:
             log.warning("No leaf tasks found in group")
             return []
-        
+
         # Shuffle to get random sampling across subtasks
         random.shuffle(leaf_tasks)
-        
+
         # Calculate pairs per subtask
         if max_items is None:
             pairs_per_task = None
         else:
             # Distribute limit across subtasks, minimum 1 per task
             pairs_per_task = max(1, max_items // len(leaf_tasks))
-        
+
         all_pairs = []
         for subtask_name, subtask in leaf_tasks:
             try:
                 # Get the leaf task name (last part after /)
                 leaf_name = subtask_name.split("/")[-1] if "/" in subtask_name else subtask_name
-                
+
                 # Try to get extractor for the specific subtask first
                 try:
                     subtask_extractor = get_extractor(leaf_name)
-                except:
+                except Exception:
                     # Fall back to parent extractor
                     subtask_extractor = extractor
-                
+
                 subtask_evaluator = getattr(subtask_extractor, 'evaluator_name', evaluator_name)
-                
+
                 subtask_pairs = subtask_extractor.extract_contrastive_pairs(subtask, limit=pairs_per_task, train_ratio=train_ratio)
                 subtask_pairs = _add_evaluator_to_pairs(subtask_pairs, subtask_evaluator, subtask_name)
                 all_pairs.extend(subtask_pairs)
-                
+
                 # Stop if we have enough
                 if max_items is not None and len(all_pairs) >= max_items:
                     break
             except Exception as e:
                 log.warning(f"Failed to extract from subtask {subtask_name}: {e}")
                 continue
-        
+
         # Shuffle final result and trim to limit
         random.shuffle(all_pairs)
         if max_items is not None:
             all_pairs = all_pairs[:max_items]
-        
+
         log.info(f"Extracted {len(all_pairs)} pairs from group task")
         upload_pairs_to_hf(task_name, all_pairs)
         return all_pairs
-    
+
     log.error(f"Unexpected task_obj type: {type(task_obj)}")
     return []
 
