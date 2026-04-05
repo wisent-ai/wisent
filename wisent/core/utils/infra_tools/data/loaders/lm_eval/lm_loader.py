@@ -141,7 +141,11 @@ class LMEvalDataLoader(BaseDataLoader):
         if lm_eval_task_name != task_name:
             log.info(f"Mapping task '{task_name}' to lm-eval task '{lm_eval_task_name}'")
 
-        is_case_sensitive = any(lm_eval_task_name.startswith(prefix) for prefix in CASE_SENSITIVE_PREFIXES)
+        # Check for case-sensitive prefixes (including ACVA tasks with camelCase components)
+        is_case_sensitive = (
+            any(lm_eval_task_name.startswith(prefix) for prefix in CASE_SENSITIVE_PREFIXES) or
+            lm_eval_task_name.startswith("arabic_leaderboard_acva_")
+        )
         if not is_case_sensitive:
             lm_eval_task_name_normalized = lm_eval_task_name.lower()
             if lm_eval_task_name_normalized != lm_eval_task_name:
@@ -169,6 +173,20 @@ class LMEvalDataLoader(BaseDataLoader):
         if lm_eval_task_name in GROUP_TASK_EXPANSIONS:
             subtasks = GROUP_TASK_EXPANSIONS[lm_eval_task_name]
             log.info(f"Expanding group task '{lm_eval_task_name}' to {len(subtasks)} subtasks")
+
+            # Special handling for "advanced": try to load parent "advanced_ai_risk" instead
+            # of individual subtasks, since lm-eval may not recognize individual subtask names
+            if lm_eval_task_name == "advanced":
+                log.info("Special case: loading parent 'advanced_ai_risk' instead of individual subtasks")
+                parent_dict = get_task_dict(["advanced_ai_risk"], task_manager=task_manager)
+                if parent_dict and "advanced_ai_risk" in parent_dict:
+                    parent_task = parent_dict["advanced_ai_risk"]
+                    # If parent is a dict (group task), flatten and return it
+                    if isinstance(parent_task, dict):
+                        log.info(f"Parent 'advanced_ai_risk' is a group task with {len(parent_task)} subtasks")
+                        return parent_task
+
+            # Standard expansion: try to load all subtasks
             task_dict = get_task_dict(subtasks, task_manager=task_manager)
             return task_dict
 
