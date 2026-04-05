@@ -178,6 +178,7 @@ LM_EXTRACTORS_P_TO_Z: dict[str, str] = {
     "20_newsgroups": f"{base_import}twenty_newsgroups:TwentyNewsgroupsExtractor",
     "ag": f"{base_import}ag:AgExtractor",
     "ag_news": f"{base_import}ag:AgExtractor",
+    "anagrams": f"{base_import}anagrams1:Anagrams1Extractor",
     "anagrams1": f"{base_import}anagrams1:Anagrams1Extractor",
     "anagrams2": f"{base_import}anagrams2:Anagrams2Extractor",
     "argument": f"{base_import}argument:ArgumentExtractor",

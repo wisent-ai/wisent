@@ -35,6 +35,7 @@ TASK_NAME_MAPPING = {
     "evalita_mp": "evalita-mp",
     "evalita_sp_sum_task_fp-small_p1": "evalita-sp_sum_task_fp-small_p1",
     "ag": "ag_news",
+    "anagrams": "anagrams1",
     "arabic": "arabic_exams",
     "fld": "fld_default",
     "instruct_humaneval": "humaneval_instruct",
