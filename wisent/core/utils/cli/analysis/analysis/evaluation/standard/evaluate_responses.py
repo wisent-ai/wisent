@@ -71,7 +71,13 @@ def _load_task_docs(task_name: str, train_ratio: float):
 
         tm = TaskManager()
         task_dict = tm.load_task_or_group(task_name)
-        task = task_dict[task_name]
+
+        if task_name in task_dict:
+            task = task_dict[task_name]
+        else:
+            # task_name is a group — use the first subtask
+            first_key = next(iter(task_dict))
+            task = task_dict[first_key]
 
         all_docs, split_counts = get_all_docs_from_task(task)
         _, task_docs = create_deterministic_split(all_docs, task_name, train_ratio=train_ratio)

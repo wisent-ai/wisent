@@ -179,29 +179,21 @@ def get_working_benchmarks_with_categories() -> Dict[str, str]:
 
 
 def validate_benchmark(task_name: str, allow_subtasks: bool = False) -> None:
-    """Validate that a benchmark is in the working benchmarks list.
+    """Validate that a benchmark exists in the extractor registry.
+
+    Checks against the extractor registry (_REGISTRY) which is the source of
+    truth for which benchmarks we can handle (4697 tasks).
 
     Args:
         task_name: Benchmark or subtask name.
-        allow_subtasks: If True, accept subtasks whose parent is a working benchmark
-            (e.g. "aclue_ancient_chinese_culture" is valid if "aclue" is working).
+        allow_subtasks: Unused, kept for API compatibility.
 
-    Raises UnsupportedBenchmarkError if not found, with helpful context.
+    Raises UnsupportedBenchmarkError if not found.
     """
     from wisent.core.utils.services.benchmarks.services.cache.download.managed_cached_benchmarks import (
         UnsupportedBenchmarkError,
     )
-    working = get_working_benchmarks()
-    if task_name in working:
-        return
-    lower_map = {t.lower(): t for t in working}
-    if task_name.lower() in lower_map:
-        return
-
-    if allow_subtasks:
-        for parent in working:
-            if task_name.startswith(parent + "_") or task_name.lower().startswith(parent.lower() + "_"):
-                return
+    from wisent.extractors.lm_eval.lm_extractor_registry import _REGISTRY
 
     broken = set(get_broken_tasks())
     if task_name in broken:
@@ -209,10 +201,13 @@ def validate_benchmark(task_name: str, allow_subtasks: bool = False) -> None:
             f"Benchmark '{task_name}' is known broken. "
             f"See broken_in_lm_eval.json."
         )
+
+    if task_name.lower() in _REGISTRY:
+        return
+
     raise UnsupportedBenchmarkError(
         f"Unknown benchmark '{task_name}'. "
-        f"Valid benchmarks: {len(working)} in "
-        f"working_benchmarks_categorized.json"
+        f"Not found in extractor registry ({len(_REGISTRY)} tasks)."
     )
 
 
