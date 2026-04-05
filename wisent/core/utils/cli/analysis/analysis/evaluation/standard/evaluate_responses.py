@@ -95,6 +95,13 @@ def execute_evaluate_responses(args):
     """
     import wisent.core.reading.evaluators.core.benchmark_specific  # noqa: F401
 
+    model_name = getattr(args, 'model', None)
+    if model_name and not getattr(args, 'cached_model', None):
+        from wisent.core.primitives.models.core.wisent_model import WisentModel
+        print(f"Loading model '{model_name}'...")
+        args.cached_model = WisentModel(model_name, device=getattr(args, 'device', None))
+        print(f"Model loaded.\n")
+
     print(f"\n{'='*80}")
     print(f"📊 EVALUATING GENERATED RESPONSES")
     print(f"{'='*80}")

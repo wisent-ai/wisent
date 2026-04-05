@@ -66,7 +66,7 @@ def _upload_results(task_name: str, result: dict) -> None:
         pass
 
 
-def test_benchmark(task_name: str, skip_cache: bool = False) -> dict:
+def test_benchmark(task_name: str, skip_cache: bool = False, model_name: str | None = None) -> dict:
     """Run extractor and evaluator tests for a single benchmark.
 
     Checks HuggingFace cache first. After running, uploads results to HF.
@@ -74,6 +74,7 @@ def test_benchmark(task_name: str, skip_cache: bool = False) -> dict:
     Args:
         task_name: Benchmark task name.
         skip_cache: If True, ignore cached results and re-run.
+        model_name: HuggingFace model name for evaluator log-likelihood computation.
 
     Returns:
         Dict with extraction and evaluator results.
@@ -107,7 +108,7 @@ def test_benchmark(task_name: str, skip_cache: bool = False) -> dict:
         pairs = data["pairs"] if isinstance(data, dict) else data
         responses = pairs_to_responses(pairs)
 
-        evaluator_result = test_evaluator(task_name, responses)
+        evaluator_result = test_evaluator(task_name, responses, model_name=model_name)
         result["evaluator"] = evaluator_result
         print(f"  {evaluator_result['status']}")
         if evaluator_result.get("detail"):

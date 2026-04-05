@@ -3,6 +3,7 @@
 
 def setup_evaluate_responses_parser(parser):
     """Set up the evaluate-responses command parser."""
+    parser.add_argument("--model", type=str, default=None, help="HuggingFace model name to load for evaluation (e.g. meta-llama/Llama-3.2-1B-Instruct)")
     parser.add_argument("--input", type=str, required=True, help="Input JSON file with generated responses")
     parser.add_argument("--baseline", type=str, help="Baseline responses JSON file (for personalization comparison)")
     parser.add_argument("--output", type=str, required=True, help="Output JSON file for evaluation results")

@@ -7,13 +7,14 @@ import sys
 import tempfile
 
 
-def test_evaluator(task_name: str, responses: list[dict], timeout: int = 300) -> dict:
+def test_evaluator(task_name: str, responses: list[dict], timeout: int = 300, model_name: str | None = None) -> dict:
     """Run evaluate-responses for a benchmark and verify the output.
 
     Args:
         task_name: Benchmark task name (e.g. "boolq", "truthfulqa_mc1").
         responses: List of response dicts with keys: question, response, expected, choices.
         timeout: Max seconds for the CLI command.
+        model_name: HuggingFace model name for log-likelihood evaluation.
 
     Returns:
         Dict with keys: task, status ("PASS"/"FAIL"), detail.
@@ -55,7 +56,8 @@ def test_evaluator(task_name: str, responses: list[dict], timeout: int = 300) ->
                 "--personalization-quality-weight", "0.33",
                 "--personalization-alignment-weight", "0.34",
                 "--verbose",
-            ],
+            ]
+            + (["--model", model_name] if model_name else []),
             capture_output=True,
             text=True,
             timeout=timeout,
