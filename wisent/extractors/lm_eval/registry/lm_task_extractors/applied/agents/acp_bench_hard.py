@@ -20,6 +20,9 @@ task_names = (
     # Gen variants (acp_bench_hard subtasks)
     "acp_prog_gen", "acp_reach_gen", "acp_app_gen", "acp_just_gen",
     "acp_land_gen", "acp_nexta_gen", "acp_areach_gen", "acp_val_gen",
+    # Gen variants with PDDL
+    "acp_prog_gen_with_pddl", "acp_reach_gen_with_pddl", "acp_app_gen_with_pddl", "acp_just_gen_with_pddl",
+    "acp_land_gen_with_pddl", "acp_nexta_gen_with_pddl", "acp_areach_gen_with_pddl", "acp_val_gen_with_pddl",
 )
 
 class AcpBenchHardExtractor(LMEvalBenchmarkExtractor):
@@ -108,14 +111,19 @@ class AcpBenchHardExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
 
-            # Format 3: context + question + answer (structured dict for _gen tasks)
-            elif "context" in doc and "question" in doc and "answer" in doc:
+            # Format 3: context + question + answer/output (structured dict for _gen tasks or yes/no)
+            elif "context" in doc and "question" in doc and ("answer" in doc or "output" in doc):
                 context = str(doc.get("context", "")).strip()
                 question = str(doc.get("question", "")).strip()
-                answer_raw = doc.get("answer", "")
+                answer_raw = doc.get("answer", doc.get("output", ""))
+                pddl = doc.get("pddl", "")
 
-                # Create full prompt with context
-                full_prompt = f"Context: {context}\n\nQuestion: {question}"
+                # Create full prompt with context and optional PDDL
+                if pddl:
+                    pddl = str(pddl).strip()
+                    full_prompt = f"PDDL:\n{pddl}\n\nContext: {context}\n\nQuestion: {question}"
+                else:
+                    full_prompt = f"Context: {context}\n\nQuestion: {question}"
 
                 # Structured dict format: {"neg": [...], "pos": [...]}
                 if isinstance(answer_raw, dict) and "neg" in answer_raw and "pos" in answer_raw:
@@ -130,6 +138,33 @@ class AcpBenchHardExtractor(LMEvalBenchmarkExtractor):
                         incorrect=incorrect_answer,
                         metadata=metadata,
                     )
+
+                # Format 3a: Yes/no format
+                if isinstance(answer_raw, str):
+                    answer = answer_raw.strip().lower()
+                    if answer in ["yes", "no"]:
+                        correct = answer
+                        incorrect = "yes" if answer == "no" else "no"
+                        metadata = {"label": "acp_bench_hard"}
+                        return self._build_pair(
+                            question=full_prompt,
+                            correct=correct,
+                            incorrect=incorrect,
+                            metadata=metadata,
+                        )
+                    # Format 3b: Free-form string answer
+                    elif answer:
+                        correct_answer = answer_raw.strip()
+                        # Create incorrect by negating or providing placeholder
+                        incorrect_answer = "incorrect answer"
+                        metadata = {"label": "acp_bench_hard"}
+                        return self._build_pair(
+                            question=full_prompt,
+                            correct=correct_answer,
+                            incorrect=incorrect_answer,
+                            metadata=metadata,
+                        )
+
                 return None
 
             # Format 4: query/prompt + answer
