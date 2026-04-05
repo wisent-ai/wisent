@@ -1,6 +1,6 @@
 """LM-eval extractor manifest - maps task names to extractor classes."""
 
-from wisent.extractors.lm_eval.group_task_manifests import (
+from wisent.extractors.lm_eval.registry.group_task_manifests import (
     get_all_group_task_mappings,
 )
 from wisent.extractors.lm_eval.lm_extractor_manifest_a_to_o import LM_EXTRACTORS_A_TO_O

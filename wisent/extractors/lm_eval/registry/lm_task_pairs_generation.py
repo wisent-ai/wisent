@@ -18,19 +18,28 @@ _LOG = setup_logger(__name__)
 def _flatten_task_dict(task_dict: dict, prefix: str = "") -> list[tuple[str, "ConfigurableTask"]]:
     """
     Recursively flatten nested group tasks into a list of (name, ConfigurableTask) tuples.
-    
+
+    Handles both string keys and Task object keys.
+
     arguments:
         task_dict: Dict of task_name -> ConfigurableTask or nested dict
         prefix: Prefix for nested task names
-        
+
     returns:
         List of (full_task_name, ConfigurableTask) tuples (leaf tasks only)
     """
     from lm_eval.api.task import ConfigurableTask
-    
+
     result = []
     for name, task in task_dict.items():
-        full_name = f"{prefix}/{name}" if prefix else name
+        # Handle both string keys and Task object keys
+        if isinstance(name, str):
+            task_name = name
+        else:
+            # Task object as key - try to get its name
+            task_name = getattr(name, 'name', None) or getattr(name, 'NAME', None) or str(name)
+
+        full_name = f"{prefix}/{task_name}" if prefix else task_name
         if isinstance(task, ConfigurableTask):
             result.append((full_name, task))
         elif isinstance(task, dict):
@@ -54,6 +63,103 @@ def _add_evaluator_to_pairs(
         metadata["source_task"] = task_name
         result.append(replace(pair, metadata=metadata))
     return result
+
+
+def _load_subtask_from_parent(task_name: str, loader, log):
+    """Try to load a subtask by loading its parent group and finding the subtask within.
+
+    For example, 'aclue_ancient_chinese_culture' -> load 'aclue' group -> find subtask.
+    Tries progressively shorter prefixes as the parent name.
+
+    Also handles tasks with variant suffixes (e.g. '_light') by constructing
+    suffixed parent candidates.  For example:
+      'arabic_leaderboard_acva_arabic_literature_light'
+      -> try parent 'arabic_leaderboard_acva_light' (strip the middle subtopic,
+         keep the variant suffix) in addition to the plain prefix approach.
+    """
+    from lm_eval.api.task import ConfigurableTask
+    from wisent.core.utils.infra_tools.data.loaders.lm_eval._lm_loader_task_mapping import (
+        GROUP_TASK_EXPANSIONS,
+    )
+
+    task_name_lower = task_name.lower()
+
+    def _normalize_name(name: str) -> str:
+        """Normalize name for comparison by converting dashes to underscores."""
+        return name.replace("-", "_").lower()
+
+    def _match(leaf_name: str) -> bool:
+        """Case-insensitive match between a leaf task name and the requested task name."""
+        clean_leaf = leaf_name.split("/")[-1] if "/" in leaf_name else leaf_name
+        clean_leaf_normalized = _normalize_name(clean_leaf)
+        task_normalized = _normalize_name(task_name)
+        return (
+            clean_leaf_normalized == task_normalized
+            or clean_leaf_normalized.endswith(task_normalized)
+            or task_normalized.endswith(clean_leaf_normalized)
+        )
+
+    def _try_parent(parent_name: str):
+        """Load parent group and search for task_name among its leaf tasks.
+
+        Returns (task_obj, parent_name) tuple on success, (None, None) on failure.
+        """
+        try:
+            parent_obj = loader.load_lm_eval_task(parent_name)
+        except Exception:
+            return None, None
+        if not isinstance(parent_obj, dict):
+            return None, None
+        for leaf_name, leaf_task in _flatten_task_dict(parent_obj):
+            if _match(leaf_name):
+                log.info(f"Found subtask '{task_name}' in parent group '{parent_name}'")
+                return leaf_task, parent_name
+        return None, None
+
+    # Strategy 0: Check GROUP_TASK_EXPANSIONS for direct parent mapping
+    task_normalized = _normalize_name(task_name)
+    for parent_name, subtasks in GROUP_TASK_EXPANSIONS.items():
+        # Check case-insensitively with dash/underscore normalization
+        if any(_normalize_name(s) == task_normalized for s in subtasks):
+            log.info(f"Found '{task_name}' in GROUP_TASK_EXPANSIONS under parent '{parent_name}'")
+            result, parent = _try_parent(parent_name)
+            if result is not None:
+                return result, parent
+
+    parts = task_name.split("_")
+
+    # Strategy 1: progressively shorter plain prefixes
+    for i in range(len(parts) - 1, 0, -1):
+        parent_name = "_".join(parts[:i])
+        result, parent = _try_parent(parent_name)
+        if result is not None:
+            return result, parent
+
+    # Strategy 2: for tasks that end with a known variant suffix (e.g. '_light', '_with_pddl'),
+    # also try parents formed by combining the base prefix with that suffix.
+    # Example: 'arabic_leaderboard_acva_arabic_literature_light'
+    #   suffix = 'light', base parts = ['arabic','leaderboard','acva','arabic','literature']
+    #   -> try parents: 'arabic_leaderboard_acva_arabic_literature_light' (already tried above),
+    #      'arabic_leaderboard_acva_arabic_light', 'arabic_leaderboard_acva_light', ...
+    # Example: 'acp_app_gen_with_pddl'
+    #   suffix = 'with_pddl', suffix_parts = ['with', 'pddl'], base_parts = ['acp','app','gen']
+    #   -> try parents: 'acp_app_gen_with_pddl' (already tried above),
+    #      'acp_app_with_pddl', 'acp_with_pddl', ...
+    KNOWN_VARIANT_SUFFIXES = (("light",), ("with", "pddl"))
+    for suffix_parts in KNOWN_VARIANT_SUFFIXES:
+        suffix_str = "_".join(suffix_parts)
+        if task_name.endswith(f"_{suffix_str}"):
+            # Check if the task_name ends with the suffix tokens
+            num_suffix_parts = len(suffix_parts)
+            if len(parts) > num_suffix_parts and parts[-num_suffix_parts:] == list(suffix_parts):
+                base_parts = parts[:-num_suffix_parts]  # strip the suffix tokens
+                for i in range(len(base_parts) - 1, 0, -1):
+                    parent_name = "_".join(base_parts[:i]) + f"_{suffix_str}"
+                    result, parent = _try_parent(parent_name)
+                    if result is not None:
+                        return result, parent
+
+    return None, None
 
 
 def build_contrastive_pairs(
@@ -116,14 +222,16 @@ def build_contrastive_pairs(
     # lm-eval extractor - need to load task
     log.info("lm-eval task - loading via LMEvalDataLoader")
     from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
-    
+
     loader = LMEvalDataLoader()
     try:
         task_obj = loader.load_lm_eval_task(task_name)
-    except Exception as e:
-        log.error(f"Failed to load lm-eval task: {e}")
-        raise
-    
+    except Exception:
+        # Subtask not loadable directly — try loading parent group and finding subtask
+        task_obj, _ = _load_subtask_from_parent(task_name, loader, log)
+        if task_obj is None:
+            raise
+
     # Single task (ConfigurableTask)
     from lm_eval.api.task import ConfigurableTask
     if isinstance(task_obj, ConfigurableTask):
