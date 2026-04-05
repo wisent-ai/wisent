@@ -142,10 +142,17 @@ class LMEvalDataLoader(BaseDataLoader):
             log.info(f"Mapping task '{task_name}' to lm-eval task '{lm_eval_task_name}'")
 
         # Check for case-sensitive prefixes (including ACVA tasks with camelCase components)
+        # Also preserve case for afrobench leaf tasks that include ISO script codes
+        # (e.g. flores_afr_Latn-eng_Latn_prompt_1, ntrex_afr_Latn-eng_Latn_prompt_1).
+        _has_iso_script = any(
+            f"_{code}" in lm_eval_task_name or f"-{code}" in lm_eval_task_name
+            for code in ("Latn", "Ethi", "Arab", "Cyrl", "Deva", "Hebr", "Nkoo")
+        )
         is_case_sensitive = (
             any(lm_eval_task_name.startswith(prefix) for prefix in CASE_SENSITIVE_PREFIXES) or
             lm_eval_task_name.startswith("arabic_leaderboard_acva_") or
-            "HHH" in lm_eval_task_name  # Preserve HHH in advanced_ai_risk tasks
+            "HHH" in lm_eval_task_name or  # Preserve HHH in advanced_ai_risk tasks
+            _has_iso_script  # Preserve ISO script codes in afrobench/flores/ntrex tasks
         )
         if not is_case_sensitive:
             lm_eval_task_name_normalized = lm_eval_task_name.lower()
@@ -247,6 +254,22 @@ class LMEvalDataLoader(BaseDataLoader):
                     if isinstance(parent_task, dict):
                         log.info(f"Parent 'advanced_ai_risk' is a group task with {len(parent_task)} subtasks")
                         return parent_task
+
+            # Special handling for "advanced_ai_risk": load it directly as a lm-eval group task
+            # rather than trying to expand its 50 individual subtask names (which use underscores
+            # while lm-eval uses dashes), since get_task_dict with the underscore names fails.
+            if lm_eval_task_name == "advanced_ai_risk":
+                log.info("Special case: loading 'advanced_ai_risk' directly as lm-eval group task")
+                try:
+                    parent_dict = get_task_dict(["advanced_ai_risk"], task_manager=task_manager)
+                    if parent_dict and "advanced_ai_risk" in parent_dict:
+                        parent_task = parent_dict["advanced_ai_risk"]
+                        if isinstance(parent_task, dict):
+                            log.info(f"'advanced_ai_risk' is a group task with {len(parent_task)} subtasks")
+                            return parent_task
+                        return parent_task
+                except Exception as _adv_exc:
+                    log.debug(f"Direct load of 'advanced_ai_risk' as group failed: {_adv_exc}")
 
             # Special handling for "model_written_evals": try to load parent "model_written_evals" instead
             # of individual subtasks, since lm-eval may not recognize individual subtask names

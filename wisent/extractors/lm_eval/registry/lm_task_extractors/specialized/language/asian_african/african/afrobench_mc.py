@@ -87,18 +87,26 @@ class AfroBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
             if "mc_answer1" in doc and "correct_answer_num" in doc:
                 return _extract_belebele(doc, log)
 
-            # Schema 2: A/B/C/D explicit choice fields (openai_mmlu, naijarc, uhura_arc_easy)
+            # Schema 2: A/B/C/D explicit choice fields (openai_mmlu)
             if "A" in doc and "B" in doc and "C" in doc and "D" in doc:
                 return _extract_abcd_choices(doc, log)
 
-            # Schema 3: classification — static choices from task YAML + int index in doc
+            # Schema 2b: options_A/B/C/D explicit choice fields (naijarc)
+            if "options_A" in doc and "options_B" in doc:
+                return _extract_options_abcd_choices(doc, log)
+
+            # Schema 3: classification — static choices from task YAML + int/str index in doc
             # (afrisenti, nollysenti, sib, masakhanews, injongointent)
             if task_choices is not None:
                 pair = _extract_classification(doc, task_choices, log)
                 if pair is not None:
                     return pair
 
-            # Schema 4: generic list-of-choices in the doc itself
+            # Schema 4a: uhura-arc-easy — choices dict with text array + answerKey letter
+            if "choices" in doc and isinstance(doc.get("choices"), dict) and "answerKey" in doc:
+                return _extract_choices_dict(doc, log)
+
+            # Schema 4b: generic list-of-choices in the doc itself
             if "choices" in doc:
                 return _extract_choices_list(doc, log)
 
@@ -186,7 +194,7 @@ def _extract_belebele(doc: dict[str, Any], log: Any) -> ContrastivePair | None:
 
 
 def _extract_abcd_choices(doc: dict[str, Any], log: Any) -> ContrastivePair | None:
-    """A/B/C/D schema (openai_mmlu, naijarc, uhura_arc_easy)."""
+    """A/B/C/D schema (openai_mmlu)."""
     question = str(doc.get("Question") or doc.get("question") or "").strip()
     choices_map = {
         "A": str(doc.get("A", "")).strip(),
@@ -302,6 +310,65 @@ def _extract_choices_list(doc: dict[str, Any], log: Any) -> ContrastivePair | No
     if not (0 <= answer_idx < len(choices)):
         return None
 
+    correct = str(choices[answer_idx]).strip()
+    incorrect = str(choices[(answer_idx + 1) % len(choices)]).strip()
+    return _make_pair(f"Question: {question}\nAnswer:", correct, incorrect)
+
+
+def _extract_options_abcd_choices(doc: dict[str, Any], log: Any) -> ContrastivePair | None:
+    """options_A/B/C/D schema (NaijaRC): story/question + options_A-D + Answer letter."""
+    question = str(doc.get("question") or doc.get("Question") or "").strip()
+    story = str(doc.get("story") or doc.get("context") or "").strip()
+    prompt_text = f"Context: {story}\nQuestion: {question}" if story else f"Question: {question}"
+    choices_map = {
+        "A": str(doc.get("options_A", "")).strip(),
+        "B": str(doc.get("options_B", "")).strip(),
+        "C": str(doc.get("options_C", "")).strip(),
+        "D": str(doc.get("options_D", "")).strip(),
+    }
+    answer_key = doc.get("Answer") or doc.get("answerKey") or doc.get("answer")
+    if not question or answer_key is None:
+        log.debug("options_abcd: missing question or answer key")
+        return None
+    answer_letter = str(answer_key).strip().upper()
+    if answer_letter not in choices_map or not choices_map.get(answer_letter):
+        log.debug("options_abcd: answer letter not in A-D", extra={"key": answer_key})
+        return None
+    correct = choices_map[answer_letter]
+    other_letters = [l for l in ("A", "B", "C", "D") if l != answer_letter and choices_map.get(l)]
+    if not other_letters:
+        return None
+    incorrect = choices_map[other_letters[0]]
+    return _make_pair(f"{prompt_text}\nAnswer:", correct, incorrect)
+
+
+def _extract_choices_dict(doc: dict[str, Any], log: Any) -> ContrastivePair | None:
+    """choices-dict schema (uhura-arc-easy): choices dict with text array + answerKey letter."""
+    question = str(doc.get("question") or doc.get("Question") or "").strip()
+    choices_container = doc.get("choices")
+    if not isinstance(choices_container, dict):
+        log.debug("choices_dict: choices is not a dict")
+        return None
+    choices = choices_container.get("text") or choices_container.get("label") or []
+    if not choices:
+        log.debug("choices_dict: empty choices text array")
+        return None
+    answer_key = doc.get("answerKey") or doc.get("Answer") or doc.get("answer")
+    if not question or answer_key is None:
+        log.debug("choices_dict: missing question or answerKey")
+        return None
+    answer_letter = str(answer_key).strip().upper()
+    if answer_letter in ("A", "B", "C", "D", "E"):
+        answer_idx = ord(answer_letter) - ord("A")
+    else:
+        try:
+            answer_idx = int(answer_key)
+        except (TypeError, ValueError):
+            log.debug("choices_dict: cannot parse answerKey", extra={"key": answer_key})
+            return None
+    if not (0 <= answer_idx < len(choices)):
+        log.debug("choices_dict: answer_idx out of range", extra={"idx": answer_idx})
+        return None
     correct = str(choices[answer_idx]).strip()
     incorrect = str(choices[(answer_idx + 1) % len(choices)]).strip()
     return _make_pair(f"Question: {question}\nAnswer:", correct, incorrect)

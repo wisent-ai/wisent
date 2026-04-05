@@ -40,7 +40,7 @@ class AiderPolyglotExtractor(HuggingFaceBenchmarkExtractor):
 
     evaluator_name = "aider_polyglot"
 
-    def __init__(self, http_timeout: int, language: Optional[str] = None):
+    def __init__(self, http_timeout: int = 30, language: Optional[str] = None):
         """
         Initialize Aider Polyglot extractor.
 

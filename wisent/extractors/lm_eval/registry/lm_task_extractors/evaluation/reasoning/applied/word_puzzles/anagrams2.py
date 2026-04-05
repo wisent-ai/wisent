@@ -1,64 +1,70 @@
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+import gzip
+import io
+import json
+from typing import Any
+
+import requests
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
-from wisent.extractors.lm_eval.atoms import LMEvalBenchmarkExtractor
-from wisent.core.utils.cli.cli_logger import setup_logger, bind
-
-if TYPE_CHECKING:
-    from lm_eval.api.task import ConfigurableTask
-
+from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.utils.cli.cli_logger import setup_logger
 
 __all__ = ["Anagrams2Extractor"]
 _LOG = setup_logger(__name__)
 
+# Raw GitHub URL for the mid_word_2_anagrams dataset (GPT-3 data release)
+_ANAGRAMS2_URL = (
+    "https://raw.githubusercontent.com/openai/gpt-3/master/data/mid_word_2_anagrams.jsonl.gz"
+)
+
 task_names = ("anagrams2",)
 
-class Anagrams2Extractor(LMEvalBenchmarkExtractor):
-    """Extractor for Anagrams2 benchmark - anagram solving task."""
 
+class Anagrams2Extractor(HuggingFaceBenchmarkExtractor):
+    """Extractor for Anagrams2 benchmark.
+
+    Downloads mid_word_2_anagrams data directly from the GPT-3 GitHub
+    repository to avoid the lm_eval trust_remote_code issue with
+    EleutherAI/unscramble on newer datasets library versions.
+    """
 
     evaluator_name = "exact_match"
+
     def extract_contrastive_pairs(
         self,
-        lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
-        preferred_doc: str | None = None,
-        *,
-        train_ratio: float,
     ) -> list[ContrastivePair]:
-        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
+        """Load anagrams2 docs from GitHub and build contrastive pairs."""
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc, train_ratio=train_ratio)
-        pairs: list[ContrastivePair] = []
-        log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
+        docs = self._load_docs_from_github()
 
-        # For anagrams, we need to use other docs' completions as incorrect answers
-        # First, extract all valid completions
-        valid_docs = []
-        for doc in docs:
+        if not docs:
+            _LOG.warning("No docs loaded for anagrams2")
+            return []
+
+        if len(docs) < 2:
+            _LOG.warning("Not enough docs to create pairs", extra={"doc_count": len(docs)})
+            return []
+
+        pairs: list[ContrastivePair] = []
+        for i, doc in enumerate(docs):
             context = doc.get("context", "").strip()
             completion = doc.get("completion", "").strip()
-            if context and completion:
-                valid_docs.append((context, completion))
+            if not context or not completion:
+                continue
 
-        if len(valid_docs) < 2:
-            log.warning("Not enough valid docs to create pairs", extra={"valid_count": len(valid_docs)})
-            return pairs
+            incorrect_completion = docs[(i + 1) % len(docs)].get("completion", "").strip()
+            if not incorrect_completion or incorrect_completion == completion:
+                continue
 
-        # Create pairs using next doc's completion as incorrect answer
-        for i, (context, correct_completion) in enumerate(valid_docs):
-            # Use the next doc's completion as incorrect answer
-            incorrect_completion = valid_docs[(i + 1) % len(valid_docs)][1]
-
-            metadata = {"label": "anagrams2"}
-            pair = self._build_pair(
-                question=context,
-                correct=correct_completion,
-                incorrect=incorrect_completion,
-                metadata=metadata,
+            pair = ContrastivePair(
+                prompt=context,
+                positive_response=PositiveResponse(model_response=completion),
+                negative_response=NegativeResponse(model_response=incorrect_completion),
+                label="anagrams2",
             )
             pairs.append(pair)
 
@@ -66,18 +72,19 @@ class Anagrams2Extractor(LMEvalBenchmarkExtractor):
                 break
 
         if not pairs:
-            task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid pairs extracted", extra={"task": task_name})
-
+            _LOG.warning("No valid anagrams2 pairs extracted")
         return pairs
 
-    @staticmethod
-    def _build_pair(
-        question: str,
-        correct: str,
-        incorrect: str,
-        metadata: dict[str, Any] | None = None,
-    ) -> ContrastivePair:
-        positive_response = PositiveResponse(model_response=correct)
-        negative_response = NegativeResponse(model_response=incorrect)
-        return ContrastivePair(prompt=question, positive_response=positive_response, negative_response=negative_response, label=metadata.get("label"))
+    def _load_docs_from_github(self) -> list[dict[str, Any]]:
+        """Download and parse the mid_word_2_anagrams JSONL file from GitHub."""
+        try:
+            resp = requests.get(_ANAGRAMS2_URL, timeout=30)
+            resp.raise_for_status()
+            with gzip.open(io.BytesIO(resp.content)) as f:
+                lines = f.read().decode("utf-8").splitlines()
+            docs = [json.loads(line) for line in lines if line.strip()]
+            _LOG.info(f"Loaded {len(docs)} anagrams2 docs from GitHub")
+            return docs
+        except Exception as exc:
+            _LOG.error(f"Failed to load anagrams2 data from GitHub: {exc}")
+            return []

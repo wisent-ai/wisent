@@ -89,7 +89,7 @@ LM_EXTRACTORS_P_TO_Z: dict[str, str] = {
     "xquad": f"{base_import}xquad:XquadExtractor",
     "zhoblimp": f"{base_import}zhoblimp:ZhoblimpExtractor",
     # NEW: Auto-generated extractors for missing task families
-    "arabic": f"{base_import}arabic:ArabicExtractor",
+    "arabic": f"{base_import}arabic_exams:ArabicExamsExtractor",
     "afrixnli": f"{base_import}afrixnli:AfrixnliExtractor",
     "afrixnli_en_direct_amh": f"{base_import}afrixnli:AfrixnliExtractor",
     "afrixnli_en_direct_eng": f"{base_import}afrixnli:AfrixnliExtractor",

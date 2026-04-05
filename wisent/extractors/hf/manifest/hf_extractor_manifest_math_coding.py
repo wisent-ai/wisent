@@ -154,6 +154,13 @@ EXTRACTORS_MATH_CODING: dict[str, str] = {
     "codexglue": f"{base_import}codexglue:CodexglueExtractor",
     "livecodebench": f"{base_import}livecodebench:LivecodebenchExtractor",
 
+    # ACP Bench (planning/agent benchmarks) — group task HF extractors
+    # Individual _gen subtasks are handled by per-task entries in the HF manifest.
+    # These group extractors aggregate all gen subtasks for the group task names.
+    "acp_bench_hard": f"{base_import}acp_bench_hard_hf:AcpBenchHardGroupHFExtractor",
+    "acp_bench_hard_with_pddl": f"{base_import}acp_bench_hard_hf:AcpBenchHardWithPddlGroupHFExtractor",
+    "acpbench": f"{base_import}acp_bench_hard_hf:AcpBenchGroupHFExtractor",
+
     # Reasoning benchmarks
     "super_gpqa": f"{base_import}super_gpqa:SuperGpqaExtractor",
     "supergpqa": f"{base_import}super_gpqa:SuperGpqaExtractor",
@@ -194,6 +201,8 @@ EXTRACTORS_MATH_CODING: dict[str, str] = {
     "ds1000": f"{base_import}ds1000:Ds1000Extractor",
     "evalita_mp": f"{base_import}evalita_mp:EvalitaMpExtractor",
     "flores": f"{base_import}flores:FloresExtractor",
+    "african_flores": f"{base_import}flores:FloresExtractor",
+    "african_flores_tasks": f"{base_import}flores:FloresExtractor",
     "humanevalpack": f"{base_import}humanevalpack:HumanevalpackExtractor",
     "iwslt2017_ar_en": f"{base_import}iwslt2017_ar_en:Iwslt2017ArEnExtractor",
     "iwslt2017_en_ar": f"{base_import}iwslt2017_en_ar:Iwslt2017EnArExtractor",

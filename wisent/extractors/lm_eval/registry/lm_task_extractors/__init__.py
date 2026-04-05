@@ -15,6 +15,8 @@ import types as _types
 _model_written_evals_mod = _types.ModuleType("model_written_evals")
 _model_written_evals_mod.ModelWrittenEvalsExtractor = ModelWrittenEvalsExtractor
 _sys.modules["wisent.extractors.lm_eval.lm_task_extractors.model_written_evals"] = _model_written_evals_mod
+# Also register under the registry path (used by LM_EVAL_EXTRACTOR_BASE_IMPORT)
+_sys.modules["wisent.extractors.lm_eval.registry.lm_task_extractors.model_written_evals"] = _model_written_evals_mod
 
 from wisent.extractors.lm_eval.lm_task_extractors.specialized.safety.ai_risk.advanced import AdvancedExtractor
 
@@ -22,6 +24,9 @@ from wisent.extractors.lm_eval.lm_task_extractors.specialized.safety.ai_risk.adv
 _advanced_mod = _types.ModuleType("advanced")
 _advanced_mod.AdvancedExtractor = AdvancedExtractor
 _sys.modules["wisent.extractors.lm_eval.lm_task_extractors.advanced"] = _advanced_mod
+# Also register under the registry path (used by LM_EVAL_EXTRACTOR_BASE_IMPORT)
+# This prevents the applied/math/advanced package from shadowing the ai_risk AdvancedExtractor
+_sys.modules["wisent.extractors.lm_eval.registry.lm_task_extractors.advanced"] = _advanced_mod
 
 from wisent.extractors.lm_eval.lm_task_extractors.specialized.language.asian_african.african.afrimgsm import AfrimgsmExtractor
 
@@ -29,14 +34,19 @@ from wisent.extractors.lm_eval.lm_task_extractors.specialized.language.asian_afr
 _afrimgsm_mod = _types.ModuleType("afrimgsm")
 _afrimgsm_mod.AfrimgsmExtractor = AfrimgsmExtractor
 _sys.modules["wisent.extractors.lm_eval.lm_task_extractors.afrimgsm"] = _afrimgsm_mod
+# Also register under the registry path
+_sys.modules["wisent.extractors.lm_eval.registry.lm_task_extractors.afrimgsm"] = _afrimgsm_mod
 
-from wisent.extractors.lm_eval.lm_task_extractors.evaluation.reasoning.applied.multi_step.agieval import AgievalExtractor, AgievalLogiQAExtractor
+from wisent.extractors.lm_eval.lm_task_extractors.evaluation.reasoning.applied.multi_step.agieval import AgievalExtractor, AgievalMathExtractor, AgievalLogiQAExtractor
 
 # Create module alias for agieval extractor
 _agieval_mod = _types.ModuleType("agieval")
 _agieval_mod.AgievalExtractor = AgievalExtractor
+_agieval_mod.AgievalMathExtractor = AgievalMathExtractor
 _agieval_mod.AgievalLogiQAExtractor = AgievalLogiQAExtractor
 _sys.modules["wisent.extractors.lm_eval.lm_task_extractors.agieval"] = _agieval_mod
+# Also register under the registry path
+_sys.modules["wisent.extractors.lm_eval.registry.lm_task_extractors.agieval"] = _agieval_mod
 
 from wisent.extractors.lm_eval.lm_task_extractors.evaluation.knowledge.analysis.text_classification.twenty_newsgroups import TwentyNewsgroupsExtractor
 
@@ -44,6 +54,8 @@ from wisent.extractors.lm_eval.lm_task_extractors.evaluation.knowledge.analysis.
 _twenty_newsgroups_mod = _types.ModuleType("twenty_newsgroups")
 _twenty_newsgroups_mod.TwentyNewsgroupsExtractor = TwentyNewsgroupsExtractor
 _sys.modules["wisent.extractors.lm_eval.lm_task_extractors.twenty_newsgroups"] = _twenty_newsgroups_mod
+# Also register under the registry path
+_sys.modules["wisent.extractors.lm_eval.registry.lm_task_extractors.twenty_newsgroups"] = _twenty_newsgroups_mod
 
 from wisent.extractors.lm_eval.lm_task_extractors.specialized.language.text_and_translation.translation_regional.regional_misc.gaokao import GaokaoExtractor
 
@@ -51,6 +63,8 @@ from wisent.extractors.lm_eval.lm_task_extractors.specialized.language.text_and_
 _gaokao_mod = _types.ModuleType("gaokao")
 _gaokao_mod.GaokaoExtractor = GaokaoExtractor
 _sys.modules["wisent.extractors.lm_eval.lm_task_extractors.gaokao"] = _gaokao_mod
+# Also register under the registry path
+_sys.modules["wisent.extractors.lm_eval.registry.lm_task_extractors.gaokao"] = _gaokao_mod
 
 from wisent.extractors.lm_eval.lm_task_extractors.ai2_arc import AI2ARCExtractor
 from wisent.extractors.lm_eval.lm_task_extractors.anli import ANLIExtractor
@@ -115,6 +129,7 @@ from wisent.extractors.lm_eval.lm_task_extractors.xwinograd import XWinogradExtr
 __all__ = [
     "AfrimgsmExtractor",
     "AgievalExtractor",
+    "AgievalMathExtractor",
     "AgievalLogiQAExtractor",
     "ModelWrittenEvalsExtractor",
     "AI2ARCExtractor",
