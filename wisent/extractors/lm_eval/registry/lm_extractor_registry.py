@@ -100,23 +100,16 @@ def get_extractor(task_name: str) -> LMEvalBenchmarkExtractor:
     if ref:
         return _instantiate(ref)
 
-    # Try prefix matching for hierarchical task names
-    # This handles cases like AraDiCE_ArabicMMLU_high_humanities_history_lev -> aradice
-    # Sort prefixes by length descending to match longest prefix first
-    PREFIX_FALLBACKS = {
-        "aradice_": "aradice",
-        "aexams_": "aexams",
-        "afrimgsm_": "afrimgsm",
-        "afrimmlu_": "afrimmlu",
-        "afrobench_": "afrobench",
-        "afridiacritics_": "afridiacritics",
-        "mmlu_": "mmlu",
-        "bigbench_": "bigbench",
-    }
-    for prefix, fallback_key in PREFIX_FALLBACKS.items():
-        if key.startswith(prefix) and fallback_key in _REGISTRY:
-            LOG.info(f"Using prefix fallback: '{task_name}' -> '{fallback_key}'")
-            return _instantiate(_REGISTRY[fallback_key])
+    # Try longest-prefix matching for hierarchical task names.
+    # This handles cases like "belebele_afr_latn" -> "belebele",
+    # "bbh_fewshot_boolean_expressions" -> "bbh", etc.
+    parts = key.split("_")
+    for i in range(len(parts) - 1, 0, -1):
+        prefix = "_".join(parts[:i])
+        ref = _REGISTRY.get(prefix)
+        if ref:
+            LOG.info(f"Using prefix match: '{task_name}' -> '{prefix}'")
+            return _instantiate(ref)
 
     raise UnsupportedLMEvalBenchmarkError(
         f"No extractor registered for task '{task_name}'. "

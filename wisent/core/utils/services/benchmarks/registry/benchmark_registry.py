@@ -182,7 +182,9 @@ def validate_benchmark(task_name: str, allow_subtasks: bool = False) -> None:
     """Validate that a benchmark exists in the extractor registry.
 
     Checks against the extractor registry (_REGISTRY) which is the source of
-    truth for which benchmarks we can handle (4697 tasks).
+    truth for which benchmarks we can handle. Supports both exact match and
+    longest-prefix match so subtask names (e.g. "belebele_afr_latn") resolve
+    to their parent extractor (e.g. "belebele").
 
     Args:
         task_name: Benchmark or subtask name.
@@ -207,6 +209,15 @@ def validate_benchmark(task_name: str, allow_subtasks: bool = False) -> None:
     normalized = task_name.lower().replace("-", "_")
     if normalized in _REGISTRY:
         return
+
+    # Prefix match: check if any registered key is a prefix of the task name.
+    # This allows subtask names like "belebele_afr_latn" to match "belebele".
+    # Use longest prefix first to avoid short false matches.
+    parts = normalized.split("_")
+    for i in range(len(parts) - 1, 0, -1):
+        prefix = "_".join(parts[:i])
+        if prefix in _REGISTRY:
+            return
 
     raise UnsupportedBenchmarkError(
         f"Unknown benchmark '{task_name}'. "

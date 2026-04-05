@@ -141,6 +141,22 @@ class LMEvalDataLoader(BaseDataLoader):
         if lm_eval_task_name != task_name:
             log.info(f"Mapping task '{task_name}' to lm-eval task '{lm_eval_task_name}'")
 
+        # Restore ISO 15924 script codes that may have been lowercased during normalization.
+        # lm-eval expects title-case: Latn, Cyrl, Arab, Ethi, etc.
+        import re
+        _ISO_SCRIPTS = {
+            "latn": "Latn", "cyrl": "Cyrl", "arab": "Arab", "ethi": "Ethi",
+            "deva": "Deva", "hebr": "Hebr", "nkoo": "Nkoo", "beng": "Beng",
+            "guru": "Guru", "mlym": "Mlym", "taml": "Taml", "orya": "Orya",
+            "sinh": "Sinh", "mymr": "Mymr", "khmr": "Khmr", "hang": "Hang",
+            "laoo": "Laoo",
+        }
+        def _restore_script_case(name: str) -> str:
+            for lower, title in _ISO_SCRIPTS.items():
+                name = re.sub(rf'(?<=[_\-]){lower}(?=[_\-]|$)', title, name)
+            return name
+        lm_eval_task_name = _restore_script_case(lm_eval_task_name)
+
         # Check for case-sensitive prefixes (including ACVA tasks with camelCase components)
         # Also preserve case for afrobench leaf tasks that include ISO script codes
         # (e.g. flores_afr_Latn-eng_Latn_prompt_1, ntrex_afr_Latn-eng_Latn_prompt_1).
