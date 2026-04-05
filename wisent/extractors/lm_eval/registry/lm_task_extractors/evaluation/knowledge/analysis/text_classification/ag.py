@@ -53,51 +53,108 @@ class AgExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            source = doc.get("source", "").strip()
-            target = doc.get("target", "").strip()
+            # Format 1: Unitxt format with source/target/task_data
+            if "source" in doc and "target" in doc:
+                return self._extract_from_unitxt_format(doc, log)
 
-            if not source or not target:
-                log.debug("Skipping doc due to missing source or target", extra={"doc": doc})
-                return None
+            # Format 2: Standard HuggingFace format with text/label
+            if "text" in doc and "label" in doc:
+                return self._extract_from_hf_format(doc, log)
 
-            # Try to extract classes from task_data (Unitxt format)
-            classes = self._extract_classes_from_task_data(doc)
-
-            # If no classes found, try to extract from source text
-            if not classes:
-                classes = self._extract_categories_from_source(source)
-
-            if not classes:
-                log.debug("Could not extract classes from task_data or source", extra={"source": source})
-                return None
-
-            # Verify target is in classes (case-insensitive, since Unitxt postprocessors
-            # may lowercase the target while classes retain their original casing)
-            target_lower = target.lower()
-            matched_target = next((cls for cls in classes if cls.lower() == target_lower), None)
-            if matched_target is None:
-                log.debug("Target not found in classes", extra={"target": target, "classes": classes})
-                return None
-            target = matched_target
-
-            # Select incorrect answer (any class that's not the target)
-            incorrect = next((cls for cls in classes if cls != target), None)
-            if not incorrect:
-                log.debug("Could not find incorrect class", extra={"target": target, "classes": classes})
-                return None
-
-            metadata = {"label": "ag_news"}
-
-            return self._build_pair(
-                question=source,
-                correct=target,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
+            log.debug("Skipping doc - no supported format found", extra={"doc_keys": list(doc.keys())})
+            return None
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
             return None
+
+    def _extract_from_unitxt_format(self, doc: dict[str, Any], log: Any) -> ContrastivePair | None:
+        """Extract pair from Unitxt format (source/target/task_data)."""
+        source = doc.get("source", "").strip()
+        target = doc.get("target", "").strip()
+
+        if not source or not target:
+            log.debug("Skipping doc - missing source or target in Unitxt format", extra={"doc": doc})
+            return None
+
+        # Try to extract classes from task_data (Unitxt format)
+        classes = self._extract_classes_from_task_data(doc)
+
+        # If no classes found, try to extract from source text
+        if not classes:
+            classes = self._extract_categories_from_source(source)
+
+        if not classes:
+            log.debug("Could not extract classes from task_data or source", extra={"source": source})
+            return None
+
+        # Verify target is in classes (case-insensitive)
+        target_lower = target.lower()
+        matched_target = next((cls for cls in classes if cls.lower() == target_lower), None)
+        if matched_target is None:
+            log.debug("Target not found in classes", extra={"target": target, "classes": classes})
+            return None
+        target = matched_target
+
+        # Select incorrect answer (any class that's not the target)
+        incorrect = next((cls for cls in classes if cls != target), None)
+        if not incorrect:
+            log.debug("Could not find incorrect class", extra={"target": target, "classes": classes})
+            return None
+
+        metadata = {"label": "ag_news"}
+
+        return self._build_pair(
+            question=source,
+            correct=target,
+            incorrect=incorrect,
+            metadata=metadata,
+        )
+
+    def _extract_from_hf_format(self, doc: dict[str, Any], log: Any) -> ContrastivePair | None:
+        """Extract pair from standard HuggingFace format (text/label)."""
+        text = doc.get("text", "").strip()
+        label = doc.get("label")
+
+        if not text or label is None:
+            log.debug("Skipping doc - missing text or label in HF format", extra={"doc": doc})
+            return None
+
+        # AG News has 4 categories
+        # label: 0=World, 1=Sports, 2=Business, 3=Sci/Tech
+        ag_news_categories = ["World", "Sports", "Business", "Sci/Tech"]
+
+        # Convert numeric label to category name
+        if isinstance(label, int):
+            if 0 <= label < len(ag_news_categories):
+                correct = ag_news_categories[label]
+            else:
+                log.debug("Invalid label value", extra={"label": label})
+                return None
+        elif isinstance(label, str):
+            # If label is already a string, use it directly
+            correct = label.strip()
+            if correct not in ag_news_categories:
+                log.debug("Label not in expected categories", extra={"label": correct, "categories": ag_news_categories})
+                return None
+        else:
+            log.debug("Invalid label type", extra={"label_type": type(label).__name__})
+            return None
+
+        # Select an incorrect answer (any category that's not the correct one)
+        incorrect = next((cat for cat in ag_news_categories if cat != correct), None)
+        if not incorrect:
+            log.debug("Could not find incorrect category")
+            return None
+
+        metadata = {"label": "ag_news"}
+
+        return self._build_pair(
+            question=text,
+            correct=correct,
+            incorrect=incorrect,
+            metadata=metadata,
+        )
 
     @staticmethod
     def _extract_classes_from_task_data(doc: dict[str, Any]) -> list[str]:

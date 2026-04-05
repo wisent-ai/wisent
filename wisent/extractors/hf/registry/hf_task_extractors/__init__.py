@@ -7,29 +7,29 @@ for _root, _dirs, _files in _os.walk(_base):
     if _root != _base:
         __path__.append(_root)
 
-from wisent.extractors.hf.hf_task_extractors.aime import AIMEExtractor
-from wisent.extractors.hf.hf_task_extractors.apps import AppsExtractor
-from wisent.extractors.hf.hf_task_extractors.codexglue import CodexglueExtractor
-from wisent.extractors.hf.hf_task_extractors.conala import ConalaExtractor
-from wisent.extractors.hf.hf_task_extractors.concode import ConcodeExtractor
-from wisent.extractors.hf.hf_task_extractors.ds_1000 import Ds1000Extractor
-from wisent.extractors.hf.hf_task_extractors.hle import HleExtractor
-from wisent.extractors.hf.hf_task_extractors.hmmt import HMMTExtractor
-from wisent.extractors.hf.hf_task_extractors.humaneval import (
+from wisent.extractors.hf.registry.hf_task_extractors.applied.math.competition.aime import AIMEExtractor
+from wisent.extractors.hf.registry.hf_task_extractors.applied.coding.code_tasks.code_generation.apps import AppsExtractor
+from wisent.extractors.hf.registry.hf_task_extractors.applied.coding.code_tasks.code_analysis.codexglue import CodexglueExtractor
+from wisent.extractors.hf.registry.hf_task_extractors.applied.coding.code_tasks.code_generation.conala import ConalaExtractor
+from wisent.extractors.hf.registry.hf_task_extractors.applied.coding.code_tasks.code_generation.concode import ConcodeExtractor
+from wisent.extractors.hf.registry.hf_task_extractors.applied.coding.code_tasks.code_analysis.ds_1000 import Ds1000Extractor
+from wisent.extractors.hf.registry.hf_task_extractors.evaluation.knowledge.truthfulqa.hle import HleExtractor
+from wisent.extractors.hf.registry.hf_task_extractors.applied.math.competition.hmmt import HMMTExtractor
+from wisent.extractors.hf.registry.hf_task_extractors.applied.coding.code_tasks.code_generation.humaneval import (
     HumanEvalExtractor,
     HumanEval64Extractor,
     HumanEvalPlusExtractor,
     HumanEvalInstructExtractor,
     HumanEval64InstructExtractor,
 )
-from wisent.extractors.hf.hf_task_extractors.livecodebench import LivecodebenchExtractor
-from wisent.extractors.hf.hf_task_extractors.livemathbench import LiveMathBenchExtractor
-from wisent.extractors.hf.hf_task_extractors.math500 import MATH500Extractor
-from wisent.extractors.hf.hf_task_extractors.mercury import MercuryExtractor
-from wisent.extractors.hf.hf_task_extractors.multipl_e import MultiplEExtractor
-from wisent.extractors.hf.hf_task_extractors.polymath import PolyMathExtractor
-from wisent.extractors.hf.hf_task_extractors.recode import RecodeExtractor
-from wisent.extractors.hf.hf_task_extractors.super_gpqa import SuperGpqaExtractor
+from wisent.extractors.hf.registry.hf_task_extractors.applied.coding.multilang_benchmarks.livecodebench.livecodebench import LivecodebenchExtractor
+from wisent.extractors.hf.registry.hf_task_extractors.applied.math.benchmarks.livemathbench import LiveMathBenchExtractor
+from wisent.extractors.hf.registry.hf_task_extractors.applied.math.benchmarks.math500 import MATH500Extractor
+from wisent.extractors.hf.registry.hf_task_extractors.applied.coding.code_tasks.competitive.mercury import MercuryExtractor
+from wisent.extractors.hf.registry.hf_task_extractors.applied.coding.multilang_benchmarks.multilang.multipl_e import MultiplEExtractor
+from wisent.extractors.hf.registry.hf_task_extractors.applied.math.polymath.polymath import PolyMathExtractor
+from wisent.extractors.hf.registry.hf_task_extractors.applied.coding.code_tasks.code_analysis.recode import RecodeExtractor
+from wisent.extractors.hf.registry.hf_task_extractors.evaluation.knowledge.mmlu.super_gpqa import SuperGpqaExtractor
 
 __all__ = [
     "AIMEExtractor",

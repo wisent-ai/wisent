@@ -16,6 +16,13 @@ _model_written_evals_mod = _types.ModuleType("model_written_evals")
 _model_written_evals_mod.ModelWrittenEvalsExtractor = ModelWrittenEvalsExtractor
 _sys.modules["wisent.extractors.lm_eval.lm_task_extractors.model_written_evals"] = _model_written_evals_mod
 
+from wisent.extractors.lm_eval.lm_task_extractors.specialized.safety.ai_risk.advanced import AdvancedExtractor
+
+# Create module alias for advanced extractor
+_advanced_mod = _types.ModuleType("advanced")
+_advanced_mod.AdvancedExtractor = AdvancedExtractor
+_sys.modules["wisent.extractors.lm_eval.lm_task_extractors.advanced"] = _advanced_mod
+
 from wisent.extractors.lm_eval.lm_task_extractors.specialized.language.asian_african.african.afrimgsm import AfrimgsmExtractor
 
 # Create module alias for afrimgsm extractor
@@ -23,11 +30,12 @@ _afrimgsm_mod = _types.ModuleType("afrimgsm")
 _afrimgsm_mod.AfrimgsmExtractor = AfrimgsmExtractor
 _sys.modules["wisent.extractors.lm_eval.lm_task_extractors.afrimgsm"] = _afrimgsm_mod
 
-from wisent.extractors.lm_eval.lm_task_extractors.evaluation.reasoning.applied.multi_step.agieval import AgievalExtractor
+from wisent.extractors.lm_eval.lm_task_extractors.evaluation.reasoning.applied.multi_step.agieval import AgievalExtractor, AgievalLogiQAExtractor
 
 # Create module alias for agieval extractor
 _agieval_mod = _types.ModuleType("agieval")
 _agieval_mod.AgievalExtractor = AgievalExtractor
+_agieval_mod.AgievalLogiQAExtractor = AgievalLogiQAExtractor
 _sys.modules["wisent.extractors.lm_eval.lm_task_extractors.agieval"] = _agieval_mod
 
 from wisent.extractors.lm_eval.lm_task_extractors.evaluation.knowledge.analysis.text_classification.twenty_newsgroups import TwentyNewsgroupsExtractor
@@ -36,6 +44,13 @@ from wisent.extractors.lm_eval.lm_task_extractors.evaluation.knowledge.analysis.
 _twenty_newsgroups_mod = _types.ModuleType("twenty_newsgroups")
 _twenty_newsgroups_mod.TwentyNewsgroupsExtractor = TwentyNewsgroupsExtractor
 _sys.modules["wisent.extractors.lm_eval.lm_task_extractors.twenty_newsgroups"] = _twenty_newsgroups_mod
+
+from wisent.extractors.lm_eval.lm_task_extractors.specialized.language.text_and_translation.translation_regional.regional_misc.gaokao import GaokaoExtractor
+
+# Create module alias for gaokao extractor
+_gaokao_mod = _types.ModuleType("gaokao")
+_gaokao_mod.GaokaoExtractor = GaokaoExtractor
+_sys.modules["wisent.extractors.lm_eval.lm_task_extractors.gaokao"] = _gaokao_mod
 
 from wisent.extractors.lm_eval.lm_task_extractors.ai2_arc import AI2ARCExtractor
 from wisent.extractors.lm_eval.lm_task_extractors.anli import ANLIExtractor
@@ -100,6 +115,7 @@ from wisent.extractors.lm_eval.lm_task_extractors.xwinograd import XWinogradExtr
 __all__ = [
     "AfrimgsmExtractor",
     "AgievalExtractor",
+    "AgievalLogiQAExtractor",
     "ModelWrittenEvalsExtractor",
     "AI2ARCExtractor",
     "ANLIExtractor",
@@ -113,6 +129,7 @@ __all__ = [
     "COPAExtractor",
     "CoQAExtractor",
     "DropExtractor",
+    "GaokaoExtractor",
     "GLUEExtractor",
     "GPQAExtractor",
     "GSM8KExtractor",

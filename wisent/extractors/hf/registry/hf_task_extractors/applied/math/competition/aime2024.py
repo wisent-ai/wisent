@@ -26,7 +26,7 @@ class AIME2024Extractor(HuggingFaceBenchmarkExtractor):
 
         # Load AIME 2024 dataset
         docs = self.load_dataset(
-            dataset_name="Maxwell-Jia/AIME_2024",
+            dataset_name="MathArena/aime_2024",
             split="train",
             limit=max_items,
         )
@@ -48,11 +48,11 @@ class AIME2024Extractor(HuggingFaceBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         try:
-            # Fields are capitalized in Maxwell-Jia/AIME_2024: Problem, Answer, Solution
-            problem = str(doc.get("Problem", doc.get("problem", ""))).strip()
-            correct = str(doc.get("Answer", doc.get("answer", ""))).strip()
+            # Fields are lowercase in MathArena/aime_2024: problem, answer
+            question = str(doc.get("problem", doc.get("question", ""))).strip()
+            correct = str(doc.get("answer", doc.get("Answer", ""))).strip()
 
-            if not problem or not correct:
+            if not question or not correct:
                 log.debug("Skipping: missing problem or answer")
                 return None
 
@@ -60,7 +60,7 @@ class AIME2024Extractor(HuggingFaceBenchmarkExtractor):
             correct = str(correct_int)
             incorrect = str(correct_int + SENSOR_LAST_OFFSET)
 
-            prompt = f"Question: {problem}\n\nWhat is the answer?"
+            prompt = f"Question: {question}\n\nWhat is the answer?"
 
             metadata = {"label": "aime2024"}
 

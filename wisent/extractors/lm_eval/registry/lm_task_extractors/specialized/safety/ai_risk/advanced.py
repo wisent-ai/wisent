@@ -53,7 +53,7 @@ class AdvancedExtractor(LMEvalBenchmarkExtractor):
 
         try:
             # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
+            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", doc.get("text", "")))))).strip()
 
             # Format 1: answer_matching_behavior / answer_not_matching_behavior (advanced_ai_risk)
             if "answer_matching_behavior" in doc and "answer_not_matching_behavior" in doc:
@@ -70,10 +70,12 @@ class AdvancedExtractor(LMEvalBenchmarkExtractor):
                     if not question:
                         question = f"advanced_ai_risk_question_{id(doc)}"
 
+                # Format prompt as lm-eval does: "Human: {question}\n\nAssistant:"
+                prompt = f"Human: {question}\n\nAssistant:"
                 metadata = {"label": "advanced_ai_risk"}
 
                 return self._build_pair(
-                    question=question,
+                    question=prompt,
                     correct=correct,
                     incorrect=incorrect,
                     metadata=metadata,
@@ -104,9 +106,15 @@ class AdvancedExtractor(LMEvalBenchmarkExtractor):
             else:
                 return None
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
+            if not choices or not (0 <= answer_idx < len(choices)):
                 log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
                 return None
+
+            # If question is empty, use the id or generate a placeholder
+            if not question:
+                question = doc.get("id", "")
+                if not question:
+                    question = f"advanced_ai_risk_question_{id(doc)}"
 
             correct = str(choices[answer_idx]).strip()
             incorrect_idx = (answer_idx + 1) % len(choices)

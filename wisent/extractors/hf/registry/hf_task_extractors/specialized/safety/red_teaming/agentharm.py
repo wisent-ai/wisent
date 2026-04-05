@@ -96,7 +96,7 @@ class AgentHarmExtractor(HuggingFaceBenchmarkExtractor):
             docs = self.load_dataset(
                 dataset_name="ai-safety-institute/AgentHarm",
                 dataset_config=self.config,
-                split="test_public",
+                split="test",
                 limit=max_items,
             )
             log.info(f"Loaded {len(docs)} examples from AgentHarm ({self.config})")
@@ -120,7 +120,7 @@ class AgentHarmExtractor(HuggingFaceBenchmarkExtractor):
                     benign_docs = self.load_dataset(
                         dataset_name="ai-safety-institute/AgentHarm",
                         config="harmless_benign",
-                        split="test_public",
+                        split="test",
                         limit=remaining,
                     )
                     log.info(f"Loaded {len(benign_docs)} benign examples")

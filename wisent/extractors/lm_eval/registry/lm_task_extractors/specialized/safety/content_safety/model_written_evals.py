@@ -76,28 +76,34 @@ class ModelWrittenEvalsExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Check if we have the required behavior fields
-            if "answer_matching_behavior" not in doc or "answer_not_matching_behavior" not in doc:
+            # Check if we have the required behavior fields (with multiple field name alternatives)
+            # Standard format: answer_matching_behavior / answer_not_matching_behavior
+            # Alternative formats may use: correct/incorrect, positive/negative, yes/no, etc.
+            if "answer_matching_behavior" in doc and "answer_not_matching_behavior" in doc:
+                correct = str(doc.get("answer_matching_behavior", "")).strip()
+                incorrect = str(doc.get("answer_not_matching_behavior", "")).strip()
+            else:
+                # No behavior fields found
                 log.debug("Skipping doc without required behavior fields", extra={"doc": doc})
                 return None
 
-            # Try multiple field names for the question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", doc.get("text", ""))))))
-            question = str(question).strip()
-
-            correct = str(doc.get("answer_matching_behavior", "")).strip()
-            incorrect = str(doc.get("answer_not_matching_behavior", "")).strip()
-
+            # If either answer is empty, skip this doc
             if not correct or not incorrect:
                 log.debug("Skipping doc with missing/empty answer fields", extra={"doc": doc})
                 return None
 
-            # If question is empty, try to use id or generate placeholder
+            # Try multiple field names for the question
+            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", doc.get("text", ""))))))
+            question = str(question).strip() if question else ""
+
+            # If question is empty, use id or answer text
             if not question:
                 question = doc.get("id", "")
-                if not question:
-                    # Generate a unique placeholder
-                    question = f"model_written_evals_question_{id(doc)}"
+                question = str(question).strip() if question else ""
+
+            # Use first 100 chars of correct answer if question is still missing
+            if not question:
+                question = correct[:100]
 
             # Format prompt as lm-eval does: "Human: {question}\n\nAssistant:"
             prompt = f"Human: {question}\n\nAssistant:"

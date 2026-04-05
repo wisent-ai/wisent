@@ -11,41 +11,42 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["GaokaoExtractor"]
+__all__ = ["AgievalLogiQAExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = (
-    "agieval_gaokao_biology",
-    "agieval_gaokao_chemistry",
-    "agieval_gaokao_chinese",
-    "agieval_gaokao_english",
-    "agieval_gaokao_geography",
-    "agieval_gaokao_history",
-    "agieval_gaokao_mathcloze",
-    "agieval_gaokao_mathqa",
-    "agieval_gaokao_physics",
-)
 
-class GaokaoExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for AGIEval Gaokao benchmark - Chinese college entrance exam questions."""
+class AgievalLogiQAExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for AGIEval LogiQA subtasks.
 
+    Covers agieval_logiqa_en and agieval_logiqa_zh which have the LogiQA schema:
+        - context: passage text
+        - question: question text
+        - options: list of answer strings
+        - label: "a", "b", "c", or "d" (index as letter)
+    """
 
     evaluator_name = "log_likelihoods"
+
     def extract_contrastive_pairs(
         self,
-        lm_eval_task_data: ConfigurableTask,
+        lm_eval_task_data: "ConfigurableTask",
         limit: int | None = None,
-        preferred_doc: str | None = None,
         *,
         train_ratio: float,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from Gaokao docs.
+        Build contrastive pairs from AGIEval LogiQA docs.
+
+        AGIEval LogiQA schema:
+            - context: str       — passage text
+            - question: str      — question text
+            - options: list[str] — answer options
+            - label: str         — correct choice as letter ("a", "b", "c", "d")
 
         Args:
-            lm_eval_task_data: lm-eval task instance for Gaokao.
+            lm_eval_task_data: lm-eval task instance for an agieval_logiqa subtask.
             limit: Optional maximum number of pairs to produce.
-            preferred_doc: Optional preferred document source.
+            train_ratio: Fraction of docs used for training split.
 
         Returns:
             A list of ContrastivePair objects.
@@ -53,7 +54,7 @@ class GaokaoExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc, train_ratio=train_ratio)
+        docs = self.load_docs(lm_eval_task_data, max_items, train_ratio=train_ratio)
 
         pairs: list[ContrastivePair] = []
 
@@ -68,56 +69,61 @@ class GaokaoExtractor(LMEvalBenchmarkExtractor):
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid Gaokao pairs extracted", extra={"task": task_name})
+            log.warning("No valid AGIEval LogiQA pairs extracted", extra={"task": task_name})
 
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single Gaokao doc into a ContrastivePair.
-
-        Gaokao format:
-        - query: question text with options
-        - choices: list of choice texts
-        - gold: list containing the index of correct answer (e.g., [2])
+        Convert a single AGIEval LogiQA doc into a ContrastivePair.
 
         Returns None when required fields are missing or malformed.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            query = str(doc.get("query", "")).strip()
-            choices = doc.get("choices", [])
-            gold = doc.get("gold", [])
+            context = str(doc.get("context", "")).strip()
+            question = str(doc.get("question", "")).strip()
+            options = doc.get("options", [])
+            label = str(doc.get("label", "")).strip()
 
-            if not query or not choices or not gold:
-                log.debug("Skipping doc due to missing fields", extra={"doc": doc})
+            if not context or not question or not options or not label:
+                log.debug(
+                    "Skipping doc due to missing/invalid fields",
+                    extra={"doc": doc},
+                )
                 return None
 
-            # Gold is a list containing the index
-            if isinstance(gold, list) and len(gold) > 0:
-                answer_idx = int(gold[0])
-            elif isinstance(gold, int):
-                answer_idx = gold
-            else:
-                log.debug("Skipping doc due to invalid gold format", extra={"doc": doc})
+            # Convert label letter to index
+            try:
+                label_idx = int(ord(label.lower()) - ord('a'))
+            except (ValueError, TypeError):
+                log.debug(
+                    "Skipping doc: invalid label format",
+                    extra={"label": label},
+                )
                 return None
 
-            if not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to invalid answer index", extra={"doc": doc})
+            if not (0 <= label_idx < len(options)):
+                log.debug(
+                    "Skipping doc: label index out of range",
+                    extra={"label_idx": label_idx, "num_options": len(options)},
+                )
                 return None
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+            correct = str(options[label_idx]).strip()
+            incorrect = str(options[(label_idx + 1) % len(options)]).strip()
 
             if not correct or not incorrect:
                 log.debug("Skipping doc: empty correct or incorrect answer")
                 return None
 
-            prompt = f"Question: {query}"
+            # Format the prompt with context and question
+            prompt = f"Passage: {context}\nQuestion: {question}"
 
-            metadata = {"label": "gaokao"}
+            metadata = {
+                "label": "agieval_logiqa",
+            }
 
             return self._build_pair(
                 question=prompt,
@@ -144,4 +150,5 @@ class GaokaoExtractor(LMEvalBenchmarkExtractor):
             positive_response=positive_response,
             negative_response=negative_response,
             label=metadata.get("label") if metadata else None,
+            metadata=metadata,
         )

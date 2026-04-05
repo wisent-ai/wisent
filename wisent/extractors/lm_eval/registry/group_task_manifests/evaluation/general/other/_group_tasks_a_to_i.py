@@ -29,7 +29,7 @@ from .afrobench_salt import AFROBENCH_SALT_TASKS
 from .afrobench_sib import AFROBENCH_SIB_TASKS
 from .afrobench_uhura_arc_easy import AFROBENCH_UHURA_ARC_EASY_TASKS
 from .afrobench_xlsum import AFROBENCH_XLSUM_TASKS
-from .agieval import AGIEVAL_TASKS
+from wisent.extractors.lm_eval.registry.group_task_manifests.evaluation.knowledge.leaderboard_suites.agieval import AGIEVAL_TASKS
 from .anli import ANLI_TASKS
 from .arab_culture import ARAB_CULTURE_TASKS
 from .arabic_leaderboard_acva import ARABIC_LEADERBOARD_ACVA_TASKS

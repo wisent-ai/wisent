@@ -94,7 +94,9 @@ class AfroBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
             # Schema 3: classification — static choices from task YAML + int index in doc
             # (afrisenti, nollysenti, sib, masakhanews, injongointent)
             if task_choices is not None:
-                return _extract_classification(doc, task_choices, log)
+                pair = _extract_classification(doc, task_choices, log)
+                if pair is not None:
+                    return pair
 
             # Schema 4: generic list-of-choices in the doc itself
             if "choices" in doc:

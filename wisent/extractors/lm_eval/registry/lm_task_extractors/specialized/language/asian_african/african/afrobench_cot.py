@@ -28,8 +28,9 @@ class AfroBenchCotExtractor(LMEvalBenchmarkExtractor):
     - masakhaner:             tokens list + ner_tags (NER)
     - masakhapos:             tokens list + pos_tags (POS)
     - translation tasks
-      (ntrex, mafand):        source + target
-      (salt, flores, xlsum):  source_sentence/sentence/article + target/summary/translation
+      (ntrex):                source + target
+      (mafand):               translation dict with language pairs
+      (salt, flores, xlsum):  source_sentence/sentence/article + target/summary/translation (string)
     """
 
     evaluator_name = "generation"
@@ -92,20 +93,28 @@ class AfroBenchCotExtractor(LMEvalBenchmarkExtractor):
             if "text" in doc and "target" in doc and "source" not in doc:
                 return _extract_text_target(doc, "text", "target", log)
 
-            # Schema 2b: translation — source + target (ntrex, mafand, etc.)
+            # Schema 2b: translation — source + target (ntrex, etc.)
             if "source" in doc and "target" in doc:
                 return _extract_text_target(doc, "source", "target", log)
+
+            # Schema 2c: translation with nested dict (mafand)
+            if "translation" in doc and isinstance(doc["translation"], dict):
+                return _extract_translation_dict(doc, log)
 
             # Schema 3: translation — source_sentence + target_sentence
             if "source_sentence" in doc and "target_sentence" in doc:
                 return _extract_text_target(doc, "source_sentence", "target_sentence", log)
 
-            # Schema 4: translation variants — sentence/article + translation/summary
-            if "sentence" in doc and "translation" in doc:
+            # Schema 4: translation variants — sentence/article + translation/summary (string only)
+            if "sentence" in doc and isinstance(doc.get("translation"), str):
                 return _extract_text_target(doc, "sentence", "translation", log)
 
             if "article" in doc and "summary" in doc:
                 return _extract_text_target(doc, "article", "summary", log)
+
+            # Schema 4b: xlsum variant — text + summary
+            if "text" in doc and "summary" in doc and "target" not in doc:
+                return _extract_text_target(doc, "text", "summary", log)
 
             # Schema 5: NER — tokens list + ner_tags
             if "tokens" in doc and "ner_tags" in doc:
@@ -164,6 +173,36 @@ def _extract_afriqa(doc: dict[str, Any], log: Any) -> ContrastivePair | None:
     return ContrastivePair(
         prompt=f"Question: {question}\nAnswer:",
         positive_response=PositiveResponse(model_response=answer),
+        negative_response=NegativeResponse(model_response=incorrect),
+        label="afrobench_cot",
+    )
+
+
+def _extract_translation_dict(doc: dict[str, Any], log: Any) -> ContrastivePair | None:
+    """Translation schema with nested dict (mafand)."""
+    translation = doc.get("translation")
+    if not isinstance(translation, dict):
+        log.debug("translation_dict: translation is not a dict")
+        return None
+
+    lang_keys = list(translation.keys())
+    if len(lang_keys) < 2:
+        log.debug("translation_dict: insufficient language pairs")
+        return None
+
+    # Use first two language pairs
+    source_lang, target_lang = lang_keys[0], lang_keys[1]
+    source = str(translation.get(source_lang, "")).strip()
+    target = str(translation.get(target_lang, "")).strip()
+
+    if not source or not target:
+        log.debug("translation_dict: missing source or target", extra={"src_lang": source_lang, "tgt_lang": target_lang})
+        return None
+
+    incorrect = _make_wrong_answer(target)
+    return ContrastivePair(
+        prompt=f"Input: {source}\nOutput:",
+        positive_response=PositiveResponse(model_response=target),
         negative_response=NegativeResponse(model_response=incorrect),
         label="afrobench_cot",
     )

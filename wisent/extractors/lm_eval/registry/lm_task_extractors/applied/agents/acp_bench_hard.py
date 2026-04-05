@@ -83,14 +83,21 @@ class AcpBenchHardExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
+            # Format 1: question + choices + answer (only if choices is non-empty)
+            # We check if choices would be non-empty before committing to this format
+            choices_data = doc.get("choices", {}) if "choices" in doc else None
+            if choices_data is not None:
                 if isinstance(choices_data, dict):
                     choices = choices_data.get("text", [])
                 elif isinstance(choices_data, list):
                     choices = choices_data
+                else:
+                    choices = []
+            else:
+                choices = None
+
+            if "question" in doc and choices:
+                question = str(doc.get("question", "")).strip()
                 answer = doc.get("answer", doc.get("answerKey", ""))
                 if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
                     answer_idx = ord(answer.upper()) - ord('A')

@@ -17,7 +17,7 @@ _LOG = setup_logger(__name__)
 task_names = ("prompt_robustness_agieval_aqua_rat", "option_order_robustness_agieval_aqua_rat", "non_greedy_robustness_agieval_aqua_rat")
 
 class AgievalAquaRatExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for AGIEval AQUA-RAT robustness benchmarks (prompt, option order, non-greedy)."""
+    """Extractor for AGIEval AQUA-RAT benchmark (including robustness variants)."""
 
 
     evaluator_name = "generation"
@@ -29,15 +29,15 @@ class AgievalAquaRatExtractor(LMEvalBenchmarkExtractor):
         train_ratio: float,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from PIQA docs.
-        
-        PIQA schema:
-            - question: str 
-            - choices: list
-            - gold: list
+        Build contrastive pairs from AGIEval AQUA-RAT docs.
+
+        AQUA-RAT schema:
+            - question: str
+            - choices: list of answer strings
+            - answer: str (letter 'A'-'E' or index)
 
         Args:
-            lm_eval_task_data: lm-eval task instance for prompt_robustness_agieval_aqua_rat.
+            lm_eval_task_data: lm-eval task instance for agieval_aqua_rat or robustness variants.
             limit: Optional maximum number of pairs to produce.
 
         Returns:
@@ -61,13 +61,13 @@ class AgievalAquaRatExtractor(LMEvalBenchmarkExtractor):
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid prompt_robustness_agieval_aqua_rat pairs extracted", extra={"task": task_name})
+            log.warning("No valid AQUA-RAT pairs extracted", extra={"task": task_name})
 
         return pairs
     
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single prompt_robustness_agieval_aqua_rat doc into a ContrastivePair, if possible.
+        Convert a single AQUA-RAT doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
@@ -75,21 +75,37 @@ class AgievalAquaRatExtractor(LMEvalBenchmarkExtractor):
         try:
 
             question = doc.get("question", "").strip()
-            choices = doc.get("choices", [])
-            options = doc.get("options", [])
-            gold = doc.get("gold", [])
+            choices = doc.get("choices") or doc.get("options", [])
+            answer = doc.get("answer")
 
-            if not question or not choices or not options or not gold:
+            if not question or not choices or answer is None:
                 log.debug(
                     "Skipping doc due to missing/invalid fields",
                     extra={"doc": doc},
                 )
                 return None
 
-            # Use letter answers (A, B, C, D, E)
-            incorrect_map = {"A": "B", "B": "C", "C": "D", "D": "E", "E": "A"}
-            correct_letter = doc.get("answer", "")
-            incorrect_letter = incorrect_map.get(correct_letter, "B")
+            # Convert answer to letter (A, B, C, D, E) and find index
+            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
+                correct_letter = answer.upper()
+                answer_idx = ord(correct_letter) - ord('A')
+            elif isinstance(answer, int):
+                answer_idx = answer
+                correct_letter = chr(ord('A') + answer_idx)
+            else:
+                log.debug("Skipping doc: answer is not a letter or integer", extra={"answer": answer})
+                return None
+
+            if not (0 <= answer_idx < len(choices)):
+                log.debug(
+                    "Skipping doc: answer index out of range",
+                    extra={"answer_idx": answer_idx, "num_choices": len(choices)},
+                )
+                return None
+
+            # Get incorrect answer by rotating through options
+            incorrect_idx = (answer_idx + 1) % len(choices)
+            incorrect_letter = chr(ord('A') + incorrect_idx)
 
             correct = f"The best answer is {correct_letter}"
             incorrect = f"The best answer is {incorrect_letter}"

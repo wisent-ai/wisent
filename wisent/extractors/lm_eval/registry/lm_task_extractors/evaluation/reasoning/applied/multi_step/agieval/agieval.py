@@ -21,7 +21,11 @@ class AgievalExtractor(LMEvalBenchmarkExtractor):
     Covers all agieval_* subtasks that share the common aqua-rat schema:
         - query:   the question text
         - choices: list of answer strings
-        - gold:    integer index of the correct answer
+        - gold:    integer index of the correct answer, or list containing the index
+
+    Supports both formats:
+        - gold: int (e.g., 2)
+        - gold: list[int] (e.g., [2] for Gaokao variants)
 
     Examples: agieval_gaokao_biology, agieval_gaokao_chemistry,
               agieval_logiqa_en, agieval_lsat_ar, agieval_sat_en, etc.
@@ -40,9 +44,10 @@ class AgievalExtractor(LMEvalBenchmarkExtractor):
         Build contrastive pairs from AGIEval docs.
 
         AGIEval schema (shared aqua-rat base):
-            - query:   str       — the full question text
-            - choices: list[str] — answer options
-            - gold:    int       — index of the correct choice
+            - query:   str           — the full question text
+            - choices: list[str]     — answer options
+            - gold:    int or list   — index of the correct choice (int for standard agieval,
+                                       list[int] for Gaokao variants)
 
         Args:
             lm_eval_task_data: lm-eval task instance for an agieval subtask.

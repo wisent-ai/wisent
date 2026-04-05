@@ -48,14 +48,24 @@ class AIME2025Extractor(HuggingFaceBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         try:
-            question = str(doc.get("problem", doc.get("question", ""))).strip()
-            correct = str(doc.get("answer", doc.get("Answer", ""))).strip()
+            question = str(doc.get("problem", "")).strip()
 
-            if not question or not correct:
-                log.debug("Skipping: missing problem or answer")
+            if not question:
+                log.debug("Skipping: missing problem")
                 return None
 
-            correct_int = int(float(correct))
+            # MathArena/aime_2025 has 'answer' as int64 field
+            answer_value = doc.get("answer")
+            if answer_value is None:
+                log.debug("Skipping: missing answer")
+                return None
+
+            # Convert answer to int if needed
+            if isinstance(answer_value, str):
+                correct_int = int(float(answer_value))
+            else:
+                correct_int = int(answer_value)
+
             correct = str(correct_int)
             incorrect = str(correct_int + SENSOR_LAST_OFFSET)
 

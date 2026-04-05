@@ -11,41 +11,43 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["GaokaoExtractor"]
+__all__ = ["AgievalGaokaoExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = (
-    "agieval_gaokao_biology",
-    "agieval_gaokao_chemistry",
-    "agieval_gaokao_chinese",
-    "agieval_gaokao_english",
-    "agieval_gaokao_geography",
-    "agieval_gaokao_history",
-    "agieval_gaokao_mathcloze",
-    "agieval_gaokao_mathqa",
-    "agieval_gaokao_physics",
-)
 
-class GaokaoExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for AGIEval Gaokao benchmark - Chinese college entrance exam questions."""
+class AgievalGaokaoExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for AGIEval Gaokao benchmark subtasks.
 
+    Covers agieval_gaokao_* subtasks which have the Gaokao schema:
+        - query:   str          — the question text
+        - choices: list[str]    — answer options
+        - gold:    list[int]    — list containing index of correct answer (e.g., [2])
+
+    Examples: agieval_gaokao_biology, agieval_gaokao_chemistry,
+              agieval_gaokao_chinese, agieval_gaokao_english, etc.
+    """
 
     evaluator_name = "log_likelihoods"
+
     def extract_contrastive_pairs(
         self,
-        lm_eval_task_data: ConfigurableTask,
+        lm_eval_task_data: "ConfigurableTask",
         limit: int | None = None,
-        preferred_doc: str | None = None,
         *,
         train_ratio: float,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from Gaokao docs.
+        Build contrastive pairs from AGIEval Gaokao docs.
+
+        AGIEval Gaokao schema:
+            - query:   str           — the full question text
+            - choices: list[str]     — answer options
+            - gold:    list[int]     — list containing index of correct choice
 
         Args:
-            lm_eval_task_data: lm-eval task instance for Gaokao.
+            lm_eval_task_data: lm-eval task instance for an agieval_gaokao subtask.
             limit: Optional maximum number of pairs to produce.
-            preferred_doc: Optional preferred document source.
+            train_ratio: Fraction of docs used for training split.
 
         Returns:
             A list of ContrastivePair objects.
@@ -53,7 +55,7 @@ class GaokaoExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc, train_ratio=train_ratio)
+        docs = self.load_docs(lm_eval_task_data, max_items, train_ratio=train_ratio)
 
         pairs: list[ContrastivePair] = []
 
@@ -68,18 +70,13 @@ class GaokaoExtractor(LMEvalBenchmarkExtractor):
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid Gaokao pairs extracted", extra={"task": task_name})
+            log.warning("No valid AGIEval Gaokao pairs extracted", extra={"task": task_name})
 
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single Gaokao doc into a ContrastivePair.
-
-        Gaokao format:
-        - query: question text with options
-        - choices: list of choice texts
-        - gold: list containing the index of correct answer (e.g., [2])
+        Convert a single AGIEval Gaokao doc into a ContrastivePair.
 
         Returns None when required fields are missing or malformed.
         """
@@ -88,39 +85,53 @@ class GaokaoExtractor(LMEvalBenchmarkExtractor):
         try:
             query = str(doc.get("query", "")).strip()
             choices = doc.get("choices", [])
-            gold = doc.get("gold", [])
+            gold = doc.get("gold")
 
-            if not query or not choices or not gold:
-                log.debug("Skipping doc due to missing fields", extra={"doc": doc})
+            if not query or not choices or gold is None:
+                log.debug(
+                    "Skipping doc due to missing/invalid fields",
+                    extra={"doc": doc},
+                )
                 return None
 
-            # Gold is a list containing the index
-            if isinstance(gold, list) and len(gold) > 0:
-                answer_idx = int(gold[0])
+            # Handle gold format: list containing index (e.g., [2])
+            if isinstance(gold, list):
+                if len(gold) == 0:
+                    log.debug(
+                        "Skipping doc due to empty gold list",
+                        extra={"doc": doc},
+                    )
+                    return None
+                gold_idx = int(gold[0])
             elif isinstance(gold, int):
-                answer_idx = gold
+                gold_idx = int(gold)
             else:
-                log.debug("Skipping doc due to invalid gold format", extra={"doc": doc})
+                log.debug(
+                    "Skipping doc due to invalid gold format",
+                    extra={"gold": gold},
+                )
                 return None
 
-            if not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to invalid answer index", extra={"doc": doc})
+            if not (0 <= gold_idx < len(choices)):
+                log.debug(
+                    "Skipping doc: gold index out of range",
+                    extra={"gold": gold_idx, "num_choices": len(choices)},
+                )
                 return None
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+            correct = str(choices[gold_idx]).strip()
+            incorrect = str(choices[(gold_idx + 1) % len(choices)]).strip()
 
             if not correct or not incorrect:
                 log.debug("Skipping doc: empty correct or incorrect answer")
                 return None
 
-            prompt = f"Question: {query}"
-
-            metadata = {"label": "gaokao"}
+            metadata = {
+                "label": "agieval_gaokao",
+            }
 
             return self._build_pair(
-                question=prompt,
+                question=query,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,
@@ -144,4 +155,5 @@ class GaokaoExtractor(LMEvalBenchmarkExtractor):
             positive_response=positive_response,
             negative_response=negative_response,
             label=metadata.get("label") if metadata else None,
+            metadata=metadata,
         )
