@@ -66,18 +66,19 @@ def _load_task_docs(task_name: str, train_ratio: float):
         print(f"   ✓ Loaded {len(task_docs)} docs from HuggingFace\n")
         return task_docs
     else:
-        from lm_eval.tasks import TaskManager
+        from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
         from wisent.core.utils import get_all_docs_from_task, create_deterministic_split
+        from wisent.extractors.lm_eval.registry.lm_task_pairs_generation import _flatten_task_dict
+        from lm_eval.api.task import ConfigurableTask
 
-        tm = TaskManager()
-        task_dict = tm.load_task_or_group(task_name)
+        task_obj = LMEvalDataLoader.load_lm_eval_task(task_name)
 
-        if task_name in task_dict:
-            task = task_dict[task_name]
+        if isinstance(task_obj, ConfigurableTask):
+            task = task_obj
         else:
-            # task_name is a group — use the first subtask
-            first_key = next(iter(task_dict))
-            task = task_dict[first_key]
+            # Group task dict — pick first leaf ConfigurableTask
+            leaf_tasks = _flatten_task_dict(task_obj)
+            _, task = leaf_tasks[0]
 
         all_docs, split_counts = get_all_docs_from_task(task)
         _, task_docs = create_deterministic_split(all_docs, task_name, train_ratio=train_ratio)

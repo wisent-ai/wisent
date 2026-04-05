@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
 __all__ = ["TwentyNewsgroupsExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("20_newsgroups")
+task_names = ("20_newsgroups",)
 
 class TwentyNewsgroupsExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Twenty Newsgroups benchmark - text classification task."""
@@ -64,9 +65,12 @@ class TwentyNewsgroupsExtractor(LMEvalBenchmarkExtractor):
                 log.debug("Skipping doc due to missing target", extra={"doc": doc})
                 return None
 
-            # Get all possible categories from the source prompt
-            # The prompt typically contains "...to one of these options: category1, category2, ..."
-            categories = self._extract_categories_from_source(source)
+            # Get all possible categories from task_data JSON (preferred: clean list)
+            # or fall back to parsing the source prompt
+            categories = self._extract_categories_from_task_data(doc.get("task_data", ""))
+            if not categories:
+                categories = self._extract_categories_from_source(source)
+
             if not categories or target not in categories:
                 log.debug("Could not extract categories or target not in categories", extra={"doc": doc})
                 return None
@@ -90,14 +94,26 @@ class TwentyNewsgroupsExtractor(LMEvalBenchmarkExtractor):
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
             return None
 
-    def _extract_categories_from_source(self, source: str) -> list[str]:
+    @staticmethod
+    def _extract_categories_from_task_data(task_data_str: str) -> list[str]:
+        """Extract categories from task_data JSON string (clean list without trailing periods)."""
+        if not task_data_str:
+            return []
+        try:
+            data = json.loads(task_data_str)
+            classes = data.get("classes", [])
+            return [c for c in classes if c]
+        except (json.JSONDecodeError, AttributeError):
+            return []
+
+    @staticmethod
+    def _extract_categories_from_source(source: str) -> list[str]:
         """Extract the list of categories from the classification prompt."""
         # The source typically looks like:
         # "Classify the Topic of the following Text to one of these options: category1, category2, ..."
-        # We need to extract the list of categories
         if "options:" in source.lower():
             options_part = source.split("options:")[-1].split("\n")[0]
-            categories = [cat.strip() for cat in options_part.split(",")]
+            categories = [cat.strip().rstrip(".") for cat in options_part.split(",")]
             return [cat for cat in categories if cat]
         return []
 

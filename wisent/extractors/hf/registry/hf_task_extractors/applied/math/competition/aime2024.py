@@ -24,9 +24,9 @@ class AIME2024Extractor(HuggingFaceBenchmarkExtractor):
     ) -> list[ContrastivePair]:
         max_items = self._normalize_limit(limit)
 
-        # Load AIME 2024 dataset
+        # Load AIME 2024 dataset (HuggingFaceH4/aime_2024 contains all 30 problems from 2024 I+II)
         docs = self.load_dataset(
-            dataset_name="MathArena/aime_2024",
+            dataset_name="HuggingFaceH4/aime_2024",
             split="train",
             limit=max_items,
         )
@@ -48,7 +48,7 @@ class AIME2024Extractor(HuggingFaceBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         try:
-            # Fields are lowercase in MathArena/aime_2024: problem, answer
+            # Fields in HuggingFaceH4/aime_2024: problem, answer (strings)
             question = str(doc.get("problem", doc.get("question", ""))).strip()
             correct = str(doc.get("answer", doc.get("Answer", ""))).strip()
 

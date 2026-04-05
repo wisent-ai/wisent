@@ -69,6 +69,7 @@ class AlpacaEvalExtractor(HuggingFaceBenchmarkExtractor):
             dataset_name="tatsu-lab/alpaca_eval",
             split="eval",
             limit=max_items,
+            trust_remote_code=True,
         )
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:

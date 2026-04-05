@@ -106,5 +106,21 @@
   "curate",
   "halulens",
   "politicalbias_qa",
-  "polyglottoxicityprompts"
+  "polyglottoxicityprompts",
+  "acp_prog_gen",
+  "acp_reach_gen",
+  "acp_app_gen",
+  "acp_just_gen",
+  "acp_land_gen",
+  "acp_nexta_gen",
+  "acp_areach_gen",
+  "acp_val_gen",
+  "acp_prog_gen_with_pddl",
+  "acp_reach_gen_with_pddl",
+  "acp_app_gen_with_pddl",
+  "acp_just_gen_with_pddl",
+  "acp_land_gen_with_pddl",
+  "acp_nexta_gen_with_pddl",
+  "acp_areach_gen_with_pddl",
+  "acp_val_gen_with_pddl"
 ]

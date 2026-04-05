@@ -56,7 +56,8 @@ class AgentHarmExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "agentharm"
+    # Using generation evaluator for semantic similarity scoring (no LLM judge needed)
+    evaluator_name = "generation"
 
     def __init__(self, config: Optional[str] = None, include_benign: bool = False):
         """
@@ -96,7 +97,7 @@ class AgentHarmExtractor(HuggingFaceBenchmarkExtractor):
             docs = self.load_dataset(
                 dataset_name="ai-safety-institute/AgentHarm",
                 dataset_config=self.config,
-                split="test",
+                split="test_public",
                 limit=max_items,
             )
             log.info(f"Loaded {len(docs)} examples from AgentHarm ({self.config})")
@@ -119,8 +120,8 @@ class AgentHarmExtractor(HuggingFaceBenchmarkExtractor):
                 try:
                     benign_docs = self.load_dataset(
                         dataset_name="ai-safety-institute/AgentHarm",
-                        config="harmless_benign",
-                        split="test",
+                        dataset_config="harmless_benign",
+                        split="test_public",
                         limit=remaining,
                     )
                     log.info(f"Loaded {len(benign_docs)} benign examples")

@@ -88,17 +88,20 @@ class GaokaoExtractor(LMEvalBenchmarkExtractor):
         try:
             query = str(doc.get("query", "")).strip()
             choices = doc.get("choices", [])
-            gold = doc.get("gold", [])
+            gold = doc.get("gold")
 
-            if not query or not choices or not gold:
+            if not query or not choices or gold is None:
                 log.debug("Skipping doc due to missing fields", extra={"doc": doc})
                 return None
 
-            # Gold is a list containing the index
-            if isinstance(gold, list) and len(gold) > 0:
+            # Gold may be an int (e.g. 2) or a list containing the index (e.g. [2])
+            if isinstance(gold, list):
+                if len(gold) == 0:
+                    log.debug("Skipping doc due to empty gold list", extra={"doc": doc})
+                    return None
                 answer_idx = int(gold[0])
-            elif isinstance(gold, int):
-                answer_idx = gold
+            elif isinstance(gold, (int, float)):
+                answer_idx = int(gold)
             else:
                 log.debug("Skipping doc due to invalid gold format", extra={"doc": doc})
                 return None

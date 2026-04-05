@@ -188,25 +188,49 @@ class LMEvalDataLoader(BaseDataLoader):
                         # Return the whole parent group as alternative
                         return parent_task
 
-        # Special handling for model_written_evals subtasks: load parent group instead
-        # since lm-eval may not recognize individual subtask names like "advanced_ai_risk_human-*"
+        # Special handling for model_written_evals subtasks (advanced_ai_risk_*, persona_*, sycophancy_*).
+        # The lm-eval package does not register a "model_written_evals" group; individual tasks are
+        # registered directly (e.g. "advanced_ai_risk_fewshot-coordinate-itself").  Try to load the
+        # task directly first; only fall back to the "advanced_ai_risk" parent tag if that fails.
         if (lm_eval_task_name.startswith("advanced_ai_risk_") or
             lm_eval_task_name.startswith("persona_") or
             lm_eval_task_name.startswith("sycophancy_")) and \
            lm_eval_task_name not in ("advanced_ai_risk", "persona", "sycophancy"):
-            log.info(f"Special case: loading parent 'model_written_evals' group for subtask '{lm_eval_task_name}'")
-            parent_dict = get_task_dict(["model_written_evals"], task_manager=task_manager)
-            if parent_dict and "model_written_evals" in parent_dict:
-                parent_task = parent_dict["model_written_evals"]
-                # If parent is a dict (group task), return the specific subtask
-                if isinstance(parent_task, dict):
-                    if lm_eval_task_name in parent_task:
-                        log.info(f"Returning subtask '{lm_eval_task_name}' from parent 'model_written_evals'")
-                        return {lm_eval_task_name: parent_task[lm_eval_task_name]}
-                    else:
-                        log.warning(f"Subtask '{lm_eval_task_name}' not found in parent 'model_written_evals'")
-                        # Return the whole parent group as alternative
+            log.info(f"Special case: loading model_written_evals subtask '{lm_eval_task_name}' directly")
+            try:
+                direct_dict = get_task_dict([lm_eval_task_name], task_manager=task_manager)
+                if direct_dict and lm_eval_task_name in direct_dict:
+                    task_result = direct_dict[lm_eval_task_name]
+                    log.info(f"Loaded subtask '{lm_eval_task_name}' directly from lm-eval")
+                    return task_result
+            except Exception as _direct_exc:
+                log.debug(f"Direct load of '{lm_eval_task_name}' failed: {_direct_exc}, trying parent group")
+            # Determine the parent tag/group based on the task prefix
+            if lm_eval_task_name.startswith("advanced_ai_risk_"):
+                parent_group = "advanced_ai_risk"
+            elif lm_eval_task_name.startswith("persona_"):
+                parent_group = "persona"
+            else:
+                parent_group = "sycophancy"
+            log.info(f"Falling back to parent group '{parent_group}' for subtask '{lm_eval_task_name}'")
+            try:
+                parent_dict = get_task_dict([parent_group], task_manager=task_manager)
+                if parent_dict and parent_group in parent_dict:
+                    parent_task = parent_dict[parent_group]
+                    if isinstance(parent_task, dict):
+                        if lm_eval_task_name in parent_task:
+                            log.info(f"Returning subtask '{lm_eval_task_name}' from parent '{parent_group}'")
+                            return {lm_eval_task_name: parent_task[lm_eval_task_name]}
+                        # Try dash/underscore normalised match
+                        norm_task = lm_eval_task_name.replace("-", "_")
+                        for k, v in parent_task.items():
+                            if k.replace("-", "_") == norm_task:
+                                log.info(f"Returning subtask '{k}' (normalised match) from parent '{parent_group}'")
+                                return {lm_eval_task_name: v}
+                        log.warning(f"Subtask '{lm_eval_task_name}' not found in parent '{parent_group}'")
                         return parent_task
+            except Exception as _parent_exc:
+                log.debug(f"Parent group load of '{parent_group}' failed: {_parent_exc}")
 
         if lm_eval_task_name in GROUP_TASK_EXPANSIONS:
             subtasks = GROUP_TASK_EXPANSIONS[lm_eval_task_name]

@@ -160,13 +160,8 @@
       }
     },
     "apps": {
-      "evaluation_type": "docker_execution",
-      "primary_metric": "pass@1",
-      "provider": "livecodebench",
-      "docker_config": {
-        "language": "python",
-        "timeout": 30
-      }
+      "evaluation_type": "generate_until",
+      "primary_metric": "generation"
     },
     "ds1000": {
       "evaluation_type": "docker_execution",
@@ -283,6 +278,10 @@
     "wsc273": {
       "evaluation_type": "loglikelihood",
       "primary_metric": "acc"
+    },
+    "agentharm": {
+      "evaluation_type": "generate_until",
+      "primary_metric": "generation"
     }
   }
 }

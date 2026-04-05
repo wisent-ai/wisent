@@ -22,6 +22,7 @@ _EVALUATOR_NAME_TO_EVAL_CONFIG = {
     "truthfulqa_gen": ("generate_until", "generation"),
     "f1": ("multiple_choice", "f1"),
     "perplexity": ("loglikelihood_rolling", "perplexity"),
+    "agentharm": ("generate_until", "generation"),
 }
 
 

@@ -202,7 +202,10 @@ def validate_benchmark(task_name: str, allow_subtasks: bool = False) -> None:
             f"See broken_in_lm_eval.json."
         )
 
-    if task_name.lower() in _REGISTRY:
+    # Normalize task name: lowercase and replace dashes with underscores,
+    # matching the normalization applied when building the registry.
+    normalized = task_name.lower().replace("-", "_")
+    if normalized in _REGISTRY:
         return
 
     raise UnsupportedBenchmarkError(
