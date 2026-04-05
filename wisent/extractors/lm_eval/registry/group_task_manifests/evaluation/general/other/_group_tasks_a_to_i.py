@@ -5,9 +5,9 @@ from .aclue import ACLUE_TASKS
 from .acp import ACP_TASKS
 from .advanced_ai_risk import ADVANCED_AI_RISK_TASKS
 from .acpbench import ACPBENCH_TASKS
-from wisent.extractors.lm_eval.registry.group_task_manifests.specialized.language.crosslingual_multilingual.multilingual_mmlu.aexams import AEXAMS_TASKS
+from .aexams import AEXAMS_TASKS
 from .afrimgsm import AFRIMGSM_TASKS
-from wisent.extractors.lm_eval.registry.group_task_manifests.specialized.language.african.african_extended.afrimmlu import AFRIMMLU_TASKS
+from .afrimmlu import AFRIMMLU_TASKS
 from .inverse import INVERSE_TASKS
 from .afrixnli import AFRIXNLI_TASKS
 from .afrobench import AFROBENCH_TASKS
@@ -29,7 +29,7 @@ from .afrobench_salt import AFROBENCH_SALT_TASKS
 from .afrobench_sib import AFROBENCH_SIB_TASKS
 from .afrobench_uhura_arc_easy import AFROBENCH_UHURA_ARC_EASY_TASKS
 from .afrobench_xlsum import AFROBENCH_XLSUM_TASKS
-from wisent.extractors.lm_eval.registry.group_task_manifests.evaluation.knowledge.leaderboard_suites.agieval import AGIEVAL_TASKS
+from .agieval import AGIEVAL_TASKS
 from .anli import ANLI_TASKS
 from .arab_culture import ARAB_CULTURE_TASKS
 from .arabic_leaderboard_acva import ARABIC_LEADERBOARD_ACVA_TASKS
