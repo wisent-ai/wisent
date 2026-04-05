@@ -24,6 +24,13 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
+# Force unbuffered output
+os.environ["PYTHONUNBUFFERED"] = "1"
+sys.stdout.reconfigure(line_buffering=True)
+sys.stderr.reconfigure(line_buffering=True)
+
+print("Starting fix_all_benchmarks...", flush=True)
+
 os.environ["HF_DATASETS_TRUST_REMOTE_CODE"] = "1"
 os.environ["HF_ALLOW_CODE_EVAL"] = "1"
 
@@ -42,12 +49,17 @@ def load_cached_results() -> dict[str, dict]:
     results = {}
     if not CACHE_DIR.exists():
         sys.exit(f"Cache not found: {CACHE_DIR}")
-    for f in sorted(CACHE_DIR.glob("*.json")):
+    files = [f for f in os.listdir(CACHE_DIR) if f.endswith(".json")]
+    files.sort()
+    print(f"  Found {len(files)} cache files...", flush=True)
+    for i, fname in enumerate(files):
         try:
-            with open(f) as fh:
-                results[f.stem] = json.load(fh)
+            with open(CACHE_DIR / fname) as fh:
+                results[fname[:-5]] = json.load(fh)  # strip .json
         except (json.JSONDecodeError, OSError):
             continue
+        if (i + 1) % 200 == 0:
+            print(f"  Loaded {i + 1}/{len(files)}...", flush=True)
     return results
 
 
@@ -231,54 +243,36 @@ def main():
     if not claude and not args.dry_run:
         sys.exit("ERROR: claude CLI not found. Install Claude Code first.")
 
-    # Phase 1: Re-test all failures to find stale cache entries
-    print("Phase 1: Re-testing all failures with current code...\n")
-    stale_pass = []
-    still_fail = []
-
-    for i, benchmark in enumerate(sorted(failures), 1):
-        ext, evl, output = run_test(benchmark, timeout=args.timeout)
-        if ext == "PASS":
-            print(f"  [{i}/{len(failures)}] {benchmark}: NOW PASSES")
-            result = {
-                "task": benchmark,
-                "extraction": {"status": "PASS"},
-                "evaluator": {"status": evl},
-            }
-            update_cache(benchmark, result)
-            if not args.no_upload:
-                upload_to_hf(benchmark, result)
-            stale_pass.append(benchmark)
-        else:
-            print(f"  [{i}/{len(failures)}] {benchmark}: STILL FAILS")
-            still_fail.append((benchmark, output))
-
-        if i % 50 == 0:
-            print(f"\n  --- {i}/{len(failures)} tested | "
-                  f"stale: {len(stale_pass)} | still fail: {len(still_fail)} ---\n")
-
-    print(f"\nPhase 1 done: {len(stale_pass)} stale, {len(still_fail)} need fixing\n")
-
-    if args.dry_run or not still_fail:
-        _print_summary(cached, stale_pass, [], [], [], still_fail)
+    if args.dry_run:
+        print(f"Dry run — {len(failures)} benchmarks need fixing:")
+        for f in sorted(failures):
+            print(f"  - {f}")
         return
 
-    # Phase 2: Launch agents for each remaining failure
-    print(f"Phase 2: Launching agents for {len(still_fail)} failures "
+    # Launch an agent for every failure. The agent tests, diagnoses, fixes,
+    # and verifies. No separate re-test phase — the agent handles everything.
+    print(f"Launching agents for {len(failures)} failures "
           f"(parallel={args.parallel})...\n")
 
-    fixed_by_agent = []
+    fixed = []
     marked_broken = []
     agent_failed = []
 
+    # Use cached error output as context for the agent (empty string if none)
+    failure_data = []
+    for benchmark in sorted(failures):
+        cached_result = cached.get(benchmark, {})
+        # Pass any detail from the cached result as context
+        detail = cached_result.get("extraction", {}).get("detail", "")
+        failure_data.append((benchmark, detail))
+
     if args.parallel <= 1:
-        # Sequential
-        for i, (benchmark, output) in enumerate(still_fail, 1):
-            print(f"  [{i}/{len(still_fail)}] {benchmark}: launching agent...")
+        for i, (benchmark, context) in enumerate(failure_data, 1):
+            print(f"[{i}/{len(failure_data)}] {benchmark}: launching agent...")
             name, outcome, desc = fix_benchmark(
-                benchmark, output, agent_timeout=args.agent_timeout
+                benchmark, context, agent_timeout=args.agent_timeout
             )
-            print(f"    -> {outcome}: {desc}")
+            print(f"  -> {outcome}: {desc}")
             if outcome == "fixed":
                 result = {
                     "task": name,
@@ -288,25 +282,29 @@ def main():
                 update_cache(name, result)
                 if not args.no_upload:
                     upload_to_hf(name, result)
-                fixed_by_agent.append(name)
+                fixed.append(name)
             elif outcome == "marked_broken":
                 marked_broken.append(name)
             else:
                 agent_failed.append((name, desc))
+
+            if i % 50 == 0:
+                print(f"\n--- Progress: {i}/{len(failure_data)} | "
+                      f"Fixed: {len(fixed)} | Broken: {len(marked_broken)} | "
+                      f"Failed: {len(agent_failed)} ---\n")
     else:
-        # Parallel
         with ThreadPoolExecutor(max_workers=args.parallel) as executor:
             futures = {
                 executor.submit(
-                    fix_benchmark, benchmark, output, args.agent_timeout
+                    fix_benchmark, benchmark, context, args.agent_timeout
                 ): benchmark
-                for benchmark, output in still_fail
+                for benchmark, context in failure_data
             }
             done_count = 0
             for future in as_completed(futures):
                 done_count += 1
                 name, outcome, desc = future.result()
-                print(f"  [{done_count}/{len(still_fail)}] {name}: {outcome} — {desc}")
+                print(f"[{done_count}/{len(failure_data)}] {name}: {outcome} — {desc}")
                 if outcome == "fixed":
                     result = {
                         "task": name,
@@ -316,33 +314,35 @@ def main():
                     update_cache(name, result)
                     if not args.no_upload:
                         upload_to_hf(name, result)
-                    fixed_by_agent.append(name)
+                    fixed.append(name)
                 elif outcome == "marked_broken":
                     marked_broken.append(name)
                 else:
                     agent_failed.append((name, desc))
 
-    _print_summary(cached, stale_pass, fixed_by_agent, marked_broken,
-                   agent_failed, [])
+                if done_count % 50 == 0:
+                    print(f"\n--- Progress: {done_count}/{len(failure_data)} | "
+                          f"Fixed: {len(fixed)} | Broken: {len(marked_broken)} | "
+                          f"Failed: {len(agent_failed)} ---\n")
+
+    _print_summary(cached, fixed, marked_broken, agent_failed)
 
 
-def _print_summary(cached, stale_pass, fixed_by_agent, marked_broken,
-                   agent_failed, still_fail):
-    total_pass = (
-        sum(1 for d in cached.values()
-            if d.get("extraction", {}).get("status") == "PASS")
-        + len(stale_pass) + len(fixed_by_agent)
+def _print_summary(cached, fixed, marked_broken, agent_failed):
+    already_passing = sum(
+        1 for d in cached.values()
+        if d.get("extraction", {}).get("status") == "PASS"
     )
+    total_pass = already_passing + len(fixed)
     total = len(cached)
 
     print(f"\n{'='*70}")
     print(f"FINAL RESULTS")
     print(f"{'='*70}")
-    print(f"Stale (now passing):   {len(stale_pass)}")
-    print(f"Fixed by agent:        {len(fixed_by_agent)}")
+    print(f"Already passing:       {already_passing}")
+    print(f"Fixed by agent:        {len(fixed)}")
     print(f"Marked broken:         {len(marked_broken)}")
     print(f"Agent failed:          {len(agent_failed)}")
-    print(f"Skipped (dry-run):     {len(still_fail)}")
     print(f"")
     print(f"Overall: {total_pass}/{total} benchmarks pass extraction "
           f"({total_pass / total * 100:.1f}%)")
