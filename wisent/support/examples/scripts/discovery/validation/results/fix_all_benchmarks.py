@@ -20,7 +20,6 @@ import os
 import shutil
 import subprocess
 import sys
-import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -44,11 +43,52 @@ CACHE_DIR = Path(__file__).resolve().parent / "hf_cache" / "test_results"
 # Cache
 # ---------------------------------------------------------------------------
 
+def download_cache_from_hf() -> None:
+    """Download all test results from HuggingFace to local hf_cache/test_results/."""
+    from huggingface_hub import HfApi
+
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+    api = HfApi(token=os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN"))
+    files = api.list_repo_tree(
+        repo_id="wisent-ai/activations",
+        repo_type="dataset",
+        path_in_repo="test_results",
+    )
+    json_files = [f for f in files if hasattr(f, "rfilename") and f.rfilename.endswith(".json")]
+    print(f"  Found {len(json_files)} test results on HuggingFace", flush=True)
+
+    from huggingface_hub import hf_hub_download
+
+    for i, f in enumerate(json_files):
+        benchmark = f.rfilename.rsplit("/", 1)[-1][:-5]  # strip path + .json
+        local_path = CACHE_DIR / f"{benchmark}.json"
+        if local_path.exists():
+            continue
+        try:
+            downloaded = hf_hub_download(
+                repo_id="wisent-ai/activations",
+                filename=f.rfilename,
+                repo_type="dataset",
+                token=api.token,
+            )
+            # Copy from HF cache to our local cache dir
+            import shutil as _shutil
+            _shutil.copy2(downloaded, local_path)
+        except Exception as e:
+            print(f"  Warning: failed to download {benchmark}: {e}", flush=True)
+        if (i + 1) % 200 == 0:
+            print(f"  Downloaded {i + 1}/{len(json_files)}...", flush=True)
+
+    print(f"  Cache synced to {CACHE_DIR}", flush=True)
+
+
 def load_cached_results() -> dict[str, dict]:
     """Load all cached test results from local HF cache."""
     results = {}
     if not CACHE_DIR.exists():
-        sys.exit(f"Cache not found: {CACHE_DIR}")
+        print("  Local cache not found, downloading from HuggingFace...", flush=True)
+        download_cache_from_hf()
     files = [f for f in os.listdir(CACHE_DIR) if f.endswith(".json")]
     files.sort()
     print(f"  Found {len(files)} cache files...", flush=True)
@@ -93,7 +133,7 @@ def upload_to_hf(benchmark: str, result: dict) -> None:
 # Test runner
 # ---------------------------------------------------------------------------
 
-def run_test(benchmark: str, timeout: int = 300) -> tuple[str, str, str]:
+def run_test(benchmark: str) -> tuple[str, str, str]:
     """Run test_single_benchmark. Returns (ext_status, eval_status, output)."""
     try:
         proc = subprocess.run(
@@ -102,7 +142,7 @@ def run_test(benchmark: str, timeout: int = 300) -> tuple[str, str, str]:
                 "wisent.support.examples.scripts.discovery.validation.test_single_benchmark",
                 benchmark, "--skip-cache",
             ],
-            capture_output=True, text=True, timeout=timeout,
+            capture_output=True, text=True,
             cwd=str(PROJECT_ROOT),
         )
         combined = proc.stdout + proc.stderr
@@ -116,8 +156,6 @@ def run_test(benchmark: str, timeout: int = 300) -> tuple[str, str, str]:
             elif "evaluator=SKIP_NO_MODEL" in line:
                 evl = "SKIP_NO_MODEL"
         return ext, evl, combined
-    except subprocess.TimeoutExpired:
-        return "TIMEOUT", "SKIP", "timed out"
     except Exception as e:
         return "ERROR", "SKIP", str(e)
 
@@ -166,8 +204,7 @@ Instructions:
 Do NOT make assumptions. Read the code first. Make targeted fixes only."""
 
 
-def fix_benchmark(benchmark: str, error_output: str,
-                  agent_timeout: int = 600) -> tuple[str, str, str]:
+def fix_benchmark(benchmark: str, error_output: str) -> tuple[str, str, str]:
     """Launch a Claude Code agent to fix one benchmark.
 
     Returns:
@@ -183,11 +220,9 @@ def fix_benchmark(benchmark: str, error_output: str,
     try:
         subprocess.run(
             [claude, "--print", "--dangerously-skip-permissions", prompt],
-            capture_output=True, text=True, timeout=agent_timeout,
+            capture_output=True, text=True,
             cwd=str(PROJECT_ROOT),
         )
-    except subprocess.TimeoutExpired:
-        return benchmark, "agent_failed", "agent timed out"
     except Exception as e:
         return benchmark, "agent_failed", str(e)
 
@@ -220,10 +255,6 @@ def main():
                         help="Only test and report, don't launch agents")
     parser.add_argument("--family", type=str, default=None,
                         help="Only process benchmarks matching this prefix")
-    parser.add_argument("--timeout", type=int, default=300,
-                        help="Timeout per benchmark test (seconds)")
-    parser.add_argument("--agent-timeout", type=int, default=600,
-                        help="Timeout per agent fix (seconds)")
     parser.add_argument("--parallel", type=int, default=1,
                         help="Number of agents to run in parallel")
     parser.add_argument("--no-upload", action="store_true",
@@ -269,9 +300,7 @@ def main():
     if args.parallel <= 1:
         for i, (benchmark, context) in enumerate(failure_data, 1):
             print(f"[{i}/{len(failure_data)}] {benchmark}: launching agent...")
-            name, outcome, desc = fix_benchmark(
-                benchmark, context, agent_timeout=args.agent_timeout
-            )
+            name, outcome, desc = fix_benchmark(benchmark, context)
             print(f"  -> {outcome}: {desc}")
             if outcome == "fixed":
                 result = {
@@ -296,7 +325,7 @@ def main():
         with ThreadPoolExecutor(max_workers=args.parallel) as executor:
             futures = {
                 executor.submit(
-                    fix_benchmark, benchmark, context, args.agent_timeout
+                    fix_benchmark, benchmark, context
                 ): benchmark
                 for benchmark, context in failure_data
             }

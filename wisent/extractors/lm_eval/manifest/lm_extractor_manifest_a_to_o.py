@@ -124,6 +124,7 @@ LM_EXTRACTORS_A_TO_O: dict[str, str] = {
     "salt": f"{base_import}afrobench_cot:AfroBenchCotExtractor",
     "xlsum": f"{base_import}afrobench_cot:AfroBenchCotExtractor",
     "arabic_exams": f"{base_import}arabic_exams:ArabicExamsExtractor",
+    "arabic_leaderboard": f"{base_import}arabic_leaderboard_complete:ArabicLeaderboardCompleteExtractor",
     "arabic_leaderboard_complete": f"{base_import}arabic_leaderboard_complete:ArabicLeaderboardCompleteExtractor",
     "arabic_leaderboard_light": f"{base_import}arabic_leaderboard_light:ArabicLeaderboardLightExtractor",
     "arabicmmlu": f"{base_import}arabicmmlu:ArabicmmluExtractor",

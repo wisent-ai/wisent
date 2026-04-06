@@ -141,6 +141,17 @@ class LMEvalDataLoader(BaseDataLoader):
         if lm_eval_task_name != task_name:
             log.info(f"Mapping task '{task_name}' to lm-eval task '{lm_eval_task_name}'")
 
+        # Restore case-sensitive prefixes for subtask names that were lowercased
+        # during registry normalization (e.g. aradice_egypt_cultural -> AraDiCE_egypt_cultural)
+        _CASE_PREFIX_MAP = {
+            "aradice_": "AraDiCE_",
+            "tinybenchmarks_": "tinyBenchmarks_",
+        }
+        for lower_prefix, correct_prefix in _CASE_PREFIX_MAP.items():
+            if lm_eval_task_name.startswith(lower_prefix):
+                lm_eval_task_name = correct_prefix + lm_eval_task_name[len(lower_prefix):]
+                break
+
         # Restore ISO 15924 script codes that may have been lowercased during normalization.
         # lm-eval expects title-case: Latn, Cyrl, Arab, Ethi, etc.
         import re
