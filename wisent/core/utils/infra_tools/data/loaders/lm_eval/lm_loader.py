@@ -20,6 +20,36 @@ import datasets.features.features as _features_module
 if 'List' not in _features_module._FEATURE_TYPES and 'LargeList' in _features_module._FEATURE_TYPES:
     _features_module._FEATURE_TYPES['List'] = _features_module._FEATURE_TYPES['LargeList']
 
+# Patch lm-eval's Jinja2 environment to allow undefined variables.
+# Many lm-eval task YAMLs reference fields that don't exist in the actual datasets
+# (e.g. masakhanews YAML uses {{headline_text}} but the data has {category, headline, text, url}).
+# StrictUndefined causes ConfigurableTask.__init__ to crash. ChainableUndefined renders
+# missing fields as empty strings, allowing the task to load.
+import lm_eval.utils as _lm_utils
+from jinja2 import Environment, BaseLoader, ChainableUndefined
+_lm_utils.env = Environment(
+    loader=BaseLoader, undefined=ChainableUndefined, keep_trailing_newline=True
+)
+_lm_utils.env.filters["regex_replace"] = _lm_utils.regex_replace
+
+# Patch lm-eval's TaskConfig to ignore unknown kwargs.
+# Some YAMLs use deprecated keywords like `group:` instead of `tag:` (e.g. arc_challenge_mt_is)
+# which causes TaskConfig.__init__ to crash with TypeError.
+import lm_eval.api.task as _lm_task
+_orig_taskconfig_init = _lm_task.TaskConfig.__init__
+def _patched_taskconfig_init(self, *args, **kwargs):
+    # Map deprecated 'group' kwarg to 'tag' (they have similar semantics)
+    if 'group' in kwargs and 'tag' not in kwargs:
+        kwargs['tag'] = kwargs.pop('group')
+    elif 'group' in kwargs:
+        kwargs.pop('group')
+    # Drop any other unknown kwargs to be safe
+    import inspect
+    valid_params = set(inspect.signature(_orig_taskconfig_init).parameters)
+    filtered_kwargs = {k: v for k, v in kwargs.items() if k in valid_params}
+    return _orig_taskconfig_init(self, *args, **filtered_kwargs)
+_lm_task.TaskConfig.__init__ = _patched_taskconfig_init
+
 from wisent.core.utils.infra_tools.data.core.atoms import BaseDataLoader, DataLoaderError, LoadDataResult
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
