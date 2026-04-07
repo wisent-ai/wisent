@@ -161,12 +161,6 @@ GROUP_TASK_EXPANSIONS = {
     "acp_bench_hard": ["acp_prog_gen", "acp_reach_gen", "acp_app_gen", "acp_just_gen", "acp_land_gen", "acp_nexta_gen", "acp_areach_gen", "acp_val_gen", "acp_prog_gen_with_pddl", "acp_reach_gen_with_pddl", "acp_app_gen_with_pddl", "acp_just_gen_with_pddl", "acp_land_gen_with_pddl", "acp_nexta_gen_with_pddl", "acp_areach_gen_with_pddl", "acp_val_gen_with_pddl"],
     "acp_bench_hard_with_pddl": ["acp_prog_gen_with_pddl", "acp_reach_gen_with_pddl", "acp_app_gen_with_pddl", "acp_just_gen_with_pddl", "acp_land_gen_with_pddl", "acp_nexta_gen_with_pddl", "acp_areach_gen_with_pddl", "acp_val_gen_with_pddl"],
     "aexams": ["aexams_IslamicStudies", "aexams_Biology", "aexams_Science", "aexams_Physics", "aexams_Social"],
-    # aexams subtasks individually - for when called by their camelCase names
-    "aexams_Biology": ["aexams_Biology"],
-    "aexams_IslamicStudies": ["aexams_IslamicStudies"],
-    "aexams_Physics": ["aexams_Physics"],
-    "aexams_Science": ["aexams_Science"],
-    "aexams_Social": ["aexams_Social"],
     "agieval": ["agieval_aqua_rat", "agieval_gaokao_biology", "agieval_gaokao_chemistry", "agieval_gaokao_chinese", "agieval_gaokao_english", "agieval_gaokao_geography", "agieval_gaokao_history", "agieval_gaokao_mathcloze", "agieval_gaokao_mathqa", "agieval_gaokao_physics", "agieval_jec_qa_ca", "agieval_jec_qa_kd", "agieval_logiqa_en", "agieval_logiqa_zh", "agieval_lsat_ar", "agieval_lsat_lr", "agieval_lsat_rc", "agieval_math", "agieval_nous", "agieval_sat_en", "agieval_sat_en_without_passage", "agieval_sat_math"],
     "agieval_cn": ["agieval_gaokao_biology", "agieval_gaokao_chemistry", "agieval_gaokao_chinese", "agieval_gaokao_geography", "agieval_gaokao_history", "agieval_gaokao_mathcloze", "agieval_gaokao_mathqa", "agieval_gaokao_physics", "agieval_jec_qa_ca", "agieval_jec_qa_kd", "agieval_logiqa_zh"],
     "agieval_en": ["agieval_aqua_rat", "agieval_gaokao_english", "agieval_logiqa_en", "agieval_lsat_ar", "agieval_lsat_lr", "agieval_lsat_rc", "agieval_math", "agieval_nous", "agieval_sat_en", "agieval_sat_en_without_passage", "agieval_sat_math"],

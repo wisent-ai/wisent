@@ -312,7 +312,7 @@ def build_contrastive_pairs(
             return f"{prefix}-{dash_rest}"
         return name
 
-    if lazy_subtask_names is not None:
+    if lazy_subtask_names is not None and len(lazy_subtask_names) > 0:
         # Lazy group loading: load subtasks one-by-one and stop once we have enough pairs.
         # Convert underscore names (from GROUP_TASK_EXPANSIONS) to lm-eval dash names so
         # each subtask loads in ~5 s directly without triggering a full parent-group reload.
