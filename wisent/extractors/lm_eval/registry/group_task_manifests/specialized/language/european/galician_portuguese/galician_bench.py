@@ -8,7 +8,7 @@ BASE_IMPORT = "wisent.extractors.lm_eval.lm_task_extractors."
 
 GALICIAN_BENCH_TASKS = {
     # Multiple_choice subtasks → galician_bench_mc.py (evaluator_name = "log_likelihoods")
-    "belebele_glg_Latn": f"{BASE_IMPORT}galician_bench_mc:GalicianBenchMultipleChoiceExtractor",
+    # belebele_glg_Latn handled by the regular belebele extractor (not galician)
     "galcola": f"{BASE_IMPORT}galician_bench_mc:GalicianBenchMultipleChoiceExtractor",
     "mgsm_direct_gl": f"{BASE_IMPORT}galician_bench_mc:GalicianBenchMultipleChoiceExtractor",
     "openbookqa_gl": f"{BASE_IMPORT}galician_bench_mc:GalicianBenchMultipleChoiceExtractor",
