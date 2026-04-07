@@ -1,8 +1,4 @@
 [
-  "acp_app_gen_with_pddl",
-  "acp_just_gen",
-  "acp_reach_gen",
-  "acp_val_gen_with_pddl",
   "afrobench_afriqa",
   "afrobench_flores",
   "afrobench_masakhaner",
