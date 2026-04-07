@@ -84,6 +84,28 @@ class AfroBenchCotExtractor(LMEvalBenchmarkExtractor):
                         label="afrobench_cot",
                     )
 
+            # Schema 0b: SALT translation — *_text fields with eng_source_text + eng_target_text
+            # Pick first non-eng *_text as source, eng_target_text as target
+            text_fields = [k for k in doc if k.endswith("_text")]
+            if "eng_target_text" in text_fields and len(text_fields) >= 2:
+                source_field = next(
+                    (k for k in text_fields if k != "eng_target_text" and k != "eng_source_text"),
+                    None,
+                )
+                if source_field is None:
+                    source_field = "eng_source_text" if "eng_source_text" in text_fields else None
+                if source_field:
+                    source_text = str(doc.get(source_field, "")).strip()
+                    target_text = str(doc.get("eng_target_text", "")).strip()
+                    if source_text and target_text:
+                        incorrect = _make_wrong_answer(target_text)
+                        return ContrastivePair(
+                            prompt=f"Input: {source_text}\nOutput:",
+                            positive_response=PositiveResponse(model_response=target_text),
+                            negative_response=NegativeResponse(model_response=incorrect),
+                            label="afrobench_cot",
+                        )
+
             # Schema 1: afriqa — question_lang + answer_pivot
             if "question_lang" in doc and "answer_pivot" in doc:
                 return _extract_afriqa(doc, log)

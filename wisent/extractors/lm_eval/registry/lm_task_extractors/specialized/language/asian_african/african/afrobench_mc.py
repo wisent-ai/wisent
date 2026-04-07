@@ -232,8 +232,10 @@ def _extract_classification(
     text = str(
         doc.get("tweet")
         or doc.get("review")
+        or doc.get("en_review")
         or doc.get("text")
         or doc.get("headline_text")
+        or doc.get("headline")
         or doc.get("utterance")
         or doc.get("sentence")
         or doc.get("question")
@@ -241,9 +243,9 @@ def _extract_classification(
         or ""
     ).strip()
 
-    # Determine answer index from label/category/intent
+    # Determine answer index from label/category/intent/sentiment
     answer_idx_raw = None
-    for field in ("label", "category", "intent"):
+    for field in ("label", "category", "intent", "sentiment"):
         val = doc.get(field)
         if val is not None:
             answer_idx_raw = val
