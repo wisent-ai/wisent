@@ -232,10 +232,14 @@ class LMEvalDataLoader(BaseDataLoader):
            lm_eval_task_name not in ("advanced_ai_risk", "persona", "sycophancy"):
             # Convert underscore subtask names to lm-eval dash format
             # e.g. advanced_ai_risk_fewshot_coordinate_itself -> advanced_ai_risk_fewshot-coordinate-itself
+            # Also restore HHH uppercase: corrigible_less_hhh -> corrigible-less-HHH
             import re as _re
             _m = _re.match(r'^(advanced_ai_risk_(?:fewshot|human|lm))[-_](.+)$', lm_eval_task_name)
             if _m:
-                _dash_name = f"{_m.group(1)}-{_m.group(2).replace('_', '-')}"
+                _suffix = _m.group(2).replace('_', '-')
+                # Restore HHH uppercase (lm-eval uses uppercase HHH in task names)
+                _suffix = _re.sub(r'(?<![a-zA-Z])hhh(?![a-zA-Z])', 'HHH', _suffix)
+                _dash_name = f"{_m.group(1)}-{_suffix}"
             else:
                 _dash_name = lm_eval_task_name
             log.info(f"Special case: loading model_written_evals subtask '{_dash_name}' directly")
