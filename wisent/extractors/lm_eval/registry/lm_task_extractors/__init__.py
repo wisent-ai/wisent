@@ -66,6 +66,15 @@ _sys.modules["wisent.extractors.lm_eval.lm_task_extractors.gaokao"] = _gaokao_mo
 # Also register under the registry path
 _sys.modules["wisent.extractors.lm_eval.registry.lm_task_extractors.gaokao"] = _gaokao_mod
 
+# benchmarks: there's a `benchmarks` folder in the walk path that shadows the
+# `benchmarks.py` file inside `evaluation/knowledge/benchmarks/reference_benchmarks/`.
+# Force the file's BenchmarksExtractor to take precedence by aliasing the module.
+from wisent.extractors.lm_eval.registry.lm_task_extractors.evaluation.knowledge.benchmarks.reference_benchmarks.benchmarks import BenchmarksExtractor
+_benchmarks_mod = _types.ModuleType("benchmarks")
+_benchmarks_mod.BenchmarksExtractor = BenchmarksExtractor
+_sys.modules["wisent.extractors.lm_eval.lm_task_extractors.benchmarks"] = _benchmarks_mod
+_sys.modules["wisent.extractors.lm_eval.registry.lm_task_extractors.benchmarks"] = _benchmarks_mod
+
 from wisent.extractors.lm_eval.lm_task_extractors.ai2_arc import AI2ARCExtractor
 from wisent.extractors.lm_eval.lm_task_extractors.anli import ANLIExtractor
 from wisent.extractors.lm_eval.lm_task_extractors.arc_challenge import ArcChallengeExtractor
