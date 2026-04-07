@@ -230,15 +230,23 @@ class LMEvalDataLoader(BaseDataLoader):
             lm_eval_task_name.startswith("persona_") or
             lm_eval_task_name.startswith("sycophancy_")) and \
            lm_eval_task_name not in ("advanced_ai_risk", "persona", "sycophancy"):
-            log.info(f"Special case: loading model_written_evals subtask '{lm_eval_task_name}' directly")
+            # Convert underscore subtask names to lm-eval dash format
+            # e.g. advanced_ai_risk_fewshot_coordinate_itself -> advanced_ai_risk_fewshot-coordinate-itself
+            import re as _re
+            _m = _re.match(r'^(advanced_ai_risk_(?:fewshot|human|lm))[-_](.+)$', lm_eval_task_name)
+            if _m:
+                _dash_name = f"{_m.group(1)}-{_m.group(2).replace('_', '-')}"
+            else:
+                _dash_name = lm_eval_task_name
+            log.info(f"Special case: loading model_written_evals subtask '{_dash_name}' directly")
             try:
-                direct_dict = get_task_dict([lm_eval_task_name], task_manager=task_manager)
-                if direct_dict and lm_eval_task_name in direct_dict:
-                    task_result = direct_dict[lm_eval_task_name]
-                    log.info(f"Loaded subtask '{lm_eval_task_name}' directly from lm-eval")
+                direct_dict = get_task_dict([_dash_name], task_manager=task_manager)
+                if direct_dict and _dash_name in direct_dict:
+                    task_result = direct_dict[_dash_name]
+                    log.info(f"Loaded subtask '{_dash_name}' directly from lm-eval")
                     return task_result
             except Exception as _direct_exc:
-                log.debug(f"Direct load of '{lm_eval_task_name}' failed: {_direct_exc}, trying parent group")
+                log.debug(f"Direct load of '{_dash_name}' failed: {_direct_exc}, trying parent group")
             # Determine the parent tag/group based on the task prefix
             if lm_eval_task_name.startswith("advanced_ai_risk_"):
                 parent_group = "advanced_ai_risk"
