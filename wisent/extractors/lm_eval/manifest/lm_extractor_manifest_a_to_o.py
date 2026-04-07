@@ -127,6 +127,7 @@ LM_EXTRACTORS_A_TO_O: dict[str, str] = {
     "arabic_leaderboard": f"{base_import}arabic_leaderboard_complete:ArabicLeaderboardCompleteExtractor",
     "arabic_leaderboard_complete": f"{base_import}arabic_leaderboard_complete:ArabicLeaderboardCompleteExtractor",
     "arabic_leaderboard_light": f"{base_import}arabic_leaderboard_light:ArabicLeaderboardLightExtractor",
+    "arabic_mt": f"{base_import}arabic_leaderboard_complete:ArabicLeaderboardCompleteExtractor",
     "arabicmmlu": f"{base_import}arabicmmlu:ArabicmmluExtractor",
     "argument_topic": f"{base_import}unitxt:UnitxtExtractor",
     "babi": f"{base_import}babi:BabiExtractor",
