@@ -11,6 +11,9 @@ Extracted from lm_loader.py to keep files under 300 lines.
 # Map task names to their lm-eval equivalents
 TASK_NAME_MAPPING = {
     "squad2": "squadv2",
+    "argument": "argument_topic",
+    "assin": "assin_entailment",
+    "arabic_leaderboard": "arabic_leaderboard_complete",
     "wikitext103": "wikitext",
     "ptb": "wikitext",
     "penn_treebank": "wikitext",
