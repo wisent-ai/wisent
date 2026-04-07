@@ -20,6 +20,37 @@ import datasets.features.features as _features_module
 if 'List' not in _features_module._FEATURE_TYPES and 'LargeList' in _features_module._FEATURE_TYPES:
     _features_module._FEATURE_TYPES['List'] = _features_module._FEATURE_TYPES['LargeList']
 
+# Patch Features.reorder_fields_as to treat LargeList and list as compatible.
+# Old cached arrow files may use LargeList while new dataset_info uses list (or vice versa).
+# This prevents "Type mismatch: between LargeList and [Value]" errors during dataset loading.
+_orig_reorder_fields_as = _features_module.Features.reorder_fields_as
+def _patched_reorder_fields_as(self, other):
+    from datasets.features.features import LargeList, Sequence, Features
+    def _normalize(x):
+        # Convert LargeList to single-element list for compatibility with Python list
+        if isinstance(x, LargeList):
+            return [_normalize(x.feature)]
+        if isinstance(x, list):
+            return [_normalize(item) for item in x]
+        if isinstance(x, dict):
+            return {k: _normalize(v) for k, v in x.items()}
+        if isinstance(x, Sequence):
+            return x  # Sequence handled by original logic
+        return x
+    try:
+        return _orig_reorder_fields_as(self, other)
+    except ValueError as e:
+        if "Type mismatch" not in str(e):
+            raise
+        # Retry with both sides normalized so LargeList <-> list mismatches are resolved
+        try:
+            normalized_other = Features({k: _normalize(v) for k, v in other.items()})
+            normalized_self = Features({k: _normalize(v) for k, v in self.items()})
+            return _orig_reorder_fields_as(normalized_self, normalized_other)
+        except Exception:
+            raise e
+_features_module.Features.reorder_fields_as = _patched_reorder_fields_as
+
 # Patch lm-eval's Jinja2 environment to allow undefined variables.
 # Many lm-eval task YAMLs reference fields that don't exist in the actual datasets
 # (e.g. masakhanews YAML uses {{headline_text}} but the data has {category, headline, text, url}).
