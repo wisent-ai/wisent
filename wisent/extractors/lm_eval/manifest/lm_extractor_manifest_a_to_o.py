@@ -241,6 +241,7 @@ LM_EXTRACTORS_A_TO_O: dict[str, str] = {
     # Spanish context
     # Hindi context
     "mmlusr": f"{base_import}mmlusr:MmlusrExtractor",
+    "advanced_ai_risk": f"{base_import}model_written_evals:ModelWrittenEvalsExtractor",
     "model_written_evals": f"{base_import}model_written_evals:ModelWrittenEvalsExtractor",
     "moral_stories": f"{base_import}moral_stories:MoralStoriesExtractor",
     "mts_dialog": f"{base_import}mts_dialog:MtsDialogExtractor",

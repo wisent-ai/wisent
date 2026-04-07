@@ -174,41 +174,82 @@ class AradiceExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Build case-insensitive doc lookup
+            doc_lower = {k.lower(): v for k, v in doc.items()}
+
+            # --- PIQA format: goal + sol1 + sol2 + label ---
+            if "goal" in doc_lower and "sol1" in doc_lower:
+                question = str(doc_lower["goal"]).strip()
+                choices = [
+                    str(doc_lower.get("sol1", "")).strip(),
+                    str(doc_lower.get("sol2", "")).strip(),
+                ]
+                answer = doc_lower.get("label", 0)
+                answer_idx = int(answer) if isinstance(answer, (int, float)) else 0
+                if question and len(choices) == 2 and 0 <= answer_idx < 2:
+                    return self._build_pair(
+                        question=question,
+                        correct=choices[answer_idx],
+                        incorrect=choices[(answer_idx + 1) % 2],
+                        metadata={"label": "aradice"},
+                    )
+                return None
+
+            # --- OpenBookQA format: question.stem + question.choices [{label,text}] + answerKey ---
+            if "question" in doc and isinstance(doc.get("question"), dict):
+                q_data = doc["question"]
+                question = str(q_data.get("stem", "")).strip()
+                raw_choices = q_data.get("choices", [])
+                choices = [str(c.get("text", "")).strip() for c in raw_choices]
+                labels = [str(c.get("label", "")).strip() for c in raw_choices]
+                answer_key = str(doc.get("answerKey", "A")).strip()
+                answer_idx = labels.index(answer_key) if answer_key in labels else 0
+                if question and choices and 0 <= answer_idx < len(choices):
+                    return self._build_pair(
+                        question=question,
+                        correct=choices[answer_idx],
+                        incorrect=choices[(answer_idx + 1) % len(choices)],
+                        metadata={"label": "aradice"},
+                    )
+                return None
+
+            # --- Standard MC format ---
             # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", doc.get("sentence", "")))))).strip()
+            question = (doc_lower.get("question", doc_lower.get("query", doc_lower.get("input",
+                        doc_lower.get("instruction", doc_lower.get("prompt", doc_lower.get("sentence", ""))))))).strip()
 
             # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
+            choices = doc_lower.get("choices", doc_lower.get("options", doc_lower.get("answers", [])))
 
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
+            # Handle "Option A"/"Option B" format (with spaces, any case)
+            if not choices and ("option a" in doc_lower or "option_a" in doc_lower):
                 choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
+                    str(doc_lower.get("option a", doc_lower.get("option_a", ""))).strip(),
+                    str(doc_lower.get("option b", doc_lower.get("option_b", ""))).strip(),
+                    str(doc_lower.get("option c", doc_lower.get("option_c", ""))).strip(),
+                    str(doc_lower.get("option d", doc_lower.get("option_d", ""))).strip(),
                 ]
                 choices = [c for c in choices if c]
 
             # Handle option1/option2 format (winogrande-style)
-            if not choices and "option1" in doc:
+            if not choices and "option1" in doc_lower:
                 choices = [
-                    str(doc.get("option1", "")).strip(),
-                    str(doc.get("option2", "")).strip(),
+                    str(doc_lower.get("option1", "")).strip(),
+                    str(doc_lower.get("option2", "")).strip(),
                 ]
                 choices = [c for c in choices if c]
 
             # Handle binary tasks with target but no explicit choices (e.g., boolq)
-            # For Arabic boolq: target is "نعم" or "لا"
-            if not choices and "target" in doc:
-                target = str(doc.get("target", "")).strip()
-                if target in ["نعم", "لا"]:  # Arabic Yes/No
-                    choices = ["لا", "نعم"]  # No, Yes
+            if not choices and "target" in doc_lower:
+                target = str(doc_lower.get("target", "")).strip()
+                if target in ["نعم", "لا"]:
+                    choices = ["لا", "نعم"]
                 elif target in ["yes", "no", "true", "false"]:
-                    choices = ["no", "yes"]  # English
+                    choices = ["no", "yes"]
 
             # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", doc.get("gold", None))))
+            # Default to 0 if no answer field (AraDiCE cultural tasks always have answer=0)
+            answer = doc_lower.get("answer", doc_lower.get("answerkey", doc_lower.get("label", doc_lower.get("target", doc_lower.get("gold", 0 if choices else None)))))
 
             # Handle different answer formats
             if isinstance(answer, str):
