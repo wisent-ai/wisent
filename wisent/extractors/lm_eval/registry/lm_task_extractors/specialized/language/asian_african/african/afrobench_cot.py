@@ -120,9 +120,11 @@ class AfroBenchCotExtractor(LMEvalBenchmarkExtractor):
             if "tokens" in doc and "ner_tags" in doc:
                 return _extract_sequence_labeling(doc, "tokens", "ner_tags", log)
 
-            # Schema 6: POS — tokens list + pos_tags
+            # Schema 6: POS — tokens list + pos_tags or upos
             if "tokens" in doc and "pos_tags" in doc:
                 return _extract_sequence_labeling(doc, "tokens", "pos_tags", log)
+            if "tokens" in doc and "upos" in doc:
+                return _extract_sequence_labeling(doc, "tokens", "upos", log)
 
             # Schema 7: generic question + answer/target field
             question = str(
