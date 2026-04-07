@@ -160,7 +160,9 @@ class LMEvalDataLoader(BaseDataLoader):
             "deva": "Deva", "hebr": "Hebr", "nkoo": "Nkoo", "beng": "Beng",
             "guru": "Guru", "mlym": "Mlym", "taml": "Taml", "orya": "Orya",
             "sinh": "Sinh", "mymr": "Mymr", "khmr": "Khmr", "hang": "Hang",
-            "laoo": "Laoo",
+            "laoo": "Laoo", "tibt": "Tibt", "grek": "Grek", "armn": "Armn",
+            "jpan": "Jpan", "knda": "Knda", "geor": "Geor", "telu": "Telu",
+            "thai": "Thai", "hans": "Hans", "hant": "Hant", "gujr": "Gujr",
         }
         def _restore_script_case(name: str) -> str:
             for lower, title in _ISO_SCRIPTS.items():
@@ -173,7 +175,10 @@ class LMEvalDataLoader(BaseDataLoader):
         # (e.g. flores_afr_Latn-eng_Latn_prompt_1, ntrex_afr_Latn-eng_Latn_prompt_1).
         _has_iso_script = any(
             f"_{code}" in lm_eval_task_name or f"-{code}" in lm_eval_task_name
-            for code in ("Latn", "Ethi", "Arab", "Cyrl", "Deva", "Hebr", "Nkoo")
+            for code in ("Latn", "Ethi", "Arab", "Cyrl", "Deva", "Hebr", "Nkoo",
+                         "Beng", "Guru", "Mlym", "Taml", "Orya", "Sinh", "Mymr",
+                         "Khmr", "Hang", "Laoo", "Tibt", "Grek", "Armn", "Jpan",
+                         "Knda", "Geor", "Telu", "Thai", "Hans", "Hant", "Gujr")
         )
         is_case_sensitive = (
             any(lm_eval_task_name.startswith(prefix) for prefix in CASE_SENSITIVE_PREFIXES) or
