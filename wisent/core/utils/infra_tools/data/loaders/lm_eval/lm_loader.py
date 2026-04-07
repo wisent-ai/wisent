@@ -152,6 +152,11 @@ class LMEvalDataLoader(BaseDataLoader):
                 lm_eval_task_name = correct_prefix + lm_eval_task_name[len(lower_prefix):]
                 break
 
+        # Additional case restorations for AraDiCE subtask components
+        # e.g. AraDiCE_arabicmmlu_egy -> AraDiCE_ArabicMMLU_egy
+        if lm_eval_task_name.startswith("AraDiCE_"):
+            lm_eval_task_name = lm_eval_task_name.replace("AraDiCE_arabicmmlu_", "AraDiCE_ArabicMMLU_")
+
         # Restore ISO 15924 script codes that may have been lowercased during normalization.
         # lm-eval expects title-case: Latn, Cyrl, Arab, Ethi, etc.
         import re

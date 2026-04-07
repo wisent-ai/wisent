@@ -177,6 +177,23 @@ class AradiceExtractor(LMEvalBenchmarkExtractor):
             # Build case-insensitive doc lookup
             doc_lower = {k.lower(): v for k, v in doc.items()}
 
+            # --- TruthfulQA MC1 format: question + mc1_targets {choices, labels} ---
+            if "mc1_targets" in doc_lower and isinstance(doc_lower.get("mc1_targets"), dict):
+                question = str(doc_lower.get("question", "")).strip()
+                mc1 = doc_lower["mc1_targets"]
+                choices = [str(c).strip() for c in mc1.get("choices", [])]
+                labels = mc1.get("labels", [])
+                # The correct answer is the choice with label == 1
+                answer_idx = next((i for i, l in enumerate(labels) if l == 1), 0)
+                if question and choices and 0 <= answer_idx < len(choices):
+                    return self._build_pair(
+                        question=question,
+                        correct=choices[answer_idx],
+                        incorrect=choices[(answer_idx + 1) % len(choices)],
+                        metadata={"label": "aradice"},
+                    )
+                return None
+
             # --- PIQA format: goal + sol1 + sol2 + label ---
             if "goal" in doc_lower and "sol1" in doc_lower:
                 question = str(doc_lower["goal"]).strip()
