@@ -107,6 +107,7 @@ TASK_NAME_MAPPING = {
     "livemathbench_cnmo_zh": "livemathbench_cnmo_cn",
     "multilingual": "lambada_openai_mt_en",
     "trasnlation_all_flores": "trasnlation_dr_en_flores",
+    "unitxt": "20_newsgroups",
     "reversed": "reversed_words",
     "random": "random_insertion",
     "pile": "pile_arxiv",
