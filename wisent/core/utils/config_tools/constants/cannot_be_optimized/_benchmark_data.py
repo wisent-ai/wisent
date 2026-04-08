@@ -127,3 +127,9 @@ POLYMATH_DEFAULT_K = 16
 BIGCODE_K_VALUES = (1, 10, 100)
 # --- Evaluator thresholds ---
 CONALA_BLEU_THRESHOLD = 0.5
+
+# Datasets removed from HuggingFace Hub upstream and the canonical mirror to use instead.
+# Used by lm_loader to redirect datasets.load_dataset() calls.
+REMOVED_DATASET_REPLACEMENTS = {
+    "Rakuten/JGLUE": "shunk031/JGLUE",
+}

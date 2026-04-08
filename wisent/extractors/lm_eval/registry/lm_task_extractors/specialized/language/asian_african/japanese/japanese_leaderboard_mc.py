@@ -27,16 +27,43 @@ class JapaneseLeaderboardMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
     evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
-        lm_eval_task_data: ConfigurableTask,
+        lm_eval_task_data: ConfigurableTask | None = None,
         limit: int | None = None,
         preferred_doc: str | None = None,
         *,
         train_ratio: float,
     ) -> list[ContrastivePair]:
-        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
+        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "japanese_leaderboard_mc"))
         max_items = self._normalize_limit(limit)
 
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc, train_ratio=train_ratio)
+        # Rakuten/JGLUE was removed from HF; jcommonsenseqa/jnli/marc_ja used to depend
+        # on it. Load shunk031/JGLUE directly when lm-eval can't load the task.
+        cfg_task = None
+        if lm_eval_task_data is not None:
+            cfg = getattr(lm_eval_task_data, "config", None)
+            cfg_task = cfg.__dict__.get("task") if (cfg is not None and hasattr(cfg, "__dict__")) else None
+
+        if lm_eval_task_data is None or cfg_task in (
+            "ja_leaderboard_jcommonsenseqa",
+            "ja_leaderboard_jnli",
+            "ja_leaderboard_marc_ja",
+        ):
+            from datasets import load_dataset
+            config_map = {
+                "ja_leaderboard_jcommonsenseqa": "JCommonsenseQA",
+                "ja_leaderboard_jnli": "JNLI",
+                "ja_leaderboard_marc_ja": "MARC-ja",
+            }
+            target_cfg = cfg_task or "ja_leaderboard_jcommonsenseqa"
+            jglue_config = config_map.get(target_cfg, "JCommonsenseQA")
+            try:
+                ds = load_dataset("shunk031/JGLUE", jglue_config, split="validation", trust_remote_code=True)
+            except Exception as exc:
+                log.error(f"Failed to load shunk031/JGLUE: {exc}")
+                return []
+            docs = list(ds)[: (max_items * 4 if max_items else None)]
+        else:
+            docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc, train_ratio=train_ratio)
 
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
@@ -62,8 +89,15 @@ class JapaneseLeaderboardMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
+            # JCommonsenseQA shunk031 format: question + choice0..choice4 + label
+            if "question" in doc and "choice0" in doc and "label" in doc:
+                question = str(doc.get("question", "")).strip()
+                choices = [str(doc.get(f"choice{i}", "")).strip() for i in range(5) if doc.get(f"choice{i}")]
+                answer = doc.get("label", 0)
+                answer_idx = int(answer) if isinstance(answer, (int, str)) else 0
+
             # Format 1: question + choices (JCommonsenseQA)
-            if "question" in doc and "choices" in doc:
+            elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", [])
                 if isinstance(choices_data, list):
@@ -111,7 +145,7 @@ class JapaneseLeaderboardMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
             negative_response = NegativeResponse(model_response=incorrect)
 
             return ContrastivePair(
-                prompt=formatted_question,
+                prompt=prompt,
                 positive_response=positive_response,
                 negative_response=negative_response,
                 label="japanese_leaderboard_mc",

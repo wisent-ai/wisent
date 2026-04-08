@@ -31,6 +31,21 @@ if 'bleurt' not in _sys.modules:
     _bleurt_stub = _types.ModuleType('bleurt')
     _sys.modules['bleurt'] = _bleurt_stub
 
+# Redirect calls for datasets that have been removed from HuggingFace Hub upstream
+# (e.g. Rakuten/JGLUE) to their canonical mirrors (e.g. shunk031/JGLUE).
+from wisent.core.utils.config_tools.constants.cannot_be_optimized._benchmark_data import (
+    REMOVED_DATASET_REPLACEMENTS,
+)
+import datasets as _ds_remap
+_orig_ds_load_dataset = _ds_remap.load_dataset
+def _patched_ds_load_dataset(path, *args, **kwargs):
+    replacement = REMOVED_DATASET_REPLACEMENTS.get(path)
+    if replacement is not None:
+        path = replacement
+        kwargs.setdefault("trust_remote_code", True)
+    return _orig_ds_load_dataset(path, *args, **kwargs)
+_ds_remap.load_dataset = _patched_ds_load_dataset
+
 # Patch evaluate.load to return a stub for unavailable metrics (e.g. bleurt)
 # Some lm-eval task utils.py call evaluate.load("bleurt", ...) at module import time.
 try:
@@ -353,6 +368,12 @@ class LMEvalDataLoader(BaseDataLoader):
             lm_eval_task_name = "kbl_bar_exam_em_" + lm_eval_task_name[len("kbl_leet_"):]
         elif lm_eval_task_name.startswith("kbl_legal_bar_exam_"):
             lm_eval_task_name = "kbl_bar_exam_em_" + lm_eval_task_name[len("kbl_legal_bar_exam_"):]
+
+        # iwslt2017 uses dashes between iwslt2017 and the language pair (iwslt2017-ar-en)
+        if lm_eval_task_name.startswith("iwslt2017_"):
+            parts = lm_eval_task_name.split("_")
+            if len(parts) >= 3:
+                lm_eval_task_name = f"{parts[0]}-{parts[1]}-{parts[2]}"
 
         # Check for case-sensitive prefixes (including ACVA tasks with camelCase components)
         # Also preserve case for afrobench leaf tasks that include ISO script codes
