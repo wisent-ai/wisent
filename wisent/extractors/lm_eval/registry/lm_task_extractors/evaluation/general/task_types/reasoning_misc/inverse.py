@@ -49,9 +49,28 @@ class InverseExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # inverse_scaling format: prompt + classes (list) + answer_index (int)
+            if "prompt" in doc and "classes" in doc and "answer_index" in doc:
+                prompt_text = str(doc.get("prompt", "")).strip()
+                classes = doc.get("classes", [])
+                try:
+                    ans_idx = int(doc.get("answer_index"))
+                except (TypeError, ValueError):
+                    return None
+                if not prompt_text or not isinstance(classes, list) or not (0 <= ans_idx < len(classes)):
+                    return None
+                correct = str(classes[ans_idx]).strip()
+                incorrect = str(classes[(ans_idx + 1) % len(classes)]).strip()
+                return ContrastivePair(
+                    prompt=prompt_text,
+                    positive_response=PositiveResponse(model_response=correct),
+                    negative_response=NegativeResponse(model_response=incorrect),
+                    label="inverse_scaling",
+                )
+
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
             

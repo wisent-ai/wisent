@@ -99,17 +99,21 @@ class EqBenchEsExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
 
-            # Format 3: query/prompt + answer
+            # Format 3: query/prompt + answer (eq_bench multilingual uses reference_answer_fullscale)
             elif "query" in doc or "prompt" in doc:
                 question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
+                correct_answer = str(
+                    doc.get("reference_answer_fullscale",
+                            doc.get("target", doc.get("answer", "")))
+                ).strip()
+                if correct_answer and question:
+                    words = correct_answer.split()
+                    incorrect = " ".join(reversed(words)) if len(words) > 1 else "incorrect rating"
                     metadata = {"label": "eq-bench_es"}
                     return self._build_pair(
-                        question=f"Question: {question}",
+                        question=question,
                         correct=correct_answer,
-                        incorrect="incorrect answer",
+                        incorrect=incorrect,
                         metadata=metadata,
                     )
                 return None

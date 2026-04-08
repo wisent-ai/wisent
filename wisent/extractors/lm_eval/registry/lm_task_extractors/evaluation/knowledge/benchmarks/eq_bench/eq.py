@@ -49,9 +49,26 @@ class EqExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # eq_bench (pbevan11/EQ-Bench): prompt + reference_answer_fullscale
+            # The reference_answer_fullscale is a structured rating block.
+            # Use it as the correct answer, with a synthetic word-shuffled negative.
+            if "prompt" in doc and "reference_answer_fullscale" in doc:
+                prompt_text = str(doc.get("prompt", "")).strip()
+                ref_answer = str(doc.get("reference_answer_fullscale", "")).strip()
+                if not prompt_text or not ref_answer:
+                    return None
+                words = ref_answer.split()
+                incorrect = " ".join(reversed(words)) if len(words) > 1 else "incorrect rating"
+                return ContrastivePair(
+                    prompt=prompt_text,
+                    positive_response=PositiveResponse(model_response=ref_answer),
+                    negative_response=NegativeResponse(model_response=incorrect),
+                    label="eq_bench",
+                )
+
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
             

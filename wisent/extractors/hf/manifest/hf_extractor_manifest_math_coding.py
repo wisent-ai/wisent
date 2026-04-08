@@ -9,6 +9,7 @@ EXTRACTORS_MATH_CODING: dict[str, str] = {
     "aime2024": f"{base_import}aime2024:AIME2024Extractor",
     "aime2025": f"{base_import}aime2025:AIME2025Extractor",
     "asdiv_cot_llama": f"{base_import}math500:MATH500Extractor",
+    "chain": f"{base_import}math500:MATH500Extractor",
     "chain_of_thought": f"{base_import}math500:MATH500Extractor",
     "gsm8k": f"{base_import}gsm8k_extractor:GSM8KExtractor",
     "gsm8k_cot": f"{base_import}math500:MATH500Extractor",

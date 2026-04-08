@@ -49,9 +49,35 @@ class JaExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # ja_leaderboard_xwinograd: sentence + sentence1 + sentence2 + answer ("1"/"2")
+            # After lm-eval's process_docs the doc also has label (int) and choices (list).
+            if "sentence1" in doc and "sentence2" in doc and ("answer" in doc or "label" in doc):
+                s1 = str(doc.get("sentence1", "")).strip()
+                s2 = str(doc.get("sentence2", "")).strip()
+                full_sentence = str(doc.get("sentence", "")).strip()
+                ans_raw = doc.get("label", doc.get("answer"))
+                try:
+                    if isinstance(ans_raw, str):
+                        ans_idx = int(ans_raw) - (1 if ans_raw in ("1", "2") else 0)
+                    else:
+                        ans_idx = int(ans_raw)
+                except (TypeError, ValueError):
+                    return None
+                if not (0 <= ans_idx <= 1) or not s1 or not s2:
+                    return None
+                correct = s1 if ans_idx == 0 else s2
+                incorrect = s2 if ans_idx == 0 else s1
+                prompt_text = full_sentence if full_sentence else "Choose the correct continuation:"
+                return ContrastivePair(
+                    prompt=prompt_text,
+                    positive_response=PositiveResponse(model_response=correct),
+                    negative_response=NegativeResponse(model_response=incorrect),
+                    label="ja_leaderboard_xwinograd",
+                )
+
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
             

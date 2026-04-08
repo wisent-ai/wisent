@@ -52,6 +52,25 @@ class CnnExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # cnn_dailymail_abisee schema: article + highlights
+            if "article" in doc and "highlights" in doc:
+                article = str(doc.get("article", "")).strip()
+                highlights = str(doc.get("highlights", "")).strip()
+                if not article or not highlights:
+                    return None
+                sentences = [s.strip() for s in highlights.split('.') if s.strip()]
+                if len(sentences) > 1:
+                    shuffled = list(reversed(sentences))
+                    incorrect = '. '.join(shuffled) + '.'
+                else:
+                    incorrect = "This is an incorrect summary."
+                return self._build_pair(
+                    question=f"Summarize the following article:\n\n{article}\n\nSummary:",
+                    correct=highlights,
+                    incorrect=incorrect,
+                    metadata={"label": "cnn_dailymail"},
+                )
+
             # Format 1: Unitxt summarization format with source + target
             if "source" in doc and "target" in doc:
                 source = str(doc.get("source", "")).strip()

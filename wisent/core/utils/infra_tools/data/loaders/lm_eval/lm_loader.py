@@ -311,7 +311,10 @@ class LMEvalDataLoader(BaseDataLoader):
             for lower, title in _ISO_SCRIPTS.items():
                 name = re.sub(rf'(?<=[_\-]){lower}(?=[_\-]|$)', title, name)
             return name
-        lm_eval_task_name = _restore_script_case(lm_eval_task_name)
+        # global_piqa task names use lowercase script codes (e.g.
+        # global_piqa_completions_eng_latn) — exempt them from the title-case restore.
+        if not lm_eval_task_name.startswith("global_piqa_"):
+            lm_eval_task_name = _restore_script_case(lm_eval_task_name)
 
         # afrobench / flores / ntrex / salt tasks use a dash between source and
         # target language pairs (e.g. flores_aka_Latn-eng_Latn_prompt_3). The HF

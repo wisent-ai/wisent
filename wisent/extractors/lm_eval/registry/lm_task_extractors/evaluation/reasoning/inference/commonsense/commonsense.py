@@ -49,9 +49,28 @@ class CommonsenseExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # ethics_cm schema: input + label (binary 0/1, choices are ['no','yes'])
+            if "input" in doc and "label" in doc and "choices" not in doc:
+                input_text = str(doc.get("input", "")).strip()
+                try:
+                    label_idx = int(doc.get("label", 0))
+                except (TypeError, ValueError):
+                    return None
+                if not input_text or label_idx not in (0, 1):
+                    return None
+                ethics_choices = ["no", "yes"]
+                correct = ethics_choices[label_idx]
+                incorrect = ethics_choices[1 - label_idx]
+                return ContrastivePair(
+                    prompt=f"{input_text}\nQuestion: Is this wrong?\nAnswer:",
+                    positive_response=PositiveResponse(model_response=correct),
+                    negative_response=NegativeResponse(model_response=incorrect),
+                    label="ethics_cm",
+                )
+
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
             

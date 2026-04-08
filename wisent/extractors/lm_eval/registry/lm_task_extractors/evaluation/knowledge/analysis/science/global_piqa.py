@@ -67,6 +67,26 @@ class GlobalPiqaExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # global_piqa schema: prompt + solution0 + solution1 + label
+            if "prompt" in doc and "solution0" in doc and "solution1" in doc and "label" in doc:
+                prompt_text = str(doc.get("prompt", "")).strip()
+                sol0 = str(doc.get("solution0", "")).strip()
+                sol1 = str(doc.get("solution1", "")).strip()
+                try:
+                    label_idx = int(doc.get("label", 0))
+                except (TypeError, ValueError):
+                    return None
+                if not prompt_text or not sol0 or not sol1 or label_idx not in (0, 1):
+                    return None
+                correct = sol0 if label_idx == 0 else sol1
+                incorrect = sol1 if label_idx == 0 else sol0
+                return ContrastivePair(
+                    prompt=prompt_text,
+                    positive_response=PositiveResponse(model_response=correct),
+                    negative_response=NegativeResponse(model_response=incorrect),
+                    label="global_piqa",
+                )
+
             # Try multiple possible schema formats
             question = None
             choices = None
