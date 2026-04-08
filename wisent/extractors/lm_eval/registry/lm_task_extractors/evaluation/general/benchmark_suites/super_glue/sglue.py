@@ -49,6 +49,21 @@ class SglueExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Format 0: boolq — question + passage + label (binary)
+            if "question" in doc and "passage" in doc and "label" in doc:
+                question_text = str(doc.get("question", "")).strip()
+                passage = str(doc.get("passage", "")).strip()
+                label = doc.get("label", -1)
+                if question_text and passage and label in (0, 1):
+                    correct = "Yes" if label == 1 else "No"
+                    incorrect = "No" if label == 1 else "Yes"
+                    return self._build_pair(
+                        question=f"Passage: {passage}\nQuestion: {question_text}\nAnswer:",
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata={"label": "sglue"},
+                    )
+
             # Format 1: premise/hypothesis/label (entailment tasks like RTE)
             if "premise" in doc and "hypothesis" in doc and "label" in doc:
                 premise = str(doc.get("premise", "")).strip()

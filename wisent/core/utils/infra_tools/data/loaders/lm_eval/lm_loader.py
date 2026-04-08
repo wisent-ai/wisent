@@ -23,6 +23,31 @@ import datasets.features.features as _features_module
 if 'List' not in _features_module._FEATURE_TYPES and 'LargeList' in _features_module._FEATURE_TYPES:
     _features_module._FEATURE_TYPES['List'] = _features_module._FEATURE_TYPES['LargeList']
 
+# Stub bleurt module so medtext/utils.py imports successfully without bleurt installed.
+# bleurt is only used at evaluation time, not during extraction.
+import sys as _sys
+if 'bleurt' not in _sys.modules:
+    import types as _types
+    _bleurt_stub = _types.ModuleType('bleurt')
+    _sys.modules['bleurt'] = _bleurt_stub
+
+# Patch evaluate.load to return a stub for unavailable metrics (e.g. bleurt)
+# Some lm-eval task utils.py call evaluate.load("bleurt", ...) at module import time.
+try:
+    import evaluate as _evaluate_mod
+    _orig_evaluate_load = _evaluate_mod.load
+    def _patched_evaluate_load(*args, **kwargs):
+        try:
+            return _orig_evaluate_load(*args, **kwargs)
+        except Exception as e:
+            class _StubMetric:
+                def compute(self, *a, **kw):
+                    return {}
+            return _StubMetric()
+    _evaluate_mod.load = _patched_evaluate_load
+except ImportError:
+    pass
+
 # Compatibility shim: datasets.load_metric was removed in datasets 3.x.
 # Some lm-eval task utils.py files (e.g. basqueglue/utils.py) still import it.
 # Forward to evaluate.load if available, otherwise provide a stub.

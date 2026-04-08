@@ -18,6 +18,13 @@ _sys.modules["wisent.extractors.lm_eval.lm_task_extractors.model_written_evals"]
 # Also register under the registry path (used by LM_EVAL_EXTRACTOR_BASE_IMPORT)
 _sys.modules["wisent.extractors.lm_eval.registry.lm_task_extractors.model_written_evals"] = _model_written_evals_mod
 
+# Module alias for super_glue_t5_prompt — extractor lives in HF tree but is used via lm_eval path
+from wisent.extractors.hf.registry.hf_task_extractors.evaluation.general.super_glue.super_glue_t5_prompt import SuperGlueT5PromptExtractor as _SuperGlueT5PromptExtractor
+_sgt5p_mod = _types.ModuleType("super_glue_t5_prompt")
+_sgt5p_mod.SuperGlueT5PromptExtractor = _SuperGlueT5PromptExtractor
+_sys.modules["wisent.extractors.lm_eval.lm_task_extractors.super_glue_t5_prompt"] = _sgt5p_mod
+_sys.modules["wisent.extractors.lm_eval.registry.lm_task_extractors.super_glue_t5_prompt"] = _sgt5p_mod
+
 from wisent.extractors.lm_eval.lm_task_extractors.specialized.safety.ai_risk.advanced import AdvancedExtractor
 
 # Create module alias for advanced extractor

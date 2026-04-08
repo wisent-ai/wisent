@@ -72,6 +72,25 @@ class LongbenchExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
+            # Format 0: longbench format — question + context + answers (list)
+            if "question" in doc and "context" in doc and "answers" in doc:
+                question_text = str(doc.get("question", "")).strip()
+                context = str(doc.get("context", "")).strip()
+                answers = doc.get("answers", [])
+                if not isinstance(answers, list) or not answers:
+                    return None
+                correct_answer = str(answers[0]).strip()
+                if not correct_answer or not question_text:
+                    return None
+                # Truncate context for synthesis incorrect
+                incorrect_answer = "Information not available in the provided context."
+                return self._build_pair(
+                    question=f"{context}\n\n{question_text}",
+                    correct=correct_answer,
+                    incorrect=incorrect_answer,
+                    metadata={"label": "longbench"},
+                )
+
             # Format 1: question + choices + answer
             if "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()

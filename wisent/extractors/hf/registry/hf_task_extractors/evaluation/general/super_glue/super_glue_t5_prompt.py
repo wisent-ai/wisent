@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
-from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
+from wisent.extractors.lm_eval.atoms import LMEvalBenchmarkExtractor
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -14,7 +14,7 @@ __all__ = ["SuperGlueT5PromptExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = ("super-glue-t5-prompt",)
-class SuperGlueT5PromptExtractor(HuggingFaceBenchmarkExtractor):
+class SuperGlueT5PromptExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Super Glue T5 Prompt benchmark."""
 
 
@@ -24,10 +24,12 @@ class SuperGlueT5PromptExtractor(HuggingFaceBenchmarkExtractor):
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
         preferred_doc: str | None = None,
+        *,
+        train_ratio: float,
     ) -> list[ContrastivePair]:
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc, train_ratio=train_ratio)
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
@@ -48,6 +50,40 @@ class SuperGlueT5PromptExtractor(HuggingFaceBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # COPA format — premise + choice1 + choice2 + question + label
+            if "premise" in doc and "choice1" in doc and "choice2" in doc and "label" in doc:
+                premise = str(doc.get("premise", "")).strip()
+                choice1 = str(doc.get("choice1", "")).strip()
+                choice2 = str(doc.get("choice2", "")).strip()
+                q_type = str(doc.get("question", "effect")).strip()
+                label = doc.get("label", -1)
+                if premise and choice1 and choice2 and label in (0, 1):
+                    correct = choice1 if label == 0 else choice2
+                    incorrect = choice2 if label == 0 else choice1
+                    connector = "because" if q_type == "cause" else "so"
+                    return self._build_pair(
+                        question=f"{premise} {connector}",
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata={"label": "super_glue_t5_prompt"},
+                    )
+
+            # Format 0: WSC format — text + span1_text + span2_text + label
+            if "text" in doc and "span1_text" in doc and "span2_text" in doc and "label" in doc:
+                text = str(doc.get("text", "")).strip()
+                span1 = str(doc.get("span1_text", "")).strip()
+                span2 = str(doc.get("span2_text", "")).strip()
+                label = doc.get("label", -1)
+                if text and span1 and span2 and label in (0, 1):
+                    correct = "True" if label == 1 else "False"
+                    incorrect = "False" if label == 1 else "True"
+                    return self._build_pair(
+                        question=f"Sentence: {text}\nDoes \"{span2}\" refer to \"{span1}\"?\nAnswer:",
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata={"label": "super_glue_t5_prompt"},
+                    )
+
             # Format 1: BoolQ format (question + passage + label)
             if "question" in doc and "passage" in doc and "label" in doc:
                 question = str(doc.get("question", "")).strip()
@@ -121,3 +157,20 @@ class SuperGlueT5PromptExtractor(HuggingFaceBenchmarkExtractor):
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
             return None
 
+    @staticmethod
+    def _build_pair(
+        question: str,
+        correct: str,
+        incorrect: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> ContrastivePair:
+        from wisent.core.primitives.contrastive_pairs.core.io.response import (
+            NegativeResponse,
+            PositiveResponse,
+        )
+        return ContrastivePair(
+            prompt=question,
+            positive_response=PositiveResponse(model_response=correct),
+            negative_response=NegativeResponse(model_response=incorrect),
+            label=(metadata or {}).get("label"),
+        )

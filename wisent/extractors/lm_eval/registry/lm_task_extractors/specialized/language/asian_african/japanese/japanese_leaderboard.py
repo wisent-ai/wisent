@@ -75,6 +75,28 @@ class JapaneseLeaderboardExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
+            # Format 0: xwinograd-style — sentence1 + sentence2 + label + choices
+            if "sentence1" in doc and "sentence2" in doc and "choices" in doc:
+                choices_data = doc.get("choices", [])
+                if isinstance(choices_data, list) and len(choices_data) >= 2:
+                    label = doc.get("label", 0)
+                    try:
+                        label_idx = int(label)
+                    except (ValueError, TypeError):
+                        label_idx = 0
+                    if 0 <= label_idx < len(choices_data):
+                        correct = str(choices_data[label_idx]).strip()
+                        incorrect_idx = (label_idx + 1) % len(choices_data)
+                        incorrect = str(choices_data[incorrect_idx]).strip()
+                        if correct and incorrect:
+                            return self._build_pair(
+                                question="Choose the more natural sentence:",
+                                correct=correct,
+                                incorrect=incorrect,
+                                metadata={"label": "japanese_leaderboard"},
+                            )
+                return None
+
             # Format 1: question + choices + answer
             if "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()

@@ -229,8 +229,10 @@ LM_EXTRACTORS_P_TO_Z: dict[str, str] = {
     "vaxx_stance": f"{base_import}vaxx:VaxxExtractor",
     "xlsum": f"{base_import}xlsum:XlsumExtractor",
     "yahoo_answers_topics": f"{base_import}unitxt:UnitxtExtractor",
-    "humaneval_instruct": f"{base_import}instructhumaneval:InstructhumanevalExtractor",
-    "humaneval_64_instruct": f"{base_import}instructhumaneval:InstructhumanevalExtractor",
+    "humaneval_instruct": f"{base_import}humaneval:HumanEvalExtractor",
+    "humaneval_64_instruct": f"{base_import}humaneval:HumanEvalExtractor",
+    "instruct_humaneval": f"{base_import}humaneval:HumanEvalExtractor",
+    "instructhumaneval": f"{base_import}humaneval:HumanEvalExtractor",
     # Note: "apps" is a HuggingFace-only task registered in the HF manifest.
     # It is NOT an lm-eval task and must not be listed here.
     "recode": f"{base_import}recode:RecodeExtractor",
