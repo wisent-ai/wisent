@@ -163,7 +163,6 @@ LM_EXTRACTORS_P_TO_Z: dict[str, str] = {
     "tag": f"{base_import}tag:TagExtractor",
     "basque_glue": f"{base_import}basque_glue:BasqueGlueExtractor",
     "basque-glue": f"{base_import}basque_glue:BasqueGlueExtractor",  # Hyphenated alias
-    "chain": f"{base_import}chain:ChainExtractor",
     "gpt3": f"{base_import}gpt3:Gpt3Extractor",
     "math": f"{base_import}math:MathExtractor",
     "math500": f"{base_import}math:MathExtractor",
