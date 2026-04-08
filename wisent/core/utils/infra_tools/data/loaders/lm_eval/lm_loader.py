@@ -324,6 +324,24 @@ class LMEvalDataLoader(BaseDataLoader):
         if lm_eval_task_name.startswith("ceval_valid_"):
             lm_eval_task_name = lm_eval_task_name.replace("ceval_valid_", "ceval-valid_", 1)
 
+        # arabic_leaderboard_acva_X_light tasks: reuse the existing TASK_NAME_MAPPING for
+        # the non-light variant (which restores title-case for country names) and append _light.
+        if lm_eval_task_name.startswith("arabic_leaderboard_acva_") and lm_eval_task_name.endswith("_light"):
+            base = lm_eval_task_name[: -len("_light")]
+            mapped_base = TASK_NAME_MAPPING.get(base, base)
+            lm_eval_task_name = f"{mapped_base}_light"
+
+        # bertaqa_en_mt_X uses dashes in model names: gemma-7b, latxa-13b-v1, llama-2-7b
+        # The HF cache stores them with underscores. Restore the dashes.
+        if lm_eval_task_name.startswith("bertaqa_en_mt_"):
+            suffix = lm_eval_task_name[len("bertaqa_en_mt_"):]
+            for orig in ("gemma_7b", "latxa_7b_v1", "latxa_13b_v1", "latxa_70b_v1",
+                         "llama_2_7b", "llama_2_13b", "llama_2_70b"):
+                if suffix.startswith(orig):
+                    suffix = orig.replace("_", "-") + suffix[len(orig):]
+                    lm_eval_task_name = "bertaqa_en_mt_" + suffix
+                    break
+
         # Check for case-sensitive prefixes (including ACVA tasks with camelCase components)
         # Also preserve case for afrobench leaf tasks that include ISO script codes
         # (e.g. flores_afr_Latn-eng_Latn_prompt_1, ntrex_afr_Latn-eng_Latn_prompt_1).
