@@ -342,6 +342,18 @@ class LMEvalDataLoader(BaseDataLoader):
                     lm_eval_task_name = "bertaqa_en_mt_" + suffix
                     break
 
+        # blimp_principle_a_X tasks use a capital 'A' in lm-eval (Principle A is a
+        # binding-theory term).
+        if lm_eval_task_name.startswith("blimp_principle_a_"):
+            lm_eval_task_name = "blimp_principle_A_" + lm_eval_task_name[len("blimp_principle_a_"):]
+
+        # Korean legal benchmark uses kbl_bar_exam_em_<topic>_<year> in lm-eval, but
+        # older HF cache entries used kbl_leet_<topic>_<year> / kbl_legal_bar_exam_<topic>_<year>.
+        if lm_eval_task_name.startswith("kbl_leet_"):
+            lm_eval_task_name = "kbl_bar_exam_em_" + lm_eval_task_name[len("kbl_leet_"):]
+        elif lm_eval_task_name.startswith("kbl_legal_bar_exam_"):
+            lm_eval_task_name = "kbl_bar_exam_em_" + lm_eval_task_name[len("kbl_legal_bar_exam_"):]
+
         # Check for case-sensitive prefixes (including ACVA tasks with camelCase components)
         # Also preserve case for afrobench leaf tasks that include ISO script codes
         # (e.g. flores_afr_Latn-eng_Latn_prompt_1, ntrex_afr_Latn-eng_Latn_prompt_1).
