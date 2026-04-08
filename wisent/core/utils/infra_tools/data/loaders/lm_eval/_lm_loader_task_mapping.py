@@ -15,6 +15,7 @@ TASK_NAME_MAPPING = {
     "assin": "assin_entailment",
     "arabic_leaderboard": "arabic_leaderboard_complete",
     "bhs": "bhs_basque",
+    "bhtc": "bhtc_v2",
     "wikitext103": "wikitext",
     "ptb": "wikitext",
     "penn_treebank": "wikitext",

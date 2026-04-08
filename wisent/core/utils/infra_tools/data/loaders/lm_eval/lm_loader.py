@@ -20,6 +20,19 @@ import datasets.features.features as _features_module
 if 'List' not in _features_module._FEATURE_TYPES and 'LargeList' in _features_module._FEATURE_TYPES:
     _features_module._FEATURE_TYPES['List'] = _features_module._FEATURE_TYPES['LargeList']
 
+# Compatibility shim: datasets.load_metric was removed in datasets 3.x.
+# Some lm-eval task utils.py files (e.g. basqueglue/utils.py) still import it.
+# Forward to evaluate.load if available, otherwise provide a stub.
+import datasets as _datasets
+if not hasattr(_datasets, 'load_metric'):
+    try:
+        import evaluate as _evaluate
+        _datasets.load_metric = _evaluate.load
+    except ImportError:
+        def _stub_load_metric(*args, **kwargs):
+            raise NotImplementedError("load_metric was removed; install 'evaluate'")
+        _datasets.load_metric = _stub_load_metric
+
 # Patch Features.reorder_fields_as to treat LargeList and list as compatible.
 # Old cached arrow files may use LargeList while new dataset_info uses list (or vice versa).
 # This prevents "Type mismatch: between LargeList and [Value]" errors during dataset loading.
