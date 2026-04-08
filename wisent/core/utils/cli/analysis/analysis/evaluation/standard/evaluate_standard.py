@@ -244,13 +244,28 @@ def evaluate_standard(
                 }
             })
         except Exception as e:
-            print(f"   ❌ Error evaluating question {idx}: {e}")
-            import traceback
-            traceback.print_exc()
-            evaluation_results.append({
-                **response_data,
-                "evaluation": {
-                    "error": str(e)
-                }
-            })
+            # Treat 'evaluator requires X kwarg' EvaluatorErrors the same as
+            # model_required so synthetic test pipelines that lack benchmark-specific
+            # metadata (test_code, judge_model, etc.) are skipped, not failed.
+            err_msg = str(e)
+            if "requires" in err_msg and ("kwarg" in err_msg or "not provided" in err_msg):
+                if args.verbose:
+                    print(f"Question {idx}: Skipped (evaluator missing prerequisite)")
+                evaluation_results.append({
+                    **response_data,
+                    "evaluation": {
+                        "error": "model_required",
+                        "detail": err_msg,
+                    }
+                })
+            else:
+                print(f"   ❌ Error evaluating question {idx}: {e}")
+                import traceback
+                traceback.print_exc()
+                evaluation_results.append({
+                    **response_data,
+                    "evaluation": {
+                        "error": str(e)
+                    }
+                })
 

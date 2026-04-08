@@ -318,6 +318,11 @@ class LMEvalDataLoader(BaseDataLoader):
             lm_eval_task_name = re.sub(r"^evalita_mp_", "evalita-mp_", lm_eval_task_name)
             lm_eval_task_name = re.sub(r"^evalita_sp_", "evalita-sp_", lm_eval_task_name)
             lm_eval_task_name = re.sub(r"_ner_v2_", "_ner-v2_", lm_eval_task_name)
+            lm_eval_task_name = re.sub(r"_ner_v1_", "_ner-v1_", lm_eval_task_name)
+
+        # ceval-valid uses a dash between ceval and valid (ceval-valid_accountant)
+        if lm_eval_task_name.startswith("ceval_valid_"):
+            lm_eval_task_name = lm_eval_task_name.replace("ceval_valid_", "ceval-valid_", 1)
 
         # Check for case-sensitive prefixes (including ACVA tasks with camelCase components)
         # Also preserve case for afrobench leaf tasks that include ISO script codes

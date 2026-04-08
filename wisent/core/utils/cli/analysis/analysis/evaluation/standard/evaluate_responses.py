@@ -35,11 +35,20 @@ def _get_special_evaluation_type(task_name: str) -> str | None:
     """Check if task requires special evaluation (docker, personalization, refusal).
 
     Returns evaluation_type string if special, None for standard evaluation.
+    Tries exact match first, then longest-prefix match against task-evaluator.json
+    keys (so e.g. "humaneval_instruct" matches "humaneval").
     """
     tasks = _load_task_evaluator_json()
     task_config = tasks.get(task_name)
     if not task_config:
-        return None
+        # Longest-prefix match: pick the longest key that is a prefix of task_name.
+        best_key = None
+        for key in tasks:
+            if task_name.startswith(key) and (best_key is None or len(key) > len(best_key)):
+                best_key = key
+        if best_key is None:
+            return None
+        task_config = tasks[best_key]
     evaluation_type = task_config.get('evaluation_type')
     if evaluation_type in ("docker_execution", "personalization", "refusal"):
         return evaluation_type
