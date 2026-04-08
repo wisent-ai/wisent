@@ -81,6 +81,25 @@ class EvalitaLlmExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # NER format: text + entities (list of {entity_text, type})
+            if "text" in doc and "entities" in doc:
+                text = str(doc.get("text", "")).strip()
+                entities = doc.get("entities", [])
+                if text and entities and isinstance(entities, list):
+                    correct_parts = [
+                        f"{e.get('entity_text', '')}:{e.get('type', '')}"
+                        for e in entities
+                        if isinstance(e, dict) and e.get("entity_text")
+                    ]
+                    if correct_parts:
+                        correct = " | ".join(correct_parts)
+                        return self._build_pair(
+                            question=f"Estrai le entità nominate dal seguente testo:\n{text}",
+                            correct=correct,
+                            incorrect="(no entities)",
+                            metadata={"label": "evalita_llm"},
+                        )
+
             # Lexical-substitution format: id + context + head + answers (list of {word, count})
             if "context" in doc and "head" in doc and "answers" in doc:
                 context = str(doc.get("context", "")).strip()

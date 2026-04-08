@@ -311,6 +311,14 @@ class LMEvalDataLoader(BaseDataLoader):
                 lm_eval_task_name,
             )
 
+        # evalita-mp / evalita-sp use dashes between top-level segments. HF
+        # caches them with underscores instead, so restore the dashes.
+        if lm_eval_task_name.startswith(("evalita_mp_", "evalita_sp_")):
+            # Convert evalita_mp_ner_v2_adg_p1 -> evalita-mp_ner-v2_adg_p1
+            lm_eval_task_name = re.sub(r"^evalita_mp_", "evalita-mp_", lm_eval_task_name)
+            lm_eval_task_name = re.sub(r"^evalita_sp_", "evalita-sp_", lm_eval_task_name)
+            lm_eval_task_name = re.sub(r"_ner_v2_", "_ner-v2_", lm_eval_task_name)
+
         # Check for case-sensitive prefixes (including ACVA tasks with camelCase components)
         # Also preserve case for afrobench leaf tasks that include ISO script codes
         # (e.g. flores_afr_Latn-eng_Latn_prompt_1, ntrex_afr_Latn-eng_Latn_prompt_1).
