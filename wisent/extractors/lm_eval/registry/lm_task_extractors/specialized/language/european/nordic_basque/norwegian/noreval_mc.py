@@ -241,12 +241,12 @@ class NorevalMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
                     log.debug("Skipping doc due to empty correct/wrong fields", extra={"doc": doc})
                     return None
 
-                prompt = f"Which sentence is grammatically correct?"
+                prompt = "Which sentence is grammatically correct?"
 
                 metadata = {"label": "noreval_ncb"}
 
                 return self._build_pair(
-                    question=question,
+                    question=prompt,
                     correct=correct,
                     incorrect=incorrect,
                     metadata=metadata,

@@ -64,6 +64,28 @@ class GalicianBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # truthfulqa-multi format: question + mc1_targets dict
+            if "question" in doc and "mc1_targets" in doc:
+                question = str(doc.get("question", "")).strip()
+                mc1 = doc.get("mc1_targets", {})
+                if question and isinstance(mc1, dict):
+                    choices_list = mc1.get("choices", [])
+                    labels = mc1.get("labels", [])
+                    if choices_list and labels and len(choices_list) == len(labels):
+                        try:
+                            correct_idx = labels.index(1)
+                            correct = str(choices_list[correct_idx]).strip()
+                            other = [c for i, c in enumerate(choices_list) if i != correct_idx]
+                            if other:
+                                return ContrastivePair(
+                                    prompt=question,
+                                    positive_response=PositiveResponse(model_response=correct),
+                                    negative_response=NegativeResponse(model_response=str(other[0]).strip()),
+                                    label="gl_bench_mc",
+                                )
+                        except (ValueError, IndexError):
+                            pass
+
             # parafrases_gl format: Frase + Paráfrase + Avaliación
             if "Frase" in doc and "Paráfrase" in doc and "Avaliación" in doc:
                 frase = str(doc.get("Frase", "")).strip()

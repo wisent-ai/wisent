@@ -67,6 +67,26 @@ class Llama3Extractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Llama3 evals format: input_question + input_choice_list + input_correct_responses
+            if "input_question" in doc and "input_choice_list" in doc and "input_correct_responses" in doc:
+                q = str(doc.get("input_question", "")).strip()
+                choice_list = doc.get("input_choice_list", {})
+                correct_responses = doc.get("input_correct_responses", [])
+                if q and isinstance(choice_list, dict) and correct_responses:
+                    correct_letter = str(correct_responses[0]).strip().upper() if correct_responses else ""
+                    if correct_letter in choice_list:
+                        correct = str(choice_list[correct_letter]).strip()
+                        # Pick a different letter as incorrect
+                        other_letters = [k for k in choice_list.keys() if k != correct_letter]
+                        if other_letters:
+                            incorrect = str(choice_list[other_letters[0]]).strip()
+                            return self._build_pair(
+                                question=q,
+                                correct=correct,
+                                incorrect=incorrect,
+                                metadata={"label": "llama3"},
+                            )
+
             # Try multiple possible schema formats
             question = None
             choices = None

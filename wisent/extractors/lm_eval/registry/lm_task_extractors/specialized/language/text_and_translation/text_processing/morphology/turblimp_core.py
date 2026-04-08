@@ -67,6 +67,18 @@ class TurblimpCoreExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # turblimp format: sentence_good + sentence_bad (BLiMP-style)
+            if "sentence_good" in doc and "sentence_bad" in doc:
+                good = str(doc.get("sentence_good", "")).strip()
+                bad = str(doc.get("sentence_bad", "")).strip()
+                if good and bad:
+                    return self._build_pair(
+                        question="Hangi cümle gramatik olarak doğrudur?",
+                        correct=good,
+                        incorrect=bad,
+                        metadata={"label": "turblimp_core"},
+                    )
+
             # Try multiple possible schema formats
             question = None
             choices = None
