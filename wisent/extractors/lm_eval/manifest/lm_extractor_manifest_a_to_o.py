@@ -89,6 +89,7 @@ LM_EXTRACTORS_A_TO_O: dict[str, str] = {
     "hendrycks_math_num_theory": f"{base_import}hendrycks_math:HendrycksMathExtractor",
     "hendrycks_math_prealgebra": f"{base_import}hendrycks_math:HendrycksMathExtractor",
     "hendrycks_math_precalc": f"{base_import}hendrycks_math:HendrycksMathExtractor",
+    # quac removed from lm-eval index; loaded via HF datasets directly
     "quac": f"{base_import}quac:QuACExtractor",
     "superglue": f"{base_import}superglue:SuperGLUEExtractor",
     "supergpqa": f"{base_import}supergpqa:SuperGPQAExtractor",

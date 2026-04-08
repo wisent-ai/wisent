@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
-from wisent.extractors.lm_eval.atoms import LMEvalBenchmarkExtractor
+from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -25,22 +25,30 @@ task_names = (
     "tmlu_teacher_qualification", "tmlu_tour_guide", "tmlu_tour_leader",
 )
 
-class TmluExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Tmlu benchmark."""
-
+class TmluExtractor(HuggingFaceBenchmarkExtractor):
+    """Extractor for Tmlu benchmark — loads MediaTek-Research/TCEval-v2 (tmmluplus subset)
+    since miulab/tmlu was removed from HF."""
 
     evaluator_name = "log_likelihoods"
+
     def extract_contrastive_pairs(
         self,
-        lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
-        preferred_doc: str | None = None,
-        *,
-        train_ratio: float,
     ) -> list[ContrastivePair]:
-        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
+        log = bind(_LOG, task="tmlu")
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc, train_ratio=train_ratio)
+
+        from datasets import load_dataset
+        try:
+            ds = load_dataset(
+                "MediaTek-Research/TCEval-v2",
+                "tmmluplus-accounting",
+                split="test",
+            )
+        except Exception as exc:
+            log.error(f"Failed to load TCEval-v2: {exc}")
+            return []
+        docs = list(ds)[: (max_items * 4 if max_items else None)]
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
@@ -52,7 +60,7 @@ class TmluExtractor(LMEvalBenchmarkExtractor):
                     break
 
         if not pairs:
-            task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
+            task_name = "tmlu"
             log.warning("No valid pairs extracted", extra={"task": task_name})
 
         return pairs
@@ -61,9 +69,24 @@ class TmluExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # TCEval-v2 tmmluplus format: question + A/B/C/D + answer (letter)
+            if "question" in doc and "A" in doc and "answer" in doc:
+                question = str(doc.get("question", "")).strip()
+                choices = [str(doc.get(letter, "")).strip() for letter in ["A", "B", "C", "D"] if doc.get(letter)]
+                answer = str(doc.get("answer", "")).strip().upper()
+                if question and choices and answer and len(answer) == 1 and answer.isalpha():
+                    answer_idx = ord(answer) - ord('A')
+                    if 0 <= answer_idx < len(choices):
+                        return self._build_pair(
+                            question=question,
+                            correct=choices[answer_idx],
+                            incorrect=choices[(answer_idx + 1) % len(choices)],
+                            metadata={"label": "tmlu"},
+                        )
+
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
             

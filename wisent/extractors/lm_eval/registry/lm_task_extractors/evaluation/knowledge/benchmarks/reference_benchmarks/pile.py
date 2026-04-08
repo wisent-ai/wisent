@@ -76,6 +76,20 @@ class PileExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Pile/pile_10k format: text-only (perplexity task)
+            if "text" in doc and len(doc) <= 3:
+                text = str(doc.get("text", "")).strip()
+                if text:
+                    words = text.split()
+                    if len(words) >= 2:
+                        return self._build_pair(
+                            question=" ".join(words[:-1]),
+                            correct=words[-1],
+                            incorrect="incorrect",
+                            metadata={"label": "pile"},
+                        )
+                return None
+
             # Try multiple possible schema formats
             question = None
             choices = None

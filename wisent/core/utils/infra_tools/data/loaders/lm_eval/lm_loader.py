@@ -331,7 +331,9 @@ class LMEvalDataLoader(BaseDataLoader):
             task_manager = LMTaskManager()
             task_manager.initialize_tasks()
 
-        if lm_eval_task_name == 'pile' or lm_eval_task_name.startswith('pile_'):
+        # pile_10k uses NeelNanda/pile-10k on HF (not the-eye.eu) — allow it.
+        # The original Pile dataset and pile_arxiv etc. host on the-eye.eu which is unavailable.
+        if (lm_eval_task_name == 'pile' or lm_eval_task_name.startswith('pile_')) and lm_eval_task_name != 'pile_10k':
             raise DataLoaderError(
                 f"Task '{lm_eval_task_name}' is disabled. "
                 f"The Pile benchmark dataset files are hosted on the-eye.eu which is currently unavailable. "

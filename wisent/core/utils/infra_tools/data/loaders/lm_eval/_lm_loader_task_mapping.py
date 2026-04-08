@@ -114,7 +114,7 @@ TASK_NAME_MAPPING = {
     "t0_eval": "anli_r1",
     "reversed": "reversed_words",
     "random": "random_insertion",
-    "pile": "pile_arxiv",
+    "pile": "pile_10k",
     "pile_10k": "pile_10k",
     "penn_treebank": "wikitext",
     "ptb": "wikitext",
