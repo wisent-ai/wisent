@@ -6,7 +6,15 @@ from wisent.core.utils.cli.cli_logger import setup_logger
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
-__all__ = ["CodexglueExtractor", "Code2TextExtractor"]
+__all__ = [
+    "CodexglueExtractor",
+    "Code2TextExtractor",
+    "Code2TextGoExtractor",
+    "Code2TextJavaExtractor",
+    "Code2TextJavascriptExtractor",
+    "Code2TextPhpExtractor",
+    "Code2TextRubyExtractor",
+]
 
 log = setup_logger(__name__)
 
@@ -186,4 +194,24 @@ class Code2TextExtractor(HuggingFaceBenchmarkExtractor):
         except Exception as exc:
             log.error(f"Error extracting code2text pair: {exc}", exc_info=True)
             return None
+
+
+class Code2TextGoExtractor(Code2TextExtractor):
+    LANGUAGE = "go"
+
+
+class Code2TextJavaExtractor(Code2TextExtractor):
+    LANGUAGE = "java"
+
+
+class Code2TextJavascriptExtractor(Code2TextExtractor):
+    LANGUAGE = "javascript"
+
+
+class Code2TextPhpExtractor(Code2TextExtractor):
+    LANGUAGE = "php"
+
+
+class Code2TextRubyExtractor(Code2TextExtractor):
+    LANGUAGE = "ruby"
 

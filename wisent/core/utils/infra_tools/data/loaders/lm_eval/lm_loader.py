@@ -11,6 +11,9 @@ os.environ['OMP_NUM_THREADS'] = '1'
 # Allow code evaluation for code-related tasks (humaneval, etc.)
 os.environ['HF_ALLOW_CODE_EVAL'] = '1'
 
+# Allow unitxt to use unverified code (required for some unitxt-based tasks like coedit)
+os.environ['UNITXT_ALLOW_UNVERIFIED_CODE'] = 'True'
+
 # Enable trust_remote_code for all datasets
 import datasets.config
 datasets.config.HF_DATASETS_TRUST_REMOTE_CODE = True

@@ -65,6 +65,25 @@ class CatalanBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # COPA schema: premise + choice1 + choice2 + question + label
+            if "premise" in doc and "choice1" in doc and "choice2" in doc and "label" in doc:
+                premise = str(doc.get("premise", "")).strip()
+                c1 = str(doc.get("choice1", "")).strip()
+                c2 = str(doc.get("choice2", "")).strip()
+                question_word = str(doc.get("question", "cause")).strip()
+                label = int(doc.get("label", 0))
+                if premise and c1 and c2 and 0 <= label <= 1:
+                    correct = c1 if label == 0 else c2
+                    incorrect = c2 if label == 0 else c1
+                    connector = "perquè" if question_word == "cause" else "per tant"
+                    return ContrastivePair(
+                        prompt=f"{premise} {connector}",
+                        positive_response=PositiveResponse(model_response=correct),
+                        negative_response=NegativeResponse(model_response=incorrect),
+                        label="ca_bench_mc",
+                    )
+                return None
+
             # Cocoteros generation schema: text + keywords + context
             if "text" in doc and "keywords" in doc and "context" in doc:
                 text = str(doc.get("text", "")).strip()

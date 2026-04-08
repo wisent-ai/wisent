@@ -19,6 +19,7 @@ TASK_NAME_MAPPING = {
     "bigbench_generate_until": "bigbench_anachronisms_generate_until",
     "cabbq": "cabbq_age",
     "click": "click_lang_grammar",
+    "coedit": "coedit_gec",
     "wikitext103": "wikitext",
     "ptb": "wikitext",
     "penn_treebank": "wikitext",
