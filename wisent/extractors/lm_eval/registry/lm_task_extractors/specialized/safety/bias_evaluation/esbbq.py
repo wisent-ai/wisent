@@ -72,6 +72,28 @@ class EsbbqExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
+            # Format 0: BBQ-style — context + question + ans0/ans1/ans2 + label
+            if "context" in doc and "question" in doc and "ans0" in doc and "label" in doc:
+                context = str(doc.get("context", "")).strip()
+                question_text = str(doc.get("question", "")).strip()
+                choices_bbq = [
+                    str(doc.get("ans0", "")).strip(),
+                    str(doc.get("ans1", "")).strip(),
+                    str(doc.get("ans2", "")).strip(),
+                ]
+                choices_bbq = [c for c in choices_bbq if c]
+                answer_idx_bbq = int(doc.get("label", 0))
+                if context and question_text and choices_bbq and 0 <= answer_idx_bbq < len(choices_bbq):
+                    correct = choices_bbq[answer_idx_bbq]
+                    incorrect = choices_bbq[(answer_idx_bbq + 1) % len(choices_bbq)]
+                    return self._build_pair(
+                        question=f"{context}\n{question_text}",
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata={"label": "esbbq"},
+                    )
+                return None
+
             # Format 1: question + choices + answer
             if "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()

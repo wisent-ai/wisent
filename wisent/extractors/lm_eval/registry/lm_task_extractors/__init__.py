@@ -75,6 +75,13 @@ _benchmarks_mod.BenchmarksExtractor = BenchmarksExtractor
 _sys.modules["wisent.extractors.lm_eval.lm_task_extractors.benchmarks"] = _benchmarks_mod
 _sys.modules["wisent.extractors.lm_eval.registry.lm_task_extractors.benchmarks"] = _benchmarks_mod
 
+# translation: same folder/file collision as benchmarks
+from wisent.extractors.lm_eval.registry.lm_task_extractors.specialized.language.text_and_translation.text_processing.text_tasks.translation import TranslationExtractor
+_translation_mod = _types.ModuleType("translation")
+_translation_mod.TranslationExtractor = TranslationExtractor
+_sys.modules["wisent.extractors.lm_eval.lm_task_extractors.translation"] = _translation_mod
+_sys.modules["wisent.extractors.lm_eval.registry.lm_task_extractors.translation"] = _translation_mod
+
 from wisent.extractors.lm_eval.lm_task_extractors.ai2_arc import AI2ARCExtractor
 from wisent.extractors.lm_eval.lm_task_extractors.anli import ANLIExtractor
 from wisent.extractors.lm_eval.lm_task_extractors.arc_challenge import ArcChallengeExtractor
