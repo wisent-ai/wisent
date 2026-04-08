@@ -85,7 +85,8 @@ class MBPPExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("task_id", "unknown"))
 
         try:
-            text = str(doc.get("text", "")).strip()
+            # mbpp uses 'text' field, mbpp_plus uses 'prompt' field
+            text = str(doc.get("text", doc.get("prompt", ""))).strip()
             code = str(doc.get("code", "")).strip()
             test_list = doc.get("test_list", [])
 

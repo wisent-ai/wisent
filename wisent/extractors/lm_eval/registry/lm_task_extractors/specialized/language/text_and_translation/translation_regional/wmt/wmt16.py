@@ -32,8 +32,15 @@ class Wmt16Extractor(LMEvalBenchmarkExtractor):
         *,
         train_ratio: float,
     ) -> list[ContrastivePair]:
-        # Determine source/target language from task name
-        task_name = getattr(lm_eval_task_data, "NAME", "wmt16-en-de")
+        # Determine source/target language from task name. NAME may be None;
+        # fall back to cfg.task. Note: getattr(cfg, "task") returns None for
+        # TaskConfig dataclass fields — need __dict__ lookup.
+        raw_name = getattr(lm_eval_task_data, "NAME", None)
+        cfg_task = None
+        cfg = getattr(lm_eval_task_data, "config", None)
+        if cfg is not None:
+            cfg_task = cfg.__dict__.get("task") if hasattr(cfg, "__dict__") else None
+        task_name = raw_name or cfg_task or "wmt16-en-de"
 
         # Parse task name to get language pair (e.g., "wmt16-de-en" -> de, en)
         if "de-en" in task_name:
@@ -67,8 +74,8 @@ class Wmt16Extractor(LMEvalBenchmarkExtractor):
     def _extract_pair_from_doc(self, doc: dict[str, Any], source_lang: str, target_lang: str) -> ContrastivePair | None:
         try:
             translation = doc.get("translation", {})
-            source_text = translation.get(source_lang, "").strip()
-            target_text = translation.get(target_lang, "").strip()
+            source_text = str(translation.get(source_lang, "")).strip() if hasattr(translation, 'get') else ""
+            target_text = str(translation.get(target_lang, "")).strip() if hasattr(translation, 'get') else ""
 
             if not source_text or not target_text:
                 log.debug("Skipping doc due to missing source or target text")
