@@ -67,6 +67,18 @@ class LmSynevalExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # lm_syneval format: sentence_good + sentence_bad (BLiMP-style minimal pair)
+            if "sentence_good" in doc and "sentence_bad" in doc:
+                good = str(doc.get("sentence_good", "")).strip()
+                bad = str(doc.get("sentence_bad", "")).strip()
+                if good and bad:
+                    return self._build_pair(
+                        question="Which sentence is grammatically correct?",
+                        correct=good,
+                        incorrect=bad,
+                        metadata={"label": "lm_syneval"},
+                    )
+
             # Try multiple possible schema formats
             question = None
             choices = None

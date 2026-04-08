@@ -75,6 +75,7 @@ class KmmluExtractor(LMEvalBenchmarkExtractor):
             answer_idx = None
 
             # Format 0: question + A/B/C/D fields + answer (KMMLU format)
+            # answer is 1-indexed (1-4)
             if "question" in doc and "A" in doc and "answer" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices = []
@@ -83,10 +84,14 @@ class KmmluExtractor(LMEvalBenchmarkExtractor):
                     if choice is not None and str(choice).strip():
                         choices.append(str(choice).strip())
 
-                answer = str(doc.get("answer", "")).strip()
-                # answer is a string like '0', '1', '2', '3'
-                if answer and answer.isdigit():
-                    answer_idx = int(answer)
+                answer = doc.get("answer")
+                if isinstance(answer, int):
+                    answer_idx = answer - 1
+                elif isinstance(answer, str):
+                    if answer.isdigit():
+                        answer_idx = int(answer) - 1
+                    elif len(answer) == 1 and answer.isalpha():
+                        answer_idx = ord(answer.upper()) - ord('A')
 
             # Format 1: question + choices + answer
             elif "question" in doc and "choices" in doc:

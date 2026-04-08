@@ -56,13 +56,21 @@ class KMMLUMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
         try:
             question = doc.get("question", "").strip()
             choices = doc.get("choices", [])
-            
+
+            # KMMLU format: A/B/C/D fields when no choices list
+            if not choices and "A" in doc:
+                choices = [str(doc.get(letter, "")).strip() for letter in ["A", "B", "C", "D"] if doc.get(letter)]
+
             # Try different answer field names
             answer = doc.get("answer")
             if answer is None:
                 answer = doc.get("answerKey")
             if answer is None:
                 answer = doc.get("label")
+
+            # KMMLU answer is 1-indexed (1-4)
+            if isinstance(answer, int) and "A" in doc:
+                answer = answer - 1
 
             if not question or not choices or answer is None:
                 log.debug("Skipping doc due to missing fields", extra={"doc": doc})
