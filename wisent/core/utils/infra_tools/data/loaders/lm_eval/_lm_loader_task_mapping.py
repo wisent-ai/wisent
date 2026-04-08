@@ -21,7 +21,6 @@ TASK_NAME_MAPPING = {
     "click": "click_lang_grammar",
     "coedit": "coedit_gec",
     "discrim_eval": "discrim_eval_explicit",
-    "doc": "doc_vqa",
     "egymmlu": "egymmlu_history",
     "epec": "epec_koref_bin",
     "esbbq": "esbbq_age",

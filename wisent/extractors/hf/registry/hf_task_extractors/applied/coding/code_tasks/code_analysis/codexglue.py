@@ -14,6 +14,7 @@ __all__ = [
     "Code2TextJavascriptExtractor",
     "Code2TextPhpExtractor",
     "Code2TextRubyExtractor",
+    "DocNliExtractor",
 ]
 
 log = setup_logger(__name__)
@@ -214,4 +215,43 @@ class Code2TextPhpExtractor(Code2TextExtractor):
 
 class Code2TextRubyExtractor(Code2TextExtractor):
     LANGUAGE = "ruby"
+
+
+class DocNliExtractor(HuggingFaceBenchmarkExtractor):
+    """Extractor for DocNLI (document-level natural language inference)."""
+
+    evaluator_name = "log_likelihoods"
+
+    def extract_contrastive_pairs(
+        self,
+        limit: int | None = None,
+    ) -> list[ContrastivePair]:
+        max_items = self._normalize_limit(limit)
+        docs = self.load_dataset(
+            dataset_name="saattrupdan/doc-nli",
+            split="test",
+            limit=max_items,
+        )
+        from wisent.core.primitives.contrastive_pairs.core.io.response import (
+            NegativeResponse,
+            PositiveResponse,
+        )
+        pairs: list[ContrastivePair] = []
+        for doc in docs:
+            premise = str(doc.get("premise", "")).strip()
+            hypothesis = str(doc.get("hypothesis", "")).strip()
+            label = str(doc.get("label", "")).strip()
+            if not premise or not hypothesis or label not in ("entailment", "not_entailment"):
+                continue
+            correct = "Yes" if label == "entailment" else "No"
+            incorrect = "No" if label == "entailment" else "Yes"
+            pairs.append(ContrastivePair(
+                prompt=f"Premise: {premise}\nHypothesis: {hypothesis}\nDoes the premise entail the hypothesis?",
+                positive_response=PositiveResponse(model_response=correct),
+                negative_response=NegativeResponse(model_response=incorrect),
+                label="doc",
+            ))
+            if max_items is not None and len(pairs) >= max_items:
+                break
+        return pairs
 

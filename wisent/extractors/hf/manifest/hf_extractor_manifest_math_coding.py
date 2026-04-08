@@ -161,6 +161,8 @@ EXTRACTORS_MATH_CODING: dict[str, str] = {
     "codexglue_code_to_text_javascript": f"{base_import}codexglue:Code2TextJavascriptExtractor",
     "codexglue_code_to_text_php": f"{base_import}codexglue:Code2TextPhpExtractor",
     "codexglue_code_to_text_ruby": f"{base_import}codexglue:Code2TextRubyExtractor",
+    "doc": f"{base_import}codexglue:DocNliExtractor",
+    "doc_nli": f"{base_import}codexglue:DocNliExtractor",
     "livecodebench": f"{base_import}livecodebench:LivecodebenchExtractor",
 
     # ACP Bench (planning/agent benchmarks) — group task HF extractors

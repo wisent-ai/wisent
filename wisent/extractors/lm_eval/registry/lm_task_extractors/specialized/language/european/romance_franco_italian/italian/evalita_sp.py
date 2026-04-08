@@ -62,6 +62,21 @@ class EvalitaSpExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Evalita SA (Sentiment Analysis) — text + opos/oneg/iro
+            if "text" in doc and ("opos" in doc or "oneg" in doc):
+                text = str(doc.get("text", "")).strip()
+                if text:
+                    opos = int(doc.get("opos", 0))
+                    correct = "Positive" if opos == 1 else "Negative"
+                    incorrect = "Negative" if opos == 1 else "Positive"
+                    return self._build_pair(
+                        question=f"Text: {text}\nSentiment:",
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata={"label": "evalita-sp"},
+                    )
+                return None
+
             # Evalita-sp format: source (article) + target (reference summary)
             source = doc.get("source", "").strip()
             target = doc.get("target", "").strip()

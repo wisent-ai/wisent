@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
-from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
+from wisent.extractors.lm_eval.atoms import LMEvalBenchmarkExtractor
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -39,7 +39,7 @@ task_names = (
     "evalita-mp_wic_prompt-6", "evalita-mp_wic_tasks",
 )
 
-class EvalitaMpExtractor(HuggingFaceBenchmarkExtractor):
+class EvalitaMpExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Evalita Mp benchmark - Italian language medical, legal, and NLP tasks.
 
     This is a multiple choice task testing knowledge across various domains.
@@ -53,10 +53,12 @@ class EvalitaMpExtractor(HuggingFaceBenchmarkExtractor):
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
         preferred_doc: str | None = None,
+        *,
+        train_ratio: float,
     ) -> list[ContrastivePair]:
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc, train_ratio=train_ratio)
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
@@ -77,6 +79,26 @@ class EvalitaMpExtractor(HuggingFaceBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("Id", doc.get("id", "unknown")))
 
         try:
+            # Format 0: Evalita SA (Sentiment Analysis) — text + opos/oneg/lpos/lneg/iro/subj
+            if "text" in doc and ("opos" in doc or "oneg" in doc or "subj" in doc):
+                text = str(doc.get("text", "")).strip()
+                if text:
+                    from wisent.core.primitives.contrastive_pairs.core.io.response import (
+                        NegativeResponse,
+                        PositiveResponse,
+                    )
+                    # Use opos (positive sentiment) as the gold label
+                    opos = int(doc.get("opos", 0))
+                    correct = "Positive" if opos == 1 else "Negative"
+                    incorrect = "Negative" if opos == 1 else "Positive"
+                    return ContrastivePair(
+                        prompt=f"Text: {text}\nSentiment:",
+                        positive_response=PositiveResponse(model_response=correct),
+                        negative_response=NegativeResponse(model_response=incorrect),
+                        label="evalita-mp",
+                    )
+                return None
+
             # Format 1: Textual Entailment format (text1, text2, entailment)
             if "text1" in doc and "text2" in doc and "entailment" in doc:
                 text1 = str(doc.get("text1", "")).strip()
