@@ -104,6 +104,8 @@ TASK_NAME_MAPPING = {
     "sycophancy_eval": "sycophancy_on_nlp_survey",
     "summarization_gl": "summarization_gl",
     "mmmlu": "mmmlu_pt_br_anatomy",
+    "livemathbench_cnmo_zh": "livemathbench_cnmo_cn",
+    "multilingual": "lambada_openai_mt_en",
     "reversed": "reversed_words",
     "random": "random_insertion",
     "pile": "pile_arxiv",

@@ -169,8 +169,8 @@ LM_EXTRACTORS_P_TO_Z: dict[str, str] = {
     "polymath_zh_medium": f"{base_import}polymath:PolymathExtractor",
     "polymath_en_high": f"{base_import}polymath:PolymathExtractor",
     "polymath_zh_high": f"{base_import}polymath:PolymathExtractor",
-    "livemathbench_cnmo_en": f"{base_import}livemathbench:LivemathbenchExtractor",
-    "livemathbench_cnmo_zh": f"{base_import}livemathbench:LivemathbenchExtractor",
+    # livemathbench is HF-only; lm_eval references removed
+    # "livemathbench_cnmo_en/zh" handled by HF manifest
     "self": f"{base_import}self:SelfExtractor",
     "twenty_newsgroups": f"{base_import}twenty_newsgroups:TwentyNewsgroupsExtractor",
     "20_newsgroups": f"{base_import}twenty_newsgroups:TwentyNewsgroupsExtractor",

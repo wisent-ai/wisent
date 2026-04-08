@@ -8,6 +8,10 @@ EXTRACTORS_SAFETY_MULTILINGUAL: dict[str, str] = {
     "swe_bench_verified": f"{base_import}swe_bench_verified:SWEBenchVerifiedExtractor",
     "swe-bench-verified": f"{base_import}swe_bench_verified:SWEBenchVerifiedExtractor",
     "swebench_verified": f"{base_import}swe_bench_verified:SWEBenchVerifiedExtractor",
+    "multi_swe_bench": f"{base_import}swe_bench_multi:MultiSWEBenchExtractor",
+    "multi-swe-bench": f"{base_import}swe_bench_multi:MultiSWEBenchExtractor",
+    "swe_bench_multilingual": f"{base_import}swe_bench_multi:MultiSWEBenchExtractor",
+    "swe-bench-multilingual": f"{base_import}swe_bench_multi:MultiSWEBenchExtractor",
 
     # Scientific Computing benchmarks (NOT lm-eval)
     "scicode": f"{base_import}scicode:SciCodeExtractor",

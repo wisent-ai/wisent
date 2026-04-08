@@ -53,7 +53,20 @@ class MultilingualExtractor(LMEvalBenchmarkExtractor):
     ) -> ContrastivePair | None:
         """Convert a single doc into a ContrastivePair."""
         try:
-            # Generic fallback - use task_data methods
+            # Lambada format: text-only field, last word is the target
+            if "text" in doc and set(doc.keys()) == {"text"}:
+                text = str(doc.get("text", "")).strip()
+                words = text.split()
+                if len(words) >= 2:
+                    return self._build_pair(
+                        question=" ".join(words[:-1]),
+                        correct=words[-1],
+                        incorrect="incorrect",
+                        metadata={"label": "multilingual", "source": "lambada"},
+                    )
+                return None
+
+            # Generic path - use task_data methods
             if hasattr(task_data, "doc_to_text"):
                 formatted_question = task_data.doc_to_text(doc)
             else:
