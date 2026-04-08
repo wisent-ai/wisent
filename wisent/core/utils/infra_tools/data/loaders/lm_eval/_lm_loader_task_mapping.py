@@ -46,6 +46,7 @@ TASK_NAME_MAPPING = {
     "gpt3": "wmt14-fr-en",
     "global_piqa": "global_piqa_completions_eng_latn",
     "gsm": "gsm8k",
+    "humaneval_infilling": "humaneval_single_line_infilling",
     "ja": "ja_leaderboard_xwinograd",
     "japanese_leaderboard": "ja_leaderboard_xwinograd",
     "jsonschema_bench": "jsonschema_bench_easy",

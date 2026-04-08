@@ -67,6 +67,23 @@ class HumanevalInfillingExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # humaneval_infilling schema: prompt + suffix + canonical_solution + entry_point
+            # (lm-eval doc_to_text is "{{suffix}}\n\n{{prompt}}", target is canonical_solution)
+            if "prompt" in doc and "suffix" in doc and "canonical_solution" in doc:
+                prompt_prefix = str(doc.get("prompt", "")).strip()
+                suffix = str(doc.get("suffix", "")).strip()
+                canonical = str(doc.get("canonical_solution", "")).strip()
+                if not canonical:
+                    return None
+                incorrect = "pass"
+                full_prompt = f"{suffix}\n\n{prompt_prefix}".strip()
+                return ContrastivePair(
+                    prompt=full_prompt,
+                    positive_response=PositiveResponse(model_response=canonical),
+                    negative_response=NegativeResponse(model_response=incorrect),
+                    label="humaneval_infilling",
+                )
+
             # Try multiple possible schema formats
             question = None
             choices = None
