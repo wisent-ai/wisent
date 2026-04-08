@@ -106,6 +106,7 @@ TASK_NAME_MAPPING = {
     "mmmlu": "mmmlu_pt_br_anatomy",
     "livemathbench_cnmo_zh": "livemathbench_cnmo_cn",
     "multilingual": "lambada_openai_mt_en",
+    "trasnlation_all_flores": "trasnlation_dr_en_flores",
     "reversed": "reversed_words",
     "random": "random_insertion",
     "pile": "pile_arxiv",

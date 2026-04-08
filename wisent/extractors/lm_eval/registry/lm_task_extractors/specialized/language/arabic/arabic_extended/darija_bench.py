@@ -97,11 +97,22 @@ class DarijaBenchExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
-            # Format 0: messages format (darija_sentiment)
+            # Format 0: messages format (darija_sentiment, darija_translation)
             # messages[0]['content'] has question and choices, messages[1]['content'] has answer
             if "messages" in doc and isinstance(doc["messages"], list) and len(doc["messages"]) >= 2:
                 user_msg = doc["messages"][0].get("content", "")
                 assistant_msg = doc["messages"][1].get("content", "").strip()
+
+                # Translation tasks (no '-' choices in user message) — use assistant_msg as direct answer
+                if user_msg and assistant_msg and "-" not in user_msg.split('\n', 1)[-1]:
+                    words = assistant_msg.split()
+                    incorrect = " ".join(reversed(words)) if len(words) > 1 else "incorrect"
+                    return self._build_pair(
+                        question=user_msg,
+                        correct=assistant_msg,
+                        incorrect=incorrect,
+                        metadata={"label": "darija_bench"},
+                    )
 
                 # Extract question and parse options from user message
                 # Format: "شنو هو الإحساس ديال هاد الجملة؟\nالعبارة: ...\n الإحتمالات:\n-سلبي\n-ايجابي\n-ماكينش إحساس"
