@@ -77,6 +77,30 @@ class MMLUExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # OpenAI MMMLU format: Question/A/B/C/D/Answer/Subject (capitalized)
+            if "Question" in doc and "A" in doc and "Answer" in doc:
+                question = str(doc.get("Question", "")).strip()
+                choices = [
+                    str(doc.get(letter, "")).strip()
+                    for letter in ["A", "B", "C", "D"]
+                ]
+                choices = [c for c in choices if c]
+                answer = doc.get("Answer", "A")
+                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
+                    answer_idx = ord(answer.upper()) - ord('A')
+                elif isinstance(answer, int):
+                    answer_idx = answer
+                else:
+                    return None
+                if 0 <= answer_idx < len(choices):
+                    return self._build_pair(
+                        question=question,
+                        correct=choices[answer_idx],
+                        incorrect=choices[(answer_idx + 1) % len(choices)],
+                        metadata={"label": "mmlu"},
+                    )
+                return None
+
             # Check for MMMLU format first (uses instruction + option_a/b/c/d)
             if "instruction" in doc and "option_a" in doc:
                 question = str(doc.get("instruction", "")).strip()

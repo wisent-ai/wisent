@@ -74,6 +74,19 @@ class GalicianBenchGenerationExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # summarization_gl format: text + summary
+            if "text" in doc and "summary" in doc:
+                text = str(doc.get("text", "")).strip()
+                summary = str(doc.get("summary", "")).strip()
+                if text and summary:
+                    incorrect = self._create_shuffled_text(summary)
+                    return ContrastivePair(
+                        prompt=f"Resume o seguinte texto:\n{text[:1500]}",
+                        positive_response=PositiveResponse(model_response=summary),
+                        negative_response=NegativeResponse(model_response=incorrect),
+                        label="gl_bench_summarization",
+                    )
+
             source_sent = None
             target_sent = None
 

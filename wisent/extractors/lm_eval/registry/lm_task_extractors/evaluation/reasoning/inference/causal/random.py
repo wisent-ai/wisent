@@ -49,6 +49,18 @@ class RandomExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # random_insertion: context + completion
+            if "context" in doc and "completion" in doc:
+                context = str(doc.get("context", "")).strip()
+                completion = str(doc.get("completion", "")).strip()
+                if context and completion:
+                    return self._build_pair(
+                        question=context,
+                        correct=completion,
+                        incorrect="incorrect",
+                        metadata={"label": "random"},
+                    )
+
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
             
