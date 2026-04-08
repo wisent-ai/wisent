@@ -57,7 +57,11 @@ class TinyarcExtractor(LMEvalBenchmarkExtractor):
             
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
+            # Handle ARC dict format: {'text': [...], 'label': [...]}
+            if isinstance(choices, dict) and "text" in choices:
+                choices = choices.get("text", [])
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [
@@ -69,7 +73,7 @@ class TinyarcExtractor(LMEvalBenchmarkExtractor):
                 choices = [c for c in choices if c]
 
             # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+            answer = doc.get("answerKey", doc.get("answer", doc.get("label", doc.get("target", None))))
 
             if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
                 answer_idx = ord(answer.upper()) - ord('A')

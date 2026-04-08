@@ -52,11 +52,11 @@ class TinyhellaswagExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
+            # Try multiple format patterns for question (hellaswag uses ctx)
+            question = doc.get("question", doc.get("query", doc.get("ctx", doc.get("input", doc.get("instruction", doc.get("prompt", "")))))).strip()
+
+            # Try multiple format patterns for choices (hellaswag uses endings)
+            choices = doc.get("choices", doc.get("endings", doc.get("options", doc.get("answers", []))))
             
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
@@ -68,11 +68,13 @@ class TinyhellaswagExtractor(LMEvalBenchmarkExtractor):
                 ]
                 choices = [c for c in choices if c]
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+            # Try multiple format patterns for answer (hellaswag uses gold or label)
+            answer = doc.get("gold", doc.get("answer", doc.get("label", doc.get("target", None))))
 
             if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
                 answer_idx = ord(answer.upper()) - ord('A')
+            elif isinstance(answer, str) and answer.isdigit():
+                answer_idx = int(answer)
             elif isinstance(answer, int):
                 answer_idx = answer
             else:

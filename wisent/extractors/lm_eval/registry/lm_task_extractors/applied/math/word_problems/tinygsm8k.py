@@ -52,9 +52,33 @@ class Tinygsm8kExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # GSM8k format: question + answer (with #### final answer)
+            if "question" in doc and "answer" in doc and isinstance(doc.get("answer"), str):
+                question_text = str(doc.get("question", "")).strip()
+                answer_text = str(doc.get("answer", "")).strip()
+                if question_text and answer_text:
+                    # Extract final answer after ####
+                    if "####" in answer_text:
+                        final_answer = answer_text.split("####")[-1].strip()
+                        # Build incorrect by perturbing the number
+                        try:
+                            num = float(final_answer.replace(",", ""))
+                            incorrect_num = num + 1 if num != 0 else 1
+                            incorrect = answer_text.replace(f"#### {final_answer}", f"#### {int(incorrect_num) if incorrect_num.is_integer() else incorrect_num}")
+                        except (ValueError, AttributeError):
+                            incorrect = answer_text + " WRONG"
+                    else:
+                        incorrect = answer_text + " WRONG"
+                    return self._build_pair(
+                        question=question_text,
+                        correct=answer_text,
+                        incorrect=incorrect,
+                        metadata={"label": "tinygsm8k"},
+                    )
+
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
             

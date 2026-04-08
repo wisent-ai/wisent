@@ -228,7 +228,7 @@ GROUP_TASK_EXPANSIONS = {
     "tinygsm8k": ["tinyGSM8k"],
     "tinyhellaswag": ["tinyHellaswag"],
     "tinymmlu": ["tinyMMLU"],
-    "tinytruthfulqa": ["tinyTruthfulQA", "tinyTruthfulQA_mc1"],
+    "tinytruthfulqa": ["tinyTruthfulQA"],
     "tinywinogrande": ["tinyWinogrande"],
     # wmt* tasks
     "wmt14": ["wmt14-en-fr", "wmt14-fr-en"],

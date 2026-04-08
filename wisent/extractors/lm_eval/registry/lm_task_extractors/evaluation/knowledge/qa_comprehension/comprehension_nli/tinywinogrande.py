@@ -52,11 +52,17 @@ class TinywinograndeExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
+            # Try multiple format patterns for question (winogrande uses 'sentence')
+            question = doc.get("question", doc.get("sentence", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", "")))))).strip()
+
+            # Try multiple format patterns for choices (winogrande uses option1/option2)
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
+            if not choices and ("option1" in doc or "option2" in doc):
+                choices = [
+                    str(doc.get("option1", "")).strip(),
+                    str(doc.get("option2", "")).strip(),
+                ]
+                choices = [c for c in choices if c]
             
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
@@ -68,11 +74,14 @@ class TinywinograndeExtractor(LMEvalBenchmarkExtractor):
                 ]
                 choices = [c for c in choices if c]
 
-            # Try multiple format patterns for answer
+            # Try multiple format patterns for answer (winogrande uses '1' or '2')
             answer = doc.get("answer", doc.get("label", doc.get("target", None)))
 
             if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
                 answer_idx = ord(answer.upper()) - ord('A')
+            elif isinstance(answer, str) and answer.isdigit():
+                # winogrande uses 1-indexed strings
+                answer_idx = int(answer) - 1 if int(answer) > 0 else int(answer)
             elif isinstance(answer, int):
                 answer_idx = answer
             else:

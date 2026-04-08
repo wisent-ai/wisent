@@ -57,10 +57,32 @@ class TinytruthfulqaExtractor(LMEvalBenchmarkExtractor):
         try:
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
+            # tinyTruthfulQA mc1 format: mc1_targets has choices + labels
+            if "mc1_targets" in doc:
+                mc1 = doc.get("mc1_targets", {})
+                if isinstance(mc1, dict):
+                    choices_list = mc1.get("choices", [])
+                    labels = mc1.get("labels", [])
+                    if choices_list and labels and len(choices_list) == len(labels):
+                        try:
+                            correct_idx = labels.index(1)
+                            correct = str(choices_list[correct_idx]).strip()
+                            incorrect_idx = (correct_idx + 1) % len(choices_list)
+                            incorrect = str(choices_list[incorrect_idx]).strip()
+                            return self._build_pair(
+                                question=question,
+                                correct=correct,
+                                incorrect=incorrect,
+                                metadata={"label": "tinytruthfulqa"},
+                            )
+                        except (ValueError, IndexError):
+                            return None
+                return None
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [
