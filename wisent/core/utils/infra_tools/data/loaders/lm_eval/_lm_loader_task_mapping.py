@@ -18,6 +18,7 @@ TASK_NAME_MAPPING = {
     "bhtc": "bhtc_v2",
     "bigbench_generate_until": "bigbench_anachronisms_generate_until",
     "cabbq": "cabbq_age",
+    "click": "click_lang_grammar",
     "wikitext103": "wikitext",
     "ptb": "wikitext",
     "penn_treebank": "wikitext",

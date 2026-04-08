@@ -83,8 +83,14 @@ class ClickExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("answer", doc.get("answerKey", ""))
                 if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
                     answer_idx = ord(answer.upper()) - ord('A')
+                elif isinstance(answer, str) and answer in choices:
+                    # Answer is text matching one of the choices
+                    answer_idx = choices.index(answer)
                 else:
-                    answer_idx = int(answer) if answer else 0
+                    try:
+                        answer_idx = int(answer) if answer else 0
+                    except (ValueError, TypeError):
+                        answer_idx = 0
 
             # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
             elif "instruction" in doc and "option_a" in doc:
