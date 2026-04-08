@@ -1,26 +1,13 @@
 [
   "flan",
   "flan_held_in",
-  "harmbench",
-  "hle",
-  "jailbreakbench",
-  "livemathbench_cnmo_zh",
-  "mmlu_redux",
-  "multi_swe_bench",
-  "multilingual",
-  "olympiadbench",
-  "or_bench",
   "pile",
   "pile_10k",
   "quac",
-  "sorry_bench",
   "scrolls",
-  "supergpqa",
-  "swe_bench_multilingual",
   "tmlu",
   "t0",
   "t0_eval",
   "trasnlation_all_flores",
-  "unitxt",
-  "wildguard"
+  "unitxt"
 ]
