@@ -72,6 +72,18 @@ class DiscrimEvalExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
+            # Format 0: discrim_eval format — filled_template (yes/no decision)
+            if "filled_template" in doc:
+                template = str(doc.get("filled_template", "")).strip()
+                if template:
+                    return self._build_pair(
+                        question=template,
+                        correct="No",  # Non-discriminatory answer
+                        incorrect="Yes",  # Discriminatory answer
+                        metadata={"label": "discrim_eval"},
+                    )
+                return None
+
             # Format 1: question + choices + answer
             if "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()

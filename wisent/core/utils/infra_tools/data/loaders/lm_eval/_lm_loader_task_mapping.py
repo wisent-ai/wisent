@@ -20,6 +20,7 @@ TASK_NAME_MAPPING = {
     "cabbq": "cabbq_age",
     "click": "click_lang_grammar",
     "coedit": "coedit_gec",
+    "discrim_eval": "discrim_eval_explicit",
     "wikitext103": "wikitext",
     "ptb": "wikitext",
     "penn_treebank": "wikitext",
