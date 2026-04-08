@@ -33,6 +33,27 @@ if not hasattr(_datasets, 'load_metric'):
             raise NotImplementedError("load_metric was removed; install 'evaluate'")
         _datasets.load_metric = _stub_load_metric
 
+# Configure HuggingFace Hub session to retry on 5xx errors. Datasets like bigbench
+# make hundreds of subtask API calls and intermittent 504 Gateway Timeouts cause
+# loading to fail. Use urllib3 Retry with backoff to handle this transparently.
+from urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
+import huggingface_hub as _hf_hub
+_orig_get_session = _hf_hub.utils._http.get_session
+def _patched_get_session():
+    session = _orig_get_session()
+    retry = Retry(
+        total=5,
+        backoff_factor=2,
+        status_forcelist=[502, 503, 504],
+        allowed_methods=["GET", "HEAD", "OPTIONS"],
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
+_hf_hub.utils._http.get_session = _patched_get_session
+
 # Patch Features.reorder_fields_as to treat LargeList and list as compatible.
 # Old cached arrow files may use LargeList while new dataset_info uses list (or vice versa).
 # This prevents "Type mismatch: between LargeList and [Value]" errors during dataset loading.

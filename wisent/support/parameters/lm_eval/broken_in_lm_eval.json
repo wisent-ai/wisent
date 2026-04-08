@@ -1,6 +1,4 @@
 [
-  "bigbench",
-  "bigbench_generate_until",
   "cabbq",
   "cabreu_abstractive",
   "chain",

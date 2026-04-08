@@ -16,6 +16,7 @@ TASK_NAME_MAPPING = {
     "arabic_leaderboard": "arabic_leaderboard_complete",
     "bhs": "bhs_basque",
     "bhtc": "bhtc_v2",
+    "bigbench_generate_until": "bigbench_anachronisms_generate_until",
     "wikitext103": "wikitext",
     "ptb": "wikitext",
     "penn_treebank": "wikitext",
