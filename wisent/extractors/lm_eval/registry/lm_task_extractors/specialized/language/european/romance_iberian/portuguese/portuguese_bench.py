@@ -70,6 +70,21 @@ class PortugueseBenchExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # ASSIN entailment format: premise + hypothesis + entailment_judgment
+            if "premise" in doc and "hypothesis" in doc and "entailment_judgment" in doc:
+                premise = str(doc.get("premise", "")).strip()
+                hypothesis = str(doc.get("hypothesis", "")).strip()
+                judgment = doc.get("entailment_judgment", -1)
+                if premise and hypothesis and judgment in (0, 1):
+                    correct = "Sim" if judgment == 1 else "Não"
+                    incorrect = "Não" if judgment == 1 else "Sim"
+                    return self._build_pair(
+                        question=f"Premissa: {premise}\nHipótese: {hypothesis}\nA premissa implica a hipótese?",
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata={"label": "portuguese_bench"},
+                    )
+
             # Try multiple possible schema formats
             question = None
             choices = None

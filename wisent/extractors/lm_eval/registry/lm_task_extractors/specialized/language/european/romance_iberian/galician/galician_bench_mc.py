@@ -64,6 +64,23 @@ class GalicianBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # parafrases_gl format: Frase + Paráfrase + Avaliación
+            if "Frase" in doc and "Paráfrase" in doc and "Avaliación" in doc:
+                frase = str(doc.get("Frase", "")).strip()
+                parafrase = str(doc.get("Paráfrase", "")).strip()
+                avaliacion = doc.get("Avaliación", -1)
+                if frase and parafrase:
+                    # Avaliación typically: 0-3 score; >=2 = paraphrase
+                    is_paraphrase = float(avaliacion) >= 2.0 if avaliacion is not None else False
+                    correct = "Si" if is_paraphrase else "No"
+                    incorrect = "No" if is_paraphrase else "Si"
+                    return ContrastivePair(
+                        prompt=f"Frase 1: {frase}\nFrase 2: {parafrase}\nSon paráfrases?",
+                        positive_response=PositiveResponse(model_response=correct),
+                        negative_response=NegativeResponse(model_response=incorrect),
+                        label="gl_bench_mc",
+                    )
+
             if "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices = doc.get("choices", {})

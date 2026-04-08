@@ -49,6 +49,21 @@ class QnlieuExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # qnlieu format: question + sentence + label (binary 0/1)
+            if "question" in doc and "sentence" in doc and "label" in doc:
+                q = str(doc.get("question", "")).strip()
+                s = str(doc.get("sentence", "")).strip()
+                label = doc.get("label", -1)
+                if q and s and label in (0, 1):
+                    correct = "Yes" if label == 0 else "No"
+                    incorrect = "No" if label == 0 else "Yes"
+                    return self._build_pair(
+                        question=f"Sentence: {s}\nQuestion: {q}\nDoes the sentence answer the question?",
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata={"label": "qnlieu"},
+                    )
+
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
             

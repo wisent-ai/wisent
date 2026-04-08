@@ -87,6 +87,10 @@ class TurkishmmluMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
             incorrect_idx = (answer_idx + 1) % len(choices)
             incorrect = str(choices[incorrect_idx]).strip()
 
+            choice_letters = ["A", "B", "C", "D", "E"]
+            formatted_choices = "\n".join(f"{ch}. {c}" for ch, c in zip(choice_letters, choices))
+            formatted_question = f"Soru: {question}\n{formatted_choices}\nCevap:"
+
             positive_response = PositiveResponse(model_response=correct)
             negative_response = NegativeResponse(model_response=incorrect)
 

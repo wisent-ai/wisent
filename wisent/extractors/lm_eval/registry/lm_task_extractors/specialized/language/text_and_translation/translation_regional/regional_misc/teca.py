@@ -52,6 +52,22 @@ class TecaExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # teca format: premise + hypothesis + label (NLI)
+            if "premise" in doc and "hypothesis" in doc and "label" in doc:
+                premise = str(doc.get("premise", "")).strip()
+                hypothesis = str(doc.get("hypothesis", "")).strip()
+                label = doc.get("label", -1)
+                if premise and hypothesis and label in (0, 1, 2):
+                    nli_labels = ["Entailment", "Neutral", "Contradiction"]
+                    correct = nli_labels[label]
+                    incorrect = nli_labels[(label + 1) % 3]
+                    return self._build_pair(
+                        question=f"Premise: {premise}\nHypothesis: {hypothesis}\nLabel:",
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata={"label": "teca"},
+                    )
+
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
             

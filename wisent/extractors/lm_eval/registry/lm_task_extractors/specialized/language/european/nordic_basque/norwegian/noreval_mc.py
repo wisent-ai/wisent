@@ -100,6 +100,138 @@ class NorevalMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # NoREC document sentiment: review + sentiment (binary 0/1)
+            if "review" in doc and "sentiment" in doc:
+                review = str(doc.get("review", "")).strip()
+                sentiment = doc.get("sentiment")
+                if review and sentiment in (0, 1):
+                    correct = "Positivt" if sentiment == 1 else "Negativt"
+                    incorrect = "Negativt" if sentiment == 1 else "Positivt"
+                    return self._build_pair(
+                        question=f"Tekst: {review[:1500]}\nSentiment:",
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata={"label": "noreval_norec"},
+                    )
+
+            # NorBeleBele: question + flores_passage + mc_answer1-4 + correct_answer_num
+            if "flores_passage" in doc and "mc_answer1" in doc and "correct_answer_num" in doc:
+                passage = str(doc.get("flores_passage", "")).strip()
+                question = str(doc.get("question", "")).strip()
+                answers = [str(doc.get(f"mc_answer{i}", "")).strip() for i in range(1, 5)]
+                correct_num = doc.get("correct_answer_num")
+                try:
+                    correct_idx = int(correct_num) - 1
+                except (TypeError, ValueError):
+                    return None
+                if passage and question and answers and 0 <= correct_idx < len(answers):
+                    return self._build_pair(
+                        question=f"Passasje: {passage}\nSpørsmål: {question}",
+                        correct=answers[correct_idx],
+                        incorrect=answers[(correct_idx + 1) % len(answers)],
+                        metadata={"label": "noreval_belebele"},
+                    )
+
+            # NorOpenBookQA: question_stem + choices + answer/answerKey
+            if "question_stem" in doc and "choices" in doc:
+                question = str(doc.get("question_stem", "")).strip()
+                choices = doc.get("choices", {})
+                answer_key = doc.get("answerKey", "") or doc.get("answer", "")
+                if question and isinstance(choices, dict) and answer_key:
+                    choice_texts = choices.get("text", [])
+                    choice_labels = choices.get("label", [])
+                    if choice_texts and choice_labels:
+                        try:
+                            correct_idx = choice_labels.index(answer_key)
+                            return self._build_pair(
+                                question=f"Spørsmål: {question}",
+                                correct=str(choice_texts[correct_idx]).strip(),
+                                incorrect=str(choice_texts[(correct_idx + 1) % len(choice_texts)]).strip(),
+                                metadata={"label": "noreval_obqa"},
+                            )
+                        except (ValueError, IndexError):
+                            pass
+
+            # NorRewrite/NorSummarize prompt-context-response format
+            if "prompt" in doc and "context" in doc and "response" in doc:
+                prompt = str(doc.get("prompt", "")).strip()
+                context = str(doc.get("context", "")).strip()
+                response = str(doc.get("response", "")).strip()
+                if prompt and response:
+                    full_prompt = f"{prompt}\n{context}".strip()
+                    words = response.split()
+                    incorrect = " ".join(reversed(words)) if len(words) > 1 else "feil svar"
+                    return self._build_pair(
+                        question=full_prompt,
+                        correct=response,
+                        incorrect=incorrect,
+                        metadata={"label": "noreval_instruct"},
+                    )
+
+            # NorSumm: article + summaries (list)
+            if "article" in doc and "summaries" in doc:
+                article = str(doc.get("article", "")).strip()
+                summaries = doc.get("summaries", [])
+                if article and summaries:
+                    if isinstance(summaries, list) and summaries:
+                        summary = str(summaries[0]).strip() if not isinstance(summaries[0], dict) else str(summaries[0].get("text", summaries[0].get("summary", ""))).strip()
+                    else:
+                        summary = str(summaries).strip()
+                    if summary:
+                        words = summary.split()
+                        incorrect = " ".join(reversed(words)) if len(words) > 1 else "feil samandrag"
+                        return self._build_pair(
+                            question=f"Sammendrag av: {article[:1500]}",
+                            correct=summary,
+                            incorrect=incorrect,
+                            metadata={"label": "noreval_summ"},
+                        )
+
+            # Tatoeba: sourceString + targetString
+            if "sourceString" in doc and "targetString" in doc:
+                src = str(doc.get("sourceString", "")).strip()
+                tgt = str(doc.get("targetString", "")).strip()
+                if src and tgt:
+                    words = tgt.split()
+                    incorrect = " ".join(reversed(words)) if len(words) > 1 else "feil"
+                    return self._build_pair(
+                        question=f"Oversett: {src}",
+                        correct=tgt,
+                        incorrect=incorrect,
+                        metadata={"label": "noreval_tatoeba"},
+                    )
+
+            # NorRewrite/NorSummarize: instruction + (input or text) + output
+            if ("instruction" in doc or "prompt" in doc) and ("output" in doc or "target" in doc or "summary" in doc):
+                instr = str(doc.get("instruction", doc.get("prompt", ""))).strip()
+                inp = str(doc.get("input", doc.get("text", ""))).strip()
+                target = str(doc.get("output", doc.get("target", doc.get("summary", "")))).strip()
+                if instr and target:
+                    prompt = f"{instr}\n{inp}".strip()
+                    # Synthetic incorrect: reverse target words
+                    words = target.split()
+                    incorrect = " ".join(reversed(words)) if len(words) > 1 else "feil svar"
+                    return self._build_pair(
+                        question=prompt,
+                        correct=target,
+                        incorrect=incorrect,
+                        metadata={"label": "noreval_instruct"},
+                    )
+
+            # Tatoeba translation: source_text + target_text or sentence_a/sentence_b
+            if "source_text" in doc and "target_text" in doc:
+                src = str(doc.get("source_text", "")).strip()
+                tgt = str(doc.get("target_text", "")).strip()
+                if src and tgt:
+                    words = tgt.split()
+                    incorrect = " ".join(reversed(words)) if len(words) > 1 else "feil"
+                    return self._build_pair(
+                        question=f"Oversett: {src}",
+                        correct=tgt,
+                        incorrect=incorrect,
+                        metadata={"label": "noreval_tatoeba"},
+                    )
+
             # Format 1: NCB - {correct, wrong}
             if "correct" in doc and "wrong" in doc:
                 correct = str(doc["correct"]).strip()

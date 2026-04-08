@@ -89,9 +89,10 @@ class XNLIExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            premise = str(doc.get("premise", "")).strip()
-            hypothesis = str(doc.get("hypothesis", "")).strip()
-            label = doc.get("label")
+            # xnli_gl uses sentence1/sentence2/gold_label instead of premise/hypothesis/label
+            premise = str(doc.get("premise", doc.get("sentence1", ""))).strip()
+            hypothesis = str(doc.get("hypothesis", doc.get("sentence2", ""))).strip()
+            label = doc.get("label", doc.get("gold_label"))
 
             if not premise or not hypothesis or label not in {0, 1, 2}:
                 log.debug(

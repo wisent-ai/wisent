@@ -239,5 +239,6 @@ LM_EXTRACTORS_P_TO_Z: dict[str, str] = {
     "conala": f"{base_import}conala:ConalaExtractor",
     "concode": f"{base_import}concode:ConcodeExtractor",
     "mercury": f"{base_import}mercury:MercuryExtractor",
+    "turkishmmlu": f"{base_import}turkishmmlu_mc:TurkishmmluMultipleChoiceExtractor",
     # Note: WMT14 and WMT16 translation tasks are now in group_task_manifests/
 }

@@ -52,6 +52,21 @@ class ParafrasejaExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # parafraseja format: sentence1 + sentence2 + label (paraphrase binary)
+            if "sentence1" in doc and "sentence2" in doc and "label" in doc:
+                s1 = str(doc.get("sentence1", "")).strip()
+                s2 = str(doc.get("sentence2", "")).strip()
+                label = doc.get("label", -1)
+                if s1 and s2 and label in (0, 1):
+                    correct = "Yes" if label == 1 else "No"
+                    incorrect = "No" if label == 1 else "Yes"
+                    return self._build_pair(
+                        question=f"Sentence 1: {s1}\nSentence 2: {s2}\nAre they paraphrases?",
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata={"label": "parafraseja"},
+                    )
+
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
             

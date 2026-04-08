@@ -100,6 +100,55 @@ class NorevalGenerationExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # NorRewrite/NorSummarize: prompt + context + response
+            if "prompt" in doc and "context" in doc and "response" in doc:
+                prompt = str(doc.get("prompt", "")).strip()
+                context = str(doc.get("context", "")).strip()
+                response = str(doc.get("response", "")).strip()
+                if prompt and response:
+                    full_prompt = f"{prompt}\n{context}".strip()
+                    words = response.split()
+                    incorrect = " ".join(reversed(words)) if len(words) > 1 else "feil svar"
+                    return self._build_pair(
+                        question=full_prompt,
+                        correct=response,
+                        incorrect=incorrect,
+                        metadata={"label": "noreval_instruct"},
+                    )
+
+            # NorSumm: article + summaries (list)
+            if "article" in doc and "summaries" in doc:
+                article = str(doc.get("article", "")).strip()
+                summaries = doc.get("summaries", [])
+                if article and summaries:
+                    if isinstance(summaries, list) and summaries:
+                        summary = str(summaries[0]).strip() if not isinstance(summaries[0], dict) else str(summaries[0].get("text", summaries[0].get("summary", ""))).strip()
+                    else:
+                        summary = str(summaries).strip()
+                    if summary:
+                        words = summary.split()
+                        incorrect = " ".join(reversed(words)) if len(words) > 1 else "feil samandrag"
+                        return self._build_pair(
+                            question=f"Lag eit samandrag av: {article[:1500]}",
+                            correct=summary,
+                            incorrect=incorrect,
+                            metadata={"label": "noreval_summ"},
+                        )
+
+            # Tatoeba: sourceString + targetString
+            if "sourceString" in doc and "targetString" in doc:
+                src = str(doc.get("sourceString", "")).strip()
+                tgt = str(doc.get("targetString", "")).strip()
+                if src and tgt:
+                    words = tgt.split()
+                    incorrect = " ".join(reversed(words)) if len(words) > 1 else "feil"
+                    return self._build_pair(
+                        question=f"Omsett: {src}",
+                        correct=tgt,
+                        incorrect=incorrect,
+                        metadata={"label": "noreval_tatoeba"},
+                    )
+
             # Format 1: ask_gec - {source, correction}
             if "source" in doc and "correction" in doc:
                 source = str(doc["source"]).strip()

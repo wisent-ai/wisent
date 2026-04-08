@@ -61,6 +61,22 @@ class BasqueBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # PIQA-eu format: goal + sol1/sol2 + label
+            if "goal" in doc and "sol1" in doc and "sol2" in doc and "label" in doc:
+                goal = str(doc.get("goal", "")).strip()
+                sol1 = str(doc.get("sol1", "")).strip()
+                sol2 = str(doc.get("sol2", "")).strip()
+                label = doc.get("label", -1)
+                if goal and sol1 and sol2 and label in (0, 1):
+                    correct = sol1 if label == 0 else sol2
+                    incorrect = sol2 if label == 0 else sol1
+                    return ContrastivePair(
+                        prompt=f"Helburua: {goal}",
+                        positive_response=PositiveResponse(model_response=correct),
+                        negative_response=NegativeResponse(model_response=incorrect),
+                        label="basque_bench_mc",
+                    )
+
             # Format 1: ARC-eu (question, choices, answerKey)
             if "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()

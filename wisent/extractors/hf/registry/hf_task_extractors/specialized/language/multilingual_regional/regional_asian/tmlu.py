@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
-from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
+from wisent.extractors.lm_eval.atoms import LMEvalBenchmarkExtractor
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -25,7 +25,7 @@ task_names = (
     "tmlu_teacher_qualification", "tmlu_tour_guide", "tmlu_tour_leader",
 )
 
-class TmluExtractor(HuggingFaceBenchmarkExtractor):
+class TmluExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Tmlu benchmark."""
 
 
@@ -35,10 +35,12 @@ class TmluExtractor(HuggingFaceBenchmarkExtractor):
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
         preferred_doc: str | None = None,
+        *,
+        train_ratio: float,
     ) -> list[ContrastivePair]:
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc, train_ratio=train_ratio)
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 

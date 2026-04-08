@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
-from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
+from wisent.extractors.lm_eval.atoms import LMEvalBenchmarkExtractor
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -15,7 +15,7 @@ _LOG = setup_logger(__name__)
 
 task_names = ("wiceu",)
 
-class WiceuExtractor(HuggingFaceBenchmarkExtractor):
+class WiceuExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Wiceu benchmark."""
 
 
@@ -25,10 +25,12 @@ class WiceuExtractor(HuggingFaceBenchmarkExtractor):
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
         preferred_doc: str | None = None,
+        *,
+        train_ratio: float,
     ) -> list[ContrastivePair]:
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc, train_ratio=train_ratio)
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
@@ -83,3 +85,20 @@ class WiceuExtractor(HuggingFaceBenchmarkExtractor):
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
             return None
 
+    @staticmethod
+    def _build_pair(
+        question: str,
+        correct: str,
+        incorrect: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> ContrastivePair:
+        from wisent.core.primitives.contrastive_pairs.core.io.response import (
+            NegativeResponse,
+            PositiveResponse,
+        )
+        return ContrastivePair(
+            prompt=question,
+            positive_response=PositiveResponse(model_response=correct),
+            negative_response=NegativeResponse(model_response=incorrect),
+            label=(metadata or {}).get("label"),
+        )
