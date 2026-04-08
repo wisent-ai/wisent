@@ -65,6 +65,28 @@ class CatalanBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Cocoteros generation schema: text + keywords + context
+            if "text" in doc and "keywords" in doc and "context" in doc:
+                text = str(doc.get("text", "")).strip()
+                kw_raw = doc.get("keywords", "")
+                if isinstance(kw_raw, list):
+                    keywords = ", ".join(str(k) for k in kw_raw)
+                else:
+                    keywords = str(kw_raw).strip()
+                context = str(doc.get("context", "")).strip()
+                if text and keywords:
+                    prompt = f"Genera una frase amb aquestes paraules: {keywords}. El context és: {context}\n\nResposta:"
+                    # Synthetic incorrect: reverse word order
+                    words = text.split()
+                    incorrect_text = " ".join(reversed(words)) if len(words) > 1 else "frase incorrecta"
+                    return ContrastivePair(
+                        prompt=prompt,
+                        positive_response=PositiveResponse(model_response=text),
+                        negative_response=NegativeResponse(model_response=incorrect_text),
+                        label="ca_bench_mc",
+                    )
+                return None
+
             if "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices = doc.get("choices", {})

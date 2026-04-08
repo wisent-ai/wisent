@@ -152,6 +152,8 @@ EXTRACTORS_MATH_CODING: dict[str, str] = {
     "multiple_rs": f"{base_import}multipl_e:MultiplEExtractor",
     "multiple_go": f"{base_import}multipl_e:MultiplEExtractor",
     "codexglue": f"{base_import}codexglue:CodexglueExtractor",
+    "code2text": f"{base_import}codexglue:Code2TextExtractor",
+    "code2text_python": f"{base_import}codexglue:Code2TextExtractor",
     "livecodebench": f"{base_import}livecodebench:LivecodebenchExtractor",
 
     # ACP Bench (planning/agent benchmarks) — group task HF extractors

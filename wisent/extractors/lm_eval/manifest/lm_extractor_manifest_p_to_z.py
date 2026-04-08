@@ -143,7 +143,6 @@ LM_EXTRACTORS_P_TO_Z: dict[str, str] = {
     "phrases_va": f"{base_import}phrases:PhrasesExtractor",
     "phrases_va-ca": f"{base_import}phrases:PhrasesExtractor",
     "phrases_va-es": f"{base_import}phrases:PhrasesExtractor",
-    "code2text": f"{base_import}code_x_glue:Code2TextExtractor",
     "ethics": f"{base_import}ethics:EthicsExtractor",
     "cabreu": f"{base_import}cabreu:CabreuExtractor",
     "sycophancy": f"{base_import}sycophancy:SycophancyExtractor",
