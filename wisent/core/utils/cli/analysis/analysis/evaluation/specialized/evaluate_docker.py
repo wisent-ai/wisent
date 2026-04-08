@@ -33,9 +33,14 @@ def evaluate_docker_execution(args, input_data, responses, task_name, evaluation
 
     # Initialize provider
     if provider_name == 'livecodebench':
-        # Extract language from responses or use default
-        language = input_data.get('language', 'python')
-        release_version = input_data.get('release_version', 'all')
+        # input_data may be a list (raw responses) or dict (with metadata).
+        # When it's a list there is no language metadata; default to python.
+        if isinstance(input_data, dict):
+            language = input_data.get('language', 'python')
+            release_version = input_data.get('release_version', 'all')
+        else:
+            language = 'python'
+            release_version = 'all'
 
         provider = LiveCodeBenchProvider(
             subprocess_timeout=subprocess_timeout,
@@ -188,8 +193,11 @@ def evaluate_docker_execution(args, input_data, responses, task_name, evaluation
     print(f"✅ EVALUATION COMPLETE")
     print(f"{'='*80}")
     print(f"   Total problems: {len(task_results)}")
-    print(f"   Passed: {int(aggregated_metrics['total_passed'])}")
-    print(f"   Failed: {len(task_results) - int(aggregated_metrics['total_passed'])}")
-    print(f"   Pass rate: {aggregated_metrics['pass_rate']:.2%}")
+    if task_results:
+        print(f"   Passed: {int(aggregated_metrics['total_passed'])}")
+        print(f"   Failed: {len(task_results) - int(aggregated_metrics['total_passed'])}")
+        print(f"   Pass rate: {aggregated_metrics['pass_rate']:.2%}")
+    else:
+        print(f"   No problems evaluated (no matching problem_ids in responses)")
     print(f"{'='*80}\n")
     return aggregated_metrics

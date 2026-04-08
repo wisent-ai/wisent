@@ -20,6 +20,21 @@ def test_evaluator(task_name: str, responses: list[dict], model_name: str | None
     """
     result = {"task": task_name, "status": "UNKNOWN"}
 
+    # Special evaluation types (docker_execution, personalization, refusal) require
+    # real model-generated responses with task-specific metadata. Synthetic extractor
+    # pairs cannot be evaluated this way — mark as SKIP rather than FAIL.
+    try:
+        from wisent.core.utils.cli.analysis.analysis.evaluation.standard.evaluate_responses import (
+            _get_special_evaluation_type,
+        )
+        special = _get_special_evaluation_type(task_name)
+        if special:
+            result["status"] = f"SKIP_{special.upper()}"
+            result["detail"] = f"{special} task requires real generation, not synthetic test pairs"
+            return result
+    except Exception:
+        pass
+
     with tempfile.TemporaryDirectory() as tmpdir:
         input_file = os.path.join(tmpdir, "responses.json")
         output_file = os.path.join(tmpdir, "evaluation.json")
