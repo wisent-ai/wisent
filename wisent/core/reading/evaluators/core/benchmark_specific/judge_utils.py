@@ -9,6 +9,7 @@ import logging
 from typing import Any
 
 from wisent.core.reading.evaluators.core.atoms import EvalResult, EvaluatorError
+from wisent.core.utils.infra_tools.errors.error_handler import ModelNotProvidedError
 from wisent.core.utils.config_tools.constants import (
     EVAL_CONFIDENCE_FULL,
     EVAL_CONFIDENCE_ZERO,
@@ -20,17 +21,16 @@ logger = logging.getLogger(__name__)
 
 
 def require_judge_model(kwargs: dict, evaluator_name: str) -> Any:
-    """Extract the judge model from kwargs or raise.
+    """Extract the judge model from kwargs or raise ModelNotProvidedError.
 
     Checks for 'judge_model' first, then falls back to 'model'.
-    Raises EvaluatorError if neither is available.
+    Raises ModelNotProvidedError so callers can distinguish "missing model"
+    from a real evaluation failure (it bubbles up as a SKIP, not a FAIL).
     """
     model = kwargs.get("judge_model") or kwargs.get("model")
     if model is None:
-        raise EvaluatorError(
-            f"{evaluator_name} requires a 'judge_model' or 'model' kwarg "
-            "to perform LLM-as-judge evaluation."
-        )
+        task_name = kwargs.get("task_name", "unknown")
+        raise ModelNotProvidedError(evaluator_name=evaluator_name, task_name=task_name)
     return model
 
 
