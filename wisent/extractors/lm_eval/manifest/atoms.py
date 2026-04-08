@@ -137,6 +137,27 @@ class LMEvalBenchmarkExtractor(ABC):
             }
         return None
 
+    @staticmethod
+    def _build_pair(
+        question: str,
+        correct: str,
+        incorrect: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> "ContrastivePair":
+        """Construct a ContrastivePair. Shared utility used by subclass extractors."""
+        from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+        from wisent.core.primitives.contrastive_pairs.core.io.response import (
+            NegativeResponse,
+            PositiveResponse,
+        )
+
+        return ContrastivePair(
+            prompt=question,
+            positive_response=PositiveResponse(model_response=correct),
+            negative_response=NegativeResponse(model_response=incorrect),
+            label=metadata.get("label") if metadata else None,
+            metadata=metadata,
+        )
 
     @classmethod
     def load_docs(

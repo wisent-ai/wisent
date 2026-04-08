@@ -18,7 +18,12 @@ class TaskSelector:
     
     def __init__(self):
         """Initialize the task selector by loading metadata."""
-        self.base_path = Path(__file__).parent.parent / "parameters" / "tasks"
+        # Resolve to wisent/support/parameters/tasks/ — the canonical location.
+        # Walk up from __file__ until we find the wisent/ root, then descend.
+        wisent_root = Path(__file__).resolve()
+        while wisent_root.name != "wisent" and wisent_root.parent != wisent_root:
+            wisent_root = wisent_root.parent
+        self.base_path = wisent_root / "support" / "parameters" / "tasks"
         self.skills = self._load_json("skills.json")
         self.risks = self._load_json("risks.json")
         self.tasks_data = self._load_json("tasks.json")

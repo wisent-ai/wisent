@@ -172,6 +172,15 @@
         "timeout": 30
       }
     },
+    "ds_1000": {
+      "evaluation_type": "docker_execution",
+      "primary_metric": "pass@1",
+      "provider": "livecodebench",
+      "docker_config": {
+        "language": "python",
+        "timeout": 30
+      }
+    },
     "multipl_e": {
       "evaluation_type": "docker_execution",
       "primary_metric": "pass@1",

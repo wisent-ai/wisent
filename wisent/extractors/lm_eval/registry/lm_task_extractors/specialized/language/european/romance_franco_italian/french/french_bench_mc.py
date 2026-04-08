@@ -78,6 +78,86 @@ class FrenchBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
                         label="french_bench_mc",
                     )
 
+            # topic_based_nli: text + topic + polarity (positif/negatif/neutre)
+            if "text" in doc and "topic" in doc and "polarity" in doc:
+                text = str(doc.get("text", "")).strip()
+                topic = str(doc.get("topic", "")).strip()
+                polarity = str(doc.get("polarity", "")).strip().lower()
+                polarity_choices = ["positif", "négatif", "neutre"]
+                polarity_aliases = {"positif": "positif", "negatif": "négatif", "négatif": "négatif", "neutre": "neutre"}
+                correct_choice = polarity_aliases.get(polarity)
+                if not text or not topic or correct_choice is None:
+                    return None
+                incorrect = next(c for c in polarity_choices if c != correct_choice)
+                return ContrastivePair(
+                    prompt=f"\nAvis Client: {text}\n\nA propos du thème \"{topic}\", l'avis client est",
+                    positive_response=PositiveResponse(model_response=correct_choice),
+                    negative_response=NegativeResponse(model_response=incorrect),
+                    label="french_bench_topic_based_nli",
+                )
+
+            # reading_comp: context + question + answerA/B/C/D + answer
+            if "context" in doc and "question" in doc and "answerA" in doc and "answer" in doc:
+                context = str(doc.get("context", "")).strip()
+                q_text = str(doc.get("question", "")).strip()
+                answers_letters = ["A", "B", "C", "D"]
+                answers_texts = [str(doc.get(f"answer{l}", "")).strip() for l in answers_letters]
+                answer_letter = str(doc.get("answer", "")).strip().upper()
+                if answer_letter not in answers_letters:
+                    return None
+                correct_idx = answers_letters.index(answer_letter)
+                correct = answers_texts[correct_idx]
+                incorrect_candidates = [a for i, a in enumerate(answers_texts) if i != correct_idx and a]
+                if not correct or not incorrect_candidates:
+                    return None
+                return ContrastivePair(
+                    prompt=f"Context: {context}\n\n{q_text}",
+                    positive_response=PositiveResponse(model_response=correct),
+                    negative_response=NegativeResponse(model_response=incorrect_candidates[0]),
+                    label="french_bench_reading_comp",
+                )
+
+            # trivia: Question + Answer (generation)
+            if "Question" in doc and "Answer" in doc:
+                q_text = str(doc.get("Question", "")).strip()
+                a_text = str(doc.get("Answer", "")).strip()
+                if not q_text or not a_text:
+                    return None
+                # Synthetic incorrect: reversed words
+                words = a_text.split()
+                incorrect = " ".join(reversed(words)) if len(words) > 1 else "réponse incorrecte"
+                return ContrastivePair(
+                    prompt=f"{q_text}\nAnswer:",
+                    positive_response=PositiveResponse(model_response=a_text),
+                    negative_response=NegativeResponse(model_response=incorrect),
+                    label="french_bench_trivia",
+                )
+
+            # multifquad: context + question + answers (extractive QA)
+            if "context" in doc and "question" in doc and "answers" in doc:
+                context = str(doc.get("context", "")).strip()
+                q_text = str(doc.get("question", "")).strip()
+                answers = doc.get("answers", {})
+                if isinstance(answers, dict):
+                    texts = answers.get("text", [])
+                elif isinstance(answers, list) and answers and isinstance(answers[0], dict):
+                    texts = [a.get("text", "") for a in answers]
+                else:
+                    return None
+                if not texts:
+                    return None
+                correct = str(texts[0]).strip()
+                if not correct or not context or not q_text:
+                    return None
+                words = correct.split()
+                incorrect = " ".join(reversed(words)) if len(words) > 1 else "réponse incorrecte"
+                return ContrastivePair(
+                    prompt=f"\nContexte: {context}\n\nQuestion: {q_text}\n\nRéponse:",
+                    positive_response=PositiveResponse(model_response=correct),
+                    negative_response=NegativeResponse(model_response=incorrect),
+                    label="french_bench_multifquad",
+                )
+
             # Format 1: Standard MC with question + choices + answerKey
             if "question" in doc and "choices" in doc and "answerKey" in doc:
                 question = str(doc.get("question", "")).strip()

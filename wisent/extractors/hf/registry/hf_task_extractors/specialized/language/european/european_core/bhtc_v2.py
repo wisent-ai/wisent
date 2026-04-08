@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
@@ -71,14 +72,13 @@ class BhtcV2Extractor(HuggingFaceBenchmarkExtractor):
             incorrect_idx = (label + 1) % len(categories)
             incorrect = categories[incorrect_idx]
 
-            question = f"Text: {text}\nQuestion: What is the topic of the above text?\nA. {incorrect}\nB. {correct}"
-            metadata = {"label": "bhtc_v2"}
+            question = f"Text: {text}\nQuestion: What is the topic of the above text?"
 
-            return self._build_pair(
-                question=question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
+            return ContrastivePair(
+                prompt=question,
+                positive_response=PositiveResponse(model_response=correct),
+                negative_response=NegativeResponse(model_response=incorrect),
+                label="bhtc_v2",
             )
 
         except Exception as exc:

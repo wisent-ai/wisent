@@ -326,6 +326,23 @@ class LMEvalDataLoader(BaseDataLoader):
                 lm_eval_task_name,
             )
 
+        # catalan_bench / portuguese_bench / basque_bench / galician_bench / spanish_bench
+        # store flores subtasks as <bench>_flores_<src>-<tgt>. The HF cache truncates the
+        # bench prefix and uses underscores: flores_ca_de -> catalan_bench_flores_ca-de.
+        # The first 2-letter language code maps to a specific bench prefix.
+        _BENCH_FOR_LANG = {
+            "ca": "catalan_bench", "pt": "portuguese_bench", "eu": "basque_bench",
+            "gl": "galician_bench", "es": "spanish_bench",
+        }
+        _flores2_match = re.match(r"^flores_([a-z]{2})_([a-z]{2})$", lm_eval_task_name)
+        if _flores2_match:
+            src, tgt = _flores2_match.group(1), _flores2_match.group(2)
+            # Try to find the bench. Prefer the source-language bench if listed,
+            # otherwise the target-language bench.
+            _bench = _BENCH_FOR_LANG.get(src) or _BENCH_FOR_LANG.get(tgt)
+            if _bench:
+                lm_eval_task_name = f"{_bench}_flores_{src}-{tgt}"
+
         # evalita-mp / evalita-sp use dashes between top-level segments. HF
         # caches them with underscores instead, so restore the dashes.
         if lm_eval_task_name.startswith(("evalita_mp_", "evalita_sp_")):
@@ -334,6 +351,12 @@ class LMEvalDataLoader(BaseDataLoader):
             lm_eval_task_name = re.sub(r"^evalita_sp_", "evalita-sp_", lm_eval_task_name)
             lm_eval_task_name = re.sub(r"_ner_v2_", "_ner-v2_", lm_eval_task_name)
             lm_eval_task_name = re.sub(r"_ner_v1_", "_ner-v1_", lm_eval_task_name)
+            # fp_small / fc_small variants use a dash before "small"
+            lm_eval_task_name = re.sub(r"_fp_small_", "_fp-small_", lm_eval_task_name)
+            lm_eval_task_name = re.sub(r"_fc_small_", "_fc-small_", lm_eval_task_name)
+            # The lm-eval evalita yamls use prompt-<N> with a dash, not prompt_<N>
+            # (e.g. evalita-mp_at_prompt-1 not evalita-mp_at_prompt_1).
+            lm_eval_task_name = re.sub(r"_prompt_(\d+)$", r"_prompt-\1", lm_eval_task_name)
 
         # ceval-valid uses a dash between ceval and valid (ceval-valid_accountant)
         if lm_eval_task_name.startswith("ceval_valid_"):
@@ -362,6 +385,10 @@ class LMEvalDataLoader(BaseDataLoader):
         if lm_eval_task_name.startswith("blimp_principle_a_"):
             lm_eval_task_name = "blimp_principle_A_" + lm_eval_task_name[len("blimp_principle_a_"):]
 
+        # blimp_complex_np_island uses uppercase NP in lm-eval (Noun Phrase).
+        if lm_eval_task_name == "blimp_complex_np_island":
+            lm_eval_task_name = "blimp_complex_NP_island"
+
         # Korean legal benchmark uses kbl_bar_exam_em_<topic>_<year> in lm-eval, but
         # older HF cache entries used kbl_leet_<topic>_<year> / kbl_legal_bar_exam_<topic>_<year>.
         if lm_eval_task_name.startswith("kbl_leet_"):
@@ -389,6 +416,8 @@ class LMEvalDataLoader(BaseDataLoader):
             any(lm_eval_task_name.startswith(prefix) for prefix in CASE_SENSITIVE_PREFIXES) or
             lm_eval_task_name.startswith("arabic_leaderboard_acva_") or
             "HHH" in lm_eval_task_name or  # Preserve HHH in advanced_ai_risk tasks
+            "_principle_A" in lm_eval_task_name or  # Preserve A in blimp_principle_A_*
+            "_NP_" in lm_eval_task_name or  # Preserve NP in blimp_complex_NP_island
             _has_iso_script  # Preserve ISO script codes in afrobench/flores/ntrex tasks
         )
         if not is_case_sensitive:

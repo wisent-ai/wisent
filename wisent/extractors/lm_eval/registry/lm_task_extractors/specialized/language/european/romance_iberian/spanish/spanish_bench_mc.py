@@ -62,7 +62,8 @@ class SpanishBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            if "question" in doc and "choices" in doc:
+            # OpenBookQA-style: question + choices{label,text} + answerKey
+            if "question" in doc and "choices" in doc and isinstance(doc.get("choices"), dict):
                 question = str(doc.get("question", "")).strip()
                 choices = doc.get("choices", {})
                 answer_key = doc.get("answerKey", "") or doc.get("answer", "")
@@ -103,9 +104,84 @@ class SpanishBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
                     label="es_bench_mc",
                 )
 
-            else:
-                log.debug("Skipping doc due to unrecognized format", extra={"doc": doc})
-                return None
+            # COPA-es: premise + question(cause/effect) + choice1 + choice2 + label
+            if "premise" in doc and "choice1" in doc and "choice2" in doc and "label" in doc:
+                premise = str(doc.get("premise", "")).strip()
+                q_type = str(doc.get("question", "")).strip()
+                choice1 = str(doc.get("choice1", "")).strip()
+                choice2 = str(doc.get("choice2", "")).strip()
+                label = doc.get("label", 0)
+
+                if not premise or not choice1 or not choice2:
+                    return None
+
+                connector = {"cause": "porque", "effect": "y por lo tanto"}.get(q_type, "")
+                prompt_text = f"{premise.rstrip('.')} {connector}".strip()
+
+                try:
+                    label_idx = int(label)
+                except (TypeError, ValueError):
+                    return None
+
+                correct = choice1 if label_idx == 0 else choice2
+                incorrect = choice2 if label_idx == 0 else choice1
+
+                return ContrastivePair(
+                    prompt=prompt_text,
+                    positive_response=PositiveResponse(model_response=correct),
+                    negative_response=NegativeResponse(model_response=incorrect),
+                    label="copa_es",
+                )
+
+            # NLI-style: sentence1 + sentence2 + label (paws_es, wnli_es)
+            if "sentence1" in doc and "sentence2" in doc and "label" in doc:
+                s1 = str(doc.get("sentence1", "")).strip()
+                s2 = str(doc.get("sentence2", "")).strip()
+                label = doc.get("label", 0)
+                try:
+                    label_idx = int(label)
+                except (TypeError, ValueError):
+                    return None
+
+                prompt_text = f"Frase 1: {s1}\nFrase 2: {s2}\n¿Son equivalentes?"
+                # Binary entailment: 1 = equivalent, 0 = not equivalent
+                positive_label = "Sí" if label_idx == 1 else "No"
+                negative_label = "No" if label_idx == 1 else "Sí"
+
+                return ContrastivePair(
+                    prompt=prompt_text,
+                    positive_response=PositiveResponse(model_response=positive_label),
+                    negative_response=NegativeResponse(model_response=negative_label),
+                    label="es_nli",
+                )
+
+            # XNLI-style: premise + hypothesis + label (3-class: entailment, neutral, contradiction)
+            if "premise" in doc and "hypothesis" in doc and "label" in doc:
+                premise = str(doc.get("premise", "")).strip()
+                hypothesis = str(doc.get("hypothesis", "")).strip()
+                label = doc.get("label", 0)
+                try:
+                    label_idx = int(label)
+                except (TypeError, ValueError):
+                    return None
+
+                xnli_labels = ["Verdadero", "Ni verdadero ni falso", "Falso"]
+                if not (0 <= label_idx < len(xnli_labels)):
+                    return None
+                correct = xnli_labels[label_idx]
+                incorrect = xnli_labels[(label_idx + 1) % len(xnli_labels)]
+
+                prompt_text = f"Premisa: {premise}\nHipótesis: {hypothesis}"
+
+                return ContrastivePair(
+                    prompt=prompt_text,
+                    positive_response=PositiveResponse(model_response=correct),
+                    negative_response=NegativeResponse(model_response=incorrect),
+                    label="xnli_es",
+                )
+
+            log.debug("Skipping doc due to unrecognized format", extra={"doc": doc})
+            return None
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})

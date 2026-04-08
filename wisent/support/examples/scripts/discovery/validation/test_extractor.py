@@ -34,7 +34,9 @@ def test_extractor(task_name: str, output_file: str, limit: int = 5) -> dict:
 
     if proc.returncode != 0:
         result["status"] = "FAIL"
-        result["detail"] = proc.stderr[:500]
+        # Capture more stderr so TaskSelector log noise doesn't drown out the real
+        # exception traceback (the first ~500 chars of stderr are often warning logs).
+        result["detail"] = proc.stderr[-3000:] if len(proc.stderr) > 3000 else proc.stderr
         return result
 
     if not os.path.exists(output_file):
