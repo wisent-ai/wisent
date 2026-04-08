@@ -67,6 +67,22 @@ class IcelandicWinograndeExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Winogrande format: sentence + option1/option2 + answer (1-indexed)
+            if "sentence" in doc and "option1" in doc and "option2" in doc and "answer" in doc:
+                sentence = str(doc.get("sentence", "")).strip()
+                option1 = str(doc.get("option1", "")).strip()
+                option2 = str(doc.get("option2", "")).strip()
+                answer = str(doc.get("answer", "")).strip()
+                if sentence and option1 and option2 and answer in ("1", "2"):
+                    correct = option1 if answer == "1" else option2
+                    incorrect = option2 if answer == "1" else option1
+                    return self._build_pair(
+                        question=sentence,
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata={"label": "icelandic_winogrande"},
+                    )
+
             # Try multiple possible schema formats
             question = None
             choices = None

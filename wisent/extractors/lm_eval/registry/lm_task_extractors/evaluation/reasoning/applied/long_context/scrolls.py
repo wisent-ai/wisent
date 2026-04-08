@@ -76,6 +76,20 @@ class ScrollsExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # SCROLLS format: input + outputs (list)
+            if "input" in doc and "outputs" in doc:
+                inp = str(doc.get("input", "")).strip()
+                outputs = doc.get("outputs", [])
+                if inp and isinstance(outputs, list) and outputs:
+                    correct = str(outputs[0]).strip()
+                    if correct:
+                        return self._build_pair(
+                            question=inp[:2000],
+                            correct=correct,
+                            incorrect="No relevant information available.",
+                            metadata={"label": "scrolls"},
+                        )
+
             # Try multiple possible schema formats
             question = None
             choices = None

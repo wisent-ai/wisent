@@ -61,6 +61,23 @@ class BasqueBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # MGSM format: question + answer_number
+            if "question" in doc and "answer_number" in doc:
+                question = str(doc.get("question", "")).strip()
+                answer_number = doc.get("answer_number")
+                if question and answer_number is not None:
+                    correct = str(answer_number)
+                    try:
+                        incorrect = str(int(answer_number) + 1)
+                    except (ValueError, TypeError):
+                        incorrect = "0"
+                    return ContrastivePair(
+                        prompt=question,
+                        positive_response=PositiveResponse(model_response=correct),
+                        negative_response=NegativeResponse(model_response=incorrect),
+                        label="basque_bench_mc",
+                    )
+
             # PIQA-eu format: goal + sol1/sol2 + label
             if "goal" in doc and "sol1" in doc and "sol2" in doc and "label" in doc:
                 goal = str(doc.get("goal", "")).strip()

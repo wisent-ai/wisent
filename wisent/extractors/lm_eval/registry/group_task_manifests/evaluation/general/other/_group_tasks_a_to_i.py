@@ -119,6 +119,10 @@ def get_a_to_i_mappings() -> dict[str, str]:
     all_mappings.update(ARADICE_TASKS)
     all_mappings.update(ARC_TASKS)
     all_mappings.update(ARITHMETIC_TASKS)
+    # FLORES_TASKS contains broken refs to flores:FloresExtractor (HF only); register
+    # FIRST so that BASQUE_BENCH_TASKS, CATALAN_BENCH_TASKS, GALICIAN_BENCH_TASKS etc.
+    # can override flores_<lang> entries with their working bench-specific extractors.
+    all_mappings.update(FLORES_TASKS)
     all_mappings.update(BASQUE_BENCH_TASKS)
     all_mappings.update(BBH_TASKS)
     all_mappings.update(BBQ_TASKS)
@@ -140,7 +144,6 @@ def get_a_to_i_mappings() -> dict[str, str]:
     all_mappings.update(EUS_TASKS)
     all_mappings.update(EVALITA_MP_TASKS)
     all_mappings.update(FLD_TASKS)
-    all_mappings.update(FLORES_TASKS)
     all_mappings.update(FREEBASE_TASKS)
     all_mappings.update(FRENCH_BENCH_TASKS)
     all_mappings.update(GALICIAN_BENCH_TASKS)

@@ -70,6 +70,18 @@ class UnscrambleExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # anagrams1/2/cycle_letters/random_insertion/reversed_words: context + completion
+            if "context" in doc and "completion" in doc:
+                context = str(doc.get("context", "")).strip()
+                completion = str(doc.get("completion", "")).strip()
+                if context and completion:
+                    return self._build_pair(
+                        question=context,
+                        correct=completion,
+                        incorrect="incorrect",
+                        metadata={"label": "unscramble"},
+                    )
+
             # Try multiple possible schema formats
             question = None
             choices = None
