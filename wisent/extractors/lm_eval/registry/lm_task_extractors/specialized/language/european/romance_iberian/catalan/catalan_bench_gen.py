@@ -75,6 +75,34 @@ class CatalanBenchGenerationExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # cabreu summarization schema: content + summaries.{abstractive,extractive,extreme}
+            if "content" in doc and "summaries" in doc and isinstance(doc.get("summaries"), dict):
+                content = str(doc.get("content", "")).strip()
+                summaries = doc["summaries"]
+                # Try abstractive, extractive, extreme in order
+                summary_text = None
+                for stype in ("abstractive", "extractive", "extreme"):
+                    s = summaries.get(stype)
+                    if isinstance(s, dict):
+                        # Take first summary
+                        for v in s.values():
+                            if v:
+                                summary_text = str(v).strip()
+                                break
+                    elif isinstance(s, str) and s:
+                        summary_text = s.strip()
+                    if summary_text:
+                        break
+                if content and summary_text:
+                    incorrect = self._create_shuffled_text(summary_text)
+                    return ContrastivePair(
+                        prompt=f"Summarize: {content}",
+                        positive_response=PositiveResponse(model_response=summary_text),
+                        negative_response=NegativeResponse(model_response=incorrect),
+                        label="catalan_bench_gen",
+                    )
+                return None
+
             source_sent = None
             target_sent = None
 
