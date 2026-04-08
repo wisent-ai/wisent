@@ -1,13 +1,9 @@
 [
-  "flan",
-  "flan_held_in",
   "multi_swe_bench",
   "swe_bench_multilingual",
   "pile",
   "pile_10k",
   "quac",
   "scrolls",
-  "tmlu",
-  "t0",
-  "t0_eval"
+  "tmlu"
 ]

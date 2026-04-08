@@ -57,6 +57,20 @@ class FlanExtractor(LMEvalBenchmarkExtractor):
 
         try:
             # Try multiple format patterns for question
+            # ANLI format: premise + hypothesis + label (3-class NLI)
+            if "premise" in doc and "hypothesis" in doc and "label" in doc:
+                premise = str(doc.get("premise", "")).strip()
+                hypothesis = str(doc.get("hypothesis", "")).strip()
+                label = doc.get("label", -1)
+                if premise and hypothesis and label in (0, 1, 2):
+                    nli_labels = ["Yes", "Maybe", "No"]
+                    return self._build_pair(
+                        question=f"Premise: {premise}\nHypothesis: {hypothesis}\nDoes the premise entail the hypothesis?",
+                        correct=nli_labels[label],
+                        incorrect=nli_labels[(label + 1) % 3],
+                        metadata={"label": "flan"},
+                    )
+
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
             
             # Try multiple format patterns for choices
