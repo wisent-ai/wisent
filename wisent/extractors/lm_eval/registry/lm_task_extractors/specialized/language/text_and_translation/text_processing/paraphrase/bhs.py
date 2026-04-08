@@ -75,6 +75,20 @@ class BhsExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
+            # Format 0: BLiMP-style minimal pair — context + ending_good + ending_bad (BHS)
+            if "context" in doc and "ending_good" in doc and "ending_bad" in doc:
+                context = str(doc.get("context", "")).strip()
+                good = str(doc.get("ending_good", "")).strip()
+                bad = str(doc.get("ending_bad", "")).strip()
+                if context and good and bad:
+                    return self._build_pair(
+                        question=context,
+                        correct=good,
+                        incorrect=bad,
+                        metadata={"label": "bhs"},
+                    )
+                return None
+
             # Format 1: question + choices + answer
             if "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
