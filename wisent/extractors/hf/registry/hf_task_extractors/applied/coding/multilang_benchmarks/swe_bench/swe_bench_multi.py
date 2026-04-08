@@ -62,12 +62,44 @@ class MultiSWEBenchExtractor(HuggingFaceBenchmarkExtractor):
         """
         max_items = self._normalize_limit(limit)
 
+        # The full dataset has python file empty + some files fail generation;
+        # load specific language jsonls directly via hf_hub_download
         try:
-            docs = self.load_dataset(
-                dataset_name="ByteDance-Seed/Multi-SWE-bench",
-                split="train",
-                limit=max_items * 2 if max_items else None,
-            )
+            from huggingface_hub import hf_hub_download
+            import json
+
+            # Try multiple language files since python is empty in this repo
+            file_candidates = [
+                "java/alibaba__fastjson2_dataset.jsonl",
+                "go/cli__cli_dataset.jsonl",
+                "js/expressjs__express_dataset.jsonl",
+                "rust/BurntSushi__ripgrep_dataset.jsonl",
+                "c/jqlang__jq_dataset.jsonl",
+                "cpp/fmtlib__fmt_dataset.jsonl",
+            ]
+            docs: list[dict[str, Any]] = []
+            for candidate in file_candidates:
+                try:
+                    jsonl_path = hf_hub_download(
+                        repo_id="ByteDance-Seed/Multi-SWE-bench",
+                        filename=candidate,
+                        repo_type="dataset",
+                    )
+                    with open(jsonl_path, "r", encoding="utf-8") as f:
+                        for line in f:
+                            line = line.strip()
+                            if not line:
+                                continue
+                            try:
+                                docs.append(json.loads(line))
+                            except json.JSONDecodeError:
+                                continue
+                            if max_items and len(docs) >= max_items * 2:
+                                break
+                except Exception:
+                    continue
+                if max_items and len(docs) >= max_items * 2:
+                    break
             log.info(f"Loaded {len(docs)} examples from Multi-SWE-bench")
         except Exception as e:
             log.error(f"Failed to load Multi-SWE-bench: {e}")
@@ -99,13 +131,13 @@ class MultiSWEBenchExtractor(HuggingFaceBenchmarkExtractor):
         Convert a single doc into a ContrastivePair.
         """
         try:
-            org = doc.get("org", "").strip()
-            repo = doc.get("repo", "").strip()
-            title = doc.get("title", "").strip()
-            body = doc.get("body", "").strip()
-            fix_patch = doc.get("fix_patch", "").strip()
-            test_patch = doc.get("test_patch", "")
-            instance_id = doc.get("instance_id", "").strip()
+            org = (doc.get("org") or "").strip()
+            repo = (doc.get("repo") or "").strip()
+            title = (doc.get("title") or "").strip()
+            body = (doc.get("body") or "").strip()
+            fix_patch = (doc.get("fix_patch") or "").strip()
+            test_patch = doc.get("test_patch") or ""
+            instance_id = (doc.get("instance_id") or "").strip()
             number = doc.get("number", 0)
 
             if not body and not title:
@@ -153,7 +185,7 @@ class MultiSWEBenchExtractor(HuggingFaceBenchmarkExtractor):
     def _detect_language(self, repo: str, instance_id: str) -> str:
         """Detect programming language from repo name or instance_id."""
         combined = f"{repo} {instance_id}".lower()
-        for lang in MULTI_SWE_BENCH_LANGUAGES:
+        for lang in ("java", "typescript", "javascript", "go", "rust", "c", "cpp", "python"):
             if lang in combined:
                 return lang
         return "unknown"

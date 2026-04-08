@@ -1,9 +1,6 @@
 [
-  "multi_swe_bench",
-  "swe_bench_multilingual",
   "pile",
   "pile_10k",
   "quac",
-  "scrolls",
   "tmlu"
 ]
