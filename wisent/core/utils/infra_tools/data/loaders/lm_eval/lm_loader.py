@@ -298,6 +298,19 @@ class LMEvalDataLoader(BaseDataLoader):
             return name
         lm_eval_task_name = _restore_script_case(lm_eval_task_name)
 
+        # afrobench / flores / ntrex / salt tasks use a dash between source and
+        # target language pairs (e.g. flores_aka_Latn-eng_Latn_prompt_3). The HF
+        # cache normalises everything to underscores, so restore the dash that
+        # separates the two ISO {lang}_{script} groups.
+        if "_Latn_" in lm_eval_task_name or any(
+            f"_{s}_" in lm_eval_task_name for s in _ISO_SCRIPTS.values()
+        ):
+            lm_eval_task_name = re.sub(
+                r"([a-zA-Z]{3})_([A-Z][a-z]{3})_([a-zA-Z]{3})_([A-Z][a-z]{3})",
+                r"\1_\2-\3_\4",
+                lm_eval_task_name,
+            )
+
         # Check for case-sensitive prefixes (including ACVA tasks with camelCase components)
         # Also preserve case for afrobench leaf tasks that include ISO script codes
         # (e.g. flores_afr_Latn-eng_Latn_prompt_1, ntrex_afr_Latn-eng_Latn_prompt_1).
