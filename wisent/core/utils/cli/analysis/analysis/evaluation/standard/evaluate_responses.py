@@ -158,8 +158,15 @@ def execute_evaluate_responses(args):
             return
 
     # Standard evaluation — use EvaluatorRotator
-    print(f"📚 Loading task data...")
-    task_docs = _load_task_docs(task_name, train_ratio=getattr(args, 'train_ratio', 0.5))
+    # task_docs are only needed when responses lack 'positive_reference'. Skip loading
+    # them when every response already carries positive_reference (which is the case
+    # for pairs piped through generate-pairs-from-task → evaluate-responses).
+    needs_task_docs = any(r.get("positive_reference") is None for r in responses)
+    if needs_task_docs:
+        print(f"📚 Loading task data...")
+        task_docs = _load_task_docs(task_name, train_ratio=getattr(args, 'train_ratio', 0.5))
+    else:
+        task_docs = []
 
     print(f"🔧 Selecting evaluator for task '{task_name}'...")
     rotator = EvaluatorRotator(
