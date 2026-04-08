@@ -63,6 +63,21 @@ class FrenchBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # boolqa format: question + passage + label (binary)
+            if "question" in doc and "passage" in doc and "label" in doc:
+                question = str(doc.get("question", "")).strip()
+                passage = str(doc.get("passage", "")).strip()
+                label = doc.get("label", -1)
+                if question and passage and label in (0, 1):
+                    correct = "Oui" if label == 1 else "Non"
+                    incorrect = "Non" if label == 1 else "Oui"
+                    return ContrastivePair(
+                        prompt=f"Passage: {passage}\nQuestion: {question}\nRéponse:",
+                        positive_response=PositiveResponse(model_response=correct),
+                        negative_response=NegativeResponse(model_response=incorrect),
+                        label="french_bench_mc",
+                    )
+
             # Format 1: Standard MC with question + choices + answerKey
             if "question" in doc and "choices" in doc and "answerKey" in doc:
                 question = str(doc.get("question", "")).strip()

@@ -81,6 +81,22 @@ class EvalitaLlmExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Lexical-substitution format: id + context + head + answers (list of {word, count})
+            if "context" in doc and "head" in doc and "answers" in doc:
+                context = str(doc.get("context", "")).strip()
+                head = str(doc.get("head", "")).strip()
+                answers = doc.get("answers", [])
+                if context and head and answers and isinstance(answers, list):
+                    correct = str(answers[0].get("word", "")).strip() if isinstance(answers[0], dict) else str(answers[0]).strip()
+                    incorrect = str(answers[1].get("word", "")).strip() if len(answers) > 1 and isinstance(answers[1], dict) else "incorrect"
+                    if correct:
+                        return self._build_pair(
+                            question=f"In '{context}', what is a synonym for '{head}'?",
+                            correct=correct,
+                            incorrect=incorrect,
+                            metadata={"label": "evalita_llm"},
+                        )
+
             # Try multiple possible schema formats
             question = None
             choices = None

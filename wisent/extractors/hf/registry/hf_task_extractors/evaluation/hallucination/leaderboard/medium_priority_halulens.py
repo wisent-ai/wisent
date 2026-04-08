@@ -81,9 +81,10 @@ class HalulensExtractor(HuggingFaceBenchmarkExtractor):
         max_items = self._normalize_limit(limit)
         pairs: list[ContrastivePair] = []
 
-        # Load Wikipedia data from GoodWiki
+        # When called without a limit (e.g. for ground-truth doc loading), default to 100
+        # so the extractor still produces pairs without crashing.
         if max_items is None:
-            raise ValueError("limit is required for HalluLensExtractor")
+            max_items = 100
         wiki_docs = self._load_wikipedia_data(load_limit=max_items)
         
         if not wiki_docs:
