@@ -72,6 +72,28 @@ class CabbqExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
+            # Format 0: BBQ-style — context + question + ans0/ans1/ans2 + label
+            if "context" in doc and "question" in doc and "ans0" in doc and "label" in doc:
+                context = str(doc.get("context", "")).strip()
+                question_text = str(doc.get("question", "")).strip()
+                choices = [
+                    str(doc.get("ans0", "")).strip(),
+                    str(doc.get("ans1", "")).strip(),
+                    str(doc.get("ans2", "")).strip(),
+                ]
+                choices = [c for c in choices if c]
+                answer_idx = int(doc.get("label", 0))
+                if context and question_text and choices and 0 <= answer_idx < len(choices):
+                    correct = choices[answer_idx]
+                    incorrect = choices[(answer_idx + 1) % len(choices)]
+                    return self._build_pair(
+                        question=f"{context}\n{question_text}",
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata={"label": "cabbq"},
+                    )
+                return None
+
             # Format 1: question + choices + answer
             if "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()

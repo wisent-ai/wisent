@@ -17,6 +17,7 @@ TASK_NAME_MAPPING = {
     "bhs": "bhs_basque",
     "bhtc": "bhtc_v2",
     "bigbench_generate_until": "bigbench_anachronisms_generate_until",
+    "cabbq": "cabbq_age",
     "wikitext103": "wikitext",
     "ptb": "wikitext",
     "penn_treebank": "wikitext",
