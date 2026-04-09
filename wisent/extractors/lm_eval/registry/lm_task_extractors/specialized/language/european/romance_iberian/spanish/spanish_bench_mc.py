@@ -62,11 +62,13 @@ class SpanishBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # OpenBookQA-style: question + choices{label,text} + answerKey
-            if "question" in doc and "choices" in doc and isinstance(doc.get("choices"), dict):
-                question = str(doc.get("question", "")).strip()
+            # OpenBookQA-style: (question | question_stem) + choices{label,text} + answerKey
+            if ("question" in doc or "question_stem" in doc) and "choices" in doc and isinstance(doc.get("choices"), dict):
+                question = str(doc.get("question", doc.get("question_stem", ""))).strip()
                 choices = doc.get("choices", {})
                 answer_key = doc.get("answerKey", "") or doc.get("answer", "")
+                if isinstance(answer_key, str):
+                    answer_key = answer_key.strip()
 
                 if not question or not choices or not answer_key:
                     log.debug("Skipping doc due to missing fields", extra={"doc": doc})
