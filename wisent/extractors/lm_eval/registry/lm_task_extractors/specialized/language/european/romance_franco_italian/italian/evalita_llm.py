@@ -85,7 +85,7 @@ class EvalitaLlmExtractor(LMEvalBenchmarkExtractor):
             if "text" in doc and "entities" in doc:
                 text = str(doc.get("text", "")).strip()
                 entities = doc.get("entities", [])
-                if text and entities and isinstance(entities, list):
+                if text and isinstance(entities, list):
                     correct_parts = [
                         f"{e.get('entity_text', '')}:{e.get('type', '')}"
                         for e in entities
@@ -93,12 +93,30 @@ class EvalitaLlmExtractor(LMEvalBenchmarkExtractor):
                     ]
                     if correct_parts:
                         correct = " | ".join(correct_parts)
-                        return self._build_pair(
-                            question=f"Estrai le entità nominate dal seguente testo:\n{text}",
-                            correct=correct,
-                            incorrect="(no entities)",
-                            metadata={"label": "evalita_llm"},
-                        )
+                    else:
+                        correct = "(no entities)"
+                    # Always produce a pair for NER docs (even if no entities)
+                    return self._build_pair(
+                        question=f"Estrai le entità nominate dal seguente testo:\n{text}",
+                        correct=correct,
+                        incorrect="(no entities)" if correct_parts else "Roma:LOC | Italia:LOC",
+                        metadata={"label": "evalita_llm"},
+                    )
+
+            # RE (relation extraction) format: text + relations
+            if "text" in doc and "relations" in doc and "entities" not in doc:
+                text = str(doc.get("text", "")).strip()
+                relations = doc.get("relations", [])
+                if text and isinstance(relations, list):
+                    parts = [f"{r[0]}:{r[1]}" for r in relations if isinstance(r, (list, tuple)) and len(r) >= 2]
+                    correct = " | ".join(parts) if parts else "(no relations)"
+                    incorrect = "(no relations)" if parts else "misura1:esame1"
+                    return self._build_pair(
+                        question=f"Estrai le relazioni dal seguente testo:\n{text}",
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata={"label": "evalita_llm_re"},
+                    )
 
             # Lexical-substitution format: id + context + head + answers (list of {word, count})
             if "context" in doc and "head" in doc and "answers" in doc:
