@@ -229,7 +229,7 @@ def chow_test_analog(
         }
 
     cosine_similarities = []
-    for i in range(len(coefficients)):
+    for i, coefficients in enumerate(coefficients):
         for j in range(i + 1, len(coefficients)):
             cos_sim = np.dot(coefficients[i], coefficients[j])
             cosine_similarities.append(cos_sim)

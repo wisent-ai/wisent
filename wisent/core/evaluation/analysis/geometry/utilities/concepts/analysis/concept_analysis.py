@@ -109,7 +109,7 @@ def analyze_concept_independence(
             return {"n_concepts": len(concepts), "independence": 1.0}
 
         angles = []
-        for i in range(len(directions)):
+        for i, directions in enumerate(directions):
             for j in range(i + 1, len(directions)):
                 cos_angle = np.dot(directions[i], directions[j])
                 angle = np.degrees(np.arccos(np.clip(np.abs(cos_angle), 0, 1)))

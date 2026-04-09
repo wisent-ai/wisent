@@ -203,7 +203,7 @@ def compute_routing_diversity_loss(
     # Use negative cosine similarity between concept routing patterns
     diversity_loss = torch.tensor(0.0)
     count = 0
-    for i in range(len(concept_means)):
+    for i, concept_means in enumerate(concept_means):
         for j in range(i + 1, len(concept_means)):
             cos_sim = F.cosine_similarity(
                 concept_means[i].flatten().unsqueeze(0),

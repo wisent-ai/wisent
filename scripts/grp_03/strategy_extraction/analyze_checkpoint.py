@@ -210,8 +210,8 @@ def plot_model(model_name: str, model_data: dict, output_dir: str):
         ax.set_xticklabels(strats, rotation=45, ha='right', fontsize=7)
         ax.set_yticks(range(len(cat_names)))
         ax.set_yticklabels(cat_names, fontsize=8)
-        for i in range(len(cat_names)):
-            for j in range(len(strats)):
+        for i, cat_names in enumerate(cat_names):
+            for j, strats in enumerate(strats):
                 ax.text(j, i, f'{heatmap[i,j]:.2f}', ha='center', va='center', fontsize=6)
         plt.colorbar(im, ax=ax, label='Best Linear Accuracy')
         ax.set_title(f'{model_name} - Strategy x Category (best linear acc)')

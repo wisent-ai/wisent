@@ -119,7 +119,7 @@ def generate_nonsense_pairs(n_samples=30):
 
 def compute_cosine(diffs):
     cosines = []
-    for i in range(len(diffs)):
+    for i, diffs in enumerate(diffs):
         for j in range(i+1, len(diffs)):
             cos = np.dot(diffs[i], diffs[j]) / (np.linalg.norm(diffs[i]) * np.linalg.norm(diffs[j]) + NORM_EPS)
             cosines.append(cos)

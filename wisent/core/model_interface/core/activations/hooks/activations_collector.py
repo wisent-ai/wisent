@@ -220,7 +220,7 @@ class ActivationCollector:
                 keep = self._select_indices(layers, n_blocks)
                 attention_mask = encoded.get("attention_mask")
 
-                for i in range(len(batch_texts)):
+                for i, batch_texts in enumerate(batch_texts):
                     collected: dict[str, torch.Tensor] = {}
                     if attention_mask is not None:
                         seq_len = int(attention_mask[i].sum().item())

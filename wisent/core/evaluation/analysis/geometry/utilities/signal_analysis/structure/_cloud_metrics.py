@@ -123,7 +123,7 @@ def compute_manifold_dimension(activations: torch.Tensor, k_neighbors: int = _C.
         X_sub = X
     dists = squareform(pdist(X_sub))
     local_dims = []
-    for i in range(len(X_sub)):
+    for i, X_sub in enumerate(X_sub):
         d_i = np.sort(dists[i])[1:k_neighbors+1]
         if d_i[-1] > 0 and d_i[0] > 0:
             log_ratios = np.log(d_i[-1] / d_i[:-1])

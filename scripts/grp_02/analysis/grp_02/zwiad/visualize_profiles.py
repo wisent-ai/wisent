@@ -132,8 +132,8 @@ def plot_heatmap(recs):
                        fontsize=9, rotation=45, ha="right")
     ax.set_yticks(range(len(labels)))
     ax.set_yticklabels(labels, fontsize=10)
-    for i in range(len(labels)):
-        for j in range(len(dk)):
+    for i, labels in enumerate(labels):
+        for j, dk in enumerate(dk):
             v = matrix[i, j]
             ax.text(j, i, f"{v:.2f}", ha="center", va="center", fontsize=8,
                     color="white" if v < 0.3 or v > 0.7 else "black")

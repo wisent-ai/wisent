@@ -142,8 +142,8 @@ def visualize_sae_analysis(
     ax.set_yticklabels([c.replace('_', '\n') for c in concepts], fontsize=VIZ_FONTSIZE_ANNOTATION)
     ax.set_title('Feature Overlap (Jaccard Similarity)\nof Top-20 Features')
     
-    for i in range(len(concepts)):
-        for j in range(len(concepts)):
+    for i, concepts in enumerate(concepts):
+        for j, concepts in enumerate(concepts):
             ax.text(j, i, f'{overlap_matrix[i,j]:.2f}', ha='center', va='center', fontsize=VIZ_FONTSIZE_BODY)
     
     plt.colorbar(im, ax=ax)

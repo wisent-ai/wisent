@@ -173,8 +173,8 @@ def visualize_concept_evolution_plots(
         ax.set_title(f'Layer {layer}')
         
         # Add text annotations
-        for i in range(len(concepts)):
-            for j in range(len(concepts)):
+        for i, concepts in enumerate(concepts):
+            for j, concepts in enumerate(concepts):
                 text = f'{sim_matrix[i, j]:.2f}'
                 color = 'white' if abs(sim_matrix[i, j]) > 0.5 else 'black'
                 ax.text(j, i, text, ha='center', va='center', color=color, fontsize=VIZ_FONTSIZE_SMALL)

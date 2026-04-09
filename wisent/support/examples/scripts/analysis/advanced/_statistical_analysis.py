@@ -94,7 +94,7 @@ def compute_direction_consistency(
     
     # Compute pairwise cosine similarities
     cosine_sims = []
-    for i in range(len(directions)):
+    for i, directions in enumerate(directions):
         for j in range(i + 1, len(directions)):
             sim = np.dot(directions[i], directions[j])
             cosine_sims.append(sim)

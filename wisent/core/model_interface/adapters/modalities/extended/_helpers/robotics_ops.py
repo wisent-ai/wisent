@@ -112,7 +112,7 @@ class RoboticsOpsMixin:
                     )
                 )
         else:
-            for i in range(len(layers)):
+            for i, layers in enumerate(layers):
                 recommended = i >= len(layers) // 2
                 points.append(
                     InterventionPoint(

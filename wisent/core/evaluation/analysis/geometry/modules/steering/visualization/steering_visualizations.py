@@ -47,7 +47,7 @@ def create_steering_effect_figure(
     _plot_scatter_points(ax, pos_2d, neg_2d, base_2d, steered_2d, pos_centroid, neg_centroid,
                          base_evaluations, steered_evaluations)
 
-    for i in range(len(base_2d)):
+    for i, base_2d in enumerate(base_2d):
         ax.annotate('', xy=(steered_2d[i, 0], steered_2d[i, 1]),
                     xytext=(base_2d[i, 0], base_2d[i, 1]),
                     arrowprops=dict(arrowstyle='->', color='green', alpha=VIZ_ALPHA_MEDIUM, lw=VIZ_ARROW_LINEWIDTH))

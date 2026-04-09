@@ -158,7 +158,7 @@ class MLPMethod(PerLayerBaseSteeringMethod):
         gradients = []
         
         # Get gradients for negative samples (direction to make them positive)
-        for i in range(len(neg)):
+        for i, neg in enumerate(neg):
             x = neg[i:i+1].clone().requires_grad_(True)
             output = mlp(x)
             output.backward()

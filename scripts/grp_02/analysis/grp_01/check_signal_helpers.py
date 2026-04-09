@@ -205,7 +205,7 @@ def compute_signal_metrics(pos_acts, neg_acts, n_subsets=5):
 
     # 1. Mean diff cosine (linear cone)
     cosines = []
-    for i in range(len(diff_vecs)):
+    for i, diff_vecs in enumerate(diff_vecs):
         for j in range(i + 1, len(diff_vecs)):
             cos = np.dot(diff_vecs[i], diff_vecs[j]) / (
                 np.linalg.norm(diff_vecs[i]) * np.linalg.norm(diff_vecs[j]) + NORM_EPS
@@ -267,7 +267,7 @@ def compute_signal_metrics(pos_acts, neg_acts, n_subsets=5):
             idx = np.random.choice(len(diff_vecs), len(diff_vecs) // 2, replace=False)
             subset = diff_vecs[idx]
             cos_list = []
-            for i in range(len(subset)):
+            for i, subset in enumerate(subset):
                 for j in range(i + 1, len(subset)):
                     cos = np.dot(subset[i], subset[j]) / (
                         np.linalg.norm(subset[i]) * np.linalg.norm(subset[j]) + NORM_EPS

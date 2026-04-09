@@ -115,7 +115,7 @@ def estimate_local_intrinsic_dim(X: np.ndarray, k: int = 10) -> float:
     np.fill_diagonal(dists, np.inf)
     sorted_dists = np.sort(dists, axis=1)[:, :k]
     dims = []
-    for i in range(len(X)):
+    for i, X in enumerate(X):
         T_k = sorted_dists[i, k-1]
         if T_k < ZERO_THRESHOLD:
             continue

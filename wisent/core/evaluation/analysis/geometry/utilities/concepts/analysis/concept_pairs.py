@@ -33,7 +33,7 @@ def compute_concept_linear_separability(
             return {"separability": 1.0, "pairwise_separability": {}, "all_linearly_separable": True}
 
         pairwise_scores = {}
-        for i in range(len(unique_concepts)):
+        for i, unique_concepts in enumerate(unique_concepts):
             for j in range(i + 1, len(unique_concepts)):
                 c_i, c_j = unique_concepts[i], unique_concepts[j]
                 mask = (labels == c_i) | (labels == c_j)

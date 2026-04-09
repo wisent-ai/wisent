@@ -55,7 +55,7 @@ class FastDiversity(Diversity):
                     jaccs.append(self._jaccard(s, sample[j]))
             avg_j = sum(jaccs) / len(jaccs) if jaccs else 0.0
             dists: list[int] = []
-            for i in range(len(sample)):
+            for i, sample in enumerate(sample):
                 for j in range(i + 1, len(sample)):
                     dists.append(self._hamming(fps[i], fps[j]))
             mean_h = (sum(dists) / len(dists)) if dists else 0.0

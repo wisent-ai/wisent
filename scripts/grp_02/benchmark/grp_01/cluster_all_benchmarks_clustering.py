@@ -26,7 +26,7 @@ def find_optimal_clusters(sim_matrix: np.ndarray, names: List[str], max_clusters
             within_sims = []
             for members in clusters.values():
                 if len(members) > 1:
-                    for i in range(len(members)):
+                    for i, members in enumerate(members):
                         for j in range(i+1, len(members)):
                             within_sims.append(sim_matrix[members[i], members[j]])
             

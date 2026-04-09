@@ -118,7 +118,7 @@ for idx, strategy_name in enumerate(all_data.keys()):
     dir_projected_norm = dir_projected / (np.linalg.norm(dir_projected, axis=1, keepdims=True) + NORM_EPS)
 
     # Plot arrows from origin
-    for i in range(len(dir_projected_norm)):
+    for i, dir_projected_norm in enumerate(dir_projected_norm):
         ax2.arrow(0, 0, dir_projected_norm[i, 0] * 0.8, dir_projected_norm[i, 1] * 0.8,
                   head_width=0.05, head_length=0.03, fc='blue', ec='blue', alpha=0.5)
 

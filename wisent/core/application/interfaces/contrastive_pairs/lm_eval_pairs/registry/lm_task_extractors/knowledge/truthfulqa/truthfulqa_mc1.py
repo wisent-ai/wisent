@@ -84,7 +84,7 @@ class TruthfulQAMC1Extractor(LMEvalBenchmarkExtractor):
                 return None
             
             # Find correct answer
-            for i in range(len(labels)):
+            for i, labels in enumerate(labels):
                 if labels[i] == 1:
                     answer_idx = i
             

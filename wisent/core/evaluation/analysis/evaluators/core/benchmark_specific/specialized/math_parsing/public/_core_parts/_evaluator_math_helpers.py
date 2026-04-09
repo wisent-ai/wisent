@@ -164,7 +164,7 @@ class EvaluatorMathHelpersMixin:
         ele_strs: List[str] = clean_s.replace("or", ",").split(",")
         ele_strs: List[str] = [s.strip() for s in ele_strs]
         merged_strs: List[str] = []
-        for i in range(len(ele_strs)):
+        for i, ele_strs in enumerate(ele_strs):
             s_i: str = ele_strs[i]
             existing = False
             for j in range(i):
