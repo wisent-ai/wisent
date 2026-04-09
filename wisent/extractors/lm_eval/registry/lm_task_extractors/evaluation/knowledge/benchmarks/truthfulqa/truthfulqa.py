@@ -55,9 +55,26 @@ class TruthfulqaExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # truthfulqa mc1: question + mc1_targets {choices, labels}
+            # The first choice is always the correct one (doc_to_target = 0).
+            if "question" in doc and "mc1_targets" in doc:
+                q = str(doc.get("question", "")).strip()
+                mc1 = doc.get("mc1_targets", {})
+                if isinstance(mc1, dict):
+                    mc1_choices = mc1.get("choices", [])
+                    if isinstance(mc1_choices, list) and len(mc1_choices) >= 2 and q:
+                        correct = str(mc1_choices[0]).strip()
+                        incorrect = str(mc1_choices[1]).strip()
+                        return ContrastivePair(
+                            prompt=f"Q: {q}\nA:",
+                            positive_response=PositiveResponse(model_response=correct),
+                            negative_response=NegativeResponse(model_response=incorrect),
+                            label="truthfulqa",
+                        )
+
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
             

@@ -77,9 +77,14 @@ class HellaSwagExtractor(LMEvalBenchmarkExtractor):
 
         try:
             query = str(doc.get("query", "")).strip()
-            endings = doc.get("endings", [])
-            label = str(doc.get("label", "")).strip()
-            label = int(label)
+            # metabench_hellaswag uses 'choices' (after process_docs); plain
+            # hellaswag uses 'endings'.
+            endings = doc.get("endings", doc.get("choices", []))
+            label_raw = doc.get("label", "")
+            try:
+                label = int(label_raw) if label_raw not in ("", None) else -1
+            except (TypeError, ValueError):
+                return None
 
             if not query or not endings or not (0 <= label < len(endings)):
                 log.debug(
