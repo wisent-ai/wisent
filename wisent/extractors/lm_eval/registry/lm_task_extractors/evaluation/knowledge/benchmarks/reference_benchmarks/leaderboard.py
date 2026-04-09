@@ -69,6 +69,31 @@ class LeaderboardExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # leaderboard_bbh schema: input + target (the doc_to_choice list comes
+            # from the yaml, not the doc). Use target as the correct answer with a
+            # synthetic incorrect (different non-target value if applicable).
+            if "input" in doc and "target" in doc and "choices" not in doc:
+                input_text = str(doc.get("input", "")).strip()
+                target = str(doc.get("target", "")).strip()
+                if not input_text or not target:
+                    return None
+                # Pick a synthetic incorrect by inverting the common boolean answers
+                # or reversing characters of the target.
+                _common_inversions = {
+                    "True": "False", "False": "True",
+                    "true": "false", "false": "true",
+                    "Yes": "No", "No": "Yes",
+                    "yes": "no", "no": "yes",
+                    "(A)": "(B)", "(B)": "(A)",
+                }
+                incorrect = _common_inversions.get(target, target[::-1] if len(target) > 1 else target + "_alt")
+                return self._build_pair(
+                    question=f"Q: {input_text}\nA:",
+                    correct=target,
+                    incorrect=incorrect,
+                    metadata={"label": "leaderboard_bbh"},
+                )
+
             # Try multiple possible schema formats
             question = None
             choices = None
