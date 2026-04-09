@@ -43,9 +43,7 @@ class WmtRoEnT5PromptExtractor(HuggingFaceBenchmarkExtractor):
                 if max_items is not None and len(pairs) >= max_items:
                     break
 
-        if not pairs:
-            task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid pairs extracted", extra={"task": task_name})
+        if not pairs:            log.warning("No valid pairs extracted")
 
         return pairs
 

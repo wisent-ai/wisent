@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
-from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
+from wisent.extractors.lm_eval.atoms import LMEvalBenchmarkExtractor
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -14,7 +14,7 @@ __all__ = ["LlamaExtractor"]
 _LOG = setup_logger(__name__)
 
 
-class LlamaExtractor(HuggingFaceBenchmarkExtractor):
+class LlamaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Llama benchmark."""
 
     evaluator_name = "log_likelihoods"
@@ -24,11 +24,13 @@ class LlamaExtractor(HuggingFaceBenchmarkExtractor):
         lm_eval_task_data: ConfigurableTask | None = None,
         limit: int | None = None,
         preferred_doc: str | None = None,
+        *,
+        train_ratio: float,
     ) -> list[ContrastivePair]:
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "llama") if lm_eval_task_data else "llama")
         max_items = self._normalize_limit(limit)
         if lm_eval_task_data is not None:
-            docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+            docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc, train_ratio=train_ratio)
         else:
             docs = self.load_dataset(
                 dataset_name="cais/mmlu", dataset_config="all",

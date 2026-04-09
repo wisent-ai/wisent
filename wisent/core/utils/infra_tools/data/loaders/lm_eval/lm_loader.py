@@ -346,6 +346,42 @@ class LMEvalDataLoader(BaseDataLoader):
             if _bench:
                 lm_eval_task_name = f"{_bench}_flores_{src}-{tgt}"
 
+        # afrobench/flores 3-letter pairs without script codes:
+        # flores_afr_eng_prompt_1 -> flores_afr_Latn-eng_Latn_prompt_1
+        # Map 3-letter ISO 639-3 codes to their primary script.
+        _LANG_TO_SCRIPT = {
+            "afr": "Latn", "aka": "Latn", "amh": "Ethi", "ara": "Arab", "bam": "Latn",
+            "ban": "Latn", "bem": "Latn", "ceb": "Latn", "cjk": "Latn", "dik": "Latn",
+            "dyu": "Latn", "eng": "Latn", "ewe": "Latn", "fin": "Latn", "fon": "Latn",
+            "fra": "Latn", "fuv": "Latn", "gaz": "Latn", "hau": "Latn", "ibo": "Latn",
+            "ind": "Latn", "isl": "Latn", "ita": "Latn", "kab": "Latn", "kam": "Latn",
+            "kbp": "Latn", "kea": "Latn", "kik": "Latn", "kin": "Latn", "kmb": "Latn",
+            "kon": "Latn", "lin": "Latn", "lua": "Latn", "lug": "Latn", "luo": "Latn",
+            "mos": "Latn", "nso": "Latn", "nus": "Latn", "nya": "Latn", "plt": "Latn",
+            "pol": "Latn", "por": "Latn", "ron": "Latn", "run": "Latn", "sag": "Latn",
+            "slv": "Latn", "sna": "Latn", "som": "Latn", "sot": "Latn", "spa": "Latn",
+            "ssw": "Latn", "sun": "Latn", "swa": "Latn", "swe": "Latn", "swh": "Latn",
+            "tha": "Thai", "tir": "Ethi", "tso": "Latn", "tsn": "Latn", "tum": "Latn",
+            "tur": "Latn", "twi": "Latn", "umb": "Latn", "urd": "Arab", "vie": "Latn",
+            "wol": "Latn", "xho": "Latn", "yor": "Latn", "yue": "Hant", "zul": "Latn",
+            "azj": "Latn", "deu": "Latn", "rus": "Cyrl", "ukr": "Cyrl", "bul": "Cyrl",
+            "kor": "Hang", "jpn": "Jpan", "khm": "Khmr", "lao": "Laoo", "mya": "Mymr",
+            "tam": "Taml", "tel": "Telu", "kan": "Knda", "mal": "Mlym", "ben": "Beng",
+            "guj": "Gujr", "ori": "Orya", "pan": "Guru", "sin": "Sinh", "hin": "Deva",
+            "mar": "Deva", "nep": "Deva", "san": "Deva", "ell": "Grek", "hye": "Armn",
+            "kat": "Geor", "ell": "Grek",
+        }
+        _flores3_match = re.match(r"^flores_([a-z]{3})_([a-z]{3})(_prompt_\d+)?$", lm_eval_task_name)
+        if _flores3_match:
+            src3, tgt3 = _flores3_match.group(1), _flores3_match.group(2)
+            # If no prompt suffix, default to prompt_1 (the bare flores_X_Y task does
+            # not exist as a yaml; only flores_X_Y_prompt_N variants).
+            prompt_suffix = _flores3_match.group(3) or "_prompt_1"
+            src_script = _LANG_TO_SCRIPT.get(src3)
+            tgt_script = _LANG_TO_SCRIPT.get(tgt3)
+            if src_script and tgt_script:
+                lm_eval_task_name = f"flores_{src3}_{src_script}-{tgt3}_{tgt_script}{prompt_suffix}"
+
         # evalita-mp / evalita-sp use dashes between top-level segments. HF
         # caches them with underscores instead, so restore the dashes.
         if lm_eval_task_name.startswith(("evalita_mp_", "evalita_sp_")):
