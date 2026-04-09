@@ -67,6 +67,19 @@ class BlimpNlExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # blimp_nl schema: sentence_good + sentence_bad (binary minimal pair)
+            if "sentence_good" in doc and "sentence_bad" in doc:
+                good = str(doc.get("sentence_good", "")).strip()
+                bad = str(doc.get("sentence_bad", "")).strip()
+                if not good or not bad:
+                    return None
+                return ContrastivePair(
+                    prompt="Choose the grammatical sentence:",
+                    positive_response=PositiveResponse(model_response=good),
+                    negative_response=NegativeResponse(model_response=bad),
+                    label="blimp_nl",
+                )
+
             # Try multiple possible schema formats
             question = None
             choices = None
