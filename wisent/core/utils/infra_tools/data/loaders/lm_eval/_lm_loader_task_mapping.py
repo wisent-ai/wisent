@@ -33,6 +33,7 @@ TASK_NAME_MAPPING = {
     "eq_bench_es": "eqbench_es",
     "ethics": "ethics_cm",
     "ethos": "ethos_binary",
+    "catalan_bench": "catalanqa",
     "cnn": "cnn_dailymail_abisee",
     "commonsense": "ethics_cm",
     "cycle": "cycle_letters",

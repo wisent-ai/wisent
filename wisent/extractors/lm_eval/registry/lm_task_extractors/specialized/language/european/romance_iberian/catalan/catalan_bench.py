@@ -70,6 +70,31 @@ class CatalanBenchExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # catalanqa schema: context + question + answers (extractive QA)
+            if "context" in doc and "question" in doc and "answers" in doc:
+                context = str(doc.get("context", "")).strip()
+                q_text = str(doc.get("question", "")).strip()
+                answers = doc.get("answers", {})
+                if isinstance(answers, dict):
+                    texts = answers.get("text", [])
+                elif isinstance(answers, list) and answers and isinstance(answers[0], dict):
+                    texts = [a.get("text", "") for a in answers]
+                else:
+                    return None
+                if not texts or not context or not q_text:
+                    return None
+                correct = str(texts[0]).strip()
+                if not correct:
+                    return None
+                words = correct.split()
+                incorrect = " ".join(reversed(words)) if len(words) > 1 else "resposta incorrecta"
+                return ContrastivePair(
+                    prompt=f"Context: {context}\n\nPregunta: {q_text}\n\nResposta:",
+                    positive_response=PositiveResponse(model_response=correct),
+                    negative_response=NegativeResponse(model_response=incorrect),
+                    label="catalan_bench",
+                )
+
             # Try multiple possible schema formats
             question = None
             choices = None
