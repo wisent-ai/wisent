@@ -39,6 +39,7 @@ TASK_NAME_MAPPING = {
     "cnn": "cnn_dailymail_abisee",
     "commonsense": "ethics_cm",
     "cycle": "cycle_letters",
+    "financial": "financial_tweets",
     "law": "law_stack_exchange",
     "non": "non_greedy_robustness_math_algebra",
     "option": "option_order_robustness_agieval_aqua_rat",

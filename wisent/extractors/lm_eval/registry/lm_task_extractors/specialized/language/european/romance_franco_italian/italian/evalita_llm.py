@@ -103,6 +103,21 @@ class EvalitaLlmExtractor(LMEvalBenchmarkExtractor):
                         metadata={"label": "evalita_llm"},
                     )
 
+            # TE (textual entailment) format: text1 + text2 + entailment (SI/NO)
+            if "text1" in doc and "text2" in doc and "entailment" in doc:
+                t1 = str(doc.get("text1", "")).strip()
+                t2 = str(doc.get("text2", "")).strip()
+                ent = str(doc.get("entailment", "")).strip().upper()
+                if t1 and t2:
+                    correct = "Sì" if ent == "SI" else "No"
+                    incorrect = "No" if ent == "SI" else "Sì"
+                    return self._build_pair(
+                        question=f"La frase: '{t1}' implica logicamente che la frase: '{t2}' sia vera?",
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata={"label": "evalita_llm_te"},
+                    )
+
             # RE (relation extraction) format: text + relations
             if "text" in doc and "relations" in doc and "entities" not in doc:
                 text = str(doc.get("text", "")).strip()
