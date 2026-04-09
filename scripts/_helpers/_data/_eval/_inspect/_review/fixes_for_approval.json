@@ -373,10 +373,10 @@
       "description": "Mapped gpt3 → wmt14-fr-en (the only translation task the Gpt3Extractor knows about). This is the kind of redirect the user flagged for review.",
       "reasoning": "There is no 'gpt3' lm-eval task. The Gpt3Extractor's task_names lists 'gpt3_translation_benchmarks' which is also not a real lm-eval task; the only valid path is one of the wmt14 leaves.",
       "before": "FAIL (TaskNotFound)",
-      "after": "UNVERIFIED — wmt14-fr-en loads multi-million sentence pairs and the extractor blocks for >5min on dataset download. Verification was killed. Recommend deleting this cache entry instead of keeping the redirect.",
+      "after": "FAIL (0 pairs after wmt14-fr-en finally finished loading several minutes later — the Gpt3Extractor doesn't recognize the wmt14 doc schema either). The redirect both takes too long AND doesn't work.",
       "commit": "375bc0fa",
       "approved": null,
-      "note": "USER REVIEW NEEDED: redirect targets a slow-loading translation dataset; cache entry may be invalid and should be removed instead."
+      "note": "USER REVIEW NEEDED: redirect is doubly broken — slow load + zero pairs. Recommend removing the gpt3 cache entry as invalid OR removing the gpt3 mapping and the Gpt3Extractor entirely (no upstream lm-eval gpt3 task exists)."
     },
     {
       "benchmark": "bhtc_v2",
@@ -503,6 +503,188 @@
       "before": "FAIL",
       "after": "extraction=PASS (5 pairs), evaluator=SKIP_NO_MODEL",
       "commit": "4a8163df",
+      "approved": null
+    },
+    {
+      "benchmark": "iwslt2017_ar_en",
+      "file": "wisent/extractors/hf/registry/hf_task_extractors/specialized/language/text_translation/translation/iwslt2017_ar_en.py",
+      "description": "Reclassified Iwslt2017ArEnExtractor from HuggingFaceBenchmarkExtractor to LMEvalBenchmarkExtractor (its method signature took lm_eval_task_data but the HF router was calling it with HF signature). Added schema handler for {'translation': {'ar': ..., 'en': ...}}.",
+      "reasoning": "The class subclassed HF but its extract_contrastive_pairs took lm_eval_task_data as positional, so the HF dispatch path crashed with TypeError. Switching to LMEvalBenchmarkExtractor + adding train_ratio kwarg + adding the iwslt2017 translation schema handler fixes both the dispatch crash and the zero-pairs issue.",
+      "before": "FAIL (TypeError on extract_contrastive_pairs signature mismatch, then 0 pairs)",
+      "after": "extraction=PASS (5 pairs), evaluator=PASS",
+      "commit": "uncommitted",
+      "approved": null
+    },
+    {
+      "benchmark": "iwslt2017_en_ar",
+      "file": "wisent/extractors/hf/registry/hf_task_extractors/specialized/language/text_translation/translation/iwslt2017_en_ar.py",
+      "description": "Same parent-class + schema-handler fix as iwslt2017_ar_en.",
+      "before": "FAIL (TypeError, then 0 pairs)",
+      "after": "extraction=PASS (5 pairs), evaluator=PASS",
+      "commit": "uncommitted",
+      "approved": null
+    },
+    {
+      "benchmark": "advanced_ai_risk",
+      "file": "(no code change — verified)",
+      "description": "Verified after foundational fixes — group task loads via existing model_written_evals path.",
+      "before": "FAIL",
+      "after": "extraction=PASS (5 pairs), evaluator=SKIP_NO_MODEL",
+      "commit": "4a8163df",
+      "approved": null
+    },
+    {
+      "benchmark": "advanced",
+      "file": "(no code change — verified)",
+      "description": "Verified — falls through GROUP_TASK_EXPANSIONS path to advanced_ai_risk.",
+      "before": "FAIL",
+      "after": "extraction=PASS (5 pairs), evaluator=SKIP_NO_MODEL",
+      "commit": "4a8163df",
+      "approved": null
+    },
+    {
+      "benchmark": "advanced_ai_risk_fewshot-corrigible-less-hhh",
+      "file": "(no code change — verified)",
+      "description": "Verified — existing HHH case-preservation in lm_loader handles this.",
+      "before": "FAIL",
+      "after": "extraction=PASS (5 pairs), evaluator=SKIP_NO_MODEL",
+      "commit": "4a8163df",
+      "approved": null
+    },
+    {
+      "benchmark": "advanced_ai_risk_human_self_awareness_general_ai",
+      "file": "(no code change — verified)",
+      "description": "Verified — all-underscores variant resolves via existing dash-restoration regex.",
+      "before": "FAIL",
+      "after": "extraction=PASS (5 pairs), evaluator=SKIP_NO_MODEL",
+      "commit": "4a8163df",
+      "approved": null
+    },
+    {
+      "benchmark": "arabic_leaderboard_acva_algeria_light",
+      "file": "(no code change — verified)",
+      "description": "Verified — existing arabic_leaderboard_acva_X_light → ACVA_AlgeriaCountry mapping works.",
+      "before": "FAIL",
+      "after": "extraction=PASS (5 pairs), evaluator=SKIP_NO_MODEL",
+      "commit": "4a8163df",
+      "approved": null
+    },
+    {
+      "benchmark": "arabic_leaderboard_acva_influencefrompersia",
+      "file": "(no code change — verified)",
+      "description": "Verified — existing CamelCase mapping in TASK_NAME_MAPPING works.",
+      "before": "FAIL",
+      "after": "extraction=PASS (5 pairs), evaluator=SKIP_NO_MODEL",
+      "commit": "4a8163df",
+      "approved": null
+    },
+    {
+      "benchmark": "arabicmmlu_islamic_studies",
+      "file": "(no code change — verified)",
+      "description": "Verified — direct lm-eval task name match.",
+      "before": "FAIL",
+      "after": "extraction=PASS (5 pairs), evaluator=SKIP_NO_MODEL",
+      "commit": "4a8163df",
+      "approved": null
+    },
+    {
+      "benchmark": "arabicmmlu_humanities_tasks",
+      "file": "(no code change — verified)",
+      "description": "Verified — tag-based group resolution works.",
+      "before": "FAIL",
+      "after": "extraction=PASS (5 pairs), evaluator=SKIP_NO_MODEL",
+      "commit": "4a8163df",
+      "approved": null
+    },
+    {
+      "benchmark": "aradice_boolq_egy",
+      "file": "(no code change — verified)",
+      "description": "Verified — existing aradice_ → AraDiCE_ case-restore mapping works.",
+      "before": "FAIL",
+      "after": "extraction=PASS (5 pairs), evaluator=SKIP_NO_MODEL",
+      "commit": "4a8163df",
+      "approved": null
+    },
+    {
+      "benchmark": "egymmlu_accounting",
+      "file": "(no code change — verified)",
+      "description": "Verified — direct lm-eval task name match.",
+      "before": "FAIL",
+      "after": "extraction=PASS (5 pairs), evaluator=SKIP_NO_MODEL",
+      "commit": "4a8163df",
+      "approved": null
+    },
+    {
+      "benchmark": "egymmlu_arabic_language_(general)",
+      "file": "(no code change — verified)",
+      "description": "Verified — parens in task name preserved through normalization (lm-eval yaml literally has parens).",
+      "before": "FAIL",
+      "after": "extraction=PASS (5 pairs), evaluator=SKIP_NO_MODEL",
+      "commit": "4a8163df",
+      "approved": null
+    },
+    {
+      "benchmark": "ceval_valid_accountant",
+      "file": "(no code change — verified)",
+      "description": "Verified — existing ceval_valid_ → ceval-valid_ transformation works.",
+      "before": "FAIL",
+      "after": "extraction=PASS (5 pairs), evaluator=SKIP_NO_MODEL",
+      "commit": "4a8163df",
+      "approved": null
+    },
+    {
+      "benchmark": "kbl_leet_civil_2014",
+      "file": "(no code change — verified)",
+      "description": "Verified — existing kbl_leet_ → kbl_bar_exam_em_ transformation works.",
+      "before": "FAIL",
+      "after": "extraction=PASS (5 pairs), evaluator=PASS",
+      "commit": "4a8163df",
+      "approved": null
+    },
+    {
+      "benchmark": "kbl_legal_bar_exam_civil_2024",
+      "file": "(no code change — verified)",
+      "description": "Verified — existing kbl_legal_bar_exam_ → kbl_bar_exam_em_ transformation works.",
+      "before": "FAIL",
+      "after": "extraction=PASS (5 pairs), evaluator=PASS",
+      "commit": "4a8163df",
+      "approved": null
+    },
+    {
+      "benchmark": "kbl_leet (bare)",
+      "file": "wisent/core/utils/infra_tools/data/loaders/lm_eval/_lm_loader_task_mapping.py",
+      "description": "Mapped to kbl_bar_exam_em_civil_2014 as a representative leaf (no aggregator yaml exists in lm-eval).",
+      "before": "FAIL (TaskNotFound)",
+      "after": "extraction=PASS (5 pairs), evaluator=PASS",
+      "commit": "375bc0fa",
+      "approved": null,
+      "note": "USER REVIEW NEEDED: this is a bare-name redirect to a representative subtask. Same category as gpt3 but verified to actually work."
+    },
+    {
+      "benchmark": "kmmlu_agricultural_sciences",
+      "file": "(no code change — verified)",
+      "description": "Verified — direct lm-eval task name match.",
+      "before": "FAIL",
+      "after": "extraction=PASS (5 pairs), evaluator=SKIP_NO_MODEL",
+      "commit": "4a8163df",
+      "approved": null
+    },
+    {
+      "benchmark": "inverse_scaling_neqa",
+      "file": "(no code change — verified using inverse.py schema handler)",
+      "description": "Verified — uses the prompt+classes+answer_index handler I added to InverseExtractor.",
+      "before": "FAIL",
+      "after": "extraction=PASS (5 pairs), evaluator=PASS",
+      "commit": "uncommitted (depends on inverse fix)",
+      "approved": null
+    },
+    {
+      "benchmark": "inverse_scaling_hindsight_neglect_10shot",
+      "file": "(no code change — verified)",
+      "description": "Verified — _10shot suffix prefix-matches to base inverse_scaling extractor; works with the new schema handler.",
+      "before": "FAIL",
+      "after": "extraction=PASS (5 pairs), evaluator=PASS",
+      "commit": "uncommitted",
       "approved": null
     }
   ]

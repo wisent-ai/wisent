@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
-from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
+from wisent.extractors.lm_eval.atoms import LMEvalBenchmarkExtractor
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -14,7 +14,7 @@ __all__ = ["Iwslt2017ArEnExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = ("iwslt2017-ar-en",)
-class Iwslt2017ArEnExtractor(HuggingFaceBenchmarkExtractor):
+class Iwslt2017ArEnExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Iwslt2017 Ar En benchmark."""
 
 
@@ -24,10 +24,12 @@ class Iwslt2017ArEnExtractor(HuggingFaceBenchmarkExtractor):
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
         preferred_doc: str | None = None,
+        *,
+        train_ratio: float,
     ) -> list[ContrastivePair]:
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc, train_ratio=train_ratio)
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
@@ -48,6 +50,24 @@ class Iwslt2017ArEnExtractor(HuggingFaceBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # iwslt2017 schema: {"translation": {"ar": "...", "en": "..."}}
+            translation = doc.get("translation")
+            if isinstance(translation, dict) and len(translation) == 2:
+                items = list(translation.items())
+                src_lang, src_text = items[0]
+                tgt_lang, tgt_text = items[1]
+                src_text = str(src_text).strip()
+                tgt_text = str(tgt_text).strip()
+                if src_text and tgt_text:
+                    words = tgt_text.split()
+                    incorrect = " ".join(reversed(words)) if len(words) > 1 else "incorrect translation"
+                    return self._build_pair(
+                        question=f"Translate from {src_lang} to {tgt_lang}: {src_text}",
+                        correct=tgt_text,
+                        incorrect=incorrect,
+                        metadata={"label": "iwslt2017"},
+                    )
+
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
             
