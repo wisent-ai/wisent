@@ -49,6 +49,20 @@ class LawExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Unitxt source/target format (law_stack_exchange)
+            if "source" in doc and "target" in doc and "choices" not in doc:
+                source = str(doc.get("source", "")).strip()
+                target = str(doc.get("target", "")).strip()
+                if source and target:
+                    words = target.split()
+                    incorrect = " ".join(reversed(words)) if len(words) > 1 else "incorrect"
+                    return self._build_pair(
+                        question=source,
+                        correct=target,
+                        incorrect=incorrect,
+                        metadata={"label": "law"},
+                    )
+
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
             
