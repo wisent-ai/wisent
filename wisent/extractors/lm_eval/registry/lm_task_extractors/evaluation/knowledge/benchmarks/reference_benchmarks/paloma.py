@@ -101,12 +101,12 @@ class PalomaExtractor(LMEvalBenchmarkExtractor):
         pairs = []
         text = doc.get("text", "").strip()
 
-        if not text or len(text) < PALOMA_MIN_TEXT_LENGTH:
+        if not text:
             return pairs
 
         # Split long text into chunks of ~PALOMA_CHUNK_SIZE_WORDS words
         words = text.split()
-        chunk_size = PALOMA_CHUNK_SIZE_WORDS
+        chunk_size = max(3, min(PALOMA_CHUNK_SIZE_WORDS, max(1, len(words) // 2)))
         target_pairs = max_pairs if max_pairs else PALOMA_TARGET_PAIRS_PER_DOC
 
         for i in range(target_pairs):
@@ -117,7 +117,7 @@ class PalomaExtractor(LMEvalBenchmarkExtractor):
             end_idx = min(start_idx + chunk_size, len(words))
             chunk_words = words[start_idx:end_idx]
 
-            if len(chunk_words) < PALOMA_MIN_CHUNK_WORDS:  # Skip very short chunks
+            if len(chunk_words) < 3:  # Skip very short chunks
                 continue
 
             chunk_text = " ".join(chunk_words)
@@ -161,7 +161,7 @@ class PalomaExtractor(LMEvalBenchmarkExtractor):
             # Paloma docs have a 'text' field with the passage
             text = doc.get("text", "").strip()
 
-            if not text or len(text) < PALOMA_MIN_CHUNK_WORDS:  # Skip very short texts
+            if not text or len(text.split()) < 3:  # Skip empty/single-word texts
                 log.debug("Skipping doc with insufficient text", extra={"text_len": len(text)})
                 return None
 
@@ -175,7 +175,7 @@ class PalomaExtractor(LMEvalBenchmarkExtractor):
             # Create corrupted version by shuffling some words
             # This should have higher perplexity than the original
             words = text.split()
-            if len(words) < PALOMA_MIN_WORDS:
+            if len(words) < 3:
                 return None
 
             # Shuffle middle 30% of words to create unnatural text
