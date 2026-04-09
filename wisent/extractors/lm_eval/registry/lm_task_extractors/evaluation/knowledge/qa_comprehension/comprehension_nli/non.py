@@ -49,6 +49,20 @@ class NonExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # SCORE math (hendrycks_math): problem + answer (string).
+            if "problem" in doc and "answer" in doc and "choices" not in doc:
+                problem = str(doc.get("problem", "")).strip()
+                answer = str(doc.get("answer", "")).strip()
+                if problem and answer:
+                    words = answer.split()
+                    incorrect = " ".join(reversed(words)) if len(words) > 1 else "incorrect"
+                    return self._build_pair(
+                        question=f"Problem: {problem}\n\nAnswer:",
+                        correct=answer,
+                        incorrect=incorrect,
+                        metadata={"label": "non_math"},
+                    )
+
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
             

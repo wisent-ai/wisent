@@ -90,6 +90,21 @@ class ScoreExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("question_id", doc.get("id", "unknown")))
 
         try:
+            # SCORE math (hendrycks_math): problem + answer (string).
+            # generate_until format with no choices.
+            if "problem" in doc and "answer" in doc and "choices" not in doc:
+                problem = str(doc.get("problem", "")).strip()
+                answer = str(doc.get("answer", "")).strip()
+                if problem and answer:
+                    words = answer.split()
+                    incorrect = " ".join(reversed(words)) if len(words) > 1 else "incorrect"
+                    return self._build_pair(
+                        question=f"Problem: {problem}\n\nAnswer:",
+                        correct=answer,
+                        incorrect=incorrect,
+                        metadata={"label": "score_math"},
+                    )
+
             # SCORE uses standard multiple-choice format
             if "question" not in doc:
                 log.debug("Skipping doc due to missing question", extra={"doc": doc})
