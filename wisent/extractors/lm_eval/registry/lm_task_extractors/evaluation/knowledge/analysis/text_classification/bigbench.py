@@ -98,8 +98,12 @@ class BigBenchExtractor(LMEvalBenchmarkExtractor):
         Returns None when required fields are missing or malformed.
         """
         try:
-            # BigBench uses "inputs" (not "input")
-            question = doc.get("inputs", doc.get("input", doc.get("question", doc.get("text", "")))).strip()
+            # BigBench uses "inputs" (not "input") — may be str or list
+            raw_q = doc.get("inputs", doc.get("input", doc.get("question", doc.get("text", ""))))
+            if isinstance(raw_q, list):
+                question = " ".join(str(x) for x in raw_q).strip()
+            else:
+                question = str(raw_q).strip()
 
             if hasattr(task_data, "doc_to_text"):
                 formatted_question = task_data.doc_to_text(doc)
@@ -107,12 +111,18 @@ class BigBenchExtractor(LMEvalBenchmarkExtractor):
                 formatted_question = question
 
             # BigBench uses "targets" which is a list, and "multiple_choice_targets" for choices
-            # First try to get correct answer from targets list
             targets = doc.get("targets", [])
             if isinstance(targets, list) and len(targets) > 0:
                 correct_answer = str(targets[0]).strip()
             else:
                 correct_answer = str(doc.get("target", doc.get("answer", doc.get("output", "")))).strip()
+
+            # Some BigBench tasks have empty "inputs" (e.g. misconceptions_russian)
+            # where the statement to judge IS the target. Use the correct_answer as
+            # the question text when inputs is empty.
+            if not question and correct_answer:
+                question = correct_answer
+                formatted_question = f"Is this statement correct? {correct_answer}"
 
             if not all([question, correct_answer]):
                 _LOG.debug("Skipping: missing question or answer")
