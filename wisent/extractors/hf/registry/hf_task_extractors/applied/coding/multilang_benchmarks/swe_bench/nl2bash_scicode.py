@@ -146,7 +146,7 @@ class SciCodeExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "scicode"
 
-    def __init__(self, http_timeout: int, domain: str | None = None):
+    def __init__(self, http_timeout: int = 60, domain: str | None = None):
         """
         Initialize SciCode extractor.
 

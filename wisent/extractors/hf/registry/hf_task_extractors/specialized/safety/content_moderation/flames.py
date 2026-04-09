@@ -48,7 +48,7 @@ class FlamesExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "flames"
 
-    def __init__(self, http_timeout: int, dimension: str | None = None):
+    def __init__(self, http_timeout: int = 60, dimension: str | None = None):
         """
         Initialize FLAMES extractor.
 

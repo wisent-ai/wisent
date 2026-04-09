@@ -31,7 +31,7 @@ class TagExtractor(HuggingFaceBenchmarkExtractor):
 
     evaluator_name = "tag"
 
-    def __init__(self, http_timeout: int):
+    def __init__(self, http_timeout: int = 60):
         """Initialize TAG-Bench extractor.
 
         Args:

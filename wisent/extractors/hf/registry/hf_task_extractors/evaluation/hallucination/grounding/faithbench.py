@@ -61,7 +61,7 @@ class FaithBenchExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "faithbench"
 
-    def __init__(self, http_timeout: int, include_benign: bool = False):
+    def __init__(self, http_timeout: int = 60, include_benign: bool = False):
         """
         Initialize FaithBench extractor.
 

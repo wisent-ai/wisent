@@ -42,7 +42,7 @@ class RecodeExtractor(HuggingFaceBenchmarkExtractor):
 
     evaluator_name = "recode"
 
-    def __init__(self, http_timeout: int):
+    def __init__(self, http_timeout: int = 60):
         """Initialize ReCode extractor.
 
         Args:

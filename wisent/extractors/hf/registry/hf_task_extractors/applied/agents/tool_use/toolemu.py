@@ -55,7 +55,7 @@ class ToolEmuExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "toolemu"
 
-    def __init__(self, http_timeout: int, risk_level: str | None = None):
+    def __init__(self, http_timeout: int = 60, risk_level: str | None = None):
         """
         Initialize ToolEmu extractor.
 
