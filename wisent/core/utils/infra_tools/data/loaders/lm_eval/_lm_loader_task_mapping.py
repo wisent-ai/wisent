@@ -35,6 +35,7 @@ TASK_NAME_MAPPING = {
     "ethos": "ethos_binary",
     "cnn": "cnn_dailymail_abisee",
     "commonsense": "ethics_cm",
+    "cycle": "cycle_letters",
     "inverse": "inverse_scaling_modus_tollens",
     "inverse_scaling": "inverse_scaling_modus_tollens",
     "esbbq": "esbbq_age",

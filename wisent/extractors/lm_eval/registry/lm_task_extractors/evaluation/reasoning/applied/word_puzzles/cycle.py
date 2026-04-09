@@ -49,6 +49,20 @@ class CycleExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # cycle_letters / unscramble schema: context + completion
+            if "context" in doc and "completion" in doc:
+                ctx = str(doc.get("context", "")).strip()
+                completion = str(doc.get("completion", "")).strip()
+                if ctx and completion:
+                    # Synthetic incorrect: reverse the completion characters
+                    incorrect = completion[::-1] if len(completion) > 1 else "x" + completion
+                    return ContrastivePair(
+                        prompt=ctx,
+                        positive_response=PositiveResponse(model_response=completion),
+                        negative_response=NegativeResponse(model_response=incorrect),
+                        label="cycle_letters",
+                    )
+
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
             

@@ -145,11 +145,11 @@ class CurateExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "curate"
 
-    def __init__(self, http_timeout: int):
+    def __init__(self, http_timeout: int = 60):
         """Initialize CURATe extractor.
 
         Args:
-            http_timeout: Timeout in seconds for HTTP requests.
+            http_timeout: Timeout in seconds for HTTP requests (default 60s).
         """
         super().__init__()
         self.http_timeout = http_timeout

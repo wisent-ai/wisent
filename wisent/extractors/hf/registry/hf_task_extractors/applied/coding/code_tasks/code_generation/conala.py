@@ -46,6 +46,7 @@ class ConalaExtractor(HuggingFaceBenchmarkExtractor):
             dataset_name="neulab/conala",
             split="train",
             limit=max_items,
+            trust_remote_code=True,
         )
 
         pairs: list[ContrastivePair] = []
