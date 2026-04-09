@@ -69,6 +69,36 @@ class LeaderboardExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # leaderboard_math schema: problem + answer (+ solution + level + type)
+            if "problem" in doc and "answer" in doc:
+                problem = str(doc.get("problem", "")).strip()
+                answer = str(doc.get("answer", "")).strip()
+                if problem and answer:
+                    words = answer.split()
+                    incorrect = " ".join(reversed(words)) if len(words) > 1 else "incorrect"
+                    return self._build_pair(
+                        question=f"Problem: {problem}\n\nAnswer:",
+                        correct=answer,
+                        incorrect=incorrect,
+                        metadata={"label": "leaderboard_math"},
+                    )
+
+            # leaderboard_ifeval schema: prompt + instruction_id_list + kwargs.
+            # No ground-truth answer (model is judged by whether output follows
+            # the instructions). Use prompt as question with a placeholder pair.
+            if "prompt" in doc and "instruction_id_list" in doc:
+                prompt_text = str(doc.get("prompt", "")).strip()
+                if not prompt_text:
+                    return None
+                instructions = doc.get("instruction_id_list", [])
+                instruction_summary = ", ".join(str(i) for i in instructions[:3]) if instructions else "instructions"
+                return self._build_pair(
+                    question=prompt_text,
+                    correct=f"<follows {instruction_summary}>",
+                    incorrect=f"<violates {instruction_summary}>",
+                    metadata={"label": "leaderboard_ifeval"},
+                )
+
             # leaderboard_bbh schema: input + target (the doc_to_choice list comes
             # from the yaml, not the doc). Use target as the correct answer with a
             # synthetic incorrect (different non-target value if applicable).
