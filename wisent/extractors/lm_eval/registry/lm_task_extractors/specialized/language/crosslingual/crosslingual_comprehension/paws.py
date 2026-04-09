@@ -49,6 +49,26 @@ class PawsExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # paws / paws_x schema: sentence1 + sentence2 + label (binary paraphrase)
+            if "sentence1" in doc and "sentence2" in doc and "label" in doc:
+                s1 = str(doc.get("sentence1", "")).strip()
+                s2 = str(doc.get("sentence2", "")).strip()
+                try:
+                    label_idx = int(doc.get("label", 0))
+                except (TypeError, ValueError):
+                    return None
+                if not s1 or not s2:
+                    return None
+                prompt = f"Sentence 1: {s1}\nSentence 2: {s2}\nAre these paraphrases?"
+                correct = "Yes" if label_idx == 1 else "No"
+                incorrect = "No" if label_idx == 1 else "Yes"
+                return ContrastivePair(
+                    prompt=prompt,
+                    positive_response=PositiveResponse(model_response=correct),
+                    negative_response=NegativeResponse(model_response=incorrect),
+                    label="paws",
+                )
+
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
             

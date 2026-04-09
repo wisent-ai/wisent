@@ -38,6 +38,7 @@ TASK_NAME_MAPPING = {
     "commonsense": "ethics_cm",
     "cycle": "cycle_letters",
     "non": "non_greedy_robustness_math_algebra",
+    "paws": "paws_en",
     "inverse": "inverse_scaling_modus_tollens",
     "inverse_scaling": "inverse_scaling_modus_tollens",
     "esbbq": "esbbq_age",
