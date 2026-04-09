@@ -86,6 +86,26 @@ class GalicianBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
                         except (ValueError, IndexError):
                             pass
 
+            # paws_gl format: sentence1 + sentence2 + label (binary paraphrase)
+            if "sentence1" in doc and "sentence2" in doc and "label" in doc:
+                s1 = str(doc.get("sentence1", "")).strip()
+                s2 = str(doc.get("sentence2", "")).strip()
+                try:
+                    label_idx = int(doc.get("label", 0))
+                except (TypeError, ValueError):
+                    return None
+                if not s1 or not s2:
+                    return None
+                prompt = f"{s1}, verdadeiro?"
+                correct = "Si, " + s2 if label_idx == 1 else "Non, " + s2
+                incorrect = "Non, " + s2 if label_idx == 1 else "Si, " + s2
+                return ContrastivePair(
+                    prompt=prompt,
+                    positive_response=PositiveResponse(model_response=correct),
+                    negative_response=NegativeResponse(model_response=incorrect),
+                    label="paws_gl",
+                )
+
             # parafrases_gl format: Frase + Paráfrase + Avaliación
             if "Frase" in doc and "Paráfrase" in doc and "Avaliación" in doc:
                 frase = str(doc.get("Frase", "")).strip()
