@@ -65,6 +65,18 @@ class CatalanBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # MGSM schema: question + answer_number (math word problem)
+            if "question" in doc and "answer_number" in doc and "premise" not in doc:
+                q = str(doc.get("question", "")).strip()
+                ans = str(doc.get("answer_number", "")).strip()
+                if q and ans:
+                    return ContrastivePair(
+                        prompt=q + "\nResposta:",
+                        positive_response=PositiveResponse(model_response=ans),
+                        negative_response=NegativeResponse(model_response=str(int(float(ans)) + 1) if ans.replace(".","",1).isdigit() else "incorrect"),
+                        label="mgsm_direct_ca",
+                    )
+
             # COPA schema: premise + choice1 + choice2 + question + label
             if "premise" in doc and "choice1" in doc and "choice2" in doc and "label" in doc:
                 premise = str(doc.get("premise", "")).strip()
