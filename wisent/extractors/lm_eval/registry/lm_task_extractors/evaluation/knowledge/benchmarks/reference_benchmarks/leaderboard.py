@@ -83,6 +83,23 @@ class LeaderboardExtractor(LMEvalBenchmarkExtractor):
                         metadata={"label": "leaderboard_math"},
                     )
 
+            # leaderboard_mmlu_pro schema: question + options (list) + answer (letter)
+            if "question" in doc and "options" in doc and "answer" in doc and "choices" not in doc:
+                q = str(doc.get("question", "")).strip()
+                options = doc.get("options", [])
+                ans_letter = str(doc.get("answer", "")).strip().upper()
+                if q and options and ans_letter and len(ans_letter) == 1:
+                    ans_idx = ord(ans_letter) - ord("A")
+                    if 0 <= ans_idx < len(options):
+                        correct = str(options[ans_idx]).strip()
+                        incorrect = str(options[(ans_idx + 1) % len(options)]).strip()
+                        return self._build_pair(
+                            question=q,
+                            correct=correct,
+                            incorrect=incorrect,
+                            metadata={"label": "leaderboard_mmlu_pro"},
+                        )
+
             # leaderboard_ifeval schema: prompt + instruction_id_list + kwargs.
             # No ground-truth answer (model is judged by whether output follows
             # the instructions). Use prompt as question with a placeholder pair.

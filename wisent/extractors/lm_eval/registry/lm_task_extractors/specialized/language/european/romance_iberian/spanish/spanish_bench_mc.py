@@ -62,6 +62,18 @@ class SpanishBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # MGSM schema: question + answer_number (math word problem)
+            if "question" in doc and "answer_number" in doc and "choices" not in doc:
+                q = str(doc.get("question", "")).strip()
+                ans = str(doc.get("answer_number", "")).strip()
+                if q and ans:
+                    return ContrastivePair(
+                        prompt=q + "\nRespuesta:",
+                        positive_response=PositiveResponse(model_response=ans),
+                        negative_response=NegativeResponse(model_response=str(int(float(ans)) + 1) if ans.replace(".","",1).isdigit() else "incorrecto"),
+                        label="mgsm_direct_es",
+                    )
+
             # OpenBookQA-style: (question | question_stem) + choices{label,text} + answerKey
             if ("question" in doc or "question_stem" in doc) and "choices" in doc and isinstance(doc.get("choices"), dict):
                 question = str(doc.get("question", doc.get("question_stem", ""))).strip()
