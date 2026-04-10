@@ -166,6 +166,8 @@ def _run_method(
         with open(os.path.join(trial_dir, "trial_meta.json"), "w") as f:
             json.dump({"params": params, "score": score, "trial": trial_idx},
                       f, indent=JSON_INDENT, default=str)
+        from .activation_cache import upload_trial
+        upload_trial(model_name, benchmark, method_name, trial_idx, trial_dir)
         return score
 
     optimizer = BaseOptimizer()
