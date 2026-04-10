@@ -175,6 +175,7 @@ TASK_NAME_MAPPING = {
     "darija_bench": "darija_sentiment",
     "eus_exams": "eus_exams_es",
     "evalita_llm": "evalita-mp",
+    "evalita_sp": "evalita-sp_sum_task_fp_p1",
     "evalita_mp": "evalita-mp",
     "evalita_sp_sum_task_fp-small_p1": "evalita-sp_sum_task_fp-small_p1",
     "ag": "ag_news",
