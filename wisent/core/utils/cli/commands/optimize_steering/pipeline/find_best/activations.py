@@ -72,6 +72,12 @@ def measure_activation_space_effect(
         "strength": strength,
         "method": winner_method,
     })
+    steering_fig = _generate_steering_figure(
+        pos_ref, neg_ref, base_acts, steered_acts,
+        benchmark, winner_method, layer, strength,
+    )
+    if steering_fig:
+        metrics["steering_figure"] = steering_fig
 
     effect_path = os.path.join(
         output_dir, f"activation_space_effect_{benchmark}.json",
@@ -239,3 +245,26 @@ def _compute_metrics(
         "total_test_samples": total,
         "region_shift": steered_in_pos - base_in_pos,
     }
+
+
+def _generate_steering_figure(
+    pos_ref, neg_ref, base_acts, steered_acts,
+    benchmark, method, layer, strength,
+) -> str | None:
+    """Generate multipanel steering effect figure. Returns base64 PNG."""
+    try:
+        from wisent.core.utils.visualization.steering.steering_multipanel import (
+            create_steering_multipanel_figure,
+        )
+        title = (
+            f"Steering Effect: {benchmark} — {method.upper()} "
+            f"(layer {layer}, strength {strength:.2f})"
+        )
+        return create_steering_multipanel_figure(
+            pos_activations=pos_ref, neg_activations=neg_ref,
+            base_activations=base_acts, steered_activations=steered_acts,
+            title=title,
+        )
+    except Exception as exc:
+        print(f"   Warning: steering figure failed: {exc}")
+        return None

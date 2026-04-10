@@ -130,18 +130,25 @@ def _update_models(task_name: str):
     return gr.update(choices=models, value=models[INDEX_FIRST])
 
 
-def _load_results(task_name: str, model_name: str) -> str:
-    """Load and format baseline + find-best results."""
+def _load_results(task_name: str, model_name: str):
+    """Load and format baseline + find-best results.
+
+    Returns:
+        Tuple of (results_markdown, steering_figure_path).
+    """
     if not task_name or not model_name:
-        return ""
+        return "", None
     task_name = _strip_task_label(task_name)
     from wisent.app.ui.tabs.benchmark_debug_viz import (
         load_benchmark_results, format_results_markdown,
+        get_steering_figure_path,
     )
     results = load_benchmark_results(task_name, model_name)
     if not results.get("baseline") and not results.get("best_method"):
-        return ""
-    return format_results_markdown(results)
+        return "", None
+    md = format_results_markdown(results)
+    fig_path = get_steering_figure_path(results)
+    return md, fig_path
 
 
 def _update_layers(task_name: str, model_name: str):
@@ -242,6 +249,9 @@ def build_benchmark_debug_tab():
             info="Available layers (auto-detected from cache/HF)")
         load_viz_btn = gr.Button("Load Visualizations", variant="secondary")
     results_display = gr.Markdown(value="")
+    steering_figure = gr.Image(
+        label="Steering Effect (multipanel)", type="filepath",
+        height=GRADIO_SUMMARY_IMAGE_HEIGHT)
     task_dropdown.change(
         fn=_update_models, inputs=[task_dropdown],
         outputs=[model_dropdown])
@@ -253,7 +263,7 @@ def build_benchmark_debug_tab():
         outputs=[layer_dropdown])
     model_dropdown.change(
         fn=_load_results, inputs=[task_dropdown, model_dropdown],
-        outputs=[results_display])
+        outputs=[results_display, steering_figure])
     viz_status = gr.Markdown(
         value="Select benchmark, model, and layer to see visualizations.")
     summary_image = gr.Image(

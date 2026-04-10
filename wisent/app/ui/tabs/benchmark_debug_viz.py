@@ -266,3 +266,15 @@ def format_results_markdown(results: dict) -> str:
         lines.append("\n**Best method:** no optimization results yet")
 
     return "\n".join(lines)
+
+
+def get_steering_figure_path(results: dict) -> str | None:
+    """Extract steering effect figure from find-best results."""
+    best = results.get("best_method")
+    if not best:
+        return None
+    act = best.get("activation_space_effect", {})
+    b64 = act.get("steering_figure")
+    if b64:
+        return base64_to_filepath(b64, "steering_effect")
+    return None
