@@ -40,7 +40,8 @@ def evaluate_standard(
                     print(f"Question {idx}: Using positive_reference as expected answer")
 
                 # Evaluate using selected evaluator
-                choices = (correct_answers or []) + (incorrect_answers or [])
+                # Do not pass choices when correct/incorrect answers exist —
+                # choices triggers _evaluate_choices which ignores generated_response
                 result = evaluator.evaluate(
                     generated_response,
                     positive_reference,
@@ -48,7 +49,7 @@ def evaluate_standard(
                     incorrect_answers=incorrect_answers,
                     model=model,
                     question=prompt,
-                    choices=choices if choices else None,
+                    task_name=task_name,
                 )
 
                 is_correct = (result.ground_truth == "TRUTHFUL")
