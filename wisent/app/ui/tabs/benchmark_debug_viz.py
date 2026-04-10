@@ -188,3 +188,81 @@ def get_summary_path(visualizations: dict[str, str]) -> str | None:
     if b64:
         return base64_to_filepath(b64, VIZ_SUMMARY_KEY)
     return None
+
+
+def load_benchmark_results(
+    task_name: str, model_name: str,
+) -> dict:
+    """Load baseline + find-best results from HF Hub.
+
+    Returns:
+        Dict with 'baseline' and 'best_method' keys (each may be None).
+    """
+    from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import (
+        load_baseline_metadata_from_hf,
+        load_best_method_from_hf,
+    )
+
+    baseline = None
+    try:
+        baseline = load_baseline_metadata_from_hf(model_name, task_name)
+    except Exception as exc:
+        _log.info("No baseline for %s/%s: %s", model_name, task_name, exc)
+
+    best_method = None
+    try:
+        best_method = load_best_method_from_hf(model_name, task_name)
+    except Exception as exc:
+        _log.info("No best-method for %s/%s: %s", model_name, task_name, exc)
+
+    return {"baseline": baseline, "best_method": best_method}
+
+
+def format_results_markdown(results: dict) -> str:
+    """Format baseline + best-method results as markdown."""
+    lines = []
+    baseline = results.get("baseline")
+    if baseline:
+        acc = baseline.get("accuracy", 0)
+        n = baseline.get("total_pairs", 0)
+        ts = baseline.get("timestamp", "")[:10]
+        lines.append(f"**Baseline (unsteered):** {acc:.2%} accuracy ({n} pairs, {ts})")
+    else:
+        lines.append("**Baseline:** not available")
+
+    best = results.get("best_method")
+    if best:
+        winner = best.get("winner", "?")
+        score = best.get("winner_score", 0)
+        delta = best.get("winner_delta", 0)
+        lines.append(f"\n**Best method:** `{winner.upper()}` — {score:.4f} ({delta:+.4f} vs baseline)")
+        ranking = best.get("ranking", [])
+        if ranking:
+            lines.append("\n| Method | Score | Delta |")
+            lines.append("|--------|-------|-------|")
+            for r in ranking:
+                m = r.get("method", "?").upper()
+                s = r.get("score", 0)
+                d = r.get("delta", 0)
+                marker = " **winner**" if m == winner.upper() else ""
+                lines.append(f"| {m} | {s:.4f} | {d:+.4f}{marker} |")
+        diff = best.get("winner_response_diff", {})
+        if diff and "error" not in diff:
+            lines.append(
+                f"\n**Response diff:** +{diff.get('flipped_correct', 0)} "
+                f"-{diff.get('flipped_wrong', 0)} "
+                f"={diff.get('unchanged', 0)} "
+                f"net={diff.get('net_improvement', 0)}"
+            )
+        act = best.get("activation_space_effect", {})
+        if act and "error" not in act:
+            lines.append(
+                f"\n**Activation effect:** "
+                f"classifier acc={act.get('classifier_accuracy', 0):.4f} "
+                f"AUC={act.get('classifier_auc', 0):.4f} "
+                f"prob shift={act.get('prob_shift', 0):.4f}"
+            )
+    else:
+        lines.append("\n**Best method:** no optimization results yet")
+
+    return "\n".join(lines)

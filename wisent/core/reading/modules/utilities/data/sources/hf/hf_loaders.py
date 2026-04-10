@@ -10,6 +10,8 @@ from .hf_config import (
     HF_REPO_ID,
     HF_REPO_TYPE,
     activation_hf_path,
+    baseline_metadata_hf_path,
+    best_method_hf_path,
     model_to_safe_name,
     pair_texts_hf_path,
     test_results_hf_path,
@@ -211,5 +213,31 @@ def load_test_results_from_hf(benchmark: str) -> dict | None:
     except Exception:
         return None
 
+    with open(local_path, "r") as f:
+        return json.load(f)
+
+
+def load_baseline_metadata_from_hf(
+    model_name: str, task_name: str,
+) -> Optional[dict]:
+    """Load baseline metadata (accuracy, total_pairs) from HF Hub."""
+    hf_path = baseline_metadata_hf_path(model_name, task_name)
+    try:
+        local_path = _hf_hub_download(hf_path)
+    except Exception:
+        return None
+    with open(local_path, "r") as f:
+        return json.load(f)
+
+
+def load_best_method_from_hf(
+    model_name: str, task_name: str,
+) -> Optional[dict]:
+    """Load find-best-method results from HF Hub."""
+    hf_path = best_method_hf_path(model_name, task_name)
+    try:
+        local_path = _hf_hub_download(hf_path)
+    except Exception:
+        return None
     with open(local_path, "r") as f:
         return json.load(f)

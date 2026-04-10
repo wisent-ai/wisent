@@ -251,8 +251,28 @@ def _save_final_report(
     final_path = os.path.join(output_dir, f"best_method_{benchmark}.json")
     with open(final_path, "w") as f:
         json.dump(final, f, indent=JSON_INDENT, default=str)
+    _upload_best_method(model_name, benchmark, final)
     _print_final(ranking, winner, baseline_score, benchmark,
                  diff, act_effect, total_time, final_path)
+
+
+def _upload_best_method(model_name, benchmark, results):
+    """Upload find-best-method results to HF (best-effort)."""
+    try:
+        from wisent.core.reading.modules.utilities.data.sources.hf.hf_config import (
+            best_method_hf_path, HF_REPO_ID, HF_REPO_TYPE)
+        from wisent.core.reading.modules.utilities.data.sources.hf.hf_writers import _get_api
+        import tempfile
+        hf_path = best_method_hf_path(model_name, benchmark)
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
+            json.dump(results, tmp, indent=JSON_INDENT, default=str)
+            tmp_path = tmp.name
+        _get_api().upload_file(path_or_fileobj=tmp_path, path_in_repo=hf_path,
+                               repo_id=HF_REPO_ID, repo_type=HF_REPO_TYPE)
+        Path(tmp_path).unlink(missing_ok=True)
+        print(f"   Uploaded results to HF: {hf_path}")
+    except Exception as exc:
+        print(f"   Warning: HF upload failed: {exc}")
 
 
 def _print_final(ranking, winner, baseline, benchmark,
