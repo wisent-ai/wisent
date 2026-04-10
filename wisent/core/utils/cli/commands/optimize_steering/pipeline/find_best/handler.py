@@ -172,7 +172,7 @@ def _run_method(
     optimizer.direction = "maximize"
     result = optimizer.optimize_fn(
         persisted_objective, space, n_trials, cfg=HPOConfig(backend=backend),
-    )
+        model=model_name, benchmark=benchmark, method=method_upper)
     method_time = time.time() - method_start
     method_results[method_name] = {
         "method": method_name, "best_score": result.best_score,
