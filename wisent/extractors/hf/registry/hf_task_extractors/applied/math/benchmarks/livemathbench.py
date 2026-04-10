@@ -84,6 +84,7 @@ class LiveMathBenchExtractor(HuggingFaceBenchmarkExtractor):
             dataset_config=self.dataset_config,
             split="test",
             limit=max_items,
+            trust_remote_code=True,
         )
 
         pairs: list[ContrastivePair] = []

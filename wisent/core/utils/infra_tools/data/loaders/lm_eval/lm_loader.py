@@ -397,6 +397,10 @@ class LMEvalDataLoader(BaseDataLoader):
             # (e.g. evalita-mp_at_prompt-1 not evalita-mp_at_prompt_1).
             lm_eval_task_name = re.sub(r"_prompt_(\d+)$", r"_prompt-\1", lm_eval_task_name)
 
+        # mgsm_cot_native_X -> mgsm_native_cot_X (word order differs in lm-eval)
+        if lm_eval_task_name.startswith("mgsm_cot_native_"):
+            lm_eval_task_name = "mgsm_native_cot_" + lm_eval_task_name[len("mgsm_cot_native_"):]
+
         # ceval-valid uses a dash between ceval and valid (ceval-valid_accountant)
         if lm_eval_task_name.startswith("ceval_valid_"):
             lm_eval_task_name = lm_eval_task_name.replace("ceval_valid_", "ceval-valid_", 1)

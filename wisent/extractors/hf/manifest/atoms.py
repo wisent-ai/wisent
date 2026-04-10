@@ -173,7 +173,17 @@ class HuggingFaceBenchmarkExtractor(ABC):
                     features_module._FEATURE_TYPES = orig_feature_types
             else:
                 _log.error(f"load_dataset ValueError for {dataset_name}: {exc}")
-                raise DatasetLoadError(task_name=dataset_name)
+                # Some datasets need trust_remote_code even when raising ValueError
+                if not trust_remote_code:
+                    _log.info(f"Retrying {dataset_name} with trust_remote_code=True")
+                    load_kwargs["trust_remote_code"] = True
+                    try:
+                        dataset = load_dataset(
+                            dataset_name, config_arg, **load_kwargs)
+                    except Exception:
+                        raise DatasetLoadError(task_name=dataset_name)
+                else:
+                    raise DatasetLoadError(task_name=dataset_name)
         except RuntimeError as exc:
             if "Dataset scripts are no longer supported" in str(exc):
                 _log.info(f"Retrying {dataset_name} with trust_remote_code=True")
