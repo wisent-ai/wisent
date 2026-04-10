@@ -103,11 +103,12 @@ def plot_pacmap_projection(
 
     Uses pacmap_alt which avoids numba threading issues on macOS.
     """
-    from .pacmap_alt import plot_pacmap_alt
+    from wisent.core.reading.modules.modules.geo_utils.config.pacmap_alt import plot_pacmap_alt
 
     return plot_pacmap_alt(
         pos_activations,
         neg_activations,
+        pacmap_pca_dim_threshold=pca_dims,
         n_neighbors=n_neighbors,
         num_iters=num_iters,
         title=title,

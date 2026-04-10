@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from typing import Dict, Any
 from wisent.core import constants as _C
+from wisent.core.utils.config_tools.constants import VIZ_PCA_DIMS_TRIMAP
 
 from .visualizations import (
     plot_pca_projection,
@@ -14,7 +15,7 @@ from .visualizations import (
     plot_norm_distribution,
     plot_pairwise_distances,
 )
-from .pacmap_alt import plot_pacmap_alt
+from wisent.core.reading.modules.modules.geo_utils.config.pacmap_alt import plot_pacmap_alt
 
 
 def create_full_summary_figure(
@@ -66,7 +67,7 @@ def create_full_summary_figure(
 
     # Row 2: PaCMAP, diff vectors, alignment
     try:
-        pacmap_data = plot_pacmap_alt(pos_activations, neg_activations)
+        pacmap_data = plot_pacmap_alt(pos_activations, neg_activations, pacmap_pca_dim_threshold=VIZ_PCA_DIMS_TRIMAP)
     except Exception as e:
         pacmap_data = {"error": str(e)}
     plot_projection(axes[1, 0], pacmap_data, "PaCMAP Projection")

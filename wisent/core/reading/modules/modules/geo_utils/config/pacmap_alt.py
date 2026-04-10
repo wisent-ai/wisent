@@ -1,37 +1,37 @@
 """
-Alternative PaCMAP implementation using pynndescent instead of Annoy.
+Alternative PaCMAP implementation using sklearn NearestNeighbors.
 
 This provides the same functionality as PaCMAP but works on systems
-where Annoy hangs (e.g., some Apple Silicon configurations).
+where Annoy or pynndescent hang (e.g., Apple Silicon with numba issues).
 """
 
 import numpy as np
 from typing import Tuple
-from pynndescent import NNDescent
 from sklearn.decomposition import PCA
+from sklearn.neighbors import NearestNeighbors
 from wisent.core.utils.config_tools.constants import (NORM_EPS, DEFAULT_RANDOM_SEED,
-    N_COMPONENTS_2D, N_JOBS_SINGLE)
+    N_COMPONENTS_2D, N_JOBS_SINGLE, VIZ_N_NEIGHBORS_TRIMAP, VIZ_NUM_ITERS,
+    VIZ_PCA_DIMS_TRIMAP)
 
 
 def find_neighbors(
     X: np.ndarray,
     n_neighbors: int = None,
 ) -> np.ndarray:
-    """Find k-nearest neighbors using pynndescent."""
+    """Find k-nearest neighbors using sklearn."""
     if n_neighbors is None:
         raise ValueError("n_neighbors is required")
     n_samples = X.shape[0]
     n_neighbors = min(n_neighbors, n_samples - 1)
 
-    index = NNDescent(
-        X,
-        n_neighbors=n_neighbors + 1,
+    nn = NearestNeighbors(
+        n_neighbors=n_neighbors,
         metric='euclidean',
         n_jobs=N_JOBS_SINGLE,
-        random_state=DEFAULT_RANDOM_SEED,
     )
-    neighbors, _ = index.neighbor_graph
-    return neighbors[:, 1:n_neighbors + 1]
+    nn.fit(X)
+    neighbors = nn.kneighbors(X, return_distance=False)
+    return neighbors
 
 
 def create_pairs(
@@ -170,12 +170,28 @@ def pacmap_embedding(
     return Y
 
 
+_DEFAULT_PACMAP_CONFIG = {
+    "n_mid_pairs": 5,
+    "n_far_pairs": 20,
+    "initial_scale": 0.01,
+    "phase_1_end": 0.1,
+    "phase_2_end": 0.3,
+    "p1_near": 2.0, "p1_mid": 1000.0, "p1_far": 1.0,
+    "p2_near": 3.0, "p2_mid": 3.0, "p2_far": 1.0,
+    "p3_near": 1.0, "p3_mid": 0.0, "p3_far": 1.0,
+    "far_repulse_eps": 1e-4,
+}
+_DEFAULT_PACMAP_LR = 1.0
+
+
 def plot_pacmap_alt(
     pos_activations: np.ndarray,
     neg_activations: np.ndarray,
-    pacmap_pca_dim_threshold: int,
-    n_neighbors: int = None,
-    num_iters: int = None,
+    pacmap_pca_dim_threshold: int = VIZ_PCA_DIMS_TRIMAP,
+    n_neighbors: int = VIZ_N_NEIGHBORS_TRIMAP,
+    num_iters: int = VIZ_NUM_ITERS,
+    learning_rate: float = _DEFAULT_PACMAP_LR,
+    pacmap_config: dict = None,
     title: str = "PaCMAP Projection",
 ) -> dict:
     """
@@ -183,6 +199,9 @@ def plot_pacmap_alt(
 
     Drop-in replacement for plot_pacmap_projection.
     """
+    if pacmap_config is None:
+        pacmap_config = _DEFAULT_PACMAP_CONFIG
+
     if hasattr(pos_activations, 'numpy'):
         pos = pos_activations.float().cpu().numpy()
     else:
@@ -207,6 +226,8 @@ def plot_pacmap_alt(
         n_components=N_COMPONENTS_2D,
         n_neighbors=n_neighbors,
         num_iters=num_iters,
+        learning_rate=learning_rate,
+        pacmap_config=pacmap_config,
     )
 
     pos_embedded = embedding[:len(pos)]

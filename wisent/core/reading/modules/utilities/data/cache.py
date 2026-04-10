@@ -19,6 +19,10 @@ def get_cache_path(task_name: str, cache_type: str, **kwargs) -> Path:
         model_name = kwargs.get("model_name", "unknown").replace("/", "_")
         layer = kwargs.get("layer", 0)
         path = CACHE_DIR / f"{task_name}_{model_name}_layer{layer}{comp_suffix}_activations.pt"
+    elif cache_type == "viz":
+        model_name = kwargs.get("model_name", "unknown").replace("/", "_")
+        layer = kwargs.get("layer", 0)
+        path = CACHE_DIR / f"{task_name}_{model_name}_layer{layer}_viz.json"
     else:
         path = CACHE_DIR / f"{task_name}_{cache_type}.json"
 
@@ -109,3 +113,21 @@ def get_cached_layers(task_name: str, model_name: str) -> list:
                 pass
 
     return sorted(layers)
+
+
+def load_viz_cache(task_name: str, model_name: str, layer: int) -> dict | None:
+    """Load cached visualizations (base64 PNGs) if available."""
+    cache_path = get_cache_path(task_name, "viz", model_name=model_name, layer=layer)
+    if not cache_path.exists():
+        return None
+    with open(cache_path, "r") as f:
+        return json.load(f)
+
+
+def save_viz_cache(
+    task_name: str, model_name: str, layer: int, visualizations: dict,
+) -> None:
+    """Save visualizations (base64 PNGs) to cache."""
+    cache_path = get_cache_path(task_name, "viz", model_name=model_name, layer=layer)
+    with open(cache_path, "w") as f:
+        json.dump(visualizations, f)

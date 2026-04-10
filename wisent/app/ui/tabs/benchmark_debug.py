@@ -7,6 +7,9 @@ import gradio as gr
 from wisent.core.utils.config_tools.constants import (
     INDEX_FIRST,
     TEST_EXTRACTOR_EVALUATOR_DEFAULT_LIMIT,
+    GRADIO_GALLERY_COLUMNS_DEBUG,
+    GRADIO_MODEL_EXAMPLES,
+    GRADIO_SUMMARY_IMAGE_HEIGHT,
 )
 
 
@@ -87,9 +90,7 @@ def _run_benchmark_test(task_name: str, limit: float | None) -> str:
     if not task_name:
         return "No benchmark selected."
 
-    # Strip label suffix like " (N subtasks)"
-    if " (" in task_name and task_name.endswith(")"):
-        task_name = task_name.split(" (")[INDEX_FIRST]
+    task_name = _strip_task_label(task_name)
 
     from wisent.support.examples.scripts.discovery.validation.test_single_benchmark import test_benchmark
 
@@ -108,6 +109,77 @@ def _get_benchmark_info(task_name: str) -> str:
         return ""
     from wisent.app.ui.tabs.benchmark_info import format_full_info
     return format_full_info(task_name)
+
+
+def _strip_task_label(task_name: str) -> str:
+    """Strip label suffix like ' (N subtasks)' from task name."""
+    if " (" in task_name and task_name.endswith(")"):
+        return task_name.split(" (")[INDEX_FIRST]
+    return task_name
+
+
+def _update_models(task_name: str):
+    """Update model dropdown with models that have activations for this task."""
+    if not task_name:
+        return gr.update(choices=list(GRADIO_MODEL_EXAMPLES), value=None)
+    task_name = _strip_task_label(task_name)
+    from wisent.app.ui.tabs.benchmark_debug_viz import discover_available_models
+    models = discover_available_models(task_name)
+    if not models:
+        return gr.update(choices=list(GRADIO_MODEL_EXAMPLES), value=None)
+    return gr.update(choices=models, value=models[INDEX_FIRST])
+
+
+def _update_layers(task_name: str, model_name: str):
+    """Update layer dropdown when benchmark or model changes."""
+    if not task_name or not model_name:
+        return gr.update(choices=[], value=None)
+    task_name = _strip_task_label(task_name)
+    from wisent.app.ui.tabs.benchmark_debug_viz import discover_available_layers
+    layers = discover_available_layers(task_name, model_name)
+    if not layers:
+        return gr.update(choices=[], value=None)
+    choices = [str(layer) for layer in layers]
+    return gr.update(choices=choices, value=choices[INDEX_FIRST])
+
+
+def _load_viz(task_name: str, model_name: str, layer_str: str):
+    """Load and display visualizations for selected benchmark/model/layer.
+
+    Returns:
+        Tuple of (summary_image_path, gallery_items, status_markdown).
+    """
+    if not task_name or not model_name or not layer_str:
+        return None, None, "Select benchmark, model, and layer to see visualizations."
+    task_name = _strip_task_label(task_name)
+    layer = int(layer_str)
+
+    from wisent.app.ui.tabs.benchmark_debug_viz import (
+        load_activations, generate_and_cache_visualizations,
+        viz_to_gallery_paths, get_summary_path,
+    )
+
+    pos, neg = load_activations(task_name, model_name, layer)
+    if pos is None:
+        return (
+            None, None,
+            f"No activations available for **{task_name}** / "
+            f"`{model_name}` / layer {layer}.",
+        )
+
+    visualizations = generate_and_cache_visualizations(
+        task_name, model_name, layer, pos, neg,
+    )
+
+    summary_path = get_summary_path(visualizations)
+    gallery_items = viz_to_gallery_paths(visualizations)
+    n_pairs = len(pos)
+    status = (
+        f"Showing {len(gallery_items)} visualizations for "
+        f"**{task_name}** / `{model_name}` / layer {layer} "
+        f"({n_pairs} pairs)"
+    )
+    return summary_path, gallery_items, status
 
 
 def _update_benchmark_choices(category: str):
@@ -143,3 +215,36 @@ def build_benchmark_debug_tab():
     from wisent.app.ui.tabs.benchmark_runner import run_all_benchmarks
     run_all_btn.click(
         fn=run_all_benchmarks, inputs=[cat_dropdown, limit_input], outputs=[output])
+
+    # --- Representation Visualizations ---
+    gr.Markdown("---\n**Representation Visualizations**")
+    with gr.Row():
+        model_dropdown = gr.Dropdown(
+            label="Model", choices=list(GRADIO_MODEL_EXAMPLES),
+            value=None, allow_custom_value=True, interactive=True,
+            info="Model used for activation extraction")
+        layer_dropdown = gr.Dropdown(
+            label="Layer", choices=[], value=None, interactive=True,
+            info="Available layers (auto-detected from cache/HF)")
+        load_viz_btn = gr.Button("Load Visualizations", variant="secondary")
+    task_dropdown.change(
+        fn=_update_models, inputs=[task_dropdown],
+        outputs=[model_dropdown])
+    task_dropdown.change(
+        fn=_update_layers, inputs=[task_dropdown, model_dropdown],
+        outputs=[layer_dropdown])
+    model_dropdown.change(
+        fn=_update_layers, inputs=[task_dropdown, model_dropdown],
+        outputs=[layer_dropdown])
+    viz_status = gr.Markdown(
+        value="Select benchmark, model, and layer to see visualizations.")
+    summary_image = gr.Image(
+        label="Summary (3x3 Grid)", type="filepath",
+        height=GRADIO_SUMMARY_IMAGE_HEIGHT)
+    gallery = gr.Gallery(
+        label="Individual Plots (click to zoom)",
+        columns=GRADIO_GALLERY_COLUMNS_DEBUG)
+    load_viz_btn.click(
+        fn=_load_viz,
+        inputs=[task_dropdown, model_dropdown, layer_dropdown],
+        outputs=[summary_image, gallery, viz_status])

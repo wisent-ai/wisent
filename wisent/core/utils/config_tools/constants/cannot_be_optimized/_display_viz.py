@@ -203,3 +203,9 @@ VIZ_CLUSTER_NAMES_GEOMETRY = [
     "Low-linear unstable",
     "Many-concept curved",
 ]
+
+# Benchmark Debug visualization cache and gallery
+VIZ_CACHE_TYPE = "viz"
+VIZ_SUMMARY_KEY = "summary"
+GRADIO_GALLERY_COLUMNS_DEBUG = 3
+GRADIO_SUMMARY_IMAGE_HEIGHT = 600

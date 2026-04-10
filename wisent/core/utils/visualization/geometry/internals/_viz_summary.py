@@ -67,8 +67,9 @@ def create_summary_figure(
     # 4. PaCMAP projection
     if include_pacmap:
         try:
-            from .pacmap_alt import plot_pacmap_alt
-            pacmap_data = plot_pacmap_alt(pos_activations, neg_activations)
+            from wisent.core.reading.modules.modules.geo_utils.config.pacmap_alt import plot_pacmap_alt
+            from wisent.core.utils.config_tools.constants import VIZ_PCA_DIMS_TRIMAP
+            pacmap_data = plot_pacmap_alt(pos_activations, neg_activations, pacmap_pca_dim_threshold=VIZ_PCA_DIMS_TRIMAP)
         except Exception as e:
             pacmap_data = {"error": str(e)}
     else:
