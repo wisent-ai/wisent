@@ -15,7 +15,8 @@ import time
 _SEP = "=" * 60
 
 
-def run(task_name: str, model_name: str):
+def run(task_name: str, model_name: str, output_dir: str,
+        trials_multiplier: int, backend: str):
     """Fill in all debug tab data for a benchmark."""
     overall_start = time.time()
 
@@ -24,7 +25,7 @@ def run(task_name: str, model_name: str):
     print(_SEP)
 
     # --- 1. Extraction + Evaluation ---
-    print(f"\n[1/3] Testing extraction + evaluation...")
+    print(f"\n[1/4] Testing extraction + evaluation...")
     from wisent.support.examples.scripts.discovery.validation.test_single_benchmark import (
         test_benchmark,
     )
@@ -41,7 +42,7 @@ def run(task_name: str, model_name: str):
             print(f"    {k}: {val}")
 
     # --- 2. Visualizations ---
-    print(f"\n[2/3] Generating visualization cache...")
+    print(f"\n[2/4] Generating visualization cache...")
     from wisent.support.examples.scripts.visualization.cache.generate_benchmark_viz import (
         generate_viz,
     )
@@ -53,8 +54,20 @@ def run(task_name: str, model_name: str):
         print(f"  No activations available: {exc}")
         viz_results = {}
 
-    # --- 3. Baseline + Find-Best Results ---
-    print(f"\n[3/3] Loading baseline + optimization results from HF...")
+    # --- 3. Find Best Method ---
+    print(f"\n[3/4] Running find-best-method optimization...")
+    from wisent.core.utils.cli.commands.optimize_steering.pipeline.find_best.handler import (
+        execute_find_best_method,
+    )
+    from types import SimpleNamespace
+    find_best_args = SimpleNamespace(
+        model=model_name, task=task_name, output_dir=output_dir,
+        trials_multiplier=trials_multiplier, backend=backend,
+    )
+    execute_find_best_method(find_best_args)
+
+    # --- 4. Baseline + Find-Best Results ---
+    print(f"\n[4/4] Loading baseline + optimization results from HF...")
     from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import (
         load_baseline_metadata_from_hf,
         load_best_method_from_hf,
@@ -101,8 +114,21 @@ def main():
     )
     parser.add_argument("task", help="Benchmark task name")
     parser.add_argument("--model", required=True, help="HuggingFace model ID")
+    parser.add_argument(
+        "--output-dir", default="debug_results",
+        help="Directory for find-best-method results (default: debug_results)",
+    )
+    parser.add_argument(
+        "--trials-multiplier", type=int, default=3,
+        help="Trials per dimension for find-best-method (default: 3)",
+    )
+    parser.add_argument(
+        "--backend", default="optuna", choices=["hyperopt", "optuna"],
+        help="Optimizer backend (default: optuna)",
+    )
     args = parser.parse_args()
-    run(args.task, args.model)
+    run(args.task, args.model, args.output_dir,
+        args.trials_multiplier, args.backend)
     sys.exit(0)
 
 
