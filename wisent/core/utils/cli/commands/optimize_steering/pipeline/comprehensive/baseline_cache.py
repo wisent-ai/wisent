@@ -167,7 +167,7 @@ def generate_baseline_with_cache(
             )[RECURSION_INITIAL_DEPTH]
             eval_kwargs = {
                 "response": response, "expected": expected, "question": prompt,
-                "choices": [neg_resp, expected], "task_name": benchmark, "model": wisent_model,
+                "task_name": benchmark, "model": wisent_model,
                 "correct_answers": [expected], "incorrect_answers": [neg_resp],
             }
             metadata = pair_dict.get("metadata") or {}
