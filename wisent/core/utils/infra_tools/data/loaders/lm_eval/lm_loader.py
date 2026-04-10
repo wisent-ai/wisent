@@ -42,7 +42,8 @@ def _patched_ds_load_dataset(path, *args, **kwargs):
     replacement = REMOVED_DATASET_REPLACEMENTS.get(path)
     if replacement is not None:
         path = replacement
-        kwargs.setdefault("trust_remote_code", True)
+    # datasets 4.x dropped env var support for trust_remote_code
+    kwargs.setdefault("trust_remote_code", True)
     return _orig_ds_load_dataset(path, *args, **kwargs)
 _ds_remap.load_dataset = _patched_ds_load_dataset
 

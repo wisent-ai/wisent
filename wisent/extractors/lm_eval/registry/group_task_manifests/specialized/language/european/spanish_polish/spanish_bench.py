@@ -8,7 +8,7 @@ BASE_IMPORT = "wisent.extractors.lm_eval.lm_task_extractors."
 
 SPANISH_BENCH_TASKS = {
     # Multiple_choice subtasks → spanish_bench_mc.py (evaluator_name = "log_likelihoods")
-    "cocoteros_es": f"{BASE_IMPORT}spanish_bench_mc:SpanishBenchMultipleChoiceExtractor",
+    "cocoteros_es": f"{BASE_IMPORT}cocoteros:CocoterosExtractor",
     "copa_es": f"{BASE_IMPORT}spanish_bench_mc:SpanishBenchMultipleChoiceExtractor",
     "escola": f"{BASE_IMPORT}spanish_bench_mc:SpanishBenchMultipleChoiceExtractor",
     "mgsm_direct_es_spanish_bench": f"{BASE_IMPORT}spanish_bench_mc:SpanishBenchMultipleChoiceExtractor",
