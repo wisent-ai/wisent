@@ -119,8 +119,8 @@ def main():
         help="Directory for find-best-method results (default: debug_results)",
     )
     parser.add_argument(
-        "--trials-multiplier", type=int, default=3,
-        help="Trials per dimension for find-best-method (default: 3)",
+        "--trials-multiplier", type=int, required=True,
+        help="Trials per dimension for find-best-method",
     )
     parser.add_argument(
         "--backend", default="optuna", choices=["hyperopt", "optuna"],
