@@ -12,6 +12,8 @@ import argparse
 import sys
 import time
 
+from wisent.core.utils.config_tools.constants import TRIALS_PER_DIMENSION_MULTIPLIER
+
 _SEP = "=" * 60
 
 
@@ -119,7 +121,8 @@ def main():
         help="Directory for find-best-method results (default: debug_results)",
     )
     parser.add_argument(
-        "--trials-multiplier", type=int, required=True,
+        "--trials-multiplier", type=int,
+        default=TRIALS_PER_DIMENSION_MULTIPLIER,
         help="Trials per dimension for find-best-method",
     )
     parser.add_argument(
