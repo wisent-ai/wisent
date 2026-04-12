@@ -15,6 +15,98 @@ import time
 from wisent.core.utils.config_tools.constants import TRIALS_PER_DIMENSION_MULTIPLIER
 
 _SEP = "=" * 60
+_TRUNC = 200
+
+
+def _print_response_comparison(output_dir, task_name):
+    """Print side-by-side baseline vs steered responses for the best trial."""
+    import json
+    import os
+    from pathlib import Path
+
+    print(f"\n{_SEP}")
+    print(f"[5/5] RESPONSE COMPARISON (baseline vs best steered)")
+    print(_SEP)
+
+    # Find best trial across all methods
+    trials_dir = os.path.join(output_dir, "trials")
+    if not os.path.isdir(trials_dir):
+        print("  No trials found")
+        return
+
+    best_score, best_meta_path, best_scores_path = -1, None, None
+    for method_dir in Path(trials_dir).iterdir():
+        if not method_dir.is_dir():
+            continue
+        for trial_dir in method_dir.iterdir():
+            meta_path = trial_dir / "trial_meta.json"
+            scores_path = trial_dir / "scores.json"
+            if not meta_path.exists() or not scores_path.exists():
+                continue
+            with open(meta_path) as f:
+                meta = json.load(f)
+            if meta.get("score", -1) > best_score:
+                best_score = meta["score"]
+                best_meta_path = meta_path
+                best_scores_path = scores_path
+
+    if best_scores_path is None:
+        print("  No completed trials with scores")
+        return
+
+    with open(best_meta_path) as f:
+        best_meta = json.load(f)
+    with open(best_scores_path) as f:
+        best_scores = json.load(f)
+
+    print(f"  Best trial: score={best_score:.4f} params={best_meta.get('params', {})}")
+    evals = best_scores.get("evaluations", [])
+
+    # Load baseline pair_results for comparison
+    baseline_dir = os.path.join(output_dir, "trials")
+    baseline_path = os.path.join(
+        output_dir,
+        f"test_pairs_{task_name}.json",
+    )
+    # Baseline responses are in the cached pair_results on HF
+    # but also available via the baseline generation. Read from
+    # the test pairs file to get the reference answers.
+    improved, worsened, unchanged_correct, unchanged_wrong = [], [], [], []
+    for ev in evals:
+        prompt = ev.get("prompt", "")
+        response = ev.get("generated_response", "")
+        eval_data = ev.get("evaluation", {})
+        correct = eval_data.get("correct", False)
+        pos_ref = ev.get("positive_reference", "")
+        neg_ref = ev.get("negative_reference", "")
+        entry = {
+            "prompt": prompt[:_TRUNC],
+            "response": response[:_TRUNC],
+            "correct": correct,
+            "pos_ref": pos_ref[:_TRUNC],
+            "neg_ref": neg_ref[:_TRUNC],
+            "details": eval_data.get("details", ""),
+        }
+        if correct:
+            improved.append(entry)
+        else:
+            worsened.append(entry)
+
+    print(f"\n  TRUTHFUL ({len(improved)}/{len(evals)}):")
+    for i, e in enumerate(improved[:5]):
+        print(f"    [{i+1}] Q: {e['prompt']}")
+        print(f"        Steered: {e['response']}")
+        print(f"        Correct ref: {e['pos_ref']}")
+        print(f"        Wrong ref: {e['neg_ref']}")
+        print()
+
+    print(f"  UNTRUTHFUL ({len(worsened)}/{len(evals)}):")
+    for i, e in enumerate(worsened[:5]):
+        print(f"    [{i+1}] Q: {e['prompt']}")
+        print(f"        Steered: {e['response']}")
+        print(f"        Correct ref: {e['pos_ref']}")
+        print(f"        Reason: {e['details']}")
+        print()
 
 
 def run(task_name: str, model_name: str, output_dir: str,
@@ -97,6 +189,9 @@ def run(task_name: str, model_name: str, output_dir: str,
             print(f"    {m:>15}: {s:.4f} ({d:+.4f}){marker}")
     else:
         print(f"  Best method: no optimization results yet")
+
+    # --- 5. Response comparison ---
+    _print_response_comparison(output_dir, task_name)
 
     # --- Summary ---
     total_time = time.time() - overall_start
