@@ -185,8 +185,7 @@ def generate_baseline_with_cache(
         neg_resp = r.get("negative", "")
         prompt = r.get("prompt", "")
         eval_kwargs = {
-            "response": response, "expected": expected, "question": prompt,
-            "task_name": benchmark,
+            "question": prompt, "task_name": benchmark,
             "correct_answers": [expected], "incorrect_answers": [neg_resp],
         }
         result = evaluator.evaluate(response, expected, **eval_kwargs)
