@@ -18,11 +18,16 @@ from wisent.core.utils.services.benchmarks.registry.benchmark_registry import ge
 
 MODEL_NAME = "meta-llama/Llama-3.2-1B-Instruct"
 
+WORKER_ID = int(os.environ.get("WORKER_ID", "0"))
+NUM_WORKERS = int(os.environ.get("NUM_WORKERS", "1"))
+
 broken = set(t.lower() for t in get_broken_tasks())
-all_tasks = sorted(k for k in _REGISTRY.keys() if k not in broken)
+all_tasks_full = sorted(k for k in _REGISTRY.keys() if k not in broken)
+all_tasks = [t for i, t in enumerate(all_tasks_full) if i % NUM_WORKERS == WORKER_ID]
 total = len(all_tasks)
-skipped_broken = len(_REGISTRY) - total
-print(f"Running tests for {total} benchmarks from _REGISTRY (skipped {skipped_broken} broken)")
+total_full = len(all_tasks_full)
+skipped_broken = len(_REGISTRY) - total_full
+print(f"[Worker {WORKER_ID}/{NUM_WORKERS}] Running {total} of {total_full} benchmarks (skipped {skipped_broken} broken)")
 print(f"Model: {MODEL_NAME}\n")
 
 pass_count = 0
@@ -34,7 +39,7 @@ for i, task_name in enumerate(all_tasks, 1):
     print(f"[{i}/{total}] {task_name}...", end=" ", flush=True)
     t0 = time.time()
     try:
-        result = test_benchmark(task_name, skip_cache=False, model_name=MODEL_NAME)
+        result = test_benchmark(task_name, skip_cache=True, model_name=MODEL_NAME)
         ext = result.get("extraction", {}).get("status", "SKIP")
         evl = result.get("evaluator", {}).get("status", "SKIP")
         elapsed = time.time() - t0

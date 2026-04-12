@@ -39,17 +39,22 @@ def evaluate_standard(
                 if args.verbose:
                     print(f"Question {idx}: Using positive_reference as expected answer")
 
-                # Evaluate using selected evaluator
-                # Do not pass choices when correct/incorrect answers exist —
-                # choices triggers _evaluate_choices which ignores generated_response
-                result = evaluator.evaluate(
-                    generated_response,
-                    positive_reference,
+                # Evaluate using selected evaluator.
+                # For log_likelihoods evaluator, build choices from correct + incorrect
+                # answers so it can compute log-probabilities across all options.
+                eval_kwargs = dict(
                     correct_answers=correct_answers,
                     incorrect_answers=incorrect_answers,
                     model=model,
                     question=prompt,
                     task_name=task_name,
+                )
+                if correct_answers and incorrect_answers:
+                    eval_kwargs["choices"] = list(correct_answers) + list(incorrect_answers)
+                result = evaluator.evaluate(
+                    generated_response,
+                    positive_reference,
+                    **eval_kwargs,
                 )
 
                 is_correct = (result.ground_truth == "TRUTHFUL")
