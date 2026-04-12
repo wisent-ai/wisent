@@ -133,3 +133,9 @@ CONALA_BLEU_THRESHOLD = 0.5
 REMOVED_DATASET_REPLACEMENTS = {
     "Rakuten/JGLUE": "shunk031/JGLUE",
 }
+
+# Minimum lexical diversity (unique_words / total_words) for a response
+# to be evaluated semantically. Below this, the response is repetitive
+# garbage and scores UNTRUTHFUL without running NLI/embedding comparison.
+# Empirically: garbage 0.10-0.43, real responses 0.89-1.00.
+EVAL_MIN_LEXICAL_DIVERSITY = 0.5

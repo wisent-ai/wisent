@@ -5,6 +5,7 @@ from typing import Any
 
 from wisent.core.reading.evaluators.core.atoms import EvalResult
 from wisent.core.utils.config_tools.constants import (
+    EVAL_MIN_LEXICAL_DIVERSITY,
     EVAL_MIN_SIMILARITY_THRESHOLD_DEFAULT,
     ROUNDING_PRECISION,
 )
@@ -31,6 +32,19 @@ class GenerationEvaluatorHelpersMixin:
         Uses semantic similarity to determine which reference the response is closer to.
         Returns TRUTHFUL if closer to correct, UNTRUTHFUL if closer to incorrect.
         """
+        # Reject repetitive garbage before running semantic comparison
+        words = response.lower().split()
+        if words:
+            diversity = len(set(words)) / len(words)
+            if diversity < EVAL_MIN_LEXICAL_DIVERSITY:
+                return EvalResult(
+                    ground_truth="UNTRUTHFUL",
+                    method_used=self.name,
+                    confidence=0.0,
+                    details=f"Repetitive response (diversity={diversity:.3f})",
+                    meta={"lexical_diversity": round(diversity, ROUNDING_PRECISION)},
+                )
+
         # Get max similarity to correct answers
         max_correct_sim = 0.0
         best_correct = None
