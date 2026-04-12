@@ -74,13 +74,15 @@ class GenerationEvaluator(GenerationEvaluatorHelpersMixin, BaseEvaluator):
         """
         task_name = kwargs.get('task_name', '')
         normalize = kwargs.get('normalize', True)
-        choices = kwargs.get('choices')
-
-        if choices and len(choices) == 2:
-            return self._evaluate_choices(choices, expected, normalize)
-
         correct_answers = kwargs.get('correct_answers', [])
         incorrect_answers = kwargs.get('incorrect_answers', [])
+        choices = kwargs.get('choices')
+
+        # Only use _evaluate_choices when no correct/incorrect references
+        # exist — otherwise _compare_to_references gives better signal by
+        # actually comparing the generated response.
+        if choices and len(choices) == 2 and not correct_answers and not incorrect_answers:
+            return self._evaluate_choices(choices, expected, normalize)
 
         if response and correct_answers and incorrect_answers:
             return self._compare_to_references(
