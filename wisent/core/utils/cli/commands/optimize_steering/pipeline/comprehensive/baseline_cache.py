@@ -125,9 +125,9 @@ def generate_baseline_with_cache(
         raise ValueError(f"No pairs found in {pairs_file}")
 
     cached_results = _load_cached_pair_results(model, benchmark)
-    cached_count = RECURSION_INITIAL_DEPTH
+    cached_response_count = RECURSION_INITIAL_DEPTH
 
-    # Identify which pairs need generation
+    # Identify which pairs need model generation (not evaluation — always re-evaluate)
     pair_hashes = []
     missing_indices = []
     for i, p in enumerate(pairs_data):
@@ -135,25 +135,18 @@ def generate_baseline_with_cache(
         expected = pos.get("model_response", "") if isinstance(pos, dict) else str(pos)
         ph = _pair_hash(p.get("prompt", ""), expected)
         pair_hashes.append(ph)
-        if ph in cached_results:
-            cached_count += COMBO_OFFSET
+        if ph in cached_results and cached_results[ph].get("response"):
+            cached_response_count += COMBO_OFFSET
         else:
             missing_indices.append(i)
 
-    print(f"   Baseline: {cached_count} cached, {len(missing_indices)} to generate", flush=True)
+    print(f"   Baseline: {cached_response_count} responses cached, "
+          f"{len(missing_indices)} to generate", flush=True)
 
-    # Generate only missing pairs
+    # Generate only missing responses
     wisent_model = None
     if missing_indices:
         wisent_model = cached_model if cached_model is not None else WisentModel(model, device=device)
-        evaluator = EvaluatorRotator(
-            evaluator=None, task_name=benchmark, autoload=False,
-            evaluator_kwargs={
-                "f1_threshold": EVAL_F1_THRESHOLD,
-                "generation_embedding_weight": EVAL_GENERATION_EMBEDDING_WEIGHT,
-                "generation_nli_weight": EVAL_GENERATION_NLI_WEIGHT,
-            },
-        )
         gen_kwargs = get_generate_kwargs()
         for idx in missing_indices:
             pair_dict = pairs_data[idx]
@@ -165,41 +158,49 @@ def generate_baseline_with_cache(
             response = wisent_model.generate(
                 [[{"role": "user", "content": prompt}]], **gen_kwargs,
             )[RECURSION_INITIAL_DEPTH]
-            eval_kwargs = {
-                "response": response, "expected": expected, "question": prompt,
-                "task_name": benchmark, "model": wisent_model,
-                "correct_answers": [expected], "incorrect_answers": [neg_resp],
-            }
-            metadata = pair_dict.get("metadata") or {}
-            for k, v in metadata.items():
-                if v is not None and k not in eval_kwargs:
-                    eval_kwargs[k] = v
-            result = evaluator.evaluate(**eval_kwargs)
             cached_results[pair_hashes[idx]] = {
                 "prompt": prompt, "response": response, "expected": expected,
-                "negative": neg_resp, "correct": result.ground_truth == "TRUTHFUL",
-                "ground_truth": result.ground_truth,
+                "negative": neg_resp,
             }
         if cached_model is None and wisent_model is not None:
             wisent_model.detach()
         _upload_pair_results(model, benchmark, cached_results)
 
-    # Aggregate results for this test set
+    # Always re-evaluate all pairs with current evaluator
+    evaluator = EvaluatorRotator(
+        evaluator=None, task_name=benchmark, autoload=False,
+        evaluator_kwargs={
+            "f1_threshold": EVAL_F1_THRESHOLD,
+            "generation_embedding_weight": EVAL_GENERATION_EMBEDDING_WEIGHT,
+            "generation_nli_weight": EVAL_GENERATION_NLI_WEIGHT,
+        },
+    )
     responses_list, scores_list = [], []
     correct = RECURSION_INITIAL_DEPTH
     total = RECURSION_INITIAL_DEPTH
     for i, p in enumerate(pairs_data):
         r = cached_results.get(pair_hashes[i], {})
-        if r.get("correct", False):
+        response = r.get("response", "")
+        expected = r.get("expected", "")
+        neg_resp = r.get("negative", "")
+        prompt = r.get("prompt", "")
+        eval_kwargs = {
+            "response": response, "expected": expected, "question": prompt,
+            "task_name": benchmark,
+            "correct_answers": [expected], "incorrect_answers": [neg_resp],
+        }
+        result = evaluator.evaluate(response, expected, **eval_kwargs)
+        is_correct = result.ground_truth == "TRUTHFUL"
+        if is_correct:
             correct += COMBO_OFFSET
         total += COMBO_OFFSET
         responses_list.append({
-            "prompt": r.get("prompt", ""), "response": r.get("response", ""),
-            "expected": r.get("expected", ""), "negative": r.get("negative", ""),
+            "prompt": prompt, "response": response,
+            "expected": expected, "negative": neg_resp,
         })
         scores_list.append({
-            "prompt": r.get("prompt", ""), "correct": r.get("correct", False),
-            "ground_truth": r.get("ground_truth", ""),
+            "prompt": prompt, "correct": is_correct,
+            "ground_truth": result.ground_truth,
         })
     accuracy = correct / total if total > RECURSION_INITIAL_DEPTH else RECURSION_INITIAL_DEPTH
     return accuracy, responses_list, scores_list
