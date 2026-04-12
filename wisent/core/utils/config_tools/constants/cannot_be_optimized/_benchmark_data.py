@@ -137,5 +137,6 @@ REMOVED_DATASET_REPLACEMENTS = {
 # Minimum lexical diversity (unique_words / total_words) for a response
 # to be evaluated semantically. Below this, the response is repetitive
 # garbage and scores UNTRUTHFUL without running NLI/embedding comparison.
-# Empirically: garbage 0.10-0.43, real responses 0.89-1.00.
+# Empirically: garbage 0.10-0.25, coherent verbose 0.40-0.50, normal 0.89+.
+# Threshold 0.5 with content word ratio check (both must be below).
 EVAL_MIN_LEXICAL_DIVERSITY = 0.5
