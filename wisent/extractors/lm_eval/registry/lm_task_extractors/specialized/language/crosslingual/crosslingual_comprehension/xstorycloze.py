@@ -86,10 +86,19 @@ class XStoryClozeExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            inputs = [str(doc.get("input_sentence_1", "")).strip(), str(doc.get("input_sentence_2", "")).strip(),
-                      str(doc.get("input_sentence_3", "")).strip(), str(doc.get("input_sentence_4", "")).strip()] 
-            endings = [str(doc.get("sentence_quiz1")).strip(), str(doc.get("sentence_quiz2")).strip()]
-            answer = doc.get("answer_right_ending") - 1
+            # Try both key formats: snake_case (standard) and CamelCase (galician_bench)
+            i1 = str(doc.get("input_sentence_1", doc.get("InputSentence1", ""))).strip()
+            i2 = str(doc.get("input_sentence_2", doc.get("InputSentence2", ""))).strip()
+            i3 = str(doc.get("input_sentence_3", doc.get("InputSentence3", ""))).strip()
+            i4 = str(doc.get("input_sentence_4", doc.get("InputSentence4", ""))).strip()
+            inputs = [i1, i2, i3, i4]
+            e1 = str(doc.get("sentence_quiz1", doc.get("RandomFifthSentenceQuiz1", ""))).strip()
+            e2 = str(doc.get("sentence_quiz2", doc.get("RandomFifthSentenceQuiz2", ""))).strip()
+            endings = [e1, e2]
+            raw_answer = doc.get("answer_right_ending", doc.get("AnswerRightEnding"))
+            if raw_answer is None:
+                return None
+            answer = int(raw_answer) - 1
 
             if not inputs or not endings or answer is None:
                 log.debug(

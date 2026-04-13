@@ -50,6 +50,25 @@ class SuperGlueLmEvalV1Extractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # BoolQ format: passage + question + label (boolean 0/1)
+            if "passage" in doc and "question" in doc and "label" in doc:
+                passage = str(doc.get("passage", "")).strip()
+                question = str(doc.get("question", "")).strip()
+                label = doc.get("label", 0)
+                if passage and question:
+                    try:
+                        label_idx = int(label)
+                    except (TypeError, ValueError):
+                        return None
+                    correct = "Yes" if label_idx == 1 else "No"
+                    incorrect = "No" if label_idx == 1 else "Yes"
+                    prompt = f"{passage}\n\nQuestion: {question}"
+                    return self._build_pair(
+                        question=prompt,
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata={"label": "super_glue_lm_eval_v1"},
+                    )
 
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()

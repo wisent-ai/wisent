@@ -94,7 +94,12 @@ class XquadExtractor(LMEvalBenchmarkExtractor):
                     return None
 
                 # Get the correct answer text
-                answer_texts = answers.get("text", [])
+                if isinstance(answers, list):
+                    answer_texts = [str(a) for a in answers if a]
+                elif isinstance(answers, dict):
+                    answer_texts = answers.get("text", [])
+                else:
+                    answer_texts = []
                 if not answer_texts or not answer_texts[0]:
                     log.debug("Skipping doc due to missing answer text", extra={"doc": doc})
                     return None

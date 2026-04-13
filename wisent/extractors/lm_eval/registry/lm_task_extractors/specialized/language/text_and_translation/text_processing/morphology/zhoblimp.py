@@ -69,6 +69,20 @@ class ZhoblimpExtractor(LMEvalBenchmarkExtractor):
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
+
+        # BLiMP-style format: sentence_good + sentence_bad
+        if "sentence_good" in doc and "sentence_bad" in doc:
+            good = str(doc.get("sentence_good", "")).strip()
+            bad = str(doc.get("sentence_bad", "")).strip()
+            if good and bad:
+                return self._build_pair(
+                    question="Which sentence is grammatically correct?",
+                    correct=good,
+                    incorrect=bad,
+                    metadata={"label": "zhoblimp"},
+                )
+            return None
+
         try:
             # Try multiple possible schema formats
             question = None

@@ -89,6 +89,18 @@ class XlsumExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Summarization format: text + summary
+            if "text" in doc and "summary" in doc:
+                text = str(doc.get("text", "")).strip()
+                summary = str(doc.get("summary", "")).strip()
+                if text and summary:
+                    from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+                    return ContrastivePair(
+                        prompt=text[:2000],
+                        positive_response=PositiveResponse(model_response=summary),
+                        negative_response=NegativeResponse(model_response="No summary available."),
+                        label="xlsum",
+                    )
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
             

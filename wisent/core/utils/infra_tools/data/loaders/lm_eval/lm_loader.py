@@ -402,6 +402,10 @@ class LMEvalDataLoader(BaseDataLoader):
         if lm_eval_task_name.startswith("mgsm_cot_native_"):
             lm_eval_task_name = "mgsm_native_cot_" + lm_eval_task_name[len("mgsm_cot_native_"):]
 
+
+        # truthfulqa_multi_X -> truthfulqa-multi_X (dash between truthfulqa and multi)
+        if lm_eval_task_name.startswith("truthfulqa_multi_"):
+            lm_eval_task_name = "truthfulqa-multi_" + lm_eval_task_name[len("truthfulqa_multi_"):]
         # super_glue T5 prompt tasks: super_glue_X_t5_prompt -> super_glue-X-t5-prompt
         if lm_eval_task_name.startswith("super_glue_") and lm_eval_task_name.endswith("_t5_prompt"):
             middle = lm_eval_task_name[len("super_glue_"):-len("_t5_prompt")]

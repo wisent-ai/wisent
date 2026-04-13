@@ -121,6 +121,13 @@ TASK_NAME_MAPPING = {
     "noreval": "norec_document_p0",
     "portuguese_bench": "assin_entailment",
     "icelandic_winogrande": "icelandic_winogrande",
+    "super_glue_lm_eval_v1": "boolq",
+    "xlsum": "xlsum_amharic_prompt_1",
+    "unfair": "unfair_tos",
+    "siqa": "social_iqa",
+    "tmmluplus_humanities": "tmmluplus_humanities",
+    "tmmluplus_social_sciences": "tmmluplus_social_sciences",
+    "tmmluplus_other": "tmmluplus_other",
     "scrolls": "scrolls_contractnli",
     "wikitext103": "wikitext",
     "wikitext_103": "wikitext",
@@ -316,9 +323,10 @@ GROUP_TASK_EXPANSIONS = {
     # NOTE: pile benchmark is DISABLED - dataset files hosted on the-eye.eu are unavailable
     # scrolls group expansion removed - lazy multiprocessing crashes; use direct contractnli mapping
     "super_glue": ["super_glue-boolq-t5-prompt", "super_glue-cb-t5-prompt", "super_glue-copa-t5-prompt", "super_glue-multirc-t5-prompt", "super_glue-record-t5-prompt", "super_glue-rte-t5-prompt", "super_glue-wic-t5-prompt", "super_glue-wsc-t5-prompt"],
-    "siqa": ["siqa_ca"],
+    # siqa: mapped via TASK_NAME_MAPPING to social_iqa (not catalan siqa_ca)
     "score": ["score_non_greedy_robustness_agieval", "score_non_greedy_robustness_math", "score_non_greedy_robustness_mmlu_pro", "score_option_order_robustness_agieval", "score_option_order_robustness_mmlu_pro", "score_prompt_robustness_agieval", "score_prompt_robustness_math", "score_prompt_robustness_mmlu_pro", "score_robustness", "score_robustness_agieval", "score_robustness_math", "score_robustness_mmlu_pro"],
     # tiny* tasks
+    "tmmluplus_stem": ["tmmluplus_advance_chemistry", "tmmluplus_basic_medical_science", "tmmluplus_computer_science", "tmmluplus_engineering_math", "tmmluplus_junior_chemistry", "tmmluplus_junior_math_exam", "tmmluplus_junior_science_exam", "tmmluplus_linear_algebra", "tmmluplus_organic_chemistry", "tmmluplus_pharmacy", "tmmluplus_physics", "tmmluplus_secondary_physics", "tmmluplus_statistics_and_machine_learning", "tmmluplus_tve_mathematics", "tmmluplus_tve_natural_sciences"],
     "tinyarc": ["tinyArc"],
     "tinygsm8k": ["tinyGSM8k"],
     "tinyhellaswag": ["tinyHellaswag"],

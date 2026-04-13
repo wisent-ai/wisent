@@ -65,6 +65,20 @@
       "reason": "Some flores African to English tasks fail sporadically from HF Hub rate limits or network timeouts during dataset download. Pass on retry.",
       "pattern": "flores_*_latn_eng_latn_prompt_N",
       "fix": "Transient. Re-running clears them."
+    },
+    {
+      "category": "bare name cache artifacts (no matching lm-eval task)",
+      "count": 4,
+      "reason": "Cache entries with bare names (summarization, prompt, self, super) that are word fragments not matching any lm-eval task. These are artifacts from early cache generation.",
+      "entries": ["summarization", "prompt", "self", "super"],
+      "fix": "Delete cache entries or ignore — no real benchmark to load."
+    },
+    {
+      "category": "scrolls_narrativeqa (dataset too large)",
+      "count": 1,
+      "reason": "tau/scrolls narrative_qa dataset is 30GB+. Loading triggers memory/time issues locally. The dataset loads but processing all documents takes extremely long.",
+      "entries": ["scrolls_narrativeqa"],
+      "fix": "Run on high-memory instance or precompute pairs from a subset."
     }
   ]
 }
