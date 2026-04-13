@@ -32,7 +32,9 @@ class GenerationEvaluatorHelpersMixin:
         Returns TRUTHFUL if closer to correct, UNTRUTHFUL if closer to incorrect.
         """
         # Reject repetitive garbage before running semantic comparison.
-        # Two checks: low lexical diversity AND low content word ratio.
+        # Pure repetition (diversity < 0.15): "within within within..."
+        # Stop-word soup (content ratio < 0.5): "nor nor except other..."
+        # Verbose coherent text has diversity 0.40+ and content ratio 0.50+.
         words = response.lower().split()
         if words:
             diversity = len(set(words)) / len(words)
@@ -49,7 +51,9 @@ class GenerationEvaluatorHelpersMixin:
             })
             content_words = [w for w in words if w not in _STOP]
             content_ratio = len(content_words) / len(words) if words else 0
-            if diversity < EVAL_MIN_LEXICAL_DIVERSITY and content_ratio < EVAL_MIN_LEXICAL_DIVERSITY:
+            is_pure_repetition = diversity < EVAL_MIN_LEXICAL_DIVERSITY / 3
+            is_stopword_soup = content_ratio < EVAL_MIN_LEXICAL_DIVERSITY
+            if is_pure_repetition or is_stopword_soup:
                 return EvalResult(
                     ground_truth="UNTRUTHFUL",
                     method_used=self.name,
