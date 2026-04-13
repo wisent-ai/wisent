@@ -67,6 +67,12 @@ def test_results_hf_path(benchmark: str) -> str:
     return f"test_results/{benchmark}.json"
 
 
+def viz_cache_hf_path(model: str, benchmark: str, layer: int) -> str:
+    """Build HF repo path for visualization cache JSON."""
+    safe = model_to_safe_name(model)
+    return f"viz_cache/{safe}/{benchmark}/layer_{layer}.json"
+
+
 def best_method_hf_path(model: str, benchmark: str) -> str:
     """Build HF repo path for find-best-method results JSON."""
     safe = model_to_safe_name(model)
