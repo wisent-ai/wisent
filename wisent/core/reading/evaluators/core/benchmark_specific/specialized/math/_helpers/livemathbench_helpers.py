@@ -51,7 +51,7 @@ class LiveMathBenchEvaluator(BaseEvaluator):
     name = "livemathbench"
     description = "LiveMathBench evaluator for mathematical olympiad problems"
 
-    def __init__(self, math_timeout: int):
+    def __init__(self, math_timeout: int = 30):
         """Initialize LiveMathBench evaluator.
 
         Args:

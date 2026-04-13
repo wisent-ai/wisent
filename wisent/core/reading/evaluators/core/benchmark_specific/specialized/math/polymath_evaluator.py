@@ -51,7 +51,7 @@ class PolyMathEvaluator(BaseEvaluator):
     name = "polymath"
     description = "PolyMath evaluator for multilingual math answers"
 
-    def __init__(self, math_timeout: int):
+    def __init__(self, math_timeout: int = 30):
         """Initialize PolyMath evaluator.
 
         Args:

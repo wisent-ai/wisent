@@ -402,6 +402,12 @@ class LMEvalDataLoader(BaseDataLoader):
         if lm_eval_task_name.startswith("mgsm_cot_native_"):
             lm_eval_task_name = "mgsm_native_cot_" + lm_eval_task_name[len("mgsm_cot_native_"):]
 
+        # super_glue T5 prompt tasks: super_glue_X_t5_prompt -> super_glue-X-t5-prompt
+        if lm_eval_task_name.startswith("super_glue_") and lm_eval_task_name.endswith("_t5_prompt"):
+            middle = lm_eval_task_name[len("super_glue_"):-len("_t5_prompt")]
+            lm_eval_task_name = "super_glue-" + middle.replace("_", "-") + "-t5-prompt"
+            lm_eval_task_name = "super_glue-" + middle.replace("_", "-") + "-t5-prompt"
+
         # ceval-valid uses a dash between ceval and valid (ceval-valid_accountant)
         if lm_eval_task_name.startswith("ceval_valid_"):
             lm_eval_task_name = lm_eval_task_name.replace("ceval_valid_", "ceval-valid_", 1)
