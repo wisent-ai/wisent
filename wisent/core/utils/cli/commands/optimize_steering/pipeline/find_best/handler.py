@@ -228,16 +228,21 @@ def _save_final_report(
         key=lambda x: x["score"], reverse=True,
     )
     diff = build_winner_diff(output_dir, winner, model_name, benchmark)
-    act_effect = measure_activation_space_effect(
-        output_dir, winner, method_results[winner]["best_params"],
-        model_name, benchmark, train_file, test_file,
-    )
+    all_effects = {}
+    for mname, mdata in method_results.items():
+        if "best_params" in mdata:
+            all_effects[mname] = measure_activation_space_effect(
+                output_dir, mname, mdata["best_params"],
+                model_name, benchmark, train_file, test_file,
+            )
+    act_effect = all_effects.get(winner, {})
     final = {
         "model": model_name, "benchmark": benchmark,
         "baseline_score": baseline_score, "winner": winner,
         "winner_score": scored[winner],
         "winner_delta": scored[winner] - baseline_score,
         "winner_response_diff": diff, "activation_space_effect": act_effect,
+        "all_activation_effects": all_effects,
         "total_time_seconds": total_time,
         "timestamp": datetime.now().isoformat(),
         "method_results": method_results, "ranking": ranking,
