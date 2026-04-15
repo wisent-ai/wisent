@@ -45,7 +45,10 @@ def execute_find_best_method(args):
     from transformers import AutoConfig as _AC
     cfg = _AC.from_pretrained(model_name, trust_remote_code=True)
     num_layers = cfg.num_hidden_layers
+    method_filter = getattr(args, "method", None)
     all_methods = SteeringMethodRegistry.list_methods()
+    if method_filter:
+        all_methods = [m for m in all_methods if m.upper() == method_filter.upper()]
     train_file, test_file, n_train, n_test = _load_pairs_from_hf(
         benchmark, output_dir,
     )
@@ -57,9 +60,7 @@ def execute_find_best_method(args):
     print(f"   Train pairs:   {n_train}")
     print(f"   Test pairs:    {n_test}")
     print(f"   Methods:       {len(all_methods)}")
-    print(f"   Trials/dim:    {trials_mult}x")
-    print(f"   Backend:       {backend}")
-    print(f"   Output:        {output_dir}")
+    print(f"   Trials/dim:    {trials_mult}x  Backend: {backend}  Output: {output_dir}")
     for method_name in all_methods:
         space = get_method_space(method_name.upper(), num_layers)
         print(f"   {method_name.upper()}: {len(space)} dims, "

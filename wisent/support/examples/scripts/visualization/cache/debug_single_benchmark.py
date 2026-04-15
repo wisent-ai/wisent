@@ -110,7 +110,7 @@ def _print_response_comparison(output_dir, task_name):
 
 
 def run(task_name: str, model_name: str, output_dir: str,
-        trials_multiplier: int, backend: str):
+        trials_multiplier: int, backend: str, method: str = None):
     """Fill in all debug tab data for a benchmark."""
     overall_start = time.time()
 
@@ -157,6 +157,7 @@ def run(task_name: str, model_name: str, output_dir: str,
     find_best_args = SimpleNamespace(
         model=model_name, task=task_name, output_dir=output_dir,
         trials_multiplier=trials_multiplier, backend=backend,
+        method=method,
     )
     execute_find_best_method(find_best_args)
 
@@ -224,9 +225,13 @@ def main():
         "--backend", default="optuna", choices=["hyperopt", "optuna"],
         help="Optimizer backend (default: optuna)",
     )
+    parser.add_argument(
+        "--method", default=None,
+        help="Run only this steering method (e.g. CAA, GROM, TECZA)",
+    )
     args = parser.parse_args()
     run(args.task, args.model, args.output_dir,
-        args.trials_multiplier, args.backend)
+        args.trials_multiplier, args.backend, args.method)
     sys.exit(0)
 
 
