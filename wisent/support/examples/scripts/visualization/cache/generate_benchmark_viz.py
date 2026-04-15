@@ -99,6 +99,7 @@ def generate_viz(
 
 def generate_all_from_index(shard=None, num_shards=None):
     """Generate viz for all benchmarks in the HF index."""
+    from wisent.core.control.steering_methods.configs.optimal import get_optimal
     from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import (
         _hf_hub_download,
     )
