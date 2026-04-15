@@ -97,17 +97,64 @@ def generate_viz(
     return results
 
 
+def generate_all_from_index():
+    """Generate viz for all benchmarks in the HF index."""
+    from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import (
+        _hf_hub_download,
+    )
+    from wisent.core.reading.modules.utilities.data.sources.hf.hf_config import (
+        safe_name_to_model,
+    )
+    import json
+
+    local = _hf_hub_download("index.json")
+    with open(local, "r") as f:
+        index = json.load(f)
+
+    strategy = get_optimal("extraction_strategy")
+    combos = set()
+    for key in index:
+        parts = key.split("/")
+        if len(parts) >= 3 and parts[-1] == strategy:
+            safe_model = parts[0]
+            task = "/".join(parts[1:-1])
+            model = safe_name_to_model(safe_model)
+            combos.add((model, task))
+
+    combos = sorted(combos)
+    print(f"Found {len(combos)} model/benchmark combos")
+    for i, (model, task) in enumerate(combos):
+        print(f"\n[{i + 1}/{len(combos)}] {model} / {task}")
+        try:
+            results = generate_viz(task, model)
+            n_layers = len(results)
+            print(f"  Done: {n_layers} layers")
+        except Exception as exc:
+            print(f"  Failed: {exc}")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Pre-generate visualization cache for a benchmark.",
     )
-    parser.add_argument("task", help="Benchmark task name")
-    parser.add_argument("--model", required=True, help="HuggingFace model ID")
+    parser.add_argument("task", nargs="?", help="Benchmark task name")
+    parser.add_argument("--model", help="HuggingFace model ID")
     parser.add_argument(
         "--layer", type=int, default=None,
         help="Specific layer (default: all available)",
     )
+    parser.add_argument(
+        "--all", action="store_true",
+        help="Generate viz for all benchmarks in HF index",
+    )
     args = parser.parse_args()
+
+    if args.all:
+        generate_all_from_index()
+        sys.exit(0)
+
+    if not args.task or not args.model:
+        parser.error("task and --model required (or use --all)")
 
     print(f"Generating visualizations for {args.task} / {args.model}")
     results = generate_viz(args.task, args.model, args.layer)
