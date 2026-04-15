@@ -97,7 +97,7 @@ def generate_viz(
     return results
 
 
-def generate_all_from_index():
+def generate_all_from_index(shard=None, num_shards=None):
     """Generate viz for all benchmarks in the HF index."""
     from wisent.core.reading.modules.utilities.data.sources.hf.hf_loaders import (
         _hf_hub_download,
@@ -122,13 +122,14 @@ def generate_all_from_index():
             combos.add((model, task))
 
     combos = sorted(combos)
-    print(f"Found {len(combos)} model/benchmark combos")
+    if shard is not None and num_shards is not None:
+        combos = [c for i, c in enumerate(combos) if i % num_shards == shard]
+    print(f"Processing {len(combos)} combos (shard {shard}/{num_shards})")
     for i, (model, task) in enumerate(combos):
         print(f"\n[{i + 1}/{len(combos)}] {model} / {task}")
         try:
             results = generate_viz(task, model)
-            n_layers = len(results)
-            print(f"  Done: {n_layers} layers")
+            print(f"  Done: {len(results)} layers")
         except Exception as exc:
             print(f"  Failed: {exc}")
 
@@ -147,10 +148,12 @@ def main():
         "--all", action="store_true",
         help="Generate viz for all benchmarks in HF index",
     )
+    parser.add_argument("--shard", type=int, help="Shard index (0-based)")
+    parser.add_argument("--num-shards", type=int, help="Total number of shards")
     args = parser.parse_args()
 
     if args.all:
-        generate_all_from_index()
+        generate_all_from_index(shard=args.shard, num_shards=args.num_shards)
         sys.exit(0)
 
     if not args.task or not args.model:
