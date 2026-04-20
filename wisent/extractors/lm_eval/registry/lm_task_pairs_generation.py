@@ -375,6 +375,11 @@ def build_contrastive_pairs(
         if task_obj is None:
             raise
 
+    # If the loader returned a dict but the caller asked for a specific leaf,
+    # narrow down to that leaf so we do not aggregate unrelated subtasks.
+    if isinstance(task_obj, dict) and task_name in task_obj:
+        task_obj = task_obj[task_name]
+
     # Single task (ConfigurableTask)
     if isinstance(task_obj, ConfigurableTask):
         log.info("Single task")

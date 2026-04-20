@@ -30,14 +30,22 @@ class MMLUSRExtractor(HuggingFaceBenchmarkExtractor):
         Returns:
             List of contrastive pairs.
         """
-        # All three variants (answer_only, question_only, question_and_answer) have the same format
-        # So we load from 'answer_only' config
-        docs = self.load_dataset(
-            dataset_name="NiniCat/MMLU-SR",
-            dataset_config="answer_only",
+        # Use task_name to route to the correct dataset_config.
+        # mmlusr_answer_only_abstract_algebra -> answer_only_abstract_algebra
+        task_name = getattr(self, "task_name", "")
+        if task_name.startswith("mmlusr_"):
+            cfg = task_name[len("mmlusr_"):]
+        else:
+            cfg = "answer_only_abstract_algebra"
+        from datasets import load_dataset
+        ds = load_dataset(
+            "NiniCat/MMLU-SR",
+            cfg,
             split="test",
-            limit=limit,
+            revision="bd6827d2542e9d6cf1d58ce262ce0b9ad7742754",
+            trust_remote_code=True,
         )
+        docs = list(ds)[:limit] if limit else list(ds)
 
         pairs: list[ContrastivePair] = []
 
@@ -53,15 +61,23 @@ class MMLUSRExtractor(HuggingFaceBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("__index__", "unknown"))
 
         try:
-            # MMLU-SR format: column_0 (question), column_1-4 (choices), column_5 (answer letter)
-            question = str(doc.get("column_0", "")).strip()
+            # Real MMLU-SR doc fields: question, choice1..choice4, answer (int 0-3)
+            question = str(doc.get("question", doc.get("column_0", ""))).strip()
             choices = [
-                str(doc.get("column_1", "")).strip(),
-                str(doc.get("column_2", "")).strip(),
-                str(doc.get("column_3", "")).strip(),
-                str(doc.get("column_4", "")).strip(),
+                str(doc.get("choice1", doc.get("column_1", ""))).strip(),
+                str(doc.get("choice2", doc.get("column_2", ""))).strip(),
+                str(doc.get("choice3", doc.get("column_3", ""))).strip(),
+                str(doc.get("choice4", doc.get("column_4", ""))).strip(),
             ]
-            answer_letter = str(doc.get("column_5", "")).strip().upper()
+            raw_answer = doc.get("answer", doc.get("column_5", ""))
+            if isinstance(raw_answer, int):
+                answer_letter = chr(ord('A') + raw_answer)
+            else:
+                s = str(raw_answer).strip()
+                if s.isdigit():
+                    answer_letter = chr(ord('A') + int(s))
+                else:
+                    answer_letter = s.upper()
 
             if not question or not all(choices) or not answer_letter:
                 log.debug("Skipping: missing question, choices, or answer")

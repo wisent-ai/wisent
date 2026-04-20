@@ -177,25 +177,15 @@ def handle_mmlusr(task_manager: LMTaskManager) -> dict[str, ConfigurableTask]:
                     if 'process_docs' in cfg and isinstance(cfg['process_docs'], str):
                         del cfg['process_docs']
 
-                    # Fix doc_to_text to use actual dataset fields (column_0, column_1, etc.)
-                    # instead of processed fields (question, choices, etc.)
-                    if 'doc_to_text' in cfg:
-                        cfg['doc_to_text'] = "{{column_0.strip()}}\nA. {{column_1}}\nB. {{column_2}}\nC. {{column_3}}\nD. {{column_4}}\nAnswer:"
+                    # Raw dataset has fields: question, choice1..choice4, answer (int 0-3)
+                    cfg['doc_to_text'] = "{{question.strip()}}\nA. {{choice1}}\nB. {{choice2}}\nC. {{choice3}}\nD. {{choice4}}\nAnswer:"
+                    cfg['doc_to_target'] = 'answer'
+                    cfg['doc_to_choice'] = ['A', 'B', 'C', 'D']
 
-                    # Fix doc_to_target to use column_5 instead of answer
-                    if 'doc_to_target' in cfg:
-                        cfg['doc_to_target'] = 'column_5'
-
-                    # Fix dataset_name to use correct config
-                    if 'dataset_name' in cfg:
-                        dataset_name = cfg['dataset_name']
-                        # Map task-specific dataset_name to actual config
-                        if 'answer_only' in dataset_name:
-                            cfg['dataset_name'] = 'answer_only'
-                        elif 'question_only' in dataset_name:
-                            cfg['dataset_name'] = 'question_only'
-                        elif 'question_and_answer' in dataset_name:
-                            cfg['dataset_name'] = 'question_and_answer'
+                    # Fix dataset_name: task like 'mmlusr_answer_only_abstract_algebra' needs
+                    # config 'answer_only_abstract_algebra' (subtopic-specific).
+                    if task_name.startswith('mmlusr_'):
+                        cfg['dataset_name'] = task_name[len('mmlusr_'):]
 
                     # Create task instance
                     task = ConfigurableTask(config=cfg)
