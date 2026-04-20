@@ -22,7 +22,10 @@ from wisent.extractors.hf.registry.hf_task_extractors.applied.coding.code_tasks.
     HumanEvalInstructExtractor,
     HumanEval64InstructExtractor,
 )
-from wisent.extractors.hf.registry.hf_task_extractors.applied.coding.multilang_benchmarks.livecodebench.livecodebench import LivecodebenchExtractor
+try:
+    from wisent.extractors.hf.registry.hf_task_extractors.applied.coding.multilang_benchmarks.livecodebench.livecodebench import LivecodebenchExtractor
+except ImportError:
+    LivecodebenchExtractor = None
 from wisent.extractors.hf.registry.hf_task_extractors.applied.math.benchmarks.livemathbench import LiveMathBenchExtractor
 from wisent.extractors.hf.registry.hf_task_extractors.applied.math.benchmarks.math500 import MATH500Extractor
 from wisent.extractors.hf.registry.hf_task_extractors.applied.coding.code_tasks.competitive.mercury import MercuryExtractor

@@ -110,6 +110,28 @@ class HuggingFaceBenchmarkExtractor(ABC):
         return None
 
     @classmethod
+    @classmethod
+    def load_all_splits(
+        cls,
+        dataset_name: str,
+        dataset_config: str | None = None,
+        trust_remote_code: bool = False,
+    ) -> list[dict[str, Any]]:
+        """Load all splits (train/validation/test) via load_dataset and concatenate."""
+        from datasets import get_dataset_split_names
+        try:
+            splits = get_dataset_split_names(dataset_name, dataset_config if dataset_config else None, trust_remote_code=trust_remote_code)
+        except Exception:
+            splits = ["train", "validation", "test"]
+        docs = []
+        for s in splits:
+            try:
+                docs.extend(cls.load_dataset(dataset_name=dataset_name, split=s, dataset_config=dataset_config, trust_remote_code=trust_remote_code))
+            except Exception:
+                continue
+        return docs
+
+    @classmethod
     def load_dataset(
         cls,
         dataset_name: str,

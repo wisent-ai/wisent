@@ -39,5 +39,5 @@ M_TASKS = {
     "m_mmlu_kn": f"{BASE_IMPORT}okapi:OkapiExtractor",
     "m_mmlu_ne": f"{BASE_IMPORT}okapi:OkapiExtractor",
     "m_mmlu_fr": f"{BASE_IMPORT}okapi:OkapiExtractor",
-    "m_mmlu": f"{BASE_IMPORT}m_mmlu:MMmluExtractor",
+    "m_mmlu": "wisent.extractors.hf.registry.hf_task_extractors.evaluation.knowledge.mmlu.m_mmlu:MMmluExtractor",
 }

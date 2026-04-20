@@ -23,7 +23,12 @@ def _regularized_pinv(M: torch.Tensor, reg: float) -> torch.Tensor:
     """Tikhonov-regularized pseudoinverse: (M^T M + reg I)^-1 M^T."""
     MtM = M.T @ M
     I = torch.eye(MtM.shape[0], device=M.device, dtype=M.dtype)
-    return torch.linalg.solve(MtM + reg * I, M.T)
+    A = MtM + reg * I
+    try:
+        return torch.linalg.solve(A, M.T)
+    except torch.linalg.LinAlgError:
+        # Matrix still singular even with regularization — use lstsq
+        return torch.linalg.lstsq(A, M.T).solution
 
 
 def _compute_target_transport(neg: torch.Tensor, pos: torch.Tensor, mode: str) -> torch.Tensor:

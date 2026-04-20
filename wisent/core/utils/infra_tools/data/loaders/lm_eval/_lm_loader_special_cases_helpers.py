@@ -116,7 +116,8 @@ def handle_mmlusr(task_manager: LMTaskManager) -> dict[str, ConfigurableTask]:
     for task_name, task_info in task_manager.task_index.items():
         if 'mmlusr' in task_name:
             # Go up to the mmlusr root directory (the yaml_path might be in a subdirectory)
-            path = task_info['yaml_path']
+            # lm-eval >= 0.4.9 returns an Entry namedtuple; older returned dict.
+            path = getattr(task_info, 'yaml_path', None) if not isinstance(task_info, dict) else task_info.get('yaml_path')
             while path and os.path.basename(path) != 'mmlusr':
                 path = os.path.dirname(path)
             if path and os.path.basename(path) == 'mmlusr':

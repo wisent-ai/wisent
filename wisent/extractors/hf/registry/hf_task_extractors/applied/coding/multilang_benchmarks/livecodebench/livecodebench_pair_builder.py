@@ -8,10 +8,10 @@ from typing import Any
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
-from wisent.extractors.hf.hf_task_extractors.get_positive_example_livecodebench import (
+from .get_positive_example_livecodebench import (
     get_positive_example,
 )
-from wisent.extractors.hf.hf_task_extractors.get_negative_example_livecodebench import (
+from .get_negative_example_livecodebench import (
     get_negative_example,
 )
 

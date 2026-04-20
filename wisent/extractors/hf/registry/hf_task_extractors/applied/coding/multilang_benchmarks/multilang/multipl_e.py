@@ -37,10 +37,16 @@ class MultiplEExtractor(HuggingFaceBenchmarkExtractor):
         """
         max_items = self._normalize_limit(limit)
 
+        # Map wisent task_name to nuprl/MultiPL-E dataset config.
+        # multiple_js -> humaneval-js, multiple_py -> humaneval-py, etc.
+        task_name = getattr(self, "task_name", "multiple_js")
+        lang_suffix = task_name.replace("multiple_", "", 1) if task_name.startswith("multiple_") else "js"
+        config = f"humaneval-{lang_suffix}"
+
         # Load dataset
         docs = self.load_dataset(
             dataset_name="nuprl/MultiPL-E",
-            dataset_config="humaneval-js",
+            dataset_config=config,
             split="test",
             limit=max_items,
         )

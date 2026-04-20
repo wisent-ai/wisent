@@ -25,6 +25,35 @@ if 'List' not in _features_module._FEATURE_TYPES and 'LargeList' in _features_mo
 
 # Stub bleurt module so medtext/utils.py imports successfully without bleurt installed.
 # bleurt is only used at evaluation time, not during extraction.
+
+# Patch missing weighted_f1_score in lm_eval afrimmlu utils (upstream bug)
+_patched_utils = False
+def _patch_missing_lm_eval_utils():
+    global _patched_utils
+    if _patched_utils: return
+    _patched_utils = True
+    try:
+        import importlib.util, lm_eval, sys
+        from pathlib import Path
+        def weighted_f1_score(items):
+            from sklearn.metrics import f1_score
+            refs, preds = zip(*items)
+            return float(f1_score(refs, preds, average="weighted"))
+        tasks_root = Path(lm_eval.tasks.__file__).parent
+        base = tasks_root / "afrimmlu"
+        if not base.exists(): return
+        for utils_file in base.rglob("utils.py"):
+            rel = utils_file.relative_to(tasks_root).with_suffix("")
+            mod_name = "lm_eval.tasks." + rel.as_posix().replace("/", ".")
+            spec = importlib.util.spec_from_file_location(mod_name, str(utils_file))
+            mod = importlib.util.module_from_spec(spec)
+            mod.__mtime__ = utils_file.stat().st_mtime_ns
+            spec.loader.exec_module(mod)
+            if not hasattr(mod, "weighted_f1_score"):
+                mod.weighted_f1_score = weighted_f1_score
+            sys.modules[mod_name] = mod
+    except Exception: pass
+
 import sys as _sys
 if 'bleurt' not in _sys.modules:
     import types as _types
@@ -86,6 +115,8 @@ import huggingface_hub as _hf_hub
 _orig_get_session = _hf_hub.utils._http.get_session
 def _patched_get_session():
     session = _orig_get_session()
+    if not hasattr(session, "mount"):
+        return session
     retry = Retry(
         total=5,
         backoff_factor=2,
@@ -480,16 +511,20 @@ class LMEvalDataLoader(BaseDataLoader):
                 log.info(f"Normalizing task name to lowercase: '{lm_eval_task_name}' -> '{lm_eval_task_name_normalized}'")
                 lm_eval_task_name = lm_eval_task_name_normalized
 
+        _patch_missing_lm_eval_utils()
+
         is_ruler_task = lm_eval_task_name == 'ruler' or lm_eval_task_name.startswith('ruler_') or lm_eval_task_name.startswith('niah_')
         if is_ruler_task:
             task_manager = LMTaskManager(
                 verbosity="INFO",
                 metadata={"pretrained": "meta-llama/Llama-3.2-1B-Instruct"}
             )
-            task_manager.initialize_tasks()
+            if hasattr(task_manager, "initialize_tasks"):
+                task_manager.initialize_tasks()
         else:
             task_manager = LMTaskManager()
-            task_manager.initialize_tasks()
+            if hasattr(task_manager, "initialize_tasks"):
+                task_manager.initialize_tasks()
 
         # pile_10k uses NeelNanda/pile-10k on HF (not the-eye.eu) — allow it.
         # The original Pile dataset and pile_arxiv etc. host on the-eye.eu which is unavailable.
@@ -626,7 +661,47 @@ class LMEvalDataLoader(BaseDataLoader):
             log.info(f"Using special case handler for task '{lm_eval_task_name}'")
             return special_handler(task_manager)
 
-        task_dict = get_task_dict([lm_eval_task_name], task_manager=task_manager)
+        try:
+            task_dict = get_task_dict([lm_eval_task_name], task_manager=task_manager)
+        except KeyError:
+            parts = lm_eval_task_name.split("_")
+            candidates = [
+                lm_eval_task_name + "_prompt_5",
+                lm_eval_task_name + "_prompt_1",
+            ]
+            if len(parts) >= 3:
+                candidates.extend([
+                    "_".join([parts[0]] + parts[2:] + [parts[1]]),
+                    "_".join([parts[0]] + parts[2:]) + "_prompt_5",
+                    "_".join([parts[0]] + parts[2:]) + "_prompt_1",
+                ])
+            if len(parts) >= 4:
+                # Drop 2nd and 3rd components (common wisent convention has 2 modifier words)
+                candidates.extend([
+                    "_".join([parts[0]] + parts[3:]) + "_prompt_5",
+                    "_".join([parts[0]] + parts[3:]) + "_prompt_1",
+                ])
+            # Fuzzy: use lm-eval task_index
+            task_index = getattr(task_manager, "task_index", None) or getattr(task_manager, "_task_index", None) or {}
+            if task_index and len(parts) >= 2:
+                scored = []
+                for t in task_index:
+                    if parts[0] in t and parts[-1] in t:
+                        scored.append((sum(1 for p in parts if p in t), -len(t), t))
+                scored.sort(reverse=True)
+                for _, _, match in scored[:3]:
+                    if match not in candidates:
+                        candidates.append(match)
+            task_dict = None
+            for candidate in candidates:
+                try:
+                    log.info(f"KeyError on {lm_eval_task_name!r}, trying {candidate!r}")
+                    task_dict = get_task_dict([candidate], task_manager=task_manager)
+                    break
+                except KeyError:
+                    continue
+            if task_dict is None:
+                raise
 
         if lm_eval_task_name in task_dict:
             result = task_dict[lm_eval_task_name]

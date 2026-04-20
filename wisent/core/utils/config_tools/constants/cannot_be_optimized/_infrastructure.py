@@ -75,7 +75,7 @@ TEMPORAL_RAMP_MAX = 1.0
 SCORE_MIDPOINT_PCT = 50
 # --- String identity constants ---
 # Evaluator names
-EVALUATOR_NAME_TRUTHFULQA_GEN = "generation"
+EVALUATOR_NAME_TRUTHFULQA_GEN = "truthfulqa_gen"
 EVALUATOR_NAME_LOG_LIKELIHOODS = "log_likelihoods"
 # Extractor manifest base imports
 HF_EXTRACTOR_BASE_IMPORT = "wisent.extractors.hf.hf_task_extractors."

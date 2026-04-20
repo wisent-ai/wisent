@@ -70,6 +70,32 @@ class CatalanBenchExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # FLORES translation schema: multiple sentence_<lang>_<script> fields
+            sentence_fields = [k for k in doc if k.startswith("sentence_")]
+            if len(sentence_fields) >= 2:
+                source_text = str(doc.get(sentence_fields[0], "")).strip()
+                target_text = str(doc.get(sentence_fields[1], "")).strip()
+                if source_text and target_text:
+                    import random as _random
+                    words = target_text.split()
+                    if len(words) > 1:
+                        _random.seed(hash(target_text) % (2**32))
+                        shuffled = words.copy()
+                        _random.shuffle(shuffled)
+                        incorrect = " ".join(shuffled)
+                        if incorrect == target_text:
+                            incorrect = " ".join(words[::-1])
+                    else:
+                        incorrect = "resposta incorrecta"
+                    if incorrect == target_text:
+                        incorrect = "resposta incorrecta"
+                    return ContrastivePair(
+                        prompt=f"Translate: {source_text}",
+                        positive_response=PositiveResponse(model_response=target_text),
+                        negative_response=NegativeResponse(model_response=incorrect),
+                        label="catalan_bench_translation",
+                    )
+
             # catalanqa schema: context + question + answers (extractive QA)
             if "context" in doc and "question" in doc and "answers" in doc:
                 context = str(doc.get("context", "")).strip()

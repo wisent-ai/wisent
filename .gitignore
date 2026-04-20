@@ -164,3 +164,4 @@ personalization_outputs/
 
 # Optuna databases
 *.db
+infra/config/credentials.conf

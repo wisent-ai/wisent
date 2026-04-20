@@ -65,21 +65,20 @@ class PalomaExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
         max_items = self._normalize_limit(limit)
-        # Load fewer docs since we'll split each into multiple pairs
-        docs_to_load = 1 if max_items is None else max(1, max_items // PALOMA_DOCS_DIVISOR)
-        docs = self.load_docs(lm_eval_task_data, docs_to_load, preferred_doc=preferred_doc, train_ratio=train_ratio)
+        # Load all docs; extractor produces one pair per doc via _extract_pair_from_doc
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc, train_ratio=train_ratio)
 
         pairs: list[ContrastivePair] = []
 
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
         for doc in docs:
-            # Extract multiple pairs from each long document
-            doc_pairs = self._extract_pairs_from_doc(doc, max_pairs=max_items - len(pairs) if max_items else None)
-            pairs.extend(doc_pairs)
-            if max_items is not None and len(pairs) >= max_items:
-                pairs = pairs[:max_items]
-                break
+            # One pair per doc via _extract_pair_from_doc
+            pair = self._extract_pair_from_doc(doc)
+            if pair is not None:
+                pairs.append(pair)
+                if max_items is not None and len(pairs) >= max_items:
+                    break
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
@@ -134,6 +133,15 @@ class PalomaExtractor(LMEvalBenchmarkExtractor):
 
             corrupted_words = chunk_words[:mid_start] + shuffled_middle + chunk_words[mid_end:]
             corrupted_text = " ".join(corrupted_words)
+
+            # Short chunks may shuffle to identical text. Fall back to reversing the
+            # entire chunk so positive != negative for perplexity contrast.
+            if corrupted_text == chunk_text:
+                reversed_chunk = chunk_words[::-1]
+                corrupted_text = " ".join(reversed_chunk)
+                if corrupted_text == chunk_text:
+                    # Perfect palindrome (vanishingly rare) — can't build a contrast pair
+                    continue
 
             metadata = {"label": "paloma", "task": doc.get("source", "paloma"), "chunk": i}
 

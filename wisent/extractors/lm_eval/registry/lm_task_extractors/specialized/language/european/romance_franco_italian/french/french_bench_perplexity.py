@@ -56,28 +56,36 @@ class FrenchBenchPerplexityExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            text = str(doc.get("text", "")).strip()
+            # Perplexity docs may use either 'text' (opus) or 'paragraph' (wikitext_fr).
+            text = str(doc.get("text", doc.get("paragraph", ""))).strip()
 
             if not text:
                 log.debug("Skipping doc due to missing text", extra={"doc": doc})
                 return None
 
-            # For perplexity tasks, we use the text as both prompt and correct response
-            # Negative response is a corrupted version
             import random
             words = text.split()
-            if len(words) > 3:
-                shuffled = words.copy()
-                random.shuffle(shuffled)
-                incorrect = " ".join(shuffled)
-            else:
-                incorrect = "texte incorrect"
+            # Cap length so pairs stay manageable
+            if len(words) > 80:
+                words = words[:80]
+                text = " ".join(words)
+            random.seed(hash(text) % (2**32))
+            shuffled = words.copy()
+            random.shuffle(shuffled)
+            incorrect = " ".join(shuffled)
+            if incorrect == text:
+                incorrect = " ".join(words[::-1])
+                if incorrect == text:
+                    # Fall back to char reversal for short single-word docs
+                    incorrect = text[::-1]
+                if incorrect == text:
+                    incorrect = text + " (garbled)"
 
             positive_response = PositiveResponse(model_response=text)
             negative_response = NegativeResponse(model_response=incorrect)
 
             return ContrastivePair(
-                prompt="",
+                prompt="Continue this text:",
                 positive_response=positive_response,
                 negative_response=negative_response,
                 label="french_bench_perplexity",

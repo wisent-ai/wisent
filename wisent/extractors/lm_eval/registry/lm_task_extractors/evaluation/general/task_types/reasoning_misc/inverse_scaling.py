@@ -88,6 +88,31 @@ class InverseScalingExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
+            # Format 0a: inverse_scaling winobias_antistereotype format (text + classes + target)
+            if "text" in doc and "classes" in doc and ("target" in doc or "answer_index" in doc):
+                prompt = str(doc.get("text", "")).strip()
+                classes = doc.get("classes", [])
+                answer_idx = doc.get("target", doc.get("answer_index"))
+
+                if not prompt or not classes or answer_idx is None or not (0 <= int(answer_idx) < len(classes)):
+                    log.debug("Skipping doc due to missing/invalid inverse_scaling fields", extra={"doc": doc})
+                    return None
+
+                answer_idx = int(answer_idx)
+                correct = str(classes[answer_idx]).strip()
+                incorrect_idx = (answer_idx + 1) % len(classes)
+                incorrect = str(classes[incorrect_idx]).strip()
+                if not correct or not incorrect or correct == incorrect:
+                    return None
+
+                metadata = {"label": "inverse_scaling"}
+                return self._build_pair(
+                    question=prompt,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
             # Format 0: inverse_scaling format (prompt + classes + answer_index)
             if "prompt" in doc and "classes" in doc and "answer_index" in doc:
                 prompt = str(doc.get("prompt", "")).strip()

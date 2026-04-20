@@ -86,7 +86,11 @@ def _regularized_pinv(M: torch.Tensor, reg: float) -> torch.Tensor:
     """Compute Tikhonov-regularized pseudoinverse: (M^T M + reg I)^-1 M^T."""
     MtM = M.T @ M
     I = torch.eye(MtM.shape[0], device=M.device, dtype=M.dtype)
-    return torch.linalg.solve(MtM + reg * I, M.T)
+    A = MtM + reg * I
+    try:
+        return torch.linalg.solve(A, M.T)
+    except torch.linalg.LinAlgError:
+        return torch.linalg.lstsq(A, M.T).solution
 
 
 class PrzelomMethod(BaseSteeringMethod):

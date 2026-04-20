@@ -129,10 +129,12 @@ def _load_trial_scores(trial_dir: str) -> Dict[str, Any]:
 def _load_baseline_scores(
     model_name: str, benchmark: str,
 ) -> List[Dict[str, Any]]:
-    """Load baseline scores from HF cache."""
-    if not baseline_cache.check_baseline_exists(model_name, benchmark):
+    """Load baseline scores from HF cache. Returns [] if cache helpers are unavailable."""
+    check_fn = getattr(baseline_cache, "check_baseline_exists", None)
+    load_fn = getattr(baseline_cache, "load_baseline_from_hf", None)
+    if check_fn is None or load_fn is None:
         return []
-    _, scores, _ = baseline_cache.load_baseline_from_hf(
-        model_name, benchmark,
-    )
+    if not check_fn(model_name, benchmark):
+        return []
+    _, scores, _ = load_fn(model_name, benchmark)
     return scores

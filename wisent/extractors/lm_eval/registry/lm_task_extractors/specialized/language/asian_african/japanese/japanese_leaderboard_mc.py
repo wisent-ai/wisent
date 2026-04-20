@@ -57,11 +57,20 @@ class JapaneseLeaderboardMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
             target_cfg = cfg_task or "ja_leaderboard_jcommonsenseqa"
             jglue_config = config_map.get(target_cfg, "JCommonsenseQA")
             try:
-                ds = load_dataset("shunk031/JGLUE", jglue_config, split="validation", trust_remote_code=True)
+                from datasets import get_dataset_split_names
+                split_names = get_dataset_split_names("shunk031/JGLUE", jglue_config, trust_remote_code=True)
+                all_rows = []
+                for s in split_names:
+                    try:
+                        ds_s = load_dataset("shunk031/JGLUE", jglue_config, split=s, trust_remote_code=True)
+                        all_rows.extend(list(ds_s))
+                    except Exception:
+                        continue
+                ds = all_rows
             except Exception as exc:
                 log.error(f"Failed to load shunk031/JGLUE: {exc}")
                 return []
-            docs = list(ds)[: (max_items * 4 if max_items else None)]
+            docs = ds[: (max_items * 4 if max_items else None)]
         else:
             docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc, train_ratio=train_ratio)
 

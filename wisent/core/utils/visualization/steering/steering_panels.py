@@ -127,7 +127,12 @@ def plot_umap_panel(ax, pos, neg, base, steered, base_evals, steered_evals):
         ax.set_title("UMAP (failed)")
         return
     reducer = umap.UMAP(n_components=_C.VIZ_N_COMPONENTS_2D, n_neighbors=min(_C.VIZ_N_NEIGHBORS, n-1), min_dist=_C.VIZ_MIN_DIST, random_state=_C.DEFAULT_RANDOM_SEED)
-    all_2d = reducer.fit_transform(all_data)
+    try:
+        all_2d = reducer.fit_transform(all_data)
+    except Exception:
+        ax.text(0.5, 0.5, "UMAP failed (numba)", ha='center', va='center', transform=ax.transAxes)
+        ax.set_title("UMAP (failed)")
+        return
     n_pos, n_neg = len(pos), len(neg)
     plot_projection_panel(ax, all_2d[:n_pos], all_2d[n_pos:n_pos+n_neg],
                           all_2d[n_pos+n_neg:n_pos+n_neg+len(base)],

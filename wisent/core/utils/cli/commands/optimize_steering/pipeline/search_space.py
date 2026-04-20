@@ -43,21 +43,25 @@ def _qln(mu, sigma):
 
 
 def _base(num_layers: int) -> dict[str, Param]:
+    # Exclude the final layer — steering on it causes CUDA assert
+    # because there is no residual stream after the last transformer block.
+    max_layer = num_layers - 1
     return {
         "steering_strategy": _Cat(choices=_SS),
         "extraction_component": _Cat(choices=_EC),
         "strength": _ln(U_MU, U_SIG),
-        "layer": _ri(_C.SS_LAYER_MIN, num_layers),
+        "layer": _ri(_C.SS_LAYER_MIN, max_layer),
     }
 
 
 def _sensor_base(num_layers: int) -> dict[str, Param]:
+    max_layer = num_layers - 1
     return {
         "steering_strategy": _Cat(choices=_SS),
         "strength": _ln(U_MU, U_SIG),
-        "sensor_layer": _ri(_C.SS_LAYER_MIN, num_layers),
-        "steering_start": _ri(_C.SS_LAYER_MIN, num_layers),
-        "steering_end": _ri(_C.SS_LAYER_MIN, num_layers),
+        "sensor_layer": _ri(_C.SS_LAYER_MIN, max_layer),
+        "steering_start": _ri(_C.SS_LAYER_MIN, max_layer),
+        "steering_end": _ri(_C.SS_LAYER_MIN, max_layer),
     }
 
 

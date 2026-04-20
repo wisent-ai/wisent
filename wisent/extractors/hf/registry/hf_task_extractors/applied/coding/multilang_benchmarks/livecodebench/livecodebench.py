@@ -5,7 +5,7 @@ from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
-from wisent.extractors.hf.hf_task_extractors.livecodebench_contrastive_pair_generator import (
+from .livecodebench_contrastive_pair_generator import (
     generate_livecodebench_pairs,
 )
 

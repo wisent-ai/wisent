@@ -23,17 +23,14 @@ class GSM8KExtractor(HuggingFaceBenchmarkExtractor):
         super().__init__()
         self.name = "gsm8k"
 
-    def extract_contrastive_pairs(self, limit: int | None = GSM8K_DEFAULT_LIMIT) -> list[ContrastivePair]:
+    def extract_contrastive_pairs(self, limit: int | None = None) -> list[ContrastivePair]:
         pairs: list[ContrastivePair] = []
 
         try:
-            docs = self.load_dataset(
-                dataset_name="gsm8k",
-                dataset_config="main",
-                split="test",
-                limit=limit,
-            )
-            log.info(f"Loaded {len(docs)} examples from GSM8K")
+            docs = self.load_all_splits(dataset_name="gsm8k", dataset_config="main")
+            if limit:
+                docs = docs[:limit]
+            log.info(f"Loaded {len(docs)} examples from GSM8K (all splits)")
         except Exception as e:
             log.error(f"Failed to load GSM8K: {e}")
             return []

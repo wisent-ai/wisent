@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
@@ -74,6 +75,8 @@ class AfrimmluExtractor(LMEvalBenchmarkExtractor):
 
             question = doc.get("question", "").strip()
             choices = doc.get("choices", [])
+            if isinstance(choices, str):
+                choices = ast.literal_eval(choices)
             answer = doc.get("answer", "")
 
             if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():

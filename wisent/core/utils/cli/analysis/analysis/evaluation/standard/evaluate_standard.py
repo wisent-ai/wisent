@@ -11,6 +11,15 @@ def evaluate_standard(
     model=None,
 ):
     """Run standard evaluation loop for benchmark responses."""
+    # Coherence guard for log_likelihoods: penalize acc if the (steered) model's
+    # perplexity on a fixed natural-text probe is too high. Prevents reward
+    # hacking where steering collapses the model into token-salad that happens
+    # to favor short/generic correct choices in MC log-prob comparison.
+    coherence_factor = 1.0
+    if model is not None and getattr(evaluator, "name", "") == "log_likelihoods":
+        coherence_factor = type(evaluator).compute_coherence_factor(model)
+        if args.verbose:
+            print(f"coherence_factor (log_likelihoods): {coherence_factor:.4f}")
     for idx, response_data in enumerate(responses, 1):
         if 'error' in response_data:
             if args.verbose:
@@ -61,7 +70,7 @@ def evaluate_standard(
 
                 # Store result
                 task_results.append({
-                    'acc': 1.0 if is_correct else 0.0,
+                    'acc': (1.0 if is_correct else 0.0) * coherence_factor,
                     'confidence': result.confidence
                 })
 
@@ -155,7 +164,7 @@ def evaluate_standard(
 
                 # Store result
                 task_results.append({
-                    'acc': 1.0 if is_correct else 0.0,
+                    'acc': (1.0 if is_correct else 0.0) * coherence_factor,
                     'f1_score': best_score
                 })
 
@@ -206,7 +215,7 @@ def evaluate_standard(
 
                 # Store result
                 task_results.append({
-                    'acc': 1.0 if is_correct else 0.0,
+                    'acc': (1.0 if is_correct else 0.0) * coherence_factor,
                     'confidence': result.confidence
                 })
 

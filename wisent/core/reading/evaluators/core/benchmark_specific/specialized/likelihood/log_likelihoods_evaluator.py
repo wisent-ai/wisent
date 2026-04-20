@@ -152,6 +152,38 @@ class LogLikelihoodsEvaluator(BaseEvaluator):
             # NO FALLBACK - raise the error
             raise
 
+    # Fixed natural-text probe for coherence check; same across all calls so
+    # penalty is comparable across trials. Pure factual English.
+    _COHERENCE_PROBE = (
+        "The quick brown fox jumps over the lazy dog. "
+        "Machine learning is a subset of artificial intelligence. "
+        "Paris is the capital of France. "
+        "Water boils at one hundred degrees Celsius at standard atmospheric pressure. "
+        "The sun rises in the east and sets in the west."
+    )
+    # Perplexity at or below this is considered fully coherent (factor = 1.0).
+    # Coherent Llama-3.2 on factual text has PPL ~5-30.
+    _COHERENT_PPL_THRESHOLD = 100.0
+
+    @classmethod
+    def compute_coherence_factor(cls, model) -> float:
+        """Penalty factor [0, 1] based on perplexity of a fixed natural-text probe.
+
+        Returns 1.0 if model is coherent (PPL <= threshold). Decays toward 0 as
+        the model's steered distribution collapses. Applied multiplicatively to
+        acc downstream so reward hacking via model collapse is disincentivized.
+        """
+        ids = model.tokenizer(cls._COHERENCE_PROBE, return_tensors="pt").input_ids.to(model.device)
+        if ids.shape[1] < 2:
+            return 1.0
+        with torch.no_grad():
+            logits = model.hf_model(ids).logits
+            log_probs = torch.nn.functional.log_softmax(logits[0, :-1, :], dim=-1)
+            token_log_probs = log_probs.gather(1, ids[0, 1:].unsqueeze(-1)).squeeze(-1)
+            avg_nll = -token_log_probs.mean().item()
+        ppl = float(torch.tensor(avg_nll).exp().item())
+        return min(1.0, cls._COHERENT_PPL_THRESHOLD / max(ppl, 1.0))
+
     def _compute_choice_log_likelihood(self, model, question: str, choice: str) -> float:
         """Compute log likelihood of a choice given a question.
 

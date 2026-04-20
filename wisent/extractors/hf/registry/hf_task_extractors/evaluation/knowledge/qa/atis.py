@@ -53,12 +53,10 @@ class AtisExtractor(HuggingFaceBenchmarkExtractor):
         return pairs
 
     def _load_atis_from_hf(self, max_items):
-        """Load ATIS dataset directly from HuggingFace."""
-        docs = self.load_dataset(
-            dataset_name="tuetschek/atis",
-            split="test",
-            limit=max_items,
-        )
+        """Load ATIS dataset directly from HuggingFace across all splits."""
+        docs = self.load_all_splits(dataset_name="tuetschek/atis")
+        if max_items:
+            docs = docs[:max_items]
         return docs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:

@@ -143,10 +143,9 @@ def generate_baseline_with_cache(
     print(f"   Baseline: {cached_response_count} responses cached, "
           f"{len(missing_indices)} to generate", flush=True)
 
-    # Generate only missing responses
-    wisent_model = None
+    # Ensure model available (needed for generation AND for log_likelihoods evaluation)
+    wisent_model = cached_model if cached_model is not None else WisentModel(model, device=device)
     if missing_indices:
-        wisent_model = cached_model if cached_model is not None else WisentModel(model, device=device)
         gen_kwargs = get_generate_kwargs()
         for idx in missing_indices:
             pair_dict = pairs_data[idx]
@@ -162,8 +161,6 @@ def generate_baseline_with_cache(
                 "prompt": prompt, "response": response, "expected": expected,
                 "negative": neg_resp,
             }
-        if cached_model is None and wisent_model is not None:
-            wisent_model.detach()
         _upload_pair_results(model, benchmark, cached_results)
 
     # Always re-evaluate all pairs with current evaluator
@@ -187,6 +184,8 @@ def generate_baseline_with_cache(
         eval_kwargs = {
             "question": prompt, "task_name": benchmark,
             "correct_answers": [expected], "incorrect_answers": [neg_resp],
+            "choices": [expected, neg_resp],
+            "model": wisent_model,
         }
         result = evaluator.evaluate(response, expected, **eval_kwargs)
         is_correct = result.ground_truth == "TRUTHFUL"
@@ -201,5 +200,7 @@ def generate_baseline_with_cache(
             "prompt": prompt, "correct": is_correct,
             "ground_truth": result.ground_truth,
         })
+    if cached_model is None and wisent_model is not None:
+        wisent_model.detach()
     accuracy = correct / total if total > RECURSION_INITIAL_DEPTH else RECURSION_INITIAL_DEPTH
     return accuracy, responses_list, scores_list

@@ -129,7 +129,7 @@ def _knn_umap_accuracy(X: np.ndarray, y: np.ndarray, n_components: int, k: int, 
         clf = KNeighborsClassifier(n_neighbors=k)
         scores = cross_val_score(clf, X_umap, y, cv=cv, scoring="accuracy")
         return float(scores.mean())
-    except ImportError:
+    except (ImportError, Exception):
         return 0.0
 
 

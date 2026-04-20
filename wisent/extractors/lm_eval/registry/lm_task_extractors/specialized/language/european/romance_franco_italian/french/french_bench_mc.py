@@ -78,6 +78,26 @@ class FrenchBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
                         label="french_bench_mc",
                     )
 
+            # xnli: premise + hypothesis + label (0=entailment, 1=neutral, 2=contradiction)
+            if "premise" in doc and "hypothesis" in doc and "label" in doc:
+                premise = str(doc.get("premise", "")).strip()
+                hypothesis = str(doc.get("hypothesis", "")).strip()
+                label = doc.get("label")
+                label_map = {0: "oui", 1: "peut-être", 2: "non"}
+                try:
+                    l_idx = int(label)
+                except Exception:
+                    l_idx = -1
+                correct_nli = label_map.get(l_idx)
+                if premise and hypothesis and correct_nli:
+                    incorrect_nli = next(v for k, v in label_map.items() if v != correct_nli)
+                    return ContrastivePair(
+                        prompt=f"Prémisse: {premise}\nHypothèse: {hypothesis}\nLa prémisse implique-t-elle l'hypothèse?",
+                        positive_response=PositiveResponse(model_response=correct_nli),
+                        negative_response=NegativeResponse(model_response=incorrect_nli),
+                        label="french_bench_xnli",
+                    )
+
             # topic_based_nli: text + topic + polarity (positif/negatif/neutre)
             if "text" in doc and "topic" in doc and "polarity" in doc:
                 text = str(doc.get("text", "")).strip()

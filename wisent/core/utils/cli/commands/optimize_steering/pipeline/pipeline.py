@@ -17,7 +17,7 @@ from wisent.core.utils.cli.optimize_steering.data.contrastive_pairs_data import 
 from wisent.core.utils.cli.optimize_steering.data.activations_data import execute_get_activations
 from wisent.core.utils.cli.optimize_steering.steering_objects import execute_create_steering_object
 from wisent.core.utils.cli.optimize_steering.data.responses import execute_generate_responses
-from wisent.core.utils.cli.optimize_steering.scores import execute_evaluate_responses
+from wisent.core.utils.cli.optimize_steering.scores import execute_evaluate_responses, task_uses_log_likelihoods, write_placeholder_responses
 from wisent.core.utils.config_tools.constants import (
     SCORE_RANGE_MIN, GENERATION_DEFAULT_MAX_NEW_TOKENS,
     GENERATION_DEFAULT_TEMPERATURE, GENERATION_DEFAULT_TOP_P,
@@ -143,28 +143,29 @@ def run_pipeline(
     ))
     steer_elapsed = time.monotonic() - steer_t0
     print(f"[run_pipeline] {_ts()} steering object created in {steer_elapsed:.1f}s", flush=True)
-
     steering_strategy = getattr(config, 'steering_strategy', get_optimal("steering_strategy"))
     gen_t0 = time.monotonic()
-    print(
-        f"[run_pipeline] {_ts()} generate start: eval_limit={eval_limit}, "
-        f"strength={strength}, strategy={steering_strategy}, "
-        f"max_new_tokens={GENERATION_DEFAULT_MAX_NEW_TOKENS}",
-        flush=True,
-    )
-    execute_generate_responses(_make_args(
-        task=task, input_file=eval_pairs_file, model=model, output=responses_file,
-        num_questions=eval_limit, min_load_limit_questions=eval_limit,
-        steering_object=steering_file, steering_strength=strength,
-        steering_strategy=steering_strategy, use_steering=True,
-        device=device, verbose=False, cached_model=cached_model,
-        max_new_tokens=GENERATION_DEFAULT_MAX_NEW_TOKENS,
-        temperature=GENERATION_DEFAULT_TEMPERATURE, top_p=GENERATION_DEFAULT_TOP_P,
-    ))
+    _skip_gen = task_uses_log_likelihoods(task)
+    print(f"[run_pipeline] {_ts()} generate start: eval_limit={eval_limit}, strength={strength}, strategy={steering_strategy}, max_new_tokens={GENERATION_DEFAULT_MAX_NEW_TOKENS}, skip_gen={_skip_gen}", flush=True)
+    if _skip_gen:
+        write_placeholder_responses(eval_pairs_file, responses_file, eval_limit, task, model)
+    else:
+        execute_generate_responses(_make_args(
+            task=task, input_file=eval_pairs_file, model=model, output=responses_file,
+            num_questions=eval_limit, min_load_limit_questions=eval_limit,
+            steering_object=steering_file, steering_strength=strength,
+            steering_strategy=steering_strategy, use_steering=True,
+            device=device, verbose=False, cached_model=cached_model,
+            max_new_tokens=GENERATION_DEFAULT_MAX_NEW_TOKENS,
+            temperature=GENERATION_DEFAULT_TEMPERATURE, top_p=GENERATION_DEFAULT_TOP_P,
+        ))
     gen_elapsed = time.monotonic() - gen_t0
     print(f"[run_pipeline] {_ts()} generate done in {gen_elapsed:.1f}s", flush=True)
-
     eval_t0 = time.monotonic()
+    _reatt = cached_model is not None and os.path.exists(steering_file)
+    if _reatt:
+        from wisent.core.control.steering_methods.steering_object import BaseSteeringObject
+        cached_model.apply_steering_object(BaseSteeringObject.load(steering_file), strength, steering_strategy)
     execute_evaluate_responses(_make_args(
         input=responses_file, output=scores_file, task=task, verbose=False,
         f1_threshold=EVAL_F1_THRESHOLD,
@@ -175,6 +176,7 @@ def run_pipeline(
         personalization_good_threshold=SCORE_MIDPOINT_PCT,
         cached_model=cached_model,
     ))
+    if _reatt: cached_model.detach()
     eval_elapsed = time.monotonic() - eval_t0
     print(f"[run_pipeline] {_ts()} evaluate done in {eval_elapsed:.1f}s", flush=True)
 

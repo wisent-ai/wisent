@@ -98,7 +98,12 @@ def get_extractor(task_name: str) -> LMEvalBenchmarkExtractor:
     # Try exact match first
     ref = _REGISTRY.get(key)
     if ref:
-        return _instantiate(ref)
+        inst = _instantiate(ref)
+        try:
+            inst.task_name = task_name
+        except Exception:
+            pass
+        return inst
 
     # Try longest-prefix matching for hierarchical task names.
     # This handles cases like "belebele_afr_latn" -> "belebele",
@@ -109,7 +114,12 @@ def get_extractor(task_name: str) -> LMEvalBenchmarkExtractor:
         ref = _REGISTRY.get(prefix)
         if ref:
             LOG.info(f"Using prefix match: '{task_name}' -> '{prefix}'")
-            return _instantiate(ref)
+            inst = _instantiate(ref)
+            try:
+                inst.task_name = task_name
+            except Exception:
+                pass
+            return inst
 
     raise UnsupportedLMEvalBenchmarkError(
         f"No extractor registered for task '{task_name}'. "

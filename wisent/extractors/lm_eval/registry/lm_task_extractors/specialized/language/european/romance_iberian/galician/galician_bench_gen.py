@@ -74,6 +74,23 @@ class GalicianBenchGenerationExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # truthfulqa_gl_gen format: question + correct_answers + incorrect_answers
+            if "question" in doc and "correct_answers" in doc and "incorrect_answers" in doc:
+                question = str(doc.get("question", "")).strip()
+                correct_answers = doc.get("correct_answers") or []
+                incorrect_answers = doc.get("incorrect_answers") or []
+                if isinstance(correct_answers, list) and correct_answers \
+                        and isinstance(incorrect_answers, list) and incorrect_answers and question:
+                    correct = str(correct_answers[0]).strip()
+                    incorrect = str(incorrect_answers[0]).strip()
+                    if correct and incorrect and correct != incorrect:
+                        return ContrastivePair(
+                            prompt=question,
+                            positive_response=PositiveResponse(model_response=correct),
+                            negative_response=NegativeResponse(model_response=incorrect),
+                            label="gl_bench_truthfulqa_gen",
+                        )
+
             # summarization_gl format: text + summary
             if "text" in doc and "summary" in doc:
                 text = str(doc.get("text", "")).strip()

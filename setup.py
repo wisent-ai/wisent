@@ -79,6 +79,12 @@ setup(
         "optuna>=3.0.0",
         "hyperopt",
         "psutil",
+        "unitxt>=1.15.0",
+        "math-verify>=0.5.0",
+        "sympy>=1.12",
+        "antlr4-python3-runtime==4.11",
+        "langdetect>=1.0.9",
+        "immutabledict>=4.2.0",
     ],
     extras_require={
         "harness": [

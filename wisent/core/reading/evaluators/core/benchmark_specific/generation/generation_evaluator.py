@@ -133,6 +133,8 @@ class GenerationEvaluator(GenerationEvaluatorHelpersMixin, BaseEvaluator):
         if text is None:
             return False, None, 0.0
         text_norm = self.normalize_text(text) if normalize else text
+        if not text_norm:
+            return False, None, 0.0
         for expected in expected_list:
             expected_str = str(expected)
             expected_norm = self.normalize_text(expected_str) if normalize else expected_str

@@ -77,24 +77,28 @@ class COPAExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            premise = str(doc.get("premise", "")).strip()
-            choice1 = str(doc.get("choice1", "")).strip()
-            choice2 = str(doc.get("choice2", "")).strip()
+            # copa_ar (alghafa) uses query/sol1/sol2; standard COPA uses premise/choice1/choice2/question
+            premise = str(doc.get("premise", doc.get("query", ""))).strip()
+            choice1 = str(doc.get("choice1", doc.get("sol1", ""))).strip()
+            choice2 = str(doc.get("choice2", doc.get("sol2", ""))).strip()
             question = str(doc.get("question", "")).strip()
             label = doc.get("label")
 
 
-            if not premise or not choice1 or not choice2 or not question or not label in {0, 1}:
+            if not premise or not choice1 or not choice2 or label not in {0, 1}:
                 log.debug(
                     "Skipping doc due to missing/invalid fields",
                     extra={"doc": doc},
                 )
                 return None
-            
+
             fills = {"cause": "because", "effect": "therefore"}
-            
-            question = f"{premise.rstrip('.')} {fills[question]}"
-            prompt = f"{question}"
+            if question and question in fills:
+                question = f"{premise.rstrip('.')} {fills[question]}"
+                prompt = f"{question}"
+            else:
+                # copa_ar and others without an explicit question/cause/effect field
+                prompt = premise
 
             correct = choice1 if label == 0 else choice2
             incorrect = choice2 if label == 0 else choice1

@@ -24,11 +24,9 @@ class StsbExtractor(HuggingFaceBenchmarkExtractor):
         
 
         max_items = self._normalize_limit(limit)
-        docs = self.load_dataset(
-            dataset_name="sentence-transformers/stsb",
-            split="test",
-            limit=max_items,
-        )
+        docs = self.load_all_splits(dataset_name="sentence-transformers/stsb")
+        if max_items:
+            docs = docs[:max_items]
         
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})

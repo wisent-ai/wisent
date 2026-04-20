@@ -248,13 +248,15 @@ class AradiceExtractor(LMEvalBenchmarkExtractor):
                 ]
                 choices = [c for c in choices if c]
 
-            # Handle option1/option2 format (winogrande-style)
+            # Handle option1/option2 format (winogrande-style, 1-indexed answer)
+            is_winogrande = False
             if not choices and "option1" in doc_lower:
                 choices = [
                     str(doc_lower.get("option1", "")).strip(),
                     str(doc_lower.get("option2", "")).strip(),
                 ]
                 choices = [c for c in choices if c]
+                is_winogrande = True
 
             # Handle binary tasks with target but no explicit choices (e.g., boolq)
             if not choices and "target" in doc_lower:
@@ -276,6 +278,8 @@ class AradiceExtractor(LMEvalBenchmarkExtractor):
                 elif answer.isdigit():
                     # Answer is like '0', '1', '2', '3'
                     answer_idx = int(answer)
+                    if is_winogrande and answer_idx >= 1:
+                        answer_idx -= 1
                 else:
                     # Try to match answer text against choices
                     if choices:

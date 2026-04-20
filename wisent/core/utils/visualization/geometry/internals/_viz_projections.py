@@ -78,7 +78,10 @@ def plot_umap_projection(
         return {"error": "not enough samples for UMAP"}
 
     reducer = umap.UMAP(n_components=VIZ_N_COMPONENTS_2D, n_neighbors=n_neighbors, min_dist=min_dist, random_state=DEFAULT_RANDOM_SEED)
-    X_umap = reducer.fit_transform(X)
+    try:
+        X_umap = reducer.fit_transform(X)
+    except Exception as e:
+        return {"error": f"UMAP fit failed: {e}"}
 
     pos_umap = X_umap[:len(pos)]
     neg_umap = X_umap[len(pos):]

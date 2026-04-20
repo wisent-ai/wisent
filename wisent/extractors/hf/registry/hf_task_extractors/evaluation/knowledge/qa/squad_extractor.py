@@ -27,11 +27,9 @@ class SQuADv2Extractor(HuggingFaceBenchmarkExtractor):
         pairs: list[ContrastivePair] = []
 
         try:
-            docs = self.load_dataset(
-                dataset_name="rajpurkar/squad_v2",
-                split="validation",
-                limit=limit,
-            )
+            docs = self.load_all_splits(dataset_name="rajpurkar/squad_v2")
+            if limit:
+                docs = docs[:limit]
             log.info(f"Loaded {len(docs)} examples from SQuAD v2")
         except Exception as e:
             log.error(f"Failed to load SQuAD v2: {e}")
