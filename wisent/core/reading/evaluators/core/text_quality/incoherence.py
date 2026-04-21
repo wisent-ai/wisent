@@ -1,7 +1,9 @@
 """
-Incoherence detection and quality evaluation for personalization steering.
+Incoherence detection and composite quality scoring.
 
-Split from coherence.py to meet 300-line limit.
+Split from gibberish.py only to meet the 300-line file limit; logically the
+two halves are one text-quality service. evaluate_quality is the 1-100
+composite score that rolls gibberish and incoherence into a single number.
 """
 
 from __future__ import annotations
@@ -17,7 +19,7 @@ if TYPE_CHECKING:
 from wisent.core.utils.config_tools.constants import (
     SCORE_SCALE_100,
 )
-from wisent.core.reading.evaluators.personalization.coherence import (
+from .gibberish import (
     _is_gibberish,
     _get_tokenizer,
     _is_nonsense_word,
@@ -229,3 +231,6 @@ def evaluate_quality(
     quality_score = score * SCORE_SCALE_100 + 1.0
 
     return quality_score
+
+
+__all__ = ["_is_incoherent", "evaluate_quality"]

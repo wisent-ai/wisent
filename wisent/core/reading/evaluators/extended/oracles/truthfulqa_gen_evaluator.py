@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any, List, Mapping
 
 from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult, EvaluatorError
+from wisent.core.reading.evaluators.core.text_quality import check_response_coherence
 from wisent.core.utils.config_tools.constants import (
     EVAL_MIN_SIMILARITY_THRESHOLD_DEFAULT,
     ROUNDING_PRECISION_FINE,
@@ -32,6 +33,7 @@ class TruthfulQAGenEvaluator(BaseEvaluator):
     name = "truthfulqa_gen"
     description = "Semantic similarity evaluator for TruthfulQA generation (compares to correct vs incorrect answers)"
     task_names = ("truthfulqa_gen", "truthfulqa_generation", "truthfulqa_custom")
+    requires_coherence_gate = True
 
     EMB_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
@@ -115,13 +117,14 @@ class TruthfulQAGenEvaluator(BaseEvaluator):
             )
 
         response_text = (response or "").strip()
-        if not response_text:
+        is_coherent, reason = check_response_coherence(response_text)
+        if not is_coherent:
             return EvalResult(
                 ground_truth="UNKNOWN",
                 method_used=self.name,
                 confidence=0.0,
-                details="Empty response",
-                meta={"error": "empty_response"},
+                details=f"Response failed coherence gate: {reason}",
+                meta={"error": reason},
             )
 
         # Compute max similarity to correct and incorrect answers

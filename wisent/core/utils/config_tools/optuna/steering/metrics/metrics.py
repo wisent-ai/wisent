@@ -24,6 +24,7 @@ from wisent.core.utils.infra_tools.errors import (
 
 # Use the standard evaluator system
 from wisent.core.reading.evaluators.rotator import EvaluatorRotator
+from wisent.core.reading.evaluators.core.text_quality import check_response_coherence
 from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_MINI, CHANCE_LEVEL_ACCURACY, MAX_BENCHMARKS_SINGLE
 logger = logging.getLogger(__name__)
 
@@ -152,6 +153,18 @@ def evaluate_benchmark_performance(
                     language=metadata.get("language", "python"),
                 )
                 is_correct = result.ground_truth == "TRUTHFUL"
+                # Defensive text-quality gate for evaluators that score free-form
+                # natural-language output. Only runs when the evaluator opts in
+                # via requires_coherence_gate; structured-answer tasks (math,
+                # code, multiple-choice) stay untouched.
+                if is_correct and getattr(rotator._plugin, "requires_coherence_gate", False):
+                    is_coherent, coherence_reason = check_response_coherence(pred)
+                    if not is_coherent:
+                        logger.info(
+                            f"Sample {i}: evaluator returned TRUTHFUL but response "
+                            f"failed coherence gate ({coherence_reason}); flipping to incorrect."
+                        )
+                        is_correct = False
                 method = evaluator_name
             else:
                 # Fallback to LMEvalHarnessGroundTruth

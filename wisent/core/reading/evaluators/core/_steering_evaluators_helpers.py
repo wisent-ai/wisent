@@ -140,9 +140,9 @@ class PersonalizationEvaluator:
         """Evaluate responses for trait alignment."""
         from wisent.core.reading.evaluators.personalization import (
             evaluate_difference,
-            evaluate_quality,
             estimate_alignment,
         )
+        from wisent.core.reading.evaluators.core.text_quality import evaluate_quality
 
         baseline_responses = self.generate_baseline_responses()
 
@@ -197,7 +197,7 @@ class PersonalizationEvaluator:
 
     def _evaluate_quality(self, responses: list[str]) -> float:
         """Evaluate the quality/coherence of responses."""
-        from wisent.core.reading.evaluators.personalization import evaluate_quality
+        from wisent.core.reading.evaluators.core.text_quality import evaluate_quality
         return evaluate_quality(
             responses,
             min_sentence_length=self._min_sentence_length,

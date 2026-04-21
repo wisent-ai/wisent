@@ -19,7 +19,7 @@ def execute_tasks(args, *, architecture_module_limit: int):
     from wisent.core.reading.classifiers.core.atoms import ClassifierTrainConfig
     from wisent.core.primitives.models.model_persistence import ModelPersistence, create_classifier_metadata
     from wisent.core.utils.infra_tools.infra.display.detection_handling import DetectionHandler, DetectionAction
-    from wisent.core.reading.evaluators.personalization.coherence import evaluate_quality
+    from wisent.core.reading.evaluators.core.text_quality import evaluate_quality
 
     from .utilities import execute_list_tasks, execute_task_info, select_tasks_by_criteria, execute_optimization
     from .cross_benchmark import load_cross_benchmark_data, load_single_task_data

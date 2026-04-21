@@ -1,13 +1,14 @@
 """
-Coherence/quality evaluator for personalization steering.
+Gibberish detection — general-purpose heuristic checks for nonsensical text.
 
-Evaluates response quality, coherence, and freedom from repetition.
+Moved here from evaluators/extended/personalization/coherence.py because
+the heuristics are language-level, not application-specific. Any evaluator
+that consumes free-form model output should gate on this before scoring.
 """
 
 from __future__ import annotations
 
 import re
-from collections import Counter
 from typing import TYPE_CHECKING
 
 
@@ -189,11 +190,10 @@ def _is_gibberish(text: str, *, nonsense_min_tokens: int) -> bool:
     return False
 
 
-# Import evaluate_quality and _is_incoherent from helpers
-# (split to meet 300-line limit)
-from wisent.core.reading.evaluators.personalization._coherence_helpers import (  # noqa: E402
-    evaluate_quality,
-    _is_incoherent,
-)
-
-__all__ = ["evaluate_quality"]
+__all__ = [
+    "FUNCTION_WORDS",
+    "_is_gibberish",
+    "_has_low_function_word_ratio",
+    "_get_tokenizer",
+    "_is_nonsense_word",
+]

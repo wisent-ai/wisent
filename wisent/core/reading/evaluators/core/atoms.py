@@ -82,6 +82,11 @@ class BaseEvaluator(ABC):
     description: str = "Abstract base evaluator"
     task_names: tuple[str, ...] = ()
     requires_judge: bool = False
+    # Evaluators that score free-form natural-language output set this True.
+    # Callers (e.g. the optuna steering scorer) apply a text_quality gate
+    # on "correct" predictions so gibberish doesn't inflate accuracy when
+    # the underlying evaluator didn't already filter it out.
+    requires_coherence_gate: bool = False
 
     _REGISTRY: dict[str, BaseEvaluator] = {}
 
