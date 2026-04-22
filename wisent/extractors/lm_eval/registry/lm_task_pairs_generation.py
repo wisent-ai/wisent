@@ -373,6 +373,18 @@ def build_contrastive_pairs(
         # Subtask not loadable directly — try loading parent group and finding subtask
         task_obj, _ = _load_subtask_from_parent(task_name, loader, log)
         if task_obj is None:
+            # Last resort: some extractors (storycloze, multipl_e) can produce pairs
+            # without an lm-eval task object. Try the extractor directly.
+            try:
+                pairs = extractor.extract_contrastive_pairs(None, limit=max_items, train_ratio=train_ratio)
+            except TypeError:
+                try:
+                    pairs = extractor.extract_contrastive_pairs(limit=max_items)
+                except Exception:
+                    raise
+            if pairs:
+                upload_pairs_to_hf(task_name, pairs)
+                return _add_evaluator_to_pairs(pairs, evaluator_name, task_name)
             raise
 
     # If the loader returned a dict but the caller asked for a specific leaf,

@@ -47,7 +47,16 @@ class StoryclozeExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc, train_ratio=train_ratio)
+        # Upstream LSDSem/story_cloze requires a manual download gate. Fall back to
+        # the open mirror lecslab/story_cloze (prompt/chosen/rejected format) for
+        # all storycloze variants.
+        from datasets import load_dataset
+        ds = load_dataset("lecslab/story_cloze", "default", split="test", trust_remote_code=True)
+        train_ds = load_dataset("lecslab/story_cloze", "default", split="train", trust_remote_code=True)
+        eval_ds = load_dataset("lecslab/story_cloze", "default", split="eval", trust_remote_code=True)
+        docs = list(ds) + list(train_ds) + list(eval_ds)
+        if max_items:
+            docs = docs[:max_items]
 
         pairs: list[ContrastivePair] = []
 
@@ -74,6 +83,20 @@ class StoryclozeExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # lecslab/story_cloze format: prompt + chosen + rejected
+            if "prompt" in doc and "chosen" in doc and "rejected" in doc:
+                prompt = str(doc.get("prompt", "")).strip()
+                chosen = str(doc.get("chosen", "")).strip()
+                rejected = str(doc.get("rejected", "")).strip()
+                if prompt and chosen and rejected and chosen != rejected:
+                    return ContrastivePair(
+                        prompt=prompt,
+                        positive_response=PositiveResponse(model_response=chosen),
+                        negative_response=NegativeResponse(model_response=rejected),
+                        label="storycloze",
+                    )
+                return None
+
             # Format 1: Storycloze native format (input_sentence_1-4 + sentence_quiz1/2 + answer_right_ending)
             if "input_sentence_1" in doc and "sentence_quiz1" in doc:
                 # Build context from the four input sentences
