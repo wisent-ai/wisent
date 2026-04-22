@@ -49,7 +49,30 @@ class PileExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc, train_ratio=train_ratio)
+        # Upstream EleutherAI/pile is deprecated/gated. Fall back to NeelNanda/pile-10k
+        # (public 10k-row sample) and filter by the pile subset encoded in task_name.
+        task_name = getattr(self, "task_name", getattr(lm_eval_task_data, "NAME", "pile") if lm_eval_task_data else "pile")
+        subset_map = {
+            "pile_arxiv": "ArXiv", "pile_bookcorpus2": "BookCorpus2", "pile_books3": "Books3",
+            "pile_dm-mathematics": "DM Mathematics", "pile_enron": "Enron Emails",
+            "pile_europarl": "EuroParl", "pile_freelaw": "FreeLaw", "pile_github": "Github",
+            "pile_gutenberg": "Gutenberg (PG-19)", "pile_hackernews": "HackerNews",
+            "pile_nih-exporter": "NIH ExPorter", "pile_opensubtitles": "OpenSubtitles",
+            "pile_openwebtext2": "OpenWebText2", "pile_philpapers": "PhilPapers",
+            "pile_pile-cc": "Pile-CC", "pile_pubmed-abstracts": "PubMed Abstracts",
+            "pile_pubmed-central": "PubMed Central", "pile_stackexchange": "StackExchange",
+            "pile_ubuntu-irc": "Ubuntu IRC", "pile_uspto": "USPTO Backgrounds",
+            "pile_wikipedia": "Wikipedia (en)", "pile_youtubesubtitles": "YoutubeSubtitles",
+        }
+        wanted = subset_map.get(task_name)
+        from datasets import load_dataset
+        ds = load_dataset("NeelNanda/pile-10k", split="train")
+        if wanted:
+            docs = [r for r in ds if r["meta"].get("pile_set_name") == wanted]
+        else:
+            docs = list(ds)
+        if max_items:
+            docs = docs[:max_items]
 
         pairs: list[ContrastivePair] = []
 
