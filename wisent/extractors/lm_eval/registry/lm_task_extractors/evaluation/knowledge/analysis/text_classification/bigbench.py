@@ -47,26 +47,35 @@ class BigBenchExtractor(LMEvalBenchmarkExtractor):
 
         max_items = self._normalize_limit(limit)
 
-        # Handle problematic BigBench tasks that have empty 'train' splits
-        task_name = getattr(lm_eval_task_data, "NAME", None) or lm_eval_task_data.config.task
+        # Handle problematic BigBench tasks that have empty 'train' splits,
+        # or cases where the lm-eval task fails to load entirely.
+        if lm_eval_task_data is not None:
+            task_name = getattr(lm_eval_task_data, "NAME", None) or lm_eval_task_data.config.task
+        else:
+            task_name = getattr(self, "task_name", "")
         problematic_tasks = {
             'bigbench_simple_arithmetic_json_multiple_choice_generate_until',
             'bigbench_simple_arithmetic_multiple_targets_json_generate_until',
         }
 
         if task_name in problematic_tasks:
-            # Manually load dataset with 'default' split for these tasks
             import datasets
-            dataset_path = lm_eval_task_data.config.dataset_path
-            dataset_name = lm_eval_task_data.config.dataset_name
-
-            log.info(f"Loading problematic task {task_name} with 'default' split")
-            dataset = datasets.load_dataset(
-                path=dataset_path,
-                name=dataset_name,
-                split='default',
-            )
-            docs = list(dataset)
+            if lm_eval_task_data is not None:
+                dataset_path = lm_eval_task_data.config.dataset_path
+                dataset_name = lm_eval_task_data.config.dataset_name
+            else:
+                # Both simple_arithmetic_* bigbench variants map to the
+                # 'simple_arithmetic_json' config on tasksource/bigbench.
+                dataset_path = "tasksource/bigbench"
+                dataset_name = "simple_arithmetic_json"
+            log.info(f"Loading problematic task {task_name}")
+            docs = []
+            for split in ("validation", "train", "test"):
+                try:
+                    ds = datasets.load_dataset(path=dataset_path, name=dataset_name, split=split)
+                    docs.extend(list(ds))
+                except Exception:
+                    continue
             if max_items and len(docs) > max_items:
                 docs = docs[:max_items]
         else:
