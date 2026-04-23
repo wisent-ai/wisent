@@ -40,7 +40,7 @@ rouge>=1.0.1  # Required for longbench and medical benchmarks
 wonderwords>=2.2.0  # Required for ruler benchmark
 sympy>=1.12  # Required for minerva_math and math benchmarks
 math_verify>=0.1.0  # Required for minerva_math and math benchmarks
-antlr4-python3-runtime==4.11  # Required for minerva_math and math benchmarks
+antlr4-python3-runtime==4.13.2  # Required for minerva_math and math benchmarks; matches tarski[clingo]==0.9.1's pin (line 46)
 unitxt  # Required for 20_newsgroups
 lark>=1.1.9  # Required for acpbench generative tasks (acp_*_gen, acp_*_gen_with_pddl)
 tarski[clingo]==0.9.1  # Required for acpbench generative tasks (0.9.1 uses antlr4 4.13.2 compatible with latex2sympy2)
