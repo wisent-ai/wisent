@@ -71,6 +71,9 @@ LM_EXTRACTORS_A_TO_O: dict[str, str] = {
     # Word prediction tasks
     # NEW: BC branch extractors
     "ai2_arc": f"{base_import}ai2_arc:AI2ARCExtractor",
+    # Bare "arc" — harness exposes arc_challenge and arc_easy; route the
+    # ambiguous shortcut to the ai2_arc group extractor so callers get data.
+    "arc": f"{base_import}ai2_arc:AI2ARCExtractor",
     "anli": f"{base_import}anli:ANLIExtractor",
     "anli_r1": f"{base_import}anli:ANLIExtractor",
     "anli_r2": f"{base_import}anli:ANLIExtractor",

@@ -10,6 +10,7 @@ EXTRACTORS_SAFETY_MULTILINGUAL: dict[str, str] = {
     "swebench_verified": f"{base_import}swe_bench_verified:SWEBenchVerifiedExtractor",
     "multi_swe_bench": f"{base_import}swe_bench_multi:MultiSWEBenchExtractor",
     "multi-swe-bench": f"{base_import}swe_bench_multi:MultiSWEBenchExtractor",
+    "multiswebench": f"{base_import}swe_bench_multi:MultiSWEBenchExtractor",
     "swe_bench_multilingual": f"{base_import}swe_bench_multi:MultiSWEBenchExtractor",
     "swe-bench-multilingual": f"{base_import}swe_bench_multi:MultiSWEBenchExtractor",
 

@@ -58,6 +58,14 @@ NOREVAL_TASKS = {
     "nortruthfulqa_gen_nob_p2": f"{BASE_IMPORT}noreval_gen:NorevalGenerationExtractor",
     "nortruthfulqa_gen_nob_p3": f"{BASE_IMPORT}noreval_gen:NorevalGenerationExtractor",
     "nortruthfulqa_gen_nob_p4": f"{BASE_IMPORT}noreval_gen:NorevalGenerationExtractor",
+    # norsumm (bare parent names)
+    "norsumm_nno": f"{BASE_IMPORT}noreval_gen:NorevalGenerationExtractor",
+    "norsumm_nob": f"{BASE_IMPORT}noreval_gen:NorevalGenerationExtractor",
+    # tatoeba (bare parent names)
+    "tatoeba_eng_nno": f"{BASE_IMPORT}noreval_gen:NorevalGenerationExtractor",
+    "tatoeba_eng_nob": f"{BASE_IMPORT}noreval_gen:NorevalGenerationExtractor",
+    "tatoeba_nno_eng": f"{BASE_IMPORT}noreval_gen:NorevalGenerationExtractor",
+    "tatoeba_nob_eng": f"{BASE_IMPORT}noreval_gen:NorevalGenerationExtractor",
     # tatoeba
     "tatoeba_eng_nno_p0": f"{BASE_IMPORT}noreval_gen:NorevalGenerationExtractor",
     "tatoeba_eng_nno_p1": f"{BASE_IMPORT}noreval_gen:NorevalGenerationExtractor",
@@ -79,6 +87,17 @@ NOREVAL_TASKS = {
     # Multiple_choice subtasks → noreval_mc.py (evaluator_name = "log_likelihoods")
     # ncb
     "ncb": f"{BASE_IMPORT}noreval_mc:NorevalMultipleChoiceExtractor",
+    # norbelebele (bare parent)
+    "norbelebele": f"{BASE_IMPORT}noreval_mc:NorevalMultipleChoiceExtractor",
+    # norcommonsenseqa (bare parents)
+    "norcommonsenseqa_nno": f"{BASE_IMPORT}noreval_mc:NorevalMultipleChoiceExtractor",
+    "norcommonsenseqa_nob": f"{BASE_IMPORT}noreval_mc:NorevalMultipleChoiceExtractor",
+    # norec (bare parents)
+    "norec_document": f"{BASE_IMPORT}noreval_mc:NorevalMultipleChoiceExtractor",
+    "norec_sentence": f"{BASE_IMPORT}noreval_mc:NorevalMultipleChoiceExtractor",
+    # noropenbookqa (bare parents)
+    "noropenbookqa_nno": f"{BASE_IMPORT}noreval_mc:NorevalMultipleChoiceExtractor",
+    "noropenbookqa_nob": f"{BASE_IMPORT}noreval_mc:NorevalMultipleChoiceExtractor",
     # norbelebele
     "norbelebele_p0": f"{BASE_IMPORT}noreval_mc:NorevalMultipleChoiceExtractor",
     "norbelebele_p1": f"{BASE_IMPORT}noreval_mc:NorevalMultipleChoiceExtractor",

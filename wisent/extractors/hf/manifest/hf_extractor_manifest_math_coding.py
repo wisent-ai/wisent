@@ -237,6 +237,9 @@ EXTRACTORS_MATH_CODING: dict[str, str] = {
     "humanevalpack": f"{base_import}humanevalpack:HumanevalpackExtractor",
     "iwslt2017_ar_en": f"{base_import}iwslt2017_ar_en:Iwslt2017ArEnExtractor",
     "iwslt2017_en_ar": f"{base_import}iwslt2017_en_ar:Iwslt2017EnArExtractor",
+    # Bare parent — both directions are registered above; route the parent
+    # to the ar->en direction so `wisent ... iwslt2017` resolves.
+    "iwslt2017": f"{base_import}iwslt2017_ar_en:Iwslt2017ArEnExtractor",
     "llama": f"{base_import}llama:LlamaExtractor",
     "multimedqa": f"{base_import}multimedqa:MultimedqaExtractor",
     "openllm": f"{base_import}openllm:OpenllmExtractor",
