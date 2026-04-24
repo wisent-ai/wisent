@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "facts-grounding",
-    "class": "FACTSGroundingExtractor",
-    "evaluator_name": "factuality_grounding",
-    "paper_title": "The FACTS Grounding Leaderboard: Benchmarking LLMs Ability to Ground Responses to Long-Form Input",
-    "paper_url": "https://arxiv.org/abs/2501.03200",
-    "evaluation_method": "Two-phase LLM-as-judge using 3 frontier judge models (Gemini 1.5 Pro, GPT-4o, Claude 3.5 Sonnet). Phase 1: Eligibility (is response sufficient?). Phase 2: Grounding (is response fully grounded in document?). Binary per-example.",
-    "metric": "Average of all judge models scores"
-}

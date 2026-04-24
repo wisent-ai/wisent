@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "math500",
-    "class": "MATH500Extractor",
-    "evaluator_name": "math",
-    "paper_title": "Let's Verify Step by Step (OpenAI, source of the 500-problem subset from MATH)",
-    "paper_url": "https://arxiv.org/abs/2305.20050",
-    "evaluation_method": "Exact match on boxed answer with equivalence checking. MATH-500 is a curated subset of 500 problems from the MATH dataset, spanning algebra, geometry, intermediate algebra, number theory, precalculus, and probability. Models must produce answers in \\boxed{x} format. The PRM800K grader parsing logic is used for evaluation, which is more robust toward differing formats and mathematical formulations than the original MATH paper's parser. All models evaluated with temperature 0.",
-    "metric": "accuracy (exact match on \\boxed{} answer)"
-}

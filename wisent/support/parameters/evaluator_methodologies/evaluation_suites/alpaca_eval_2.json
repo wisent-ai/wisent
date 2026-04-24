@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "alpaca_eval_2",
-    "class": "AlpacaEvalExtractor",
-    "evaluator_name": "generation",
-    "paper_title": "Length-Controlled AlpacaEval: A Simple Way to Debias Automatic Evaluators",
-    "paper_url": "https://arxiv.org/abs/2404.04475",
-    "evaluation_method": "LLM-as-a-judge pairwise comparison. Model responses to 805 instruction-following tasks are compared against a baseline model's responses (GPT-4 Turbo for AlpacaEval 2.0) by a GPT-4 Turbo auto-annotator. The annotator outputs a single token preference, and logprobs are used to compute a continuous preference score. A generalized linear model is then fit to predict preferences while controlling for length difference, yielding length-controlled win rates.",
-    "metric": "length-controlled win rate (LC win rate)"
-}

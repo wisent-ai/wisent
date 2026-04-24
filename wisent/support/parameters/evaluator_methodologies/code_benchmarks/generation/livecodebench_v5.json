@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "livecodebench_v5",
-    "class": "LiveCodeBenchV6Extractor",
-    "evaluator_name": "code_generation",
-    "paper_title": "LiveCodeBench: Holistic and Contamination Free Evaluation of Large Language Models for Code",
-    "paper_url": "https://arxiv.org/abs/2403.07974",
-    "evaluation_method": "Test case execution. Models generate code, executed against hidden test cases (avg 59 per problem). 10 candidate solutions generated, fraction passing all test cases computed.",
-    "metric": "pass@1"
-}

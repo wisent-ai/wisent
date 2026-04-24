@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "apps",
-    "class": "AppsExtractor",
-    "evaluator_name": "coding",
-    "paper_title": "Measuring Coding Challenge Competence With APPS",
-    "paper_url": "https://arxiv.org/abs/2105.09938",
-    "evaluation_method": "Test case execution. Generated Python code is executed against a bank of over 130,000 test cases. Strict accuracy requires passing ALL test cases for a problem. The paper also tracks test case average (fraction of test cases passed per problem). Problems span three difficulty levels: Introductory, Interview, and Competition. BLEU was shown to be inversely correlated with functional correctness, so test pass rate is the primary metric.",
-    "metric": "strict accuracy (pass all test cases) and test case average"
-}

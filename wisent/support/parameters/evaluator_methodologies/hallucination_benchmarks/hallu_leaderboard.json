@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "hallu_leaderboard",
-    "class": "HallucinationsLeaderboardExtractor",
-    "evaluator_name": "hallucination_detection",
-    "paper_title": "The Hallucinations Leaderboard -- An Open Effort to Measure Hallucinations in Large Language Models",
-    "paper_url": "https://arxiv.org/abs/2404.05904",
-    "evaluation_method": "Meta-benchmark using EleutherAI lm-evaluation-harness. Factuality score = avg of NQ(EM), TriviaQA(EM), PopQA(EM), TruthfulQA(MC2 acc), FEVER(acc), True-False(acc). Faithfulness score = avg of XSum(ROUGE-L), CNN/DailyMail(ROUGE-L), RACE(acc), SQuAD2.0(EM), NQ-Swap(EM), MemoTrap(acc), IFEval(acc), FaithDial(acc), HaluEval(acc). Mixed evaluation methods across sub-tasks.",
-    "metric": "Averaged sub-task metrics (heterogeneous)"
-}

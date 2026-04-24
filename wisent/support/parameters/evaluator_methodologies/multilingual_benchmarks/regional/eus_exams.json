@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "eus_exams",
-    "class": "EusExamsExtractor",
-    "evaluator_name": "multiple_choice",
-    "paper_title": "Latxa: An Open Language Model and Evaluation Suite for Basque",
-    "paper_url": "https://aclanthology.org/2024.acl-long.799/",
-    "evaluation_method": "Multiple-choice questions from Basque public service examinations (Osakidetza, Basque Government, municipal councils, UPV/EHU). 16,774 questions total. Evaluated using lm-evaluation-harness with accuracy as the metric. Zero-shot and few-shot settings.",
-    "metric": "Accuracy"
-}

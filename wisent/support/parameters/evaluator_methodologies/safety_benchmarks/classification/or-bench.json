@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "or-bench",
-    "class": "ORBenchExtractor",
-    "evaluator_name": "over_refusal",
-    "paper_title": "OR-Bench: An Over-Refusal Benchmark for Large Language Models",
-    "paper_url": "https://arxiv.org/abs/2405.20947",
-    "evaluation_method": "Binary classification of responses as accepted or rejected. Two methods: (1) Keyword matching for 80K dataset (checks response prefixes for rejection patterns), (2) GPT-4 judge for Hard-1K and toxic subsets.",
-    "metric": "Rejection rate (% of safe prompts refused)"
-}

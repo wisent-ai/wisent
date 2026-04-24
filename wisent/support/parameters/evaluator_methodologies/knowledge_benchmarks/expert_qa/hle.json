@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "hle",
-    "class": "HleExtractor",
-    "evaluator_name": "exact_match",
-    "paper_title": "Humanity's Last Exam",
-    "paper_url": "https://arxiv.org/abs/2501.14249",
-    "evaluation_method": "Exact match with normalization and LLM judge verification. HLE contains expert-level questions in two formats: ~80% short-answer exact-match and ~20% multiple-choice (5+ options). For short-answer questions, the model's extracted final answer undergoes string matching, numeric normalization (fractions to decimals), and format normalization. An automated GPT-4o judge then evaluates response correctness against the provided answers. No partial credit - a single mistake yields zero. Models are also scored on calibration (whether they know what they know). A held-out private set prevents benchmark hacking.",
-    "metric": "accuracy (exact match with normalization, pass@1)"
-}

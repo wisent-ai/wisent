@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "hle_exact_match",
-    "class": "HleExtractor",
-    "evaluator_name": "exact_match",
-    "paper_title": "Humanity's Last Exam",
-    "paper_url": "https://arxiv.org/abs/2501.14249",
-    "evaluation_method": "Exact match with normalization and LLM judge verification. This is the short-answer subset (~80% of HLE). The model's extracted final answer undergoes string matching, numeric normalization (fractions to decimals), and format normalization. An automated GPT-4o judge evaluates response correctness. No partial credit. Models are scored on accuracy and calibration.",
-    "metric": "accuracy (exact match with normalization, pass@1)"
-}

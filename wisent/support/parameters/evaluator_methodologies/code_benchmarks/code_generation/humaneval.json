@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "humaneval",
-    "class": "HumanEvalExtractor",
-    "evaluator_name": "coding",
-    "paper_title": "Evaluating Large Language Models Trained on Code",
-    "paper_url": "https://arxiv.org/abs/2107.03374",
-    "evaluation_method": "Functional correctness via unit test execution (pass@k). The HumanEval dataset comprises 164 original Python programming problems with an average of 7.7 unit tests each. Generated code is executed against the unit test suite. To evaluate pass@k, n >= k samples are generated per task (n=200, k<=100), the number of correct samples c that pass all unit tests is counted, and pass@k is computed as the unbiased estimator: 1 - C(n-c,k)/C(n,k). The standard reporting metric is pass@1.",
-    "metric": "pass@k (primarily pass@1)"
-}

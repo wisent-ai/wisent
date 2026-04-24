@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "flan_held_in",
-    "class": "FlanHeldInExtractor",
-    "evaluator_name": "log_likelihoods",
-    "paper_title": "Finetuned Language Models Are Zero-Shot Learners",
-    "paper_url": "https://arxiv.org/abs/2109.01652",
-    "evaluation_method": "Evaluation of FLAN (Finetuned LAnguage Net) on held-in tasks, i.e., tasks included in the instruction tuning mixture. Tests how well the model performs on tasks it was explicitly trained on during instruction tuning. Tasks are formatted with natural language instruction templates. For multiple-choice tasks, the model evaluates candidate completions via log-likelihood and selects the highest-scoring option. Accuracy is reported as the primary metric, with median performance across multiple prompt templates and interquartile range to measure prompt sensitivity.",
-    "metric": "accuracy"
-}

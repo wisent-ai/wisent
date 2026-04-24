@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "sciq",
-    "class": "SciQExtractor",
-    "evaluator_name": "log_likelihoods",
-    "paper_title": "Crowdsourcing Multiple Choice Science Questions",
-    "paper_url": "https://arxiv.org/abs/1707.06209",
-    "evaluation_method": "SciQ is a dataset of 13,679 crowdsourced multiple-choice science exam questions (Physics, Chemistry, Biology) with 4 answer options each. For the majority of questions, a supporting evidence paragraph is provided. The original paper evaluates models by accuracy on the multiple-choice questions. In lm-eval-harness, the model is presented with each question and its 4 answer choices. The log-likelihood of each answer choice conditioned on the question (and optionally the support paragraph) is computed, and the choice with highest log-likelihood is selected. Accuracy is the proportion of correctly selected answers.",
-    "metric": "accuracy"
-}

@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "openllm",
-    "class": "OpenllmExtractor",
-    "evaluator_name": "log_likelihoods",
-    "paper_title": "Open LLM Leaderboard (v1 and v2) by Hugging Face",
-    "paper_url": "https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard",
-    "evaluation_method": "The Open LLM Leaderboard is a meta-benchmark aggregating scores from multiple constituent benchmarks. V1 used: ARC (25-shot), HellaSwag (10-shot), MMLU (5-shot), TruthfulQA (0-shot), Winogrande (5-shot), GSM8K (5-shot). V2 uses: IFEval, BBH (3-shot), MATH Lvl 5 (4-shot), GPQA (0-shot), MuSR (0-shot), MMLU-PRO (5-shot). All evaluations run via the EleutherAI LM Evaluation Harness on standardized GPU clusters. Constituent benchmarks use a mix of log-likelihood-based scoring (normalized and unnormalized) and generative evaluation with exact match.",
-    "metric": "Aggregate normalized accuracy across constituent benchmarks"
-}

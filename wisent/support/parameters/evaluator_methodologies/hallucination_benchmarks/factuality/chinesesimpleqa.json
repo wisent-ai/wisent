@@ -1,8 +1,0 @@
-{
-    "class": "ChineseSimpleQAExtractor",
-    "evaluator_name": "factuality",
-    "paper_title": "Chinese SimpleQA: A Chinese Factuality Evaluation for Large Language Models",
-    "paper_url": "https://arxiv.org/abs/2411.07140",
-    "evaluation_method": "LLM-as-judge (GPT-4o recommended). Grades each response into 3 categories: Correct (CO), Not Attempted (NA), Incorrect (IN). Derived metrics: Correct Given Attempted (CGA) = CO/(CO+IN), F-score = harmonic mean of CO and CGA.",
-    "metric": "CO rate, CGA, F-score"
-}

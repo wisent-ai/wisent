@@ -1,8 +1,0 @@
-{
-    "class": "AgentBenchExtractor",
-    "evaluator_name": "agent_task",
-    "paper_title": "AgentBench: Evaluating LLMs as Agents",
-    "paper_url": "https://arxiv.org/abs/2308.03688",
-    "evaluation_method": "8 environments with different metrics: OS/DB/ALFWorld/HouseHolding=Success Rate (binary), KG=F1, Card Game=Win Rate, Web Shopping=Reward, Web Browsing=Step Success Rate. Overall=weighted average after normalization.",
-    "metric": "Per-environment (mostly Success Rate), overall weighted average"
-}

@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "babilong",
-    "class": "BabilongExtractor",
-    "evaluator_name": "log_likelihoods",
-    "paper_title": "BABILong: Testing the Limits of LLMs with Long Context Reasoning-in-a-Haystack",
-    "paper_url": "https://arxiv.org/abs/2406.10149",
-    "evaluation_method": "BABILong extends the original bAbI benchmark (20 reasoning tasks including fact chaining, induction, deduction, counting, and set handling) by embedding the relevant facts within long natural-language documents from PG19 books corpus at varying context lengths (0k to 10M+ tokens). Models must extract the relevant facts from the long context and answer questions. Evaluation uses exact match accuracy: the model's generated answer must exactly match the gold answer. Results are reported as average accuracy over QA1-QA5 (or all QA1-QA20) tasks at each context length. The paper defines >85% accuracy as satisfactory and <30% as failure.",
-    "metric": "accuracy (exact match)"
-}

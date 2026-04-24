@@ -1,8 +1,0 @@
-{
-    "class": "TravelPlannerExtractor",
-    "evaluator_name": "planning_constraint_satisfaction",
-    "paper_title": "TravelPlanner: A Benchmark for Real-World Planning with Language Agents",
-    "paper_url": "https://arxiv.org/abs/2402.01622",
-    "evaluation_method": "Programmatic constraint checking via evaluation scripts. Four metrics: Delivery Rate, Commonsense Constraint Pass Rate (8 dimensions), Hard Constraint Pass Rate, Final Pass Rate (all constraints met). Binary pass/fail per constraint.",
-    "metric": "Final Pass Rate (all constraints satisfied)"
-}

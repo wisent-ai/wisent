@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "wmt16_en_de",
-    "class": "WMT16Extractor",
-    "evaluator_name": "generation",
-    "paper_title": "Language Models are Few-Shot Learners",
-    "paper_url": "https://arxiv.org/abs/2005.14165",
-    "evaluation_method": "Machine translation evaluation on WMT'16 datasets for German-English, English-German, English-Romanian, and Romanian-English pairs from the First Conference on Machine Translation (WMT) 2016. Models generate translations of source-language sentences into the target language. Evaluation uses BLEU score computed with multi-bleu.perl using XLM's tokenization, as specified in the GPT-3 paper. The WMT16 Metrics Shared Task also evaluated 16 additional metrics from 9 research groups using system-level and segment-level correlation with human judgments.",
-    "metric": "BLEU"
-}

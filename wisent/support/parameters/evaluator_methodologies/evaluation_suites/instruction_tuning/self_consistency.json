@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "self_consistency",
-    "class": "SelfConsistencyExtractor",
-    "evaluator_name": "log_likelihoods",
-    "paper_title": "Self-Consistency Improves Chain of Thought Reasoning in Language Models",
-    "paper_url": "https://arxiv.org/abs/2203.11171",
-    "evaluation_method": "Self-consistency decoding strategy for chain-of-thought prompting. Samples N diverse reasoning paths via temperature-based sampling instead of greedy decoding, extracts the final answer from each path, then selects the most consistent answer via majority voting. Evaluated on arithmetic reasoning (GSM8K, SVAMP, AQuA, MATH) and commonsense reasoning (StrategyQA, ARC-challenge) tasks. In lm-evaluation-harness, implemented as filter pipelines (e.g., maj@64, maj@8) where answers are extracted via regex and majority voted. Accuracy is the primary metric.",
-    "metric": "accuracy (via majority voting over sampled reasoning paths)"
-}

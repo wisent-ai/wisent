@@ -1,8 +1,0 @@
-{
-    "class": "LongformWritingExtractor",
-    "evaluator_name": "longform_writing_quality",
-    "paper_title": "LongForm: Effective Instruction Tuning with Reverse Instructions",
-    "paper_url": "https://arxiv.org/abs/2304.08460",
-    "evaluation_method": "Generation quality evaluation across writing tasks (recipe generation, long-form QA, short story generation). METEOR score as primary metric measuring unigram precision/recall with stemming, synonymy, and paraphrase matching. Model generates long-form text from instructions, output compared against reference completions. Dataset: akoksal/LongForm on HuggingFace.",
-    "metric": "METEOR score"
-}

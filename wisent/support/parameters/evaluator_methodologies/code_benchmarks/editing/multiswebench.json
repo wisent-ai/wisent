@@ -1,8 +1,0 @@
-{
-    "class": "MultiSWEBenchExtractor",
-    "evaluator_name": "software_engineering_multilingual",
-    "paper_title": "Multi-SWE-bench: A Multilingual Benchmark for Issue Resolving",
-    "paper_url": "https://arxiv.org/abs/2504.02605",
-    "evaluation_method": "Extends SWE-bench to 7 languages. Same test-based evaluation.",
-    "metric": "Resolved Rate (%)"
-}

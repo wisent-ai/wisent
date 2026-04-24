@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "meddialog_qsumm_perplexity",
-    "class": "MeddialogExtractor",
-    "evaluator_name": "generation",
-    "paper_title": "MedDialog: Large-scale Medical Dialogue Datasets",
-    "paper_url": "https://arxiv.org/abs/2004.03329",
-    "evaluation_method": "MedDialog provides a Chinese dataset (3.4M conversations, 11.3M utterances, 660.2M tokens, 172 disease specialties) and an English dataset (0.26M conversations, 0.51M utterances, 44.53M tokens, 96 specialties). The paper evaluates dialogue generation models (Transformer, GPT, BERT-GPT) using automatic metrics: Perplexity (language model confidence), NIST-4 (weighted n-gram precision), BLEU-2 and BLEU-4 (n-gram overlap), METEOR (alignment-based scoring), Entropy-4 (lexical diversity), and Dist-1/Dist-2 (distinct unigram/bigram ratio for diversity). In lm-eval-harness, the task is split into question entailment and open-ended QA variants, evaluated with perplexity (word_perplexity, byte_perplexity) or generation metrics.",
-    "metric": "Perplexity, BLEU-2, BLEU-4, NIST-4, METEOR, Entropy-4, Dist-1, Dist-2"
-}

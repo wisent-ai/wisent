@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "basque-glue",
-    "class": "BasqueglueExtractor",
-    "evaluator_name": "log_likelihoods",
-    "paper_title": "BasqueGLUE: A Natural Language Understanding Benchmark for Basque",
-    "paper_url": "https://aclanthology.org/2022.lrec-1.172/",
-    "evaluation_method": "Nine-task NLU benchmark for Basque modeled after GLUE and SuperGLUE. Each subtask uses its own metric: BEC2016eu (sentiment) uses micro-average F1, BHTCv2 (topic classification) uses micro-average F1, WiCeu (word sense disambiguation) uses accuracy, VaxxStance (stance detection) uses macro-average F1 of FAVOR and AGAINST classes, QNLIeu (NLI) uses accuracy, EPEC-korref-Bin (coreference) uses accuracy. Results are reported individually per task, not averaged into a composite score.",
-    "metric": "task-dependent (micro-F1, macro-F1, or accuracy per subtask)"
-}

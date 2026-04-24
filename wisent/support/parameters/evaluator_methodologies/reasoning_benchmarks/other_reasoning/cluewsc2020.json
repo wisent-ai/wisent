@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "cluewsc2020",
-    "class": "CLUEWSCExtractor",
-    "evaluator_name": "coreference_resolution",
-    "paper_title": "CLUE: A Chinese Language Understanding Evaluation Benchmark",
-    "paper_url": "https://arxiv.org/abs/2004.05986",
-    "evaluation_method": "Binary classification (true/false). Given sentence with pronoun and candidate noun, determine if pronoun refers to noun. In lm-eval-harness-compatible frameworks: output_type=multiple_choice with two choices.",
-    "metric": "Accuracy"
-}
