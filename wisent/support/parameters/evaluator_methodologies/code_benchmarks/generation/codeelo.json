@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "codeelo",
+    "class": "CodeforcesExtractor",
+    "evaluator_name": "code_generation",
+    "paper_title": "CodeElo: Benchmarking Competition-level Code Generation of LLMs with Human-comparable Elo Ratings",
+    "paper_url": "https://arxiv.org/abs/2501.01257",
+    "evaluation_method": "Solutions executed against comprehensive test cases. Correct only if passes ALL test cases.",
+    "metric": "pass@1, pass@8, Elo ratings"
+}

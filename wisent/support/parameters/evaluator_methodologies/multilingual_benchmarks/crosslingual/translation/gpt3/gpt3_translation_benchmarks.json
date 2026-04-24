@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "gpt3_translation_benchmarks",
+    "class": "Gpt3TranslationBenchmarksExtractor",
+    "evaluator_name": "log_likelihoods",
+    "paper_title": "Language Models are Few-Shot Learners",
+    "paper_url": "https://arxiv.org/abs/2005.14165",
+    "evaluation_method": "Translation benchmarks from the GPT-3 paper evaluated via log-likelihood scoring. The GPT-3 paper evaluated translation on WMT'14 Fr-En/En-Fr and WMT'16 De-En/En-De/Ro-En/En-Ro datasets. In the log-likelihood evaluation setting (as opposed to generation-based), the model scores candidate translations by computing their log-probabilities rather than generating translations freely. BLEU scores were computed using multi-bleu.perl with XLM's tokenization for comparison with prior unsupervised NMT work. This evaluator uses log-likelihood ranking rather than free generation.",
+    "metric": "BLEU (via log-likelihood scoring of candidates)"
+}

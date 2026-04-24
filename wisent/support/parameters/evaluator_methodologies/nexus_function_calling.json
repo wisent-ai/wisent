@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "nexus_function_calling",
+    "class": "ToolBenchExtractor",
+    "evaluator_name": "function_calling",
+    "paper_title": "ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs",
+    "paper_url": "https://openreview.net/forum?id=dHng2O0Jjr",
+    "evaluation_method": "LLM-as-judge (ChatGPT, called ToolEval). Pass Rate = ChatGPT judges if solution path succeeds (binary). Win Rate = preference comparison of two solution paths. 87.1% agreement with human annotators.",
+    "metric": "Pass Rate + Win Rate"
+}

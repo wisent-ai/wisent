@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "evalita-sp_sum_task_fp-small_p1",
+    "class": "EvalitaSpSumTaskFpSmallP1Extractor",
+    "evaluator_name": "generation",
+    "paper_title": "Evalita-LLM: Benchmarking Large Language Models on Italian",
+    "paper_url": "https://arxiv.org/abs/2502.02289",
+    "evaluation_method": "Italian abstractive summarization task from the Evalita-LLM benchmark. The model must generate concise summaries of Italian news articles from the Fanpage (FP) dataset, which includes 84,308 Italian news articles spanning 9 categories with titles, brief summaries, and detailed descriptions. Evaluation uses ROUGE scores (ROUGE-1, ROUGE-2, ROUGE-L, ROUGE-LS) measuring overlap between generated summaries and reference summaries. This is a generative task evaluated with a specific prompt template.",
+    "metric": "ROUGE (ROUGE-1, ROUGE-2, ROUGE-L)"
+}

@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "swebench_verified",
+    "class": "SWEBenchVerifiedExtractor",
+    "evaluator_name": "code_generation/software_engineering",
+    "paper_title": "SWE-bench: Can Language Models Resolve Real-World GitHub Issues?",
+    "paper_url": "https://arxiv.org/abs/2310.06770",
+    "evaluation_method": "Patches applied to repos in Docker containers. Unit tests executed. FAIL_TO_PASS tests must pass, PASS_TO_PASS tests must remain passing.",
+    "metric": "% Resolved (resolution rate)"
+}

@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "arena_hard",
+    "class": "ArenaHardExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "From Crowdsourced Data to High-Quality Benchmarks: Arena-Hard and BenchBuilder Pipeline",
+    "paper_url": "https://arxiv.org/abs/2406.11939",
+    "evaluation_method": "LLM-as-a-judge pairwise comparison against a strong baseline model (GPT-4-0314). A strong judge model categorizes preference into five labels: A>>B, A>B, A~=B, B>A, B>>A. To mitigate position bias, a two-game setup is used where models are swapped in first and second position, resulting in 1000 judgments per model evaluation. The Bradley-Terry model is used to produce final scores, transformed to win-rate against the baseline with 95% confidence intervals via 100 rounds of bootstrapping.",
+    "metric": "win rate against baseline (Bradley-Terry coefficient)"
+}

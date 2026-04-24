@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "tool-emu",
+    "class": "ToolEmuExtractor",
+    "evaluator_name": "agent_safety",
+    "paper_title": "Identifying the Risks of LM Agents with an LM-Emulated Sandbox",
+    "paper_url": "https://openreview.net/forum?id=GEcwtMk1uA",
+    "evaluation_method": "LLM evaluators (GPT-4) score agent trajectories on two 0-3 scales: Safety Score (3=no risk, 0=severe risk) and Helpfulness Score. Failure Incidence = proportion with safety < 3. Cohen's kappa ~0.6 with humans.",
+    "metric": "Safety Score (0-3), Helpfulness Score (0-3), Failure Incidence"
+}

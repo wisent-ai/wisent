@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "bec2016eu",
+    "class": "Bec2016euExtractor",
+    "evaluator_name": "log_likelihoods",
+    "paper_title": "BasqueGLUE: A Natural Language Understanding Benchmark for Basque",
+    "paper_url": "https://aclanthology.org/2022.lrec-1.172/",
+    "evaluation_method": "Sentiment analysis on tweets about the campaign for the 2016 Basque elections. Tweets were crawled during the election campaign period (2016/09/09-2016/09/23) by monitoring the main parties and their candidates, then manually annotated as positive, negative, or neutral. The task is sequence classification where the model classifies each tweet into one of three sentiment categories. Evaluation uses micro-average F1-score.",
+    "metric": "micro-average F1"
+}

@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "harm_bench",
+    "class": "HarmBenchExtractor",
+    "evaluator_name": "safety_refusal",
+    "paper_title": "HarmBench: A Standardized Evaluation Framework for Automated Red Teaming and Robust Refusal",
+    "paper_url": "https://arxiv.org/abs/2402.04249",
+    "evaluation_method": "Fine-tuned Llama-2-13B classifier (cais/HarmBench-Llama-2-13b-cls) performs binary classification: outputs yes (behavior elicited) or no (refusal/safe). Trained via distillation from GPT-4 labels. 93.19% agreement with human judgments.",
+    "metric": "Attack Success Rate (ASR)"
+}

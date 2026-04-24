@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "browse_comp",
+    "class": "BrowseCompExtractor",
+    "evaluator_name": "web_browsing_accuracy",
+    "paper_title": "BrowseComp: A Simple Yet Challenging Benchmark for Browsing Agents",
+    "paper_url": "https://cdn.openai.com/pdf/5e10f4ab-d6f7-442e-9508-59515c65e35d/browsecomp.pdf",
+    "evaluation_method": "LLM-as-judge (GPT-4.1 or Qwen3-32B) makes binary CORRECT/INCORRECT determination comparing model answer against ground-truth.",
+    "metric": "Accuracy (% correct out of 1,266 problems)"
+}

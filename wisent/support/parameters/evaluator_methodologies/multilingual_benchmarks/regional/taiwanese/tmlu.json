@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "tmlu",
+    "class": "TmluExtractor",
+    "evaluator_name": "log_likelihoods",
+    "paper_title": "Measuring Taiwanese Mandarin Language Understanding",
+    "paper_url": "https://arxiv.org/abs/2403.20180",
+    "evaluation_method": "Multiple-choice question answering with 2,981 questions across 37 subjects spanning social science, STEM, humanities, and Taiwan-specific content. Two evaluation approaches: (1) Likelihood-based method examining candidate answer symbols (A, B, C, D) and selecting the one with highest token probability, used for open-source models; (2) Generation-based method using the first greedily generated token interpretable as an option code, used when probability access is unavailable. Accuracy is the primary metric.",
+    "metric": "accuracy"
+}

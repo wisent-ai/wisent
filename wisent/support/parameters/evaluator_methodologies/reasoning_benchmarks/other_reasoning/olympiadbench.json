@@ -1,0 +1,8 @@
+{
+    "class": "OlympiadBenchExtractor",
+    "evaluator_name": "math_olympiad",
+    "paper_title": "OlympiadBench: A Challenging Benchmark for Promoting AGI with Olympiad-Level Bilingual Multimodal Scientific Problems",
+    "paper_url": "https://arxiv.org/abs/2402.14008",
+    "evaluation_method": "Automated scoring pipeline with five answer types: Numeric (floating-point comparison with tolerance), Expressions (SymPy verification), Equations (term rearrangement + division check), Intervals and Tuples (element-by-element). Mathematical equivalence checking, not string matching.",
+    "metric": "Micro-average accuracy"
+}

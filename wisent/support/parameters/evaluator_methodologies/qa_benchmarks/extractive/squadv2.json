@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "squadv2",
+    "class": "SQuADv2Extractor",
+    "evaluator_name": "extractive_qa",
+    "paper_title": "Know What You Don't Know: Unanswerable Questions for SQuAD",
+    "paper_url": "https://arxiv.org/abs/1806.03822",
+    "evaluation_method": "SQuAD 2.0 combines the 100,000 answerable questions from SQuAD 1.1 with over 50,000 unanswerable questions written adversarially by crowdworkers to look similar to answerable ones. Systems must either extract the correct answer span from the passage or determine that no answer is supported and abstain. Evaluation uses two metrics: Exact Match (EM) measures the percentage of predictions that match any one of the ground truth answers exactly (after normalization: lowercasing, removing articles/punctuation/extra whitespace). F1 measures the average token-level overlap between the prediction and ground truth answer, treating both as bags of tokens.",
+    "metric": "Exact Match (EM), F1"
+}

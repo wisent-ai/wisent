@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "oj_bench",
+    "class": "OJBenchExtractor",
+    "evaluator_name": "competitive_programming",
+    "paper_title": "OJBench: A Competition Level Code Benchmark For Large Language Models",
+    "paper_url": "https://arxiv.org/abs/2506.16395",
+    "evaluation_method": "232 NOI/ICPC problems. Solutions must pass ALL test cases from competition organizers.",
+    "metric": "Pass@n (pass@1, pass@8)"
+}

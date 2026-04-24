@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "stsb",
+    "class": "StsbExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "SemEval-2017 Task 1: Semantic Textual Similarity - Multilingual and Cross-lingual Focused Evaluation",
+    "paper_url": "https://arxiv.org/abs/1708.00055",
+    "evaluation_method": "Semantic Textual Similarity Benchmark (STS-B) from the GLUE benchmark suite, originally assembled from SemEval STS tasks. Contains 8,628 training, 1,500 development, and 1,379 test English sentence pairs sourced from captions, news, and forums. Each pair is annotated by human raters with real-valued similarity scores from 0 (no semantic overlap) to 5 (complete equivalence). Models predict a similarity score for each pair, and evaluation measures Pearson correlation between predicted and gold scores.",
+    "metric": "Pearson correlation"
+}

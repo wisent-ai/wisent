@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "faith-bench",
+    "class": "FaithBenchExtractor",
+    "evaluator_name": "hallucination_detection",
+    "paper_title": "FaithBench: A Diverse Hallucination Benchmark for Summarization by Modern LLMs",
+    "paper_url": "https://arxiv.org/abs/2410.13210",
+    "evaluation_method": "Human annotators classify hallucinated spans into 4 categories: Consistent, Benign, Questionable, Unwanted (intrinsic/extrinsic). Worst-pooled scoring (sample gets worst label). Evaluates hallucination detectors.",
+    "metric": "Balanced Accuracy, F1-Macro across categories"
+}

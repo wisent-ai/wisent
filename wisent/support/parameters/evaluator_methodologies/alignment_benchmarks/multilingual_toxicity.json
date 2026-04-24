@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "multilingual_toxicity",
+    "class": "PolygloToxicityExtractor",
+    "evaluator_name": "multilingual_toxicity",
+    "paper_title": "PolygloToxicityPrompts: Multilingual Evaluation of Neural Toxic Degeneration in Large Language Models",
+    "paper_url": "https://arxiv.org/abs/2405.09373",
+    "evaluation_method": "K=10 completions sampled per prompt. Each completion scored by Perspective API toxicity classifier. Three metrics: Expected Maximum Toxicity (EMT), Average Toxicity (AT), Empirical Probability (EP, probability at least one completion >= 0.5 toxicity).",
+    "metric": "EMT, Average Toxicity, Empirical Probability"
+}

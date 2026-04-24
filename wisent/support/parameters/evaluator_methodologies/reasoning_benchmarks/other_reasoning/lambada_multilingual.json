@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "lambada_multilingual",
+    "class": "LambadaMultilingualExtractor",
+    "evaluator_name": "word_prediction",
+    "paper_title": "The LAMBADA dataset: Word prediction requiring a broad discourse context",
+    "paper_url": "https://arxiv.org/abs/1606.06031",
+    "evaluation_method": "In lm-eval-harness: output_type=loglikelihood. Context = all words except last, target = last word. Accuracy = whether model assigns highest probability to exact correct final word.",
+    "metric": "Perplexity and Accuracy"
+}

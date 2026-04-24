@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "concode",
+    "class": "ConcodeExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "Mapping Language to Code in Programmatic Context",
+    "paper_url": "https://arxiv.org/abs/1808.09588",
+    "evaluation_method": "Given natural language description and class environment (member variables, member functions), generate Java class member function code. Evaluated by computing exact match (EM) rate where prediction must exactly match the reference, and smoothed BLEU-4 score measuring n-gram overlap between generated code and reference code.",
+    "metric": "Exact Match (EM), BLEU-4"
+}

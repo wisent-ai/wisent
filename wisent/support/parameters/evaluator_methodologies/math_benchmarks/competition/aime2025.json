@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "aime2025",
+    "class": "AIME2025Extractor",
+    "evaluator_name": "aime",
+    "paper_title": "MathArena: Evaluating LLMs on Uncontaminated Math Competitions",
+    "paper_url": "https://arxiv.org/abs/2505.23281",
+    "evaluation_method": "Exact integer match. AIME 2025 consists of 30 problems (AIME I + AIME II) with integer answers in range 0-999. A model-based answer extractor extracts the model's final answer, which is then compared for exact match against the answer key. No partial credit. Each model is evaluated four times per problem, with accuracy computed using the pass@1 metric.",
+    "metric": "accuracy (exact integer match, pass@1)"
+}

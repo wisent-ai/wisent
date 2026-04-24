@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "drop",
+    "class": "DROPExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "DROP: A Reading Comprehension Benchmark Requiring Discrete Reasoning Over Paragraphs",
+    "paper_url": "https://arxiv.org/abs/1903.00161",
+    "evaluation_method": "DROP is a 55k-question reading comprehension benchmark requiring discrete reasoning (addition, counting, sorting) over paragraphs. The official evaluation uses two custom metrics: (1) Exact Match (EM) measures the percentage of predictions that exactly match the gold answer after normalization. (2) F1 measures the token-level overlap between prediction and gold answer using bag-of-words. For number answers, EM requires exact numeric match. For date answers, EM requires all date components to match. For span answers, standard string EM and token-level F1 are used. The final score is the max over all gold answers for each question.",
+    "metric": "F1, Exact Match (EM)"
+}

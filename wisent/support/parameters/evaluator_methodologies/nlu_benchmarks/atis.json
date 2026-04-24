@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "atis",
+    "class": "AtisExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "The ATIS Spoken Language Systems Pilot Corpus",
+    "paper_url": "https://aclanthology.org/H90-1021/",
+    "evaluation_method": "The ATIS (Airline Travel Information Systems) corpus was created by Hemphill, Godfrey and Doddington (1990) from transcribed audio recordings of interactions between human users and a flight scheduling system. The dataset has 26 intent categories and 83 slot types. Two primary tasks are evaluated: (1) Intent Detection (ID): classification accuracy measuring the proportion of utterances whose intent is correctly predicted. (2) Slot Filling (SF): F1 score computed using the CoNLL evaluation script, where a slot is correct only if both its range and type match the gold label exactly.",
+    "metric": "accuracy (intent detection), F1 (slot filling)"
+}

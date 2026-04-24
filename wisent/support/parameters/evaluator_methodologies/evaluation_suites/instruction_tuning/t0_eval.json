@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "t0_eval",
+    "class": "T0EvalExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "Multitask Prompted Training Enables Zero-Shot Task Generalization",
+    "paper_url": "https://arxiv.org/abs/2110.08207",
+    "evaluation_method": "Zero-shot task generalization evaluation for T0, a model trained on a multitask mixture of prompted datasets. Held-out evaluation tasks include natural language inference, coreference resolution, sentence completion, and word sense disambiguation, plus BIG-bench tasks. For each dataset, median performance across prompts (up to 15) is reported along with interquartile range to measure prompt sensitivity. T0 uses a seq2seq (encoder-decoder) architecture, so evaluation is done by generating text and comparing to expected outputs. Accuracy is the primary metric.",
+    "metric": "accuracy (median across prompts)"
+}

@@ -1,0 +1,8 @@
+{
+    "class": "PlanBenchExtractor",
+    "evaluator_name": "planning_reasoning",
+    "paper_title": "PlanBench: An Extensible Benchmark for Evaluating Large Language Models on Planning and Reasoning about Change",
+    "paper_url": "https://arxiv.org/abs/2206.10498",
+    "evaluation_method": "Plan generation: plans validated using VAL plan validator. Plan verification: exact match of yes/no answers. Plans translated to PDDL and mechanically validated.",
+    "metric": "Accuracy % (valid plans)"
+}

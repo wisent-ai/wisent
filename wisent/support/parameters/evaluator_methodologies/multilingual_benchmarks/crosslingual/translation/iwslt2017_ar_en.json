@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "iwslt2017_ar_en",
+    "class": "Iwslt2017ArEnExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "The IWSLT 2017 Evaluation Campaign",
+    "paper_url": "https://sites.google.com/site/iwsltevaluation2017/TED-tasks",
+    "evaluation_method": "Machine translation evaluation from the International Workshop on Spoken Language Translation (IWSLT) 2017, covering Arabic-English and English-Arabic language pairs as an unofficial bilingual text translation task. Models generate translations between Arabic and English. Evaluation uses case-sensitive BLEU and NIST scores computed with mteval-v13a.pl, and case-sensitive TER computed with tercom.7.25.jar. Arabic text is normalized before scoring using the QCRI Arabic Normalizer 3.0. Also applies to Iwslt2017EnArExtractor.",
+    "metric": "BLEU, NIST, TER"
+}

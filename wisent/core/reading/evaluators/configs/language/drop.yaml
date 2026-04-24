@@ -1,0 +1,32 @@
+# DROP - Reading comprehension with discrete reasoning
+task_name: drop
+description: Discrete Reasoning Over Paragraphs - reading comprehension requiring calculation
+
+evaluation:
+  type: generate_until
+  method: text_generation
+  output_type: generate_until
+
+metrics:
+  primary: em
+  all:
+    - em    # Exact match
+    - f1    # F1 score (token overlap)
+
+aggregation: mean
+
+task_config:
+  answer_format: text
+  passage_field: passage
+  question_field: question
+  answers_field: answers_spans
+
+generation_config:
+  max_new_tokens: 64
+  temperature: 0.0
+
+notes: |
+  - Uses text generation (not loglikelihood)
+  - 9,536 validation examples
+  - Requires reading + arithmetic reasoning
+  - Both exact match and F1 reported

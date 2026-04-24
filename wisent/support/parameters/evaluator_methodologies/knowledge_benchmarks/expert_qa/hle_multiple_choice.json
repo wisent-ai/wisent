@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "hle_multiple_choice",
+    "class": "HleExtractor",
+    "evaluator_name": "multiple_choice",
+    "paper_title": "Humanity's Last Exam",
+    "paper_url": "https://arxiv.org/abs/2501.14249",
+    "evaluation_method": "Multiple-choice accuracy. This is the multiple-choice subset (~20% of HLE) with 5 or more answer options per question. The model selects one of the provided answer choices. Accuracy is computed as the fraction of correctly answered questions. An automated GPT-4o judge verifies responses. Models are also scored on calibration.",
+    "metric": "accuracy (multiple-choice, pass@1)"
+}

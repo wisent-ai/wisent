@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "ethos_binary",
+    "class": "EthosExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "ETHOS: a multi-label hate speech detection dataset",
+    "paper_url": "https://arxiv.org/abs/2006.08328",
+    "evaluation_method": "Binary hate speech classification on the ETHOS dataset containing 998 comments from YouTube and Reddit (565 non-hate-speech, 433 hate-speech), validated via Figure-Eight crowdsourcing. The binary variant classifies comments as containing hate speech (1) or not (0). In lm-evaluation-harness, this is implemented as a generative task where the model generates a classification label. The generated output is compared against the gold label. The paper reports balanced accuracy and weighted F1 as primary metrics, alongside per-class F1 scores.",
+    "metric": "F1-score, accuracy"
+}

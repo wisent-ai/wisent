@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "wikitext103",
+    "class": "Wikitext103Extractor",
+    "evaluator_name": "perplexity",
+    "paper_title": "Pointer Sentinel Mixture Models",
+    "paper_url": "https://arxiv.org/abs/1609.07843",
+    "evaluation_method": "Language modeling evaluation on WikiText-103, a dataset of over 103 million tokens extracted from verified Good and Featured Wikipedia articles. Unlike Penn Treebank, WikiText-103 retains original casing, numbers, and punctuation, with a vocabulary of 267,735 tokens. The dataset preserves full articles enabling evaluation of long-term dependency modeling. Evaluation uses perplexity computed via rolling log-likelihoods on the test set. In lm-evaluation-harness, word_perplexity, byte_perplexity, and bits_per_byte are reported.",
+    "metric": "perplexity (word_perplexity, byte_perplexity, bits_per_byte)"
+}

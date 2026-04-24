@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "tau-bench",
+    "class": "TauBenchExtractor",
+    "evaluator_name": "agent_task_completion",
+    "paper_title": "tau-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains",
+    "paper_url": "https://arxiv.org/abs/2406.12045",
+    "evaluation_method": "Stateful database comparison. Compares database state after task completion with expected outcome. Uses pass^k metric measuring binary task success across k repeated trials.",
+    "metric": "pass^k (binary success across k trials)"
+}

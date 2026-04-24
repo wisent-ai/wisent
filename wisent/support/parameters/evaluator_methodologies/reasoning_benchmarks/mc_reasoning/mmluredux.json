@@ -1,0 +1,8 @@
+{
+    "class": "MMLUReduxExtractor",
+    "evaluator_name": "multiple_choice",
+    "paper_title": "Are We Done with MMLU?",
+    "paper_url": "https://arxiv.org/abs/2406.04127",
+    "evaluation_method": "Same as standard MMLU: multiple-choice accuracy via log-likelihood comparison. In lm-eval-harness: output_type=multiple_choice, model computes log-probabilities for each answer choice (A/B/C/D), highest selected.",
+    "metric": "Accuracy (acc, acc_norm)"
+}

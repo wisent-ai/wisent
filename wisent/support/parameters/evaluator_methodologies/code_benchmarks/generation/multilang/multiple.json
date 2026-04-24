@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "multiple",
+    "class": "MultipleExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "MultiPL-E: A Scalable and Polyglot Approach to Benchmarking Neural Code Generation",
+    "paper_url": "https://arxiv.org/abs/2208.08227",
+    "evaluation_method": "Same methodology as MultiPL-E. Translates unit-test-driven Python benchmarks (HumanEval and MBPP) to 18 other programming languages. Generated code samples are executed against predefined unit tests. The unbiased pass@k estimator is used to measure functional correctness: pass@k = 1 - C(n-c, k) / C(n, k) where n is total samples and c is number passing. Primary reported metric is pass@1.",
+    "metric": "pass@k (primarily pass@1)"
+}

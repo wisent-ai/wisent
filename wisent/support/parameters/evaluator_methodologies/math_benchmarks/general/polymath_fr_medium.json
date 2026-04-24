@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "polymath_fr_medium",
+    "class": "PolyMathFRMediumExtractor",
+    "evaluator_name": "polymath",
+    "paper_title": "PolyMath: Evaluating Mathematical Reasoning in Multilingual Contexts",
+    "paper_url": "https://arxiv.org/abs/2504.18428",
+    "evaluation_method": "Multilingual mathematical reasoning benchmark from Qwen, covering 18 languages and 4 difficulty levels (low, medium, high, top) with 9,000 high-quality problem samples. Models generate solutions to math problems. At each difficulty level, accuracy (ACC) is computed for every model-language pair using pass@1 metric. The overall PolyMath benchmark score uses Difficulty-Weighted Accuracy (DW-ACC) which weights accuracy across the four difficulty levels. Evaluation checks if the model's final answer matches the ground truth after normalization. All 65+ variants correspond to language/difficulty combinations (e.g., polymath_en_high, polymath_zh_top).",
+    "metric": "accuracy (pass@1) and Difficulty-Weighted Accuracy (DW-ACC)"
+}

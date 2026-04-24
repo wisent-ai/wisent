@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "frames_benchmark",
+    "class": "FRAMESExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "Fact, Fetch, and Reason: A Unified Evaluation of Retrieval-Augmented Generation",
+    "paper_url": "https://arxiv.org/abs/2409.12941",
+    "evaluation_method": "LLM-as-judge accuracy evaluation. FRAMES contains 824 challenging multi-hop questions requiring integration of information from 2-15 Wikipedia articles. Since gold answers are free-form text (not multiple choice), an LLM judge evaluates whether the model's output matches the gold answer. The auto-rating mechanism was validated against human evaluations, achieving accuracy of 0.96 and Cohen's Kappa of 0.889 using Gemini-Pro-1.5-0514 as the autorating LLM.",
+    "metric": "accuracy (LLM-judged correctness)"
+}

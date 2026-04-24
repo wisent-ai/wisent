@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "livecodebench",
+    "class": "LivecodebenchExtractor",
+    "evaluator_name": "coding",
+    "paper_title": "LiveCodeBench: Holistic and Contamination Free Evaluation of Large Language Models for Code",
+    "paper_url": "https://arxiv.org/abs/2403.07974",
+    "evaluation_method": "Test case execution with contamination-free design. LiveCodeBench continuously collects new competitive programming problems from LeetCode, AtCoder, and CodeForces, annotated with release dates to allow evaluating models only on problems released after their training cutoff. Models generate code solutions that are executed against hidden test cases. The benchmark evaluates four scenarios: code generation, self-repair, test output prediction, and code execution. Pass@1 and pass@5 metrics are computed.",
+    "metric": "pass@1, pass@5"
+}

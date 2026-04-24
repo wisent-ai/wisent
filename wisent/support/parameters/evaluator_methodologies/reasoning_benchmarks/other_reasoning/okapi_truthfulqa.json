@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "okapi_truthfulqa",
+    "class": "OkapiTruthfulQAExtractor",
+    "evaluator_name": "truthfulness",
+    "paper_title": "Based on TruthfulQA (Lin et al. 2022), multilingual via Okapi project",
+    "paper_url": "https://aclanthology.org/2022.acl-long.229/",
+    "evaluation_method": "Two MC variants, both output_type=multiple_choice in lm-eval-harness. MC1 (single-true): standard log-likelihood comparison. MC2 (multi-true): normalized total probability assigned to set of true answers.",
+    "metric": "Accuracy (MC1), normalized probability (MC2)"
+}

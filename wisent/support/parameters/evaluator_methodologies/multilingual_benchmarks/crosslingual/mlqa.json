@@ -1,0 +1,8 @@
+{
+    "class": "MLQAExtractor",
+    "evaluator_name": "extractive_qa",
+    "paper_title": "MLQA: Evaluating Cross-lingual Extractive Question Answering",
+    "paper_url": "https://aclanthology.org/2020.acl-main.653/",
+    "evaluation_method": "Extractive QA following SQuAD format. Model must extract answer span from context passage. Evaluated using standard SQuAD metrics: F1 (token overlap between predicted and gold answer) and Exact Match (binary, predicted answer matches gold exactly). Cross-lingual evaluation across 7 languages (English, Arabic, German, Spanish, Hindi, Vietnamese, Chinese).",
+    "metric": "F1, Exact Match (EM)"
+}

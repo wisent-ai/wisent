@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "chain_of_thought",
+    "class": "MATH500Extractor",
+    "evaluator_name": "math",
+    "paper_title": "Let's Verify Step by Step",
+    "paper_url": "https://arxiv.org/abs/2305.20050",
+    "evaluation_method": "MATH-500 is a representative 500-problem subset of the MATH dataset (Hendrycks et al., 2021) featuring competition-level mathematics across seven subjects: Prealgebra, Algebra, Number Theory, Counting and Probability, Geometry, Intermediate Algebra, Precalculus. Models generate step-by-step solutions and present final answers in boxed LaTeX format. Evaluation uses the PRM800K dataset grader's parsing logic to extract the final answer from the model's generation and compare it against the ground truth. The chain_of_thought variant uses chain-of-thought prompting to elicit reasoning steps before the final answer. Exact match after answer normalization is the evaluation criterion.",
+    "metric": "accuracy (exact match of final answer after normalization)"
+}

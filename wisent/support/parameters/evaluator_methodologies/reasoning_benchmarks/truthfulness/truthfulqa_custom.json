@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "truthfulqa_custom",
+    "class": "TruthfulQACustomExtractor",
+    "evaluator_name": "truthfulqa_gen",
+    "paper_title": "TruthfulQA: Measuring How Models Mimic Human Falsehoods",
+    "paper_url": "https://arxiv.org/abs/2109.07958",
+    "evaluation_method": "TruthfulQA generation task comprising 817 questions across 38 categories (health, law, finance, politics, etc.) crafted so humans would answer falsely due to misconceptions. The generation evaluation uses multiple methods: (1) GPT-judge: a finetuned GPT-3 model classifying answers as true or false (89.6% accuracy on human baseline); (2) GPT-info: classifying answers as informative or not; (3) BLEURT/ROUGE1 similarity metrics comparing to reference true/false answers. A model answer is truthful if it contains no false statements. The truthfulqa_gen evaluator scores both truthfulness and informativeness, reporting the percentage of answers that are both true and informative.",
+    "metric": "truthful (% true answers), informative (% informative), true + informative combined"
+}

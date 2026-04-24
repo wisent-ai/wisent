@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "humanevalpack",
+    "class": "HumanevalpackExtractor",
+    "evaluator_name": "coding",
+    "paper_title": "OctoPack: Instruction Tuning Code Large Language Models",
+    "paper_url": "https://arxiv.org/abs/2308.07124",
+    "evaluation_method": "Functional correctness via unit test execution (pass@1). HumanEvalPack expands HumanEval to 3 coding tasks (Code Repair, Code Explanation, Code Synthesis) across 6 programming languages (Python, JavaScript, Java, Go, C++, Rust). For each task and language, generated code is executed against unit tests. Scores are aggregated by computing the mean pass@1 across tasks per language.",
+    "metric": "pass@1 (per language, per task)"
+}

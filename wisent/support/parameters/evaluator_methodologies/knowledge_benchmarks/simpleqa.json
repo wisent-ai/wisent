@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "simpleqa",
+    "class": "SimpleQAExtractor",
+    "evaluator_name": "generation",
+    "paper_title": "Measuring Short-Form Factuality in Large Language Models",
+    "paper_url": "https://arxiv.org/abs/2411.04368",
+    "evaluation_method": "LLM-as-judge three-way classification. A prompted ChatGPT classifier sees both the predicted answer and the ground-truth answer, then grades the prediction as 'correct', 'incorrect', or 'not_attempted'. The benchmark contains 4,326 questions adversarially collected against GPT-4 responses, where each question has a single indisputable answer that does not change over time. Ideal model behavior maximizes correct while minimizing incorrect, with proper calibration of when to attempt answers.",
+    "metric": "accuracy (correct / (correct + incorrect + not_attempted))"
+}

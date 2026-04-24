@@ -1,0 +1,8 @@
+{
+    "class": "MercuryExtractor",
+    "evaluator_name": "code_efficiency",
+    "paper_title": "Mercury: A Code Efficiency Benchmark for Code Large Language Models",
+    "paper_url": "https://arxiv.org/abs/2402.07844",
+    "evaluation_method": "Execution-based. Two metrics: Pass@k (functional correctness via test execution) and Beyond@k (runtime-percentile-weighted pass score).",
+    "metric": "Pass@k, Beyond@k"
+}

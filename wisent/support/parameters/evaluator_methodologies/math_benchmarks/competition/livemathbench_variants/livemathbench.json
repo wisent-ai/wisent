@@ -1,0 +1,9 @@
+{
+    "benchmark_name": "livemathbench",
+    "class": "LiveMathBenchExtractor",
+    "evaluator_name": "exact_match",
+    "paper_title": "Are Your LLMs Capable of Stable Reasoning?",
+    "paper_url": "https://arxiv.org/abs/2412.13147",
+    "evaluation_method": "Exact match with G-Pass@k stability metric. LiveMathBench is a dynamic mathematical benchmark comprising challenging problems from competitions including CNMO, CCEE, AMC, and WLPMC. The primary metric is greedy decoding accuracy (exact match on the final mathematical answer). The paper introduces G-Pass@k, a novel metric quantifying both peak performance potential and stability across multiple sampling attempts. Models are evaluated with 48 runs, reporting greedy accuracy and G-Pass@16 at thresholds {0.5, 0.75, 1.0} plus mG-Pass@16.",
+    "metric": "greedy accuracy (exact match), G-Pass@k (stability)"
+}
