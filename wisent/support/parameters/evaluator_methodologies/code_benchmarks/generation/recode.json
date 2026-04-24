@@ -1,8 +1,0 @@
-{
-    "class": "RecodeExtractor",
-    "evaluator_name": "code_generation",
-    "paper_title": "ReCode: Robustness Evaluation of Code Generation Models",
-    "paper_url": "https://arxiv.org/abs/2212.10264",
-    "evaluation_method": "Code executed against test cases. Robust Pass@k = worst-case Pass@k across 10 perturbed variants.",
-    "metric": "Robust Pass@k, Robust Drop%"
-}

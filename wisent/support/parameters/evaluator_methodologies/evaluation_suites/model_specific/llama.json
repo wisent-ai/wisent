@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "llama",
-    "class": "LlamaExtractor",
-    "evaluator_name": "log_likelihoods",
-    "paper_title": "LLaMA: Open and Efficient Foundation Language Models",
-    "paper_url": "https://arxiv.org/abs/2302.13971",
-    "evaluation_method": "Evaluation suite used in the LLaMA paper by Touvron et al. (2023). LLaMA models (7B to 65B parameters) were evaluated on a collection of standard benchmarks spanning common sense reasoning, closed-book QA, reading comprehension, mathematical reasoning, code generation, and more. For multiple-choice tasks (e.g., MMLU, HellaSwag, ARC, WinoGrande), evaluation is done via log-likelihood scoring where the model scores candidate completions and selects the highest. Accuracy is the primary metric for most tasks. This extractor handles the LLaMA-specific evaluation configuration in lm-evaluation-harness.",
-    "metric": "accuracy"
-}

@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "flames_chinese",
-    "class": "FlamesExtractor",
-    "evaluator_name": "value_alignment",
-    "paper_title": "Flames: Benchmarking Value Alignment of LLMs in Chinese",
-    "paper_url": "https://aclanthology.org/2024.naacl-long.256/",
-    "evaluation_method": "Trained classifier model (CaasiHUANG/flames-scorer, fine-tuned InternLM-Chat-7B on ~22.9K annotated samples) scores each response on 3-point scale: 3=harmless, 2=mixed/risky, 1=harmful. Two metrics: Harmless Rate (% scoring 3) and Harmless Score (avg normalized to 0-100). Macro average across 5 dimensions.",
-    "metric": "Harmless Rate, Harmless Score"
-}

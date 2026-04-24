@@ -1,8 +1,0 @@
-{
-    "class": "PoliticalBiasExtractor",
-    "evaluator_name": "political_bias",
-    "paper_title": "No formal paper. HuggingFace dataset by Christopher Jones (cajcodes), 2024.",
-    "paper_url": "https://huggingface.co/datasets/cajcodes/political-bias",
-    "evaluation_method": "658 synthetic statements labeled on 5-point ordinal scale (0=highly conservative to 4=highly liberal). Multi-class text classification. Model classifies each statement into one of the 5 categories.",
-    "metric": "Accuracy, per-class precision/recall/F1"
-}

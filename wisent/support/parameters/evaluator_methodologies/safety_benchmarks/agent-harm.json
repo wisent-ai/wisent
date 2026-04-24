@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "agent-harm",
-    "class": "AgentHarmExtractor",
-    "evaluator_name": "agent_safety",
-    "paper_title": "AgentHarm: A Benchmark for Measuring Harmfulness of LLM Agents",
-    "paper_url": "https://arxiv.org/abs/2410.09024",
-    "evaluation_method": "Task-specific Python grading functions with human-written rubrics output [0,1] scores. HarmScore = average across all behaviors. Minimal LLM judge involvement.",
-    "metric": "HarmScore (0-100%), RefusalRate"
-}

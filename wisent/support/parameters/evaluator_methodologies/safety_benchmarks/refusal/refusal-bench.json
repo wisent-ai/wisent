@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "refusal-bench",
-    "class": "RefusalBenchExtractor",
-    "evaluator_name": "selective_refusal",
-    "paper_title": "RefusalBench: Generative Evaluation of Selective Refusal in Grounded Language Models",
-    "paper_url": "https://arxiv.org/abs/2510.10390",
-    "evaluation_method": "Models must either answer or issue a refusal code from 6 categories. Metrics: Refusal Detection F1-Score, Category Accuracy, False Refusal Rate, Missed Refusal Rate, Expected Calibration Error, Calibrated Refusal Score. LLM-as-Judge (Claude Sonnet) scores answer quality 1-5.",
-    "metric": "Refusal Detection F1, Category Accuracy, CRS"
-}

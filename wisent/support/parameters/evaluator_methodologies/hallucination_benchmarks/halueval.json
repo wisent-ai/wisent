@@ -1,8 +1,0 @@
-{
-    "class": "HaluEvalExtractor",
-    "evaluator_name": "hallucination_detection",
-    "paper_title": "HaluEval: A Large-Scale Hallucination Evaluation Benchmark for Large Language Models",
-    "paper_url": "https://aclanthology.org/2023.emnlp-main.397/",
-    "evaluation_method": "Binary classification (Yes/No). Model is presented with ground-truth or hallucinated output and must output exactly Yes or No. Single-token response compared against ground truth label.",
-    "metric": "Accuracy (% correct Yes/No classifications)"
-}

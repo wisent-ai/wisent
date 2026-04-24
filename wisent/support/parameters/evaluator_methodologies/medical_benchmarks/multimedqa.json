@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "multimedqa",
-    "class": "MultimedqaExtractor",
-    "evaluator_name": "log_likelihoods",
-    "paper_title": "Large Language Models Encode Clinical Knowledge",
-    "paper_url": "https://arxiv.org/abs/2212.13138",
-    "evaluation_method": "Multiple-choice question answering evaluated via accuracy. MultiMedQA combines six existing medical QA datasets (MedQA, MedMCQA, PubMedQA, MMLU clinical topics, LiveQA, MedicationQA) plus HealthSearchQA. For the multiple-choice subsets (MedQA, MedMCQA, PubMedQA, MMLU), the model selects from candidate answer options and accuracy is computed as the fraction of correctly answered questions. For open-ended subsets, a human evaluation framework scores answers along axes of factuality, comprehension, reasoning, possible harm, and bias.",
-    "metric": "accuracy"
-}

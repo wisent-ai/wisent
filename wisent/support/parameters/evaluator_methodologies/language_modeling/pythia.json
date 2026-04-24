@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "pythia",
-    "class": "PythiaExtractor",
-    "evaluator_name": "log_likelihoods",
-    "paper_title": "Pythia: A Suite for Analyzing Large Language Models Across Training and Scaling",
-    "paper_url": "https://arxiv.org/abs/2304.01373",
-    "evaluation_method": "Pythia is a model suite (not a benchmark) of 16 LLMs ranging from 70M to 12B parameters, all trained on The Pile in the same order, with 154 checkpoints per model. The models are evaluated on standard benchmarks via the EleutherAI LM Evaluation Harness. Evaluation tasks include LAMBADA (word prediction accuracy and perplexity), WinoGrande (accuracy), ARC-Easy/Challenge (accuracy), SciQ (accuracy), LogiQA (accuracy), CrowS-Pairs (stereotype percentage via perplexity comparison). The primary language modeling metric is perplexity (log-likelihood rolling).",
-    "metric": "perplexity, accuracy (on downstream tasks via lm-eval-harness)"
-}

@@ -1,8 +1,0 @@
-{
-    "class": "CurateExtractor",
-    "evaluator_name": "personalized_alignment",
-    "paper_title": "CURATe: Benchmarking Personalised Alignment of Conversational AI Assistants",
-    "paper_url": "https://arxiv.org/abs/2410.21159",
-    "evaluation_method": "Multi-turn evaluation across 5 scenarios with 85 use cases each (337 total per scenario). Tests whether AI models appropriately handle user-provided safety-critical contexts. Evaluates failure modes: inappropriate weighing of conflicting preferences, sycophancy (prioritizing desires above safety), lack of attentiveness to critical user information, inconsistent application of user-specific knowledge. Data loaded from GitHub Excel file (lize-alberts/llm_prag_benchmark).",
-    "metric": "Task-specific safety-critical context handling rates"
-}

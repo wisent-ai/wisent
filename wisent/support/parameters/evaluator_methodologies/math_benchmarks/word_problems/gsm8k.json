@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "gsm8k",
-    "class": "GSM8KExtractor",
-    "evaluator_name": "exact_match",
-    "paper_title": "Training Verifiers to Solve Math Word Problems",
-    "paper_url": "https://arxiv.org/abs/2110.14168",
-    "evaluation_method": "Exact numeric match. Each GSM8K problem has a numeric final answer following the #### delimiter in the solution. The model's extracted final numeric answer is compared against the ground truth number. Candidate completions are labeled correct/incorrect based solely on whether they produce the correct numerical answer, regardless of the reasoning steps. The metric is the proportion of problems for which the model produces the exact correct answer.",
-    "metric": "accuracy (exact numeric match)"
-}

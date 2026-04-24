@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "doc_vqa",
-    "class": "DocVQAExtractor",
-    "evaluator_name": "generation",
-    "paper_title": "DocVQA: A Dataset for VQA on Document Images",
-    "paper_url": "https://arxiv.org/abs/2007.00398",
-    "evaluation_method": "DocVQA is a visual question answering dataset with 50,000 questions on 12,767 document images (letters, memos, reports etc.). The evaluation metric is Average Normalized Levenshtein Similarity (ANLS). For each question-answer pair, the normalized Levenshtein distance NL(prediction, gold) is computed. If NL < 0.5 (i.e., edit distance is less than half the max string length), the score is 1 - NL; otherwise the score is 0. This threshold distinguishes correctly selected but poorly OCR-recognized answers from entirely wrong answers. The ANLS is the average of these scores across all questions. ANLS is case-insensitive but space-sensitive.",
-    "metric": "ANLS (Average Normalized Levenshtein Similarity)"
-}

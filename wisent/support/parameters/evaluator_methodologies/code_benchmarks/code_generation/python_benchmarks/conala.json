@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "conala",
-    "class": "ConalaExtractor",
-    "evaluator_name": "generation",
-    "paper_title": "Learning to Mine Aligned Code and Natural Language Pairs from Stack Overflow",
-    "paper_url": "https://arxiv.org/abs/1805.08949",
-    "evaluation_method": "Corpus-level BLEU score on generated code. The CoNaLa corpus contains 2,379 training and 500 test natural language intent to Python code snippet pairs mined from Stack Overflow. Models generate Python code from natural language descriptions, and the generated code is compared to reference solutions using corpus-level BLEU calculated on the target code outputs in the test set.",
-    "metric": "corpus-level BLEU"
-}

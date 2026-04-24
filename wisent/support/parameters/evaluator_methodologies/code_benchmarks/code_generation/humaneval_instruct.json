@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "humaneval_instruct",
-    "class": "HumanEvalInstructExtractor",
-    "evaluator_name": "coding",
-    "paper_title": "Evaluating Large Language Models Trained on Code",
-    "paper_url": "https://arxiv.org/abs/2107.03374",
-    "evaluation_method": "Functional correctness via unit test execution (pass@k). Same as HumanEval but using instruction-formatted prompts for instruction-tuned models. The prompt asks the model to write a solution that passes tests. Generated code is executed against the unit test suite. pass@k is computed as the unbiased estimator: 1 - C(n-c,k)/C(n,k).",
-    "metric": "pass@k (primarily pass@1)"
-}

@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "wmt_ro_en_t5_prompt",
-    "class": "WmtRoEnT5PromptExtractor",
-    "evaluator_name": "generation",
-    "paper_title": "Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer",
-    "paper_url": "https://arxiv.org/abs/1910.10683",
-    "evaluation_method": "WMT Romanian-English translation evaluated using T5-style text-to-text prompts as introduced by Raffel et al. (2020). The translation task is reformulated as a text generation problem with a task-specific prefix (e.g., 'translate Romanian to English:'). The model generates English translations from Romanian source text. Evaluation uses BLEU score to measure translation quality. This follows the T5 unified text-to-text framework where all tasks including translation use the same encoder-decoder architecture.",
-    "metric": "BLEU"
-}

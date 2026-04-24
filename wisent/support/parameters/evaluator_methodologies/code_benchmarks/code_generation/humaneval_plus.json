@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "humaneval_plus",
-    "class": "HumanEvalPlusExtractor",
-    "evaluator_name": "coding",
-    "paper_title": "Evaluating Large Language Models Trained on Code",
-    "paper_url": "https://arxiv.org/abs/2107.03374",
-    "evaluation_method": "Functional correctness via unit test execution (pass@k). Same as HumanEval but with an augmented test suite (HumanEval+) providing more comprehensive test coverage. Generated code is executed against the expanded unit test suite for each of the 164 Python programming problems. pass@k is computed as the unbiased estimator: 1 - C(n-c,k)/C(n,k).",
-    "metric": "pass@k (primarily pass@1)"
-}

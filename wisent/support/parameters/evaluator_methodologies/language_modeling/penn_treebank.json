@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "penn_treebank",
-    "class": "PennTreebankExtractor",
-    "evaluator_name": "perplexity",
-    "paper_title": "Building a Large Annotated Corpus of English: The Penn Treebank",
-    "paper_url": "https://aclanthology.org/J93-2004/",
-    "evaluation_method": "Language modeling evaluation on the Penn Treebank corpus. The dataset consists of 929k training words, 73k validation words, and 82k test words from Wall Street Journal articles. Standard preprocessing: words lowercased, numbers replaced with N, newlines replaced with <eos>, punctuation removed, vocabulary restricted to most frequent 10k words with rest replaced by <unk>. Models are evaluated by computing perplexity (exponential of the average per-word negative log-likelihood) on the test set. Lower perplexity indicates better language modeling.",
-    "metric": "perplexity (word-level)"
-}

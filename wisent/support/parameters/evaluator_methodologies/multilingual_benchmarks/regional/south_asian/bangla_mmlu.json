@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "bangla_mmlu",
-    "class": "BanglaMmluExtractor",
-    "evaluator_name": "log_likelihoods",
-    "paper_title": "BnMMLU: Measuring Massive Multitask Language Understanding in Bengali",
-    "paper_url": "https://arxiv.org/abs/2505.18951",
-    "evaluation_method": "BnMMLU is a Bengali-language multiple-choice QA benchmark spanning 23 domains (science, humanities, mathematics, general knowledge) with 138,949 question-option pairs. Questions are sourced from Bangladeshi educational materials (NCTB-approved textbooks, competitive exam guides) processed via OCR with post-correction. Models are evaluated on the test set in zero-shot and 5-shot settings. The test set is annotated with three cognitive categories: factual knowledge, procedural application, and reasoning. Evaluation uses accuracy (proportion of correctly answered multiple-choice questions). In lm-eval-harness, log-likelihood of each answer choice is computed and the choice with highest log-likelihood is selected.",
-    "metric": "accuracy"
-}
