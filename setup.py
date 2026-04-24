@@ -21,7 +21,13 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/wisent-ai/wisent",  # Replace with your GitHub repo
-    packages=find_packages(exclude=["patches", "patches.*"]),  # Exclude patches directory
+    packages=find_packages(exclude=[
+        "patches", "patches.*",
+        # Moved to separate PyPI packages wisent-extractors and wisent-evaluators.
+        # Main wisent no longer ships these subtrees; they come via runtime deps.
+        "wisent.extractors", "wisent.extractors.*",
+        "wisent.core.reading.evaluators", "wisent.core.reading.evaluators.*",
+    ]),
     include_package_data=True,
     package_data={
         "wisent": [
@@ -53,6 +59,9 @@ setup(
     ],
     python_requires=">=3.8",
     install_requires=[
+        # Split-out sibling packages contributing to the wisent.* namespace.
+        "wisent-extractors>=0.1.0",
+        "wisent-evaluators>=0.1.0",
         "torch>=1.9.0",
         "transformers>=4.46.0",
         "jinja2>=3.1.0",        "tqdm>=4.50.0",
