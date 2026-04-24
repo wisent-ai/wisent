@@ -26,12 +26,20 @@ setup(
         exclude=[
             "patches",
             "patches.*",
-            # Moved to separate PyPI packages wisent-extractors and wisent-evaluators.
-            # Main wisent no longer ships these subtrees; they come via runtime deps.
+            # Moved to separate PyPI packages. Main wisent no longer ships these
+            # subtrees; they come via runtime deps.
             "wisent.extractors",
             "wisent.extractors.*",
             "wisent.core.reading.evaluators",
             "wisent.core.reading.evaluators.*",
+            "wisent.app",
+            "wisent.app.*",
+            "wisent.core.control.steering_optimizer",
+            "wisent.core.control.steering_optimizer.*",
+            "wisent.scripts",
+            "wisent.scripts.*",
+            "wisent.core.classifiers.full_benchmarks",
+            "wisent.core.classifiers.full_benchmarks.*",
         ]
     ),
     include_package_data=True,
@@ -49,10 +57,7 @@ setup(
             "support/parameters/evaluator_methodologies/*/*.json",
             "support/parameters/evaluator_methodologies/*/*/*.json",
             "support/parameters/evaluator_methodologies/*/*/*/*.json",
-            "scripts/*.sh",
             "core/control/steering_methods/configs/*.json",
-            "app/*.png",
-            "app/icons/*.svg",
         ],
     },
     classifiers=[
@@ -66,8 +71,11 @@ setup(
     python_requires=">=3.8",
     install_requires=[
         # Split-out sibling packages contributing to the wisent.* namespace.
-        "wisent-extractors>=0.1.0",
-        "wisent-evaluators>=0.1.0",
+        "wisent-extractors>=0.1.2",
+        "wisent-evaluators>=0.1.2",
+        "wisent-gradio>=0.1.0",
+        "wisent-optimizer>=0.1.0",
+        "wisent-tools>=0.1.0",
         "torch>=1.9.0",
         "transformers>=4.46.0",
         "jinja2>=3.1.0",
