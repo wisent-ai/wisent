@@ -1,4 +1,9 @@
 import os as _os
+import pkgutil as _pkgutil
+# Merge with sibling installs of wisent.core.* (e.g. wisent-evaluators
+# contributes wisent/core/reading/evaluators). Without this, the regular
+# package above hides the namespace-package contributions in site-packages.
+__path__ = _pkgutil.extend_path(__path__, __name__)
 _base = _os.path.dirname(__file__)
 for _entry in sorted(_os.listdir(_base)):
     _path = _os.path.join(_base, _entry)
