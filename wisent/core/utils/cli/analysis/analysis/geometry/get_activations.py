@@ -188,6 +188,7 @@ def execute_get_activations(args, *, architecture_module_limit: int = ARCHITECTU
                     pair, strategy=extraction_strategy,
                     layers=layer_strs, component=extraction_component,
                     capture_qk=True,
+                    weighted_decay=getattr(args, "weighted_decay", None),
                 )
                 enriched_pairs.append(updated_pair)
                 qk_data_per_pair.append(dict(collector._last_qk))

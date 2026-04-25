@@ -2,6 +2,10 @@
 
 import argparse
 
+from wisent.core.utils.config_tools.constants.for_experiments.by_domain.analysis._analysis import (
+    CHAT_WEIGHTED_DECAY_DEFAULT,
+)
+
 
 def setup_get_activations_parser(parser: argparse.ArgumentParser) -> None:
     """
@@ -71,6 +75,16 @@ def setup_get_activations_parser(parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="Output raw hidden states [seq_len, hidden_size] instead of extracted vectors. "
              "Allows applying different extraction strategies later without re-running the model."
+    )
+
+    # Strategy-specific parameters
+    parser.add_argument(
+        "--weighted-decay",
+        type=float,
+        default=CHAT_WEIGHTED_DECAY_DEFAULT,
+        help="Exponential decay factor for chat_weighted strategy. Higher values "
+             "weight earlier answer tokens more heavily; 0.0 reduces to chat_mean. "
+             "Used only when --extraction-strategy=chat_weighted."
     )
 
     # Processing options

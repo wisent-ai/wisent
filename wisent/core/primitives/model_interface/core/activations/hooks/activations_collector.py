@@ -49,6 +49,7 @@ class ActivationCollector:
         normalize_layers: bool = False,
         prompt_strategy: str | None = None,
         capture_qk: bool = False,
+        weighted_decay: float | None = None,
     ) -> ContrastivePair:
         """Collect activations for a contrastive pair."""
         if aggregation is not None:
@@ -63,12 +64,12 @@ class ActivationCollector:
         pos = self._collect_single(
             pair.prompt, pos_text, strategy, layers, normalize,
             other_response=other_for_pos, is_positive=True, component=component,
-            capture_qk=capture_qk)
+            capture_qk=capture_qk, weighted_decay=weighted_decay)
         pos_qk = dict(self._last_qk) if capture_qk else {}
         neg = self._collect_single(
             pair.prompt, neg_text, strategy, layers, normalize,
             other_response=other_for_neg, is_positive=False, component=component,
-            capture_qk=capture_qk)
+            capture_qk=capture_qk, weighted_decay=weighted_decay)
         neg_qk = dict(self._last_qk) if capture_qk else {}
         if capture_qk:
             self._last_qk = {"pos": pos_qk, "neg": neg_qk}
@@ -81,6 +82,7 @@ class ActivationCollector:
         is_positive: bool = True,
         component: ExtractionComponent = ExtractionComponent.default(),
         capture_qk: bool = False,
+        weighted_decay: float | None = None,
     ) -> LayerActivations:
         """Collect activations for a single prompt-response pair."""
         self._ensure_eval_mode()
@@ -126,14 +128,14 @@ class ActivationCollector:
                     nm = names_by_idx[idx]
                     if idx in q_cap:
                         qk_out[f"q_{nm}"] = extract_activation(
-                            strategy, q_cap[idx].squeeze(0), answer_text, tok, prompt_len).to(self.store_device)
+                            strategy, q_cap[idx].squeeze(0), answer_text, tok, prompt_len, weighted_decay=weighted_decay).to(self.store_device)
                     if idx in k_cap:
                         qk_out[f"k_{nm}"] = extract_activation(
-                            strategy, k_cap[idx].squeeze(0), answer_text, tok, prompt_len).to(self.store_device)
+                            strategy, k_cap[idx].squeeze(0), answer_text, tok, prompt_len, weighted_decay=weighted_decay).to(self.store_device)
                 self._last_qk = qk_out
             if component.needs_hooks:
                 hooked = self._collect_with_hooks(
-                    full_enc, keep, component, strategy, answer_text, tok, prompt_len)
+                    full_enc, keep, component, strategy, answer_text, tok, prompt_len, weighted_decay=weighted_decay)
             else:
                 hooked = None
             collected: RawActivationMap = {}
@@ -143,7 +145,7 @@ class ActivationCollector:
                     h = hooked[idx].squeeze(0)
                 else:
                     h = hs[idx + 1].squeeze(0)
-                value = extract_activation(strategy, h, answer_text, tok, prompt_len)
+                value = extract_activation(strategy, h, answer_text, tok, prompt_len, weighted_decay=weighted_decay)
                 value = value.to(self.store_device)
                 if self.dtype is not None:
                     value = value.to(self.dtype)
@@ -152,7 +154,7 @@ class ActivationCollector:
                 collected[name] = value
             return LayerActivations(collected)
 
-    def _collect_with_hooks(self, full_enc, keep, component, strategy, answer_text, tok, prompt_len):
+    def _collect_with_hooks(self, full_enc, keep, component, strategy, answer_text, tok, prompt_len, weighted_decay=None):
         """Run a second forward pass with hooks to capture component activations."""
         from wisent.core.primitives.model_interface.core.activations.component_hooks import ComponentHookManager
         manager = ComponentHookManager(self.model.hf_model, component, keep, self.architecture_module_limit)
