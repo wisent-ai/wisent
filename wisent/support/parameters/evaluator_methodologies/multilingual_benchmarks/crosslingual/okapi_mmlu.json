@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "okapi_mmlu",
-    "class": "OkapiMMLUExtractor",
-    "evaluator_name": "multiple_choice",
-    "paper_title": "Okapi: Instruction-tuned Large Language Models in Multiple Languages with Reinforcement Learning from Human Feedback",
-    "paper_url": "https://arxiv.org/abs/2307.16039",
-    "evaluation_method": "ChatGPT-translated MMLU into 26 languages. Same evaluation as standard MMLU: multiple-choice accuracy via log-likelihood comparison. In lm-eval-harness: output_type=multiple_choice, model computes log-probabilities for each answer choice (A/B/C/D), highest selected. Zero-shot evaluation.",
-    "metric": "Accuracy (acc, acc_norm)"
-}

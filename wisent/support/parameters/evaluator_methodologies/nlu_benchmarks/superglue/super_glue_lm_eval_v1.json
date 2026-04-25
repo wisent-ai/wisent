@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "super_glue_lm_eval_v1",
-    "class": "SuperGlueLmEvalV1Extractor",
-    "evaluator_name": "log_likelihoods",
-    "paper_title": "SuperGLUE: A Stickier Benchmark for General-Purpose Language Understanding Systems",
-    "paper_url": "https://arxiv.org/abs/1905.00537",
-    "evaluation_method": "SuperGLUE benchmark evaluated via log-likelihood scoring in the lm-evaluation-harness. Contains eight NLU tasks: BoolQ (accuracy), CB (accuracy and macro-F1), COPA (accuracy), MultiRC (F1 and exact match), ReCoRD (F1 and exact match), RTE (accuracy), WiC (accuracy), WSC (accuracy). In the log-likelihood evaluation setting, the model scores candidate completions by their log-probability and selects the highest-scoring one. The overall SuperGLUE score is the simple average across all tasks.",
-    "metric": "task-dependent (accuracy, F1, exact match); overall is average across tasks"
-}

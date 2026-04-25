@@ -1,8 +1,0 @@
-{
-    "class": "CNMOExtractor",
-    "evaluator_name": "math_olympiad",
-    "paper_title": "LiveMathBench: A Dynamic and Rigorous Mathematical Benchmark with G-Pass@k Metric",
-    "paper_url": "https://arxiv.org/abs/2412.13147",
-    "evaluation_method": "Chinese National Math Olympiad problems from opencompass/LiveMathBench (config: v202412_CNMO_en). LLM-as-judge (Qwen2.5-72B-Instruct) determines correctness of generated answers. G-Pass@k metric provides continuous assessment of model performance across multiple sampling attempts, quantifying both peak performance potential and stability. Mathematical answer equivalence checking.",
-    "metric": "G-Pass@k, Accuracy"
-}

@@ -1,8 +1,0 @@
-{
-    "class": "InverseScalingExtractor",
-    "evaluator_name": "multiple_choice",
-    "paper_title": "Inverse Scaling: When Bigger Isnt Better",
-    "paper_url": "https://arxiv.org/abs/2306.09479",
-    "evaluation_method": "In lm-eval-harness: output_type=multiple_choice. Model computes log-probabilities for each answer choice. Most winning submissions used classification loss.",
-    "metric": "Accuracy (acc, acc_norm)"
-}

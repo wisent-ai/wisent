@@ -1,8 +1,0 @@
-{
-    "class": "SciCodeExtractor",
-    "evaluator_name": "code_generation/scientific_computing",
-    "paper_title": "SciCode: A Research Coding Benchmark Curated by Scientists",
-    "paper_url": "https://arxiv.org/abs/2407.13168",
-    "evaluation_method": "Execution-based. Generated code run and validated with numerical tests and domain-specific tests.",
-    "metric": "pass@1 (subproblem and main problem level)"
-}

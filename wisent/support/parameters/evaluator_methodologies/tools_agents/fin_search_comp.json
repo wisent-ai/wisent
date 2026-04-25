@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "fin_search_comp",
-    "class": "FinSearchCompExtractor",
-    "evaluator_name": "financial_search",
-    "paper_title": "FinSearchComp: Towards a Realistic, Expert-Level Evaluation of Financial Search and Reasoning",
-    "paper_url": "https://arxiv.org/abs/2509.13160",
-    "evaluation_method": "LLM-as-judge with rubric-guided judging. 0-1 binary. Explicit tolerance bands per question type. 95% agreement with human labels.",
-    "metric": "Accuracy (% correct per task type)"
-}

@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "livemathbench_amc_en",
-    "class": "LiveMathBenchAmcEnExtractor",
-    "evaluator_name": "exact_match",
-    "paper_title": "Are Your LLMs Capable of Stable Reasoning?",
-    "paper_url": "https://arxiv.org/abs/2412.13147",
-    "evaluation_method": "Exact match with G-Pass@k stability metric. AMC (American Mathematics Competition) English subset of LiveMathBench. Greedy decoding accuracy on mathematical answers plus G-Pass@k stability assessment across multiple sampling attempts.",
-    "metric": "greedy accuracy (exact match), G-Pass@k (stability)"
-}

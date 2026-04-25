@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "paws_x",
-    "class": "PawsXExtractor",
-    "evaluator_name": "paraphrase_identification",
-    "paper_title": "PAWS-X: A Cross-lingual Adversarial Dataset for Paraphrase Identification",
-    "paper_url": "https://aclanthology.org/D19-1382/",
-    "evaluation_method": "Binary classification: given two sentences, determine if they are paraphrases (1) or not (0). Adversarial pairs with high lexical overlap but different semantics. 23,659 human-translated evaluation pairs across 6 languages (French, Spanish, German, Chinese, Japanese, Korean). In lm-eval-harness: output_type=multiple_choice, log-likelihood comparison over two choices.",
-    "metric": "Accuracy"
-}

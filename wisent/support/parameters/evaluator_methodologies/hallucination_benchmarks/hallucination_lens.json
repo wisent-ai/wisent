@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "hallucination_lens",
-    "class": "HalulensExtractor",
-    "evaluator_name": "hallucination_classification",
-    "paper_title": "HalluLens: LLM Hallucination Benchmark",
-    "paper_url": "https://arxiv.org/abs/2504.17550",
-    "evaluation_method": "LLM-as-judge (Llama-3.1-70B-Instruct, ~95% human agreement). Three tasks: PreciseWikiQA (False Refusal Rate, Hallucination Rate, Correct Answer Rate), LongWiki (Precision, Recall@K, F1@K via claim decomposition), NonExistentEntities (False Acceptance Rate).",
-    "metric": "Per-task: Hallucination Rate, F1@K, False Acceptance Rate"
-}

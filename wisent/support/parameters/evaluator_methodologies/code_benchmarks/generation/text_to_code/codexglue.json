@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "codexglue",
-    "class": "CodexglueExtractor",
-    "evaluator_name": "generation",
-    "paper_title": "CodeXGLUE: A Machine Learning Benchmark Dataset for Code Understanding and Generation",
-    "paper_url": "https://arxiv.org/abs/2102.04664",
-    "evaluation_method": "CodeXGLUE is a multi-task benchmark with 10 tasks across 14 datasets. Evaluation metrics are task-specific: text-to-code generation uses exact match (EM) and smoothed BLEU; code-to-code translation uses exact match, BLEU, and CodeBLEU (weighted combination of n-gram match, weighted n-gram match, AST match, and data-flow match); clone detection uses F1; defect detection uses accuracy; code search uses MRR; code summarization uses smoothed BLEU-4; code completion uses token-level accuracy and exact match.",
-    "metric": "Exact Match (EM), BLEU, CodeBLEU (task-dependent)"
-}

@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "winogender",
-    "class": "WinogenderHfExtractor",
-    "evaluator_name": "generation",
-    "paper_title": "Gender Bias in Coreference Resolution",
-    "paper_url": "https://arxiv.org/abs/1804.09301",
-    "evaluation_method": "Winograd schema-style minimal pair sentences for evaluating gender bias in coreference resolution. Each example consists of a sentence with an occupation, a participant, and a pronoun, with three variations differing only by pronoun gender (male, female, neutral). The task is to correctly resolve which entity the pronoun refers to. In the LLM evaluation setting (as in the LLaMA paper), accuracy is measured on the entire set of Winogender sentences, testing how pronoun gender affects coreference predictions. Includes a gotcha subset for cases where pronoun gender contradicts occupational gender statistics.",
-    "metric": "accuracy"
-}

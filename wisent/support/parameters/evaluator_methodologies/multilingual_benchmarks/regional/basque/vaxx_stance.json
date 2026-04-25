@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "vaxx_stance",
-    "class": "VaxxStanceExtractor",
-    "evaluator_name": "log_likelihoods",
-    "paper_title": "VaxxStance@IberLEF 2021: Going Beyond Text in Cross-lingual Stance Detection",
-    "paper_url": "https://vaxxstance.github.io/",
-    "evaluation_method": "Stance detection on tweets around the anti-vaccine movement in Basque and Spanish. Given a tweet, determine whether it expresses AGAINST, FAVOR, or NEUTRAL (NONE) stance towards the anti-vaccine topic. Evaluation uses the metric from SemEval 2016 Task on Stance Detection: macro-average F1-score of two classes (FAVOR and AGAINST), although the NONE class is also present in the test data. Part of the BasqueGLUE benchmark.",
-    "metric": "macro-average F1 of FAVOR and AGAINST classes"
-}

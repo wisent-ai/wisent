@@ -1,5 +1,6 @@
 import os
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 # Read the contents of the README file
 with open("README.md", encoding="utf-8") as f:
@@ -21,7 +22,26 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/wisent-ai/wisent",  # Replace with your GitHub repo
-    packages=find_packages(exclude=["patches", "patches.*"]),  # Exclude patches directory
+    packages=find_packages(
+        exclude=[
+            "patches",
+            "patches.*",
+            # Moved to separate PyPI packages. Main wisent no longer ships these
+            # subtrees; they come via runtime deps.
+            "wisent.extractors",
+            "wisent.extractors.*",
+            "wisent.core.reading.evaluators",
+            "wisent.core.reading.evaluators.*",
+            "wisent.app",
+            "wisent.app.*",
+            "wisent.core.control.steering_optimizer",
+            "wisent.core.control.steering_optimizer.*",
+            "wisent.scripts",
+            "wisent.scripts.*",
+            "wisent.core.classifiers.full_benchmarks",
+            "wisent.core.classifiers.full_benchmarks.*",
+        ]
+    ),
     include_package_data=True,
     package_data={
         "wisent": [
@@ -37,10 +57,7 @@ setup(
             "support/parameters/evaluator_methodologies/*/*.json",
             "support/parameters/evaluator_methodologies/*/*/*.json",
             "support/parameters/evaluator_methodologies/*/*/*/*.json",
-            "scripts/*.sh",
             "core/control/steering_methods/configs/*.json",
-            "app/*.png",
-            "app/icons/*.svg",
         ],
     },
     classifiers=[
@@ -53,9 +70,16 @@ setup(
     ],
     python_requires=">=3.8",
     install_requires=[
+        # Split-out sibling packages contributing to the wisent.* namespace.
+        "wisent-extractors>=0.1.2",
+        "wisent-evaluators>=0.1.2",
+        "wisent-gradio>=0.1.0",
+        "wisent-optimizer>=0.1.0",
+        "wisent-tools>=0.1.0",
         "torch>=1.9.0",
         "transformers>=4.46.0",
-        "jinja2>=3.1.0",        "tqdm>=4.50.0",
+        "jinja2>=3.1.0",
+        "tqdm>=4.50.0",
         "scikit-learn>=0.24.0",
         "pandas>=1.2.0",
         "numpy>=1.21.0",
@@ -112,4 +136,4 @@ setup(
         ],
     },
     keywords="nlp, machine learning, language models, safety, guardrails, lm-evaluation-harness",
-) 
+)

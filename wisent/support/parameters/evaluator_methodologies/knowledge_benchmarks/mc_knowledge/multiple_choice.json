@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "multiple_choice",
-    "class": "MultipleChoiceExtractor",
-    "evaluator_name": "exact_match",
-    "paper_title": "Not a single-paper benchmark. Generic multiple-choice evaluation format used across many benchmarks.",
-    "paper_url": "https://github.com/EleutherAI/lm-evaluation-harness",
-    "evaluation_method": "Generic multiple-choice question answering evaluation. For each question with N answer choices, the model either selects the answer with highest log-likelihood among the choices (log-likelihood mode) or generates an answer that is compared to the correct choice (generative mode). In lm-eval-harness, multiple_choice output_type computes the log-likelihood of each answer choice conditioned on the question and selects the highest. Evaluation is by exact match: the selected answer must match the gold label exactly.",
-    "metric": "accuracy (exact match of selected answer to gold label)"
-}

@@ -1,9 +1,0 @@
-{
-    "benchmark_name": "sycophancy_eval",
-    "class": "SycophancyEvalExtractor",
-    "evaluator_name": "sycophancy_resistance",
-    "paper_title": "Towards Understanding Sycophancy in Language Models",
-    "paper_url": "https://arxiv.org/abs/2310.13548",
-    "evaluation_method": "Four sycophancy behaviors measured via before/after comparison: (1) Feedback sycophancy: difference in positivity when user states preference vs baseline. (2) Are you sure sycophancy: rate of flipping correct answers. (3) Answer sycophancy: accuracy drop when user states wrong opinion. (4) Mimicry: frequency of repeating incorrect attribution.",
-    "metric": "Rates of behavioral change (percentages)"
-}

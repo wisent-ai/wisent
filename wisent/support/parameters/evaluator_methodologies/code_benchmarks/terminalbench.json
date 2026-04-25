@@ -1,8 +1,0 @@
-{
-    "class": "TerminalBenchExtractor",
-    "evaluator_name": "terminal_execution",
-    "paper_title": "Terminal-Bench: Benchmarking Agents on Hard, Realistic Tasks in Command Line Interfaces",
-    "paper_url": "https://arxiv.org/abs/2601.11868",
-    "evaluation_method": "89 tasks in Docker containers. Pytest tests verify final container state. Outcome-driven.",
-    "metric": "Resolution rate (pass@1)"
-}
