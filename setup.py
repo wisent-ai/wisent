@@ -1,6 +1,6 @@
 import os
 
-from setuptools import find_packages, setup
+from setuptools import find_namespace_packages, setup
 
 # Read the contents of the README file
 with open("README.md", encoding="utf-8") as f:
@@ -22,7 +22,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/wisent-ai/wisent",  # Replace with your GitHub repo
-    packages=find_packages(
+    packages=find_namespace_packages(
         exclude=[
             "patches",
             "patches.*",
