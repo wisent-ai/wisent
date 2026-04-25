@@ -1,7 +1,8 @@
 """Core geometry metrics computation for activation representations."""
 
 import os
-os.environ["NUMBA_NUM_THREADS"] = "1"
+# NUMBA_NUM_THREADS deliberately not set here — see runner.py for the
+# pynndescent reload_config race rationale.
 
 from typing import Dict, Optional, Any
 import torch

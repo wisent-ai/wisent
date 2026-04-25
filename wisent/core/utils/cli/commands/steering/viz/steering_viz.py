@@ -4,7 +4,7 @@ Uses database activations if available, regenerates if not.
 """
 
 import os
-os.environ["NUMBA_NUM_THREADS"] = "1"
+# NUMBA_NUM_THREADS deliberately not set here — see runner.py.
 
 import json
 from wisent.core.utils.config_tools.constants import JSON_INDENT, VIZ_TRUTHFUL_REGION_THRESHOLD, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD

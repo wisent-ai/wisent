@@ -6,7 +6,10 @@ analysis on activation representations.
 """
 
 import os
-os.environ["NUMBA_NUM_THREADS"] = "1"
+# NUMBA_NUM_THREADS deliberately not set here — pinning it at import time
+# triggers a reload_config race in numba once pynndescent (or any other
+# numba consumer) initializes its dispatcher with a different default.
+# Set it in the shell environment if you need to constrain numba.
 
 import json
 import time
