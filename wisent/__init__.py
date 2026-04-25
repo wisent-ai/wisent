@@ -1,7 +1,12 @@
 import os
 import pkgutil
 
-os.environ["NUMBA_NUM_THREADS"] = "1"
+# Note: previous versions set os.environ["NUMBA_NUM_THREADS"] = "1" here,
+# which caused RuntimeError when numba's reload_config (triggered by
+# pynndescent import) detected the env and tried to re-launch threads at a
+# different count than the one already running. Operators who actually want
+# to constrain numba should set NUMBA_NUM_THREADS in the environment before
+# launching python — not from inside our package init.
 
 # pkgutil.extend_path lets sibling packages (wisent-extractors, wisent-evaluators)
 # contribute to the wisent.* namespace from separate installed locations.
@@ -15,7 +20,7 @@ for _entry in sorted(os.listdir(_base)):
     if os.path.isdir(_path) and not _entry.startswith((".", "_")):
         __path__.append(_path)
 
-__version__ = "0.11.1"
+__version__ = "0.11.4"
 
 from wisent.core.control.tasks.base.diversity_processors import (
     OpenerPenaltyProcessor,
