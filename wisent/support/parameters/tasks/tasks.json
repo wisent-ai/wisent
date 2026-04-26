@@ -6122,13 +6122,6 @@
       ],
       "quality_score": 3
     },
-    "multiple_choice": {
-      "tags": [
-        "multiple-choice",
-        "english"
-      ],
-      "quality_score": 2
-    },
     "paloma": {
       "tags": [
         "general",
@@ -41202,10 +41195,12 @@
     },
     "humaneval": {
       "tags": [
-        "general",
+        "coding",
+        "python",
+        "code generation",
         "english"
       ],
-      "quality_score": 2
+      "quality_score": 4
     },
     "humaneval_64": {
       "tags": [
@@ -41216,10 +41211,12 @@
     },
     "humaneval_plus": {
       "tags": [
-        "general",
+        "coding",
+        "python",
+        "code generation",
         "english"
       ],
-      "quality_score": 2
+      "quality_score": 4
     },
     "ifeval": {
       "tags": [
@@ -44163,10 +44160,12 @@
     },
     "mbpp_plus": {
       "tags": [
-        "general",
+        "coding",
+        "python",
+        "code generation",
         "english"
       ],
-      "quality_score": 2
+      "quality_score": 3
     },
     "mc_taco": {
       "tags": [
@@ -55774,24 +55773,6 @@
       ],
       "quality_score": 2
     },
-    "humaneval": {
-      "tags": [
-        "coding",
-        "python",
-        "code generation",
-        "english"
-      ],
-      "quality_score": 4
-    },
-    "humaneval_plus": {
-      "tags": [
-        "coding",
-        "python",
-        "code generation",
-        "english"
-      ],
-      "quality_score": 4
-    },
     "instructhumaneval": {
       "tags": [
         "coding",
@@ -55808,15 +55789,6 @@
         "python",
         "code generation",
         "competitive programming",
-        "english"
-      ],
-      "quality_score": 3
-    },
-    "mbpp_plus": {
-      "tags": [
-        "coding",
-        "python",
-        "code generation",
         "english"
       ],
       "quality_score": 3
