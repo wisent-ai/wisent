@@ -36,8 +36,16 @@ def get_all_docs_from_task(task: Any) -> Tuple[List[Dict[str, Any]], Dict[str, i
         ("fewshot_docs", "has_fewshot_docs"),
     ]
 
+    import time
     for docs_method, has_method in split_methods:
-        if hasattr(task, has_method):
+        if not hasattr(task, has_method):
+            continue
+        # Retry on HF 429 rate limits — the wisent batch fleet has 20+
+        # parallel agents that hit dataset_info on every job, blowing the
+        # 1000-req/5-min free-tier ceiling. Without retry, a single 429
+        # cascades to NoDocsAvailableError(task='NoneType') and the whole
+        # job is marked failed even though the task is fine.
+        for attempt in range(5):
             try:
                 has_docs = getattr(task, has_method)
                 if callable(has_docs) and has_docs():
@@ -47,9 +55,14 @@ def get_all_docs_from_task(task: Any) -> Tuple[List[Dict[str, Any]], Dict[str, i
                         if docs:
                             split_counts[docs_method] = len(docs)
                             all_docs.extend(docs)
-            except Exception:
-                # Skip splits that fail to load
-                continue
+                break
+            except Exception as exc:
+                msg = str(exc)
+                is_429 = "429" in msg or "Too Many Requests" in msg or "rate limit" in msg.lower()
+                if is_429 and attempt < 4:
+                    time.sleep(15 + attempt * 30)
+                    continue
+                break
 
     return all_docs, split_counts
 
