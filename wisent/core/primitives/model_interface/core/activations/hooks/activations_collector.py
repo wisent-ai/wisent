@@ -94,7 +94,8 @@ class ActivationCollector:
                 prompt_len = int(prompt_enc["input_ids"].shape[-1])
             else:
                 prompt_len = 0
-            full_enc = tok(full_text, return_tensors="pt", add_special_tokens=False, truncation=True, max_length=tok.model_max_length)
+            _capped = min(int(tok.model_max_length or 4096), 4096)
+            full_enc = tok(full_text, return_tensors="pt", add_special_tokens=False, truncation=True, max_length=_capped)
             compute_device = getattr(self.model, "compute_device", None) or next(self.model.hf_model.parameters()).device
             full_enc = {k: v.to(compute_device) for k, v in full_enc.items()}
             n_blocks = self.model.num_layers
